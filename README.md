@@ -13,6 +13,37 @@ See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installati
 
 * 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/leabra25ra` code using Python, including the GUI etc.
 
+# Design
+
+* `leabra` sub-package provides a clean, well-organized implementation of core Leabra algorithms and Network structures. More specialized modifications such as `DeepLeabra` or `PBWM` or `PVLV` are all (going to be) implemented as additional specialized code that builds on / replaces elements of the basic version.  The goal is to make all of the code simpler, more transparent, and more easily modified by end users.  You should not have to dig through deep chains of C++ inheritance to find out what is going on.  Nevertheless, the basic tradeoffs of code re-use dictate that not everything should be in-line in one massive blob of code, so there is still some inevitable tracking down of function calls etc.  The algorithm overview below should be helpful in finding everything.
+
+* `ActParams` (in [act.go](https://github.com/emer/leabra/blob/master/leabra/act.go)), `InhibParams` (in [inhib.go](https://github.com/emer/leabra/blob/master/leabra/inhib.go)), and `LearnNeurParams` / `LearnSynParams` (in [learn.go](https://github.com/emer/leabra/blob/master/leabra/learn.go)) provide the core parameters and functions used, including the X-over-X-plus-1 activation function, FFFB inhibition, and the XCal BCM-like learning rule, etc.  This function-based organization should be clearer than the purely structural organization used in C++ emergent.
+
+* There are 3 main levels of structure: `Network`, `Layer` and `Prjn` (projection).  The network calls methods on its Layers, and Layers iterate over both `Neuron` data structures (which have only a minimal set of methods) and the `Prjn`s, to implement the relevant computations.  The `Prjn` fully manages everything about a projection of connectivity between two layers, including the full list of `Syanpse` elements in the connection.  There is no "ConGroup" or "ConState" level as was used in C++, which greatly simplifies many things.  The Layer also has a set of `Pool` elements, one for each level at which inhibition is computed (there is always one for the Layer, and then optionally one for each Sub-Pool of units (*Pool* is the new simpler term for "Unit Group" from C++ emergent).
+
+* The `NetworkStru` and `LayerStru` structs manage all the core structural aspects of things (data structures etc), and then the algorithm-specific versions (e.g., `leabra.Network`) use Go's anonymous embedding (akin to inheritance in C++) to transparently get all that functionality, while then directly implementing the algorithm code.  Almost every step of computation has an associated method in `leabra.Layer`, so look first in [layer.go](https://github.com/emer/leabra/blob/master/leabra/layer.go) to see how something is implemented.  
+
+* Each structural element directly has all the parameters controlling its behavior -- e.g., the `Layer` contains an `ActParams` field (named `Act`), etc, instead of using a separate `Spec` structure as in C++ emergent.  The Spec-like ability to share parameter settings across multiple layers etc is instead achieved through a **styling**-based paradigm -- you apply parameter "styles" to relevant layers instead of assigning different specs to them.  This paradigm should be less confusing and less likely to result in accidental or poorly-understood parameter applications.  We adopt the CSS (cascading-style-sheets) standard where parameters can be specifed in terms of the Name of an object (e.g., `#Hidden`), the *Class* of an object (e.g., `.TopDown` -- where the class name TopDown is manually assigned to relevant elements), and the *Type* of an object (e.g., `Layer` applies to all layers).  Multiple space-separated classes can be assigned to any given element, enabling a powerful combinatorial styling strategy to be used.
+
+* Go uses `interfaces` to represent abstract collections of functionality (i.e., sets of methods).  The `emer` package provides a set of interfaces for each structural level (e.g., `emer.Layer` etc) -- any given specific layer must implement all of these methods, and the structural containers (e.g., the list of layers in a network) are lists of these interfaces.  An interface is implicitly a *pointer* to an actual concrete object that implements the interface.  Thus, we typically need to convert this interface into the pointer to the actual concrete type, as in:
+
+```Go
+func (nt *Network) InitActs() {
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		ly.(*Layer).InitActs() // ly is the emer.Layer interface -- (*Layer) converts to leabra.Layer
+	}
+}
+```
+
+* The emer interfaces are designed to support generic access to network state, e.g., for the 3D network viewer, but specifically avoid anything algorithmic.  Thus, they should allow viewing of any kind of network, including PyTorch backprop nets.
+
+* There is also a `leabra.LeabraLayer` and `leabra.LeabraPrjn` interface, defined in [leabra.go](https://github.com/emer/leabra/blob/master/leabra/leabra.go), which provides a virtual interface for the Leabra-specific algorithm functions at the basic level.  These interfaces are used in the base leabra code, so that any more specialized version that embeds the basic leabra types will be called instead.  See `deep` sub-package for implemented example that does DeepLeabra on top of the basic `leabra` foundation.
+
+* Layers have a `Shape` property, using the `etensor.Shape` type, which specifies their n-dimensional (tensor) shape.  Standard layers are expected to use a 2D Y*X shape (note: dimension order is now outer-to-inner or *RowMajor* now), and a 4D shape then enables `Pools` ("unit groups") as hypercolumn-like structures within a layer that can have their own local level of inihbition, and are also used extensively for organizing patterns of connectivity.
+
 # The Leabra Algorithm
 
 Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) earning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](http://ccnbook.colorado.edu) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
@@ -34,7 +65,7 @@ There is a single learning equation, derived from a very detailed model of spike
 
 Weights are subject to a contrast enhancement function, which compensates for the soft (exponential) weight bounding that keeps weights within the normalized 0-1 range.  Contrast enhancement is important for enhancing the selectivity of self-organizing learning, and generally results in faster learning with better overall results.  Learning operates on the underlying internal linear weight value.  Biologically, we associate the underlying linear weight value with internal synaptic factors such as actin scaffolding, CaMKII phosphorlation level, etc, while the contrast enhancement operates at the level of AMPA receptor expression.
 
-There are various extensions to the algorithm that implement special neural mechanisms associated with the prefrontal cortex and basal ganglia [PBWM](#pbwm), dopamine systems [PVLV](#pvlv), the [Hippocampus](#hippocampus), and predictive learning and temporal integration dynamics associated with the thalamocortical circuits [DeepLeabra](#deepleabra).
+There are various extensions to the algorithm that implement special neural mechanisms associated with the prefrontal cortex and basal ganglia [PBWM](#pbwm), dopamine systems [PVLV](#pvlv), the [Hippocampus](#hippocampus), and predictive learning and temporal integration dynamics associated with the thalamocortical circuits [DeepLeabra](#deepleabra).  All of these are (will be) implemented as additional modifications of the core, simple `leabra` implementation, instead of having everything rolled into one giant hairball as in the original C++ implementation.
 
 # Pseudocode as a LaTeX doc for Paper Appendix
 

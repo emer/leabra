@@ -5,8 +5,8 @@
 package leabra
 
 import (
+	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/etensor"
 )
 
 // LeabraLayer defines the essential algorithmic API for Leabra, at the layer level.

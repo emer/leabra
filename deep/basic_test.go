@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/chewxy/math32"
+	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/etensor"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/leabra/leabra"
 )

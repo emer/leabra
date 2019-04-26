@@ -11,11 +11,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/emer/emergent/dtable"
+	"github.com/emer/dtable/dtable"
+	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/eplot"
 	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/etensor"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/timer"
