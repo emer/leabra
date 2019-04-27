@@ -439,3 +439,117 @@ func TestNetLearn(t *testing.T) {
 	}
 	fp.Write(wb)
 }
+
+func TestInhibAct(t *testing.T) {
+	var InhibNet Network
+	InhibNet.InitName(&InhibNet, "InhibNet")
+
+	inLay := InhibNet.AddLayer("Input", []int{4, 1}, emer.Input).(*Layer)
+	hidLay := InhibNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden).(*Layer)
+	outLay := InhibNet.AddLayer("Output", []int{4, 1}, emer.Target).(*Layer)
+
+	InhibNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Forward)
+	InhibNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Inhib)
+	InhibNet.ConnectLayers(hidLay, outLay, prjn.NewOneToOne(), emer.Forward)
+	InhibNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
+
+	InhibNet.Defaults()
+	InhibNet.StyleParams(Pars[0], false) // false) // true) // no msg
+	InhibNet.Build()
+	InhibNet.InitWts()
+	InhibNet.TrialInit() // get GScale
+
+	InhibNet.InitWts()
+	InhibNet.InitExt()
+
+	ltime := NewTime()
+
+	printCycs := false
+	printQtrs := false
+
+	qtr0HidActs := []float32{0.49207208, 2.4012093e-33, 2.4012093e-33, 2.4012093e-33}
+	qtr0HidGes := []float32{0.44997975, 0, 0, 0}
+	qtr0HidGis := []float32{0.71892214, 0.24392211, 0.24392211, 0.24392211}
+	qtr0OutActs := []float32{0.648718, 2.4021936e-33, 2.4021936e-33, 2.4021936e-33}
+	qtr0OutGes := []float32{0.24562117, 0, 0, 0}
+	qtr0OutGis := []float32{0.29192635, 0.29192635, 0.29192635, 0.29192635}
+
+	qtr3HidActs := []float32{0.5632278, 4e-45, 4e-45, 4e-45}
+	qtr3HidGes := []float32{0.475, 0, 0, 0}
+	qtr3HidGis := []float32{0.7622025, 0.28720248, 0.28720248, 0.28720248}
+	qtr3OutActs := []float32{0.95, 0, 0, 0}
+	qtr3OutGes := []float32{0.2802849, 0, 0, 0}
+	qtr3OutGis := []float32{0.42749998, 0.42749998, 0.42749998, 0.42749998}
+
+	for pi := 0; pi < 4; pi++ {
+		inpat, err := InPats.SubSlice(2, []int{pi})
+		if err != nil {
+			t.Error(err)
+		}
+		inLay.ApplyExt(inpat)
+		outLay.ApplyExt(inpat)
+
+		InhibNet.TrialInit()
+		ltime.TrialStart()
+		for qtr := 0; qtr < 4; qtr++ {
+			for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
+				InhibNet.Cycle(ltime)
+				ltime.CycleInc()
+
+				if printCycs {
+					inActs, _ := inLay.UnitVals("Act")
+					hidActs, _ := hidLay.UnitVals("Act")
+					hidGes, _ := hidLay.UnitVals("GeInc")
+					hidGis, _ := hidLay.UnitVals("Gi")
+					outActs, _ := outLay.UnitVals("Act")
+					outGes, _ := outLay.UnitVals("Ge")
+					outGis, _ := outLay.UnitVals("Gi")
+					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
+				}
+			}
+			InhibNet.QuarterFinal(ltime)
+			ltime.QuarterInc()
+
+			if printCycs && printQtrs {
+				fmt.Printf("=============================\n")
+			}
+
+			inActs, _ := inLay.UnitVals("Act")
+			hidActs, _ := hidLay.UnitVals("Act")
+			hidGes, _ := hidLay.UnitVals("Ge")
+			hidGis, _ := hidLay.UnitVals("Gi")
+			outActs, _ := outLay.UnitVals("Act")
+			outGes, _ := outLay.UnitVals("Ge")
+			outGis, _ := outLay.UnitVals("Gi")
+
+			if printQtrs {
+				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ltime.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
+			}
+
+			if printCycs && printQtrs {
+				fmt.Printf("=============================\n")
+			}
+
+			if pi == 0 && qtr == 0 {
+				CmprFloats(hidActs, qtr0HidActs, "qtr 0 hidActs", t)
+				CmprFloats(hidGes, qtr0HidGes, "qtr 0 hidGes", t)
+				CmprFloats(hidGis, qtr0HidGis, "qtr 0 hidGis", t)
+				CmprFloats(outActs, qtr0OutActs, "qtr 0 outActs", t)
+				CmprFloats(outGes, qtr0OutGes, "qtr 0 outGes", t)
+				CmprFloats(outGis, qtr0OutGis, "qtr 0 outGis", t)
+			}
+			if pi == 0 && qtr == 3 {
+				CmprFloats(hidActs, qtr3HidActs, "qtr 3 hidActs", t)
+				CmprFloats(hidGes, qtr3HidGes, "qtr 3 hidGes", t)
+				CmprFloats(hidGis, qtr3HidGis, "qtr 3 hidGis", t)
+				CmprFloats(outActs, qtr3OutActs, "qtr 3 outActs", t)
+				CmprFloats(outGes, qtr3OutGes, "qtr 3 outGes", t)
+				CmprFloats(outGis, qtr3OutGis, "qtr 3 outGis", t)
+			}
+		}
+
+		if printQtrs {
+			fmt.Printf("=============================\n")
+		}
+	}
+}
