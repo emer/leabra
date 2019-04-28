@@ -46,7 +46,7 @@ func (nt *Network) InitActs() {
 
 # The Leabra Algorithm
 
-Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) earning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](http://ccnbook.colorado.edu) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
+Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) learning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](http://ccnbook.colorado.edu) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
 the Mind by Simulating the Brain*, O'Reilly and Munakata, 2000,
 Cambridge, MA: MIT Press. [Computational Explorations..]([https://psych.colorado.edu/~oreilly/comp_ex_cog_neuro.html)
 
