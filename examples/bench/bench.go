@@ -16,19 +16,19 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/emer/dtable/dtable"
-	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/timer"
+	"github.com/emer/etable/etable"
+	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 )
 
 var Net *leabra.Network
-var Pats *dtable.Table
-var EpcLog *dtable.Table
+var Pats *etable.Table
+var EpcLog *etable.Table
 var Thread = false // much slower for small net
 
 var Pars = emer.ParamStyle{
@@ -79,12 +79,12 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	net.InitWts()
 }
 
-func ConfigPats(dt *dtable.Table, pats, units int) {
+func ConfigPats(dt *etable.Table, pats, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
 	fmt.Printf("shape: %v\n", shp)
 
-	dt.SetFromSchema(dtable.Schema{
+	dt.SetFromSchema(etable.Schema{
 		{"Name", etensor.STRING, nil, nil},
 		{"Input", etensor.FLOAT32, shp, []string{"Y", "X"}},
 		{"Output", etensor.FLOAT32, shp, []string{"Y", "X"}},
@@ -98,8 +98,8 @@ func ConfigPats(dt *dtable.Table, pats, units int) {
 	patgen.PermutedBinaryRows(dt.Cols[2], nOn, 1, 0)
 }
 
-func ConfigEpcLog(dt *dtable.Table) {
-	dt.SetFromSchema(dtable.Schema{
+func ConfigEpcLog(dt *etable.Table) {
+	dt.SetFromSchema(etable.Schema{
 		{"Epoch", etensor.INT64, nil, nil},
 		{"CosDiff", etensor.FLOAT32, nil, nil},
 		{"AvgCosDiff", etensor.FLOAT32, nil, nil},
@@ -114,7 +114,7 @@ func ConfigEpcLog(dt *dtable.Table) {
 	}, 0)
 }
 
-func TrainNet(net *leabra.Network, pats, epcLog *dtable.Table, epcs int) {
+func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 	ltime := leabra.NewTime()
 	net.InitWts()
 	np := pats.NumRows()
@@ -143,8 +143,8 @@ func TrainNet(net *leabra.Network, pats, epcLog *dtable.Table, epcs int) {
 		avgSSE := float32(0)
 		for pi := 0; pi < np; pi++ {
 			ppi := porder[pi]
-			inp, _ := inPats.SubSlice(2, []int{ppi})
-			outp, _ := outPats.SubSlice(2, []int{ppi})
+			inp, _ := inPats.SubSpace(2, []int{ppi})
+			outp, _ := outPats.SubSpace(2, []int{ppi})
 
 			inLay.ApplyExt(inp)
 			outLay.ApplyExt(outp)
@@ -215,10 +215,10 @@ func main() {
 	Net = &leabra.Network{}
 	ConfigNet(Net, threads, units)
 
-	Pats = &dtable.Table{}
+	Pats = &etable.Table{}
 	ConfigPats(Pats, pats, units)
 
-	EpcLog = &dtable.Table{}
+	EpcLog = &etable.Table{}
 	ConfigEpcLog(EpcLog)
 
 	TrainNet(Net, Pats, EpcLog, epochs)

@@ -11,14 +11,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/emer/dtable/dtable"
-	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/eplot"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/timer"
+	"github.com/emer/etable/etable"
+	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
@@ -66,8 +66,8 @@ var PlotColorNames = []string{"black", "red", "blue", "ForestGreen", "purple", "
 // This can be edited directly by the user to access any elements of the simulation.
 type SimState struct {
 	Net        *leabra.Network `view:"no-inline"`
-	Pats       *dtable.Table   `view:"no-inline"`
-	EpcLog     *dtable.Table   `view:"no-inline"`
+	Pats       *etable.Table   `view:"no-inline"`
+	EpcLog     *etable.Table   `view:"no-inline"`
 	Pars       emer.ParamStyle `view:"no-inline"`
 	MaxEpcs    int             `desc:"maximum number of epochs to run"`
 	Epoch      int
@@ -102,8 +102,8 @@ var Sim SimState
 // New creates new blank elements
 func (ss *SimState) New() {
 	ss.Net = &leabra.Network{}
-	ss.Pats = &dtable.Table{}
-	ss.EpcLog = &dtable.Table{}
+	ss.Pats = &etable.Table{}
+	ss.EpcLog = &etable.Table{}
 	ss.Pars = DefaultPars
 	ss.RndSeed = 1
 }
@@ -153,8 +153,8 @@ func (ss *SimState) RunTrial() {
 		pidx = ss.Porder[ss.Trial]
 	}
 
-	inp, _ := inPats.SubSlice(2, []int{pidx})
-	outp, _ := outPats.SubSlice(2, []int{pidx})
+	inp, _ := inPats.SubSpace(2, []int{pidx})
+	outp, _ := outPats.SubSpace(2, []int{pidx})
 	inLay.ApplyExt(inp)
 	outLay.ApplyExt(outp)
 
@@ -320,7 +320,7 @@ func (ss *SimState) ConfigNet() {
 
 func (ss *SimState) ConfigPats() {
 	dt := ss.Pats
-	dt.SetFromSchema(dtable.Schema{
+	dt.SetFromSchema(etable.Schema{
 		{"Name", etensor.STRING, nil, nil},
 		{"Input", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
 		{"Output", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
@@ -341,7 +341,7 @@ func (ss *SimState) OpenPats() {
 
 func (ss *SimState) ConfigEpcLog() {
 	dt := ss.EpcLog
-	dt.SetFromSchema(dtable.Schema{
+	dt.SetFromSchema(etable.Schema{
 		{"Epoch", etensor.INT64, nil, nil},
 		{"SSE", etensor.FLOAT32, nil, nil},
 		{"Avg SSE", etensor.FLOAT32, nil, nil},

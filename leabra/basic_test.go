@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/chewxy/math32"
-	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
+	"github.com/emer/etable/etensor"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of
@@ -162,7 +162,7 @@ func TestNetAct(t *testing.T) {
 	qtr3OutGis := []float32{0.45951304, 0.45951304, 0.45951304, 0.45951304}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSlice(2, []int{pi})
+		inpat, err := InPats.SubSpace(2, []int{pi})
 		if err != nil {
 			t.Error(err)
 		}
@@ -307,7 +307,7 @@ func TestNetLearn(t *testing.T) {
 		ltime := NewTime()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat, err := InPats.SubSlice(2, []int{pi})
+			inpat, err := InPats.SubSpace(2, []int{pi})
 			if err != nil {
 				t.Error(err)
 			}
@@ -482,7 +482,7 @@ func TestInhibAct(t *testing.T) {
 	qtr3OutGis := []float32{0.42749998, 0.42749998, 0.42749998, 0.42749998}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSlice(2, []int{pi})
+		inpat, err := InPats.SubSpace(2, []int{pi})
 		if err != nil {
 			t.Error(err)
 		}

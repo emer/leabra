@@ -5,9 +5,9 @@
 package leabra
 
 import (
-	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/etable/etensor"
 )
 
 // leabra.LayerStru manages the structural elements of the layer, which are common

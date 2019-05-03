@@ -10,9 +10,9 @@ import (
 	"io"
 
 	"github.com/chewxy/math32"
-	"github.com/emer/dtable/etensor"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"

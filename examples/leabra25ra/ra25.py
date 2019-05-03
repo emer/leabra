@@ -16,7 +16,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, eplot, patgen, prjn, dtable, etensor, rand, erand, gi, giv, svg
+from leabra import go, leabra, emer, eplot, patgen, prjn, etable, etensor, rand, erand, gi, giv, svg
 
 # this is in-process and will be an installable module under GoGi later
 import pygiv
@@ -346,12 +346,12 @@ class SimState(object):
         net.InitWts()
 
     def ConfigPats(self):
-        # note: this is all go-based for using dtable.Table instead of pandas
+        # note: this is all go-based for using etable.Table instead of pandas
         dt = self.Pats
-        schema = dtable.Schema()
-        schema.append(dtable.Column("Name", etensor.STRING, nil, nil))
-        schema.append(dtable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
-        schema.append(dtable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
+        schema = etable.Schema()
+        schema.append(etable.Column("Name", etensor.STRING, nil, nil))
+        schema.append(etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
+        schema.append(etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
         dt.SetFromSchema(schema, 25)
             
         patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
