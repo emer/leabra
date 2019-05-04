@@ -14,6 +14,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/eplot"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/timer"
@@ -38,8 +39,8 @@ func main() {
 	})
 }
 
-// DefaultPars are the initial default parameters for this simulation
-var DefaultPars = emer.ParamStyle{
+// DefaultParams are the initial default parameters for this simulation
+var DefaultParams = emer.ParamStyle{
 	{"Prjn", emer.Params{
 		"Prjn.Learn.Norm.On":     1,
 		"Prjn.Learn.Momentum.On": 1,
@@ -68,11 +69,12 @@ type SimState struct {
 	Net        *leabra.Network `view:"no-inline"`
 	Pats       *etable.Table   `view:"no-inline"`
 	EpcLog     *etable.Table   `view:"no-inline"`
-	Pars       emer.ParamStyle `view:"no-inline"`
+	Params     emer.ParamStyle `view:"no-inline"`
 	MaxEpcs    int             `desc:"maximum number of epochs to run"`
 	Epoch      int
 	Trial      int
 	Time       leabra.Time
+	UpdtView   bool     `desc:"update the network display while running"`
 	Plot       bool     `desc:"update the epoch plot while running?"`
 	PlotVals   []string `desc:"values to plot in epoch plot"`
 	Sequential bool     `desc:"set to true to present items in sequential order"`
@@ -86,14 +88,15 @@ type SimState struct {
 	EpcCosDiff float32 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
 
 	// internal state - view:"-"
-	SumSSE     float32     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAvgSSE  float32     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumCosDiff float32     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	CntErr     int         `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
-	Porder     []int       `view:"-" inactive:"+" desc:"permuted pattern order"`
-	EpcPlotSvg *svg.Editor `view:"-" desc:"the epoch plot svg editor"`
-	StopNow    bool        `view:"-" desc:"flag to stop running"`
-	RndSeed    int64       `view:"-" desc:"the current random seed"`
+	SumSSE     float32          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAvgSSE  float32          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumCosDiff float32          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	CntErr     int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
+	Porder     []int            `view:"-" inactive:"+" desc:"permuted pattern order"`
+	EpcPlotSvg *svg.Editor      `view:"-" desc:"the epoch plot svg editor"`
+	NetView    *netview.NetView `view:"-" desc:"the network viewer"`
+	StopNow    bool             `view:"-" desc:"flag to stop running"`
+	RndSeed    int64            `view:"-" desc:"the current random seed"`
 }
 
 // Sim is the overall state for this simulation
@@ -104,7 +107,7 @@ func (ss *SimState) New() {
 	ss.Net = &leabra.Network{}
 	ss.Pats = &etable.Table{}
 	ss.EpcLog = &etable.Table{}
-	ss.Pars = DefaultPars
+	ss.Params = DefaultParams
 	ss.RndSeed = 1
 }
 
@@ -127,10 +130,11 @@ func (ss *SimState) Init() {
 	ss.StopNow = false
 	ss.Time.Reset()
 	np := ss.Pats.NumRows()
-	ss.Porder = rand.Perm(np)         // always start with new one so random order is identical
-	ss.Net.StyleParams(ss.Pars, true) // set msg
+	ss.Porder = rand.Perm(np)            // always start with new one so random order is identical
+	ss.Net.StyleParams(ss.Params, false) // true) // set msg
 	ss.Net.InitWts()
 	ss.EpcLog.SetNumRows(0)
+	ss.UpdateView()
 }
 
 // NewRndSeed gets a new random seed based on current time -- otherwise uses
@@ -247,12 +251,21 @@ func (ss *SimState) LogEpoch() {
 
 }
 
+func (ss *SimState) UpdateView() {
+	if ss.NetView != nil {
+		ss.NetView.Update()
+	}
+}
+
 // StepTrial does one alpha trial of processing and increments everything etc
 // for interactive running.
 func (ss *SimState) StepTrial() {
 	ss.RunTrial()
 	ss.TrialStats(!ss.Test) // accumulate if not doing testing
 	ss.TrialInc()           // does LogEpoch, EpochInc automatically
+	if ss.UpdtView {
+		ss.UpdateView()
+	}
 }
 
 // StepEpoch runs for remainder of this epoch
@@ -313,7 +326,7 @@ func (ss *SimState) ConfigNet() {
 	// }
 
 	net.Defaults()
-	net.StyleParams(ss.Pars, true) // set msg
+	net.StyleParams(ss.Params, true) // set msg
 	net.Build()
 	net.InitWts()
 }
@@ -358,6 +371,9 @@ func (ss *SimState) ConfigEpcLog() {
 
 // PlotEpcLog plots given epoch log using PlotVals Y axis columns into EpcPlotSvg
 func (ss *SimState) PlotEpcLog() *plot.Plot {
+	if !ss.EpcPlotSvg.IsVisible() {
+		return nil
+	}
 	dt := ss.EpcLog
 	plt, _ := plot.New() // todo: keep around?
 	plt.Title.Text = "Random Associator Epoch Log"
@@ -419,6 +435,14 @@ func (ss *SimState) ConfigGui() *gi.Window {
 	// sv.SetStretchMaxHeight()
 
 	tv := gi.AddNewTabView(split, "tv")
+
+	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
+	nv.SetStretchMaxWidth()
+	nv.SetStretchMaxHeight()
+	nv.Var = "Act"
+	nv.SetNet(ss.Net)
+	ss.NetView = nv
+
 	svge := tv.AddNewTab(svg.KiT_Editor, "Epc Plot").(*svg.Editor)
 	svge.InitScale()
 	svge.Fill = true
@@ -482,7 +506,7 @@ func (ss *SimState) ConfigGui() *gi.Window {
 			ss.SaveEpcPlot("ra25_cur_epc_plot.svg")
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Save Pars", Icon: "file-save"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Save Params", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			// todo: need save / load methods for these
 			// ss.EpcLog.SaveCSV("ra25_epc.dat", ',', true)

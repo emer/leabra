@@ -28,7 +28,7 @@ type LayFunChan chan func(ly LeabraLayer)
 // leabra.NetworkStru holds the basic structural components of a network (layers)
 type NetworkStru struct {
 	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Name    string       `desc:"overall name of network -- helps discriminate if there are multiple"`
+	Nm      string       `desc:"overall name of network -- helps discriminate if there are multiple"`
 	Layers  []emer.Layer
 	WtsFile string                `desc:"filename of last weights file loaded or saved"`
 	LayMap  map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
@@ -45,14 +45,14 @@ type NetworkStru struct {
 // which enables the proper interface methods to be called.  Also sets the name.
 func (nt *NetworkStru) InitName(net emer.Network, name string) {
 	nt.EmerNet = net
-	nt.Name = name
+	nt.Nm = name
 }
 
 // emer.Network interface methods:
-func (nt *NetworkStru) NetName() string               { return nt.Name }
-func (nt *NetworkStru) Label() string                 { return nt.Name }
-func (nt *NetworkStru) NLayers() int                  { return len(nt.Layers) }
-func (nt *NetworkStru) LayerIndex(idx int) emer.Layer { return nt.Layers[idx] }
+func (nt *NetworkStru) Name() string             { return nt.Nm }
+func (nt *NetworkStru) Label() string            { return nt.Nm }
+func (nt *NetworkStru) NLayers() int             { return len(nt.Layers) }
+func (nt *NetworkStru) Layer(idx int) emer.Layer { return nt.Layers[idx] }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
 // Will create the layer map if it is nil or a different size than layers slice,
@@ -70,7 +70,7 @@ func (nt *NetworkStru) LayerByName(name string) emer.Layer {
 func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
 	ly := nt.LayerByName(name)
 	if ly == nil {
-		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Name)
+		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Nm)
 		log.Println(err)
 		return ly, err
 	}
@@ -81,7 +81,7 @@ func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
 func (nt *NetworkStru) MakeLayMap() {
 	nt.LayMap = make(map[string]emer.Layer, len(nt.Layers))
 	for _, ly := range nt.Layers {
-		nt.LayMap[ly.LayName()] = ly
+		nt.LayMap[ly.Name()] = ly
 	}
 }
 
@@ -108,7 +108,7 @@ func (nt *NetworkStru) BuildThreads() {
 	}
 	for th := 0; th < nt.NThreads; th++ {
 		if len(nt.ThrLay[th]) == 0 {
-			log.Printf("Network BuildThreads: Network %v has no layers for thread: %v\n", nt.Name, th)
+			log.Printf("Network BuildThreads: Network %v has no layers for thread: %v\n", nt.Nm, th)
 		}
 		nt.ThrChans[th] = make(LayFunChan)
 	}
@@ -121,7 +121,7 @@ func (nt *NetworkStru) StdVertLayout() {
 	for li, ly := range nt.Layers {
 		if li == 0 {
 			ly.SetLayRel(relpos.Rel{Rel: relpos.NoRel})
-			lstnm = ly.LayName()
+			lstnm = ly.Name()
 		} else {
 			ly.SetLayRel(relpos.Rel{Rel: relpos.Above, Other: lstnm, XAlign: relpos.Middle, YAlign: relpos.Front})
 		}
@@ -274,7 +274,7 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", nt.Name)))
+	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", nt.Nm)))
 	depth++
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
@@ -352,7 +352,7 @@ func (nt *NetworkStru) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 
 // TimerReport reports the amount of time spent in each function, and in each thread
 func (nt *NetworkStru) TimerReport() {
-	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Name, nt.NThreads)
+	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Nm, nt.NThreads)
 	fmt.Printf("\tFunction Name\tTotal Secs\tPct\n")
 	nfn := len(nt.FunTimes)
 	fnms := make([]string, nfn)

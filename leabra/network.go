@@ -47,11 +47,6 @@ func (nt *Network) UpdateParams() {
 	}
 }
 
-// Layer returns the leabra.Layer version of the layer
-func (nt *Network) Layer(idx int) *Layer {
-	return nt.Layers[idx].(*Layer)
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 

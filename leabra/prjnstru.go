@@ -48,7 +48,7 @@ func (ps *PrjnStru) Init(prjn emer.Prjn) {
 func (ps *PrjnStru) PrjnClass() string   { return ps.Class }
 func (ps *PrjnStru) SetClass(cls string) { ps.Class = cls }
 func (ps *PrjnStru) PrjnName() string {
-	return ps.Send.LayName() + "To" + ps.Recv.LayName()
+	return ps.Send.Name() + "To" + ps.Recv.Name()
 }
 func (ps *PrjnStru) Label() string             { return ps.PrjnName() }
 func (ps *PrjnStru) RecvLay() emer.Layer       { return ps.Recv }
@@ -178,12 +178,12 @@ func (ps *PrjnStru) String() string {
 	if ps.Recv == nil {
 		str += "recv=nil; "
 	} else {
-		str += ps.Recv.LayName() + " <- "
+		str += ps.Recv.Name() + " <- "
 	}
 	if ps.Send == nil {
 		str += "send=nil"
 	} else {
-		str += ps.Send.LayName()
+		str += ps.Send.Name()
 	}
 	if ps.Pat == nil {
 		str += " Pat=nil"

@@ -14,7 +14,7 @@ import (
 // to any Layer type
 type LayerStru struct {
 	LeabraLay LeabraLayer    `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Name      string         `desc:"Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name"`
+	Nm        string         `desc:"Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name"`
 	Class     string         `desc:"Class is for applying parameter styles, can be space separated multple tags"`
 	Off       bool           `desc:"inactivate this layer -- allows for easy experimentation"`
 	Shape     etensor.Shape  `desc:"shape of the layer -- can be 2D for basic layers and 4D for layers with sub-groups (hypercolumns) -- order is outer-to-inner (row major) so Y then X for 2D and for 4D: Y-X unit pools then Y-X neurons within pools"`
@@ -33,11 +33,11 @@ type LayerStru struct {
 // which enables the proper interface methods to be called.  Also sets the name.
 func (ls *LayerStru) InitName(lay emer.Layer, name string) {
 	ls.LeabraLay = lay.(LeabraLayer)
-	ls.Name = name
+	ls.Nm = name
 }
 
-func (ls *LayerStru) LayName() string              { return ls.Name }
-func (ls *LayerStru) Label() string                { return ls.Name }
+func (ls *LayerStru) Name() string                 { return ls.Nm }
+func (ls *LayerStru) Label() string                { return ls.Nm }
 func (ls *LayerStru) LayClass() string             { return ls.Class }
 func (ls *LayerStru) SetClass(cls string)          { ls.Class = cls }
 func (ls *LayerStru) LayType() emer.LayerType      { return ls.Type }
@@ -107,7 +107,7 @@ func (ls *LayerStru) Config(shape []int, typ emer.LayerType) {
 // it always prints a message if a parameter fails to be set.
 func (ls *LayerStru) StyleParam(sel string, pars emer.Params, setMsg bool) bool {
 	cls := ls.Class + " " + ls.Type.String()
-	if emer.StyleMatch(sel, ls.Name, cls, "Layer") {
+	if emer.StyleMatch(sel, ls.Nm, cls, "Layer") {
 		if ls.LeabraLay.SetParams(pars, setMsg) { // note: going through LeabraLay interface is key
 			return true // done -- otherwise, might be for prjns
 		}

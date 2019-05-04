@@ -158,7 +158,7 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte(fmt.Sprintf("\"GScale\": %v\n", pj.GScale)))
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", slay.Name)))
+	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", slay.Nm)))
 	depth++
 	for ri := 0; ri < nr; ri++ {
 		nc := int(pj.RConN[ri])

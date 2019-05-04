@@ -49,11 +49,6 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
-// Layer returns the deep.Layer version of the layer
-func (nt *Network) Layer(idx int) *Layer {
-	return nt.Layers[idx].(*Layer)
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 

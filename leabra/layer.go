@@ -186,7 +186,7 @@ func (ly *Layer) BuildPrjns() error {
 func (ly *Layer) Build() error {
 	nu := ly.Shape.Len()
 	if nu == 0 {
-		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Name)
+		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Nm)
 	}
 	ly.Neurons = make([]Neuron, nu)
 	err := ly.BuildPools(nu)
@@ -205,7 +205,7 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", ly.Name)))
+	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", ly.Nm)))
 	// todo: save average activity state
 	depth++
 	for _, pj := range ly.RecvPrjns {
