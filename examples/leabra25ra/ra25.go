@@ -109,6 +109,7 @@ func (ss *SimState) New() {
 	ss.EpcLog = &etable.Table{}
 	ss.Params = DefaultParams
 	ss.RndSeed = 1
+	ss.UpdtView = true
 }
 
 // Config configures all the elements using the standard functions
