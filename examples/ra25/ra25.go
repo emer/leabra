@@ -408,12 +408,12 @@ func (ss *SimState) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
-	gi.SetAppName("leabra25ra")
+	gi.SetAppName("ra25")
 	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
 	plot.DefaultFont = "Helvetica"
 
-	win := gi.NewWindow2D("leabra25ra", "Leabra Random Associator", width, height, true)
+	win := gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, true)
 
 	vp := win.WinViewport2D()
 	updt := vp.UpdateStart()
