@@ -553,7 +553,10 @@ func (ss *SimState) ConfigGui() *gi.Window {
 }
 
 func mainrun() {
-
+	// gi3d.Update3DTrace = true
+	// gi.Update2DTrace = true
+	// gi.Render2DTrace = true
+	//
 	// todo: args
 	Sim.New()
 	Sim.Config()

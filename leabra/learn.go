@@ -40,6 +40,7 @@ func (ln *LearnNeurParams) InitActAvg(nrn *Neuron) {
 	nrn.AvgM = ln.ActAvg.Init
 	nrn.AvgL = ln.AvgL.Init
 	nrn.AvgSLrn = 0
+	nrn.ActAvg = ln.ActAvg.Init
 }
 
 // AvgsFmAct updates the running averages based on current activation.
