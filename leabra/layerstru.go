@@ -79,7 +79,7 @@ func (ls *LayerStru) Size() mat32.Vec2 {
 		sz = mat32.Vec2{float32(ls.Shp.Dim(1)), float32(ls.Shp.Dim(0))} // Y, X
 	case ls.Is4D():
 		// note: pool spacing is handled internally in display and does not affect overall size
-		sz = mat32.Vec2{float32(ls.Shp.Dim(1) * ls.Shp.Dim(2)), float32(ls.Shp.Dim(0) * ls.Shp.Dim(3))} // Y, X
+		sz = mat32.Vec2{float32(ls.Shp.Dim(1) * ls.Shp.Dim(3)), float32(ls.Shp.Dim(0) * ls.Shp.Dim(2))} // Y, X
 	default:
 		sz = mat32.Vec2{float32(ls.Shp.Len()), 1}
 	}
