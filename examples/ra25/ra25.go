@@ -20,6 +20,7 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
@@ -401,8 +402,12 @@ func (ss *Sim) ConfigNet() {
 	net.InitName(net, "RA25")
 	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
 	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2Lay := net.AddLayer2D("Hidden2", 7, 7, emer.Hidden)
+	hid2Lay := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
 	outLay := net.AddLayer2D("Output", 5, 5, emer.Target)
+
+	// use this to position layers relative to each other
+	// default is Above, YAlign = Front, XAlign = Center
+	hid2Lay.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
 	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
 	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
