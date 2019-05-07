@@ -45,10 +45,10 @@ type LeabraLayer interface {
 	// otherwise it goes in Ext.
 	ApplyExt(ext *etensor.Float32)
 
-	// TrialInit handles all initialization at start of new input pattern, including computing
+	// AlphaCycInit handles all initialization at start of new input pattern, including computing
 	// netinput scaling from running average activation etc.
 	// should already have presented the external input to the network at this point.
-	TrialInit()
+	AlphaCycInit()
 
 	// AvgLFmAvgM updates AvgL long-term running average activation that drives BCM Hebbian learning
 	AvgLFmAvgM()
@@ -65,7 +65,7 @@ type LeabraLayer interface {
 	// DecayState decays activation state by given proportion (default is on ly.Act.Init.Decay)
 	DecayState(decay float32)
 
-	// HardClamp hard-clamps the activations in the layer -- called during TrialInit
+	// HardClamp hard-clamps the activations in the layer -- called during AlphaCycInit
 	// for hard-clamped Input layers
 	HardClamp()
 

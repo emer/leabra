@@ -43,8 +43,8 @@ func (tm *Time) Reset() {
 	}
 }
 
-// TrialStart starts a new alpha-trial (set of 4 quarters)
-func (tm *Time) TrialStart() {
+// AlphaCycStart starts a new alpha-cycle (set of 4 quarters)
+func (tm *Time) AlphaCycStart() {
 	tm.Cycle = 0
 	tm.Quarter = 0
 }

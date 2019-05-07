@@ -89,14 +89,14 @@ func (nt *Network) InitExt() {
 	}
 }
 
-// TrialInit handles all initialization at start of new input pattern, including computing
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
 // netinput scaling from running average activation etc.
-func (nt *Network) TrialInit() {
+func (nt *Network) AlphaCycInit() {
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
 			continue
 		}
-		ly.(LeabraLayer).TrialInit()
+		ly.(LeabraLayer).AlphaCycInit()
 	}
 }
 

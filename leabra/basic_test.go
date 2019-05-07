@@ -82,7 +82,7 @@ func TestMakeNet(t *testing.T) {
 	TestNet.StyleParams(Pars[0], false) // false) // true) // no msg
 	TestNet.Build()
 	TestNet.InitWts()
-	TestNet.TrialInit() // get GScale
+	TestNet.AlphaCycInit() // get GScale
 
 	var buf bytes.Buffer
 	TestNet.WriteWtsJSON(&buf)
@@ -169,8 +169,8 @@ func TestNetAct(t *testing.T) {
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
-		TestNet.TrialInit()
-		ltime.TrialStart()
+		TestNet.AlphaCycInit()
+		ltime.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
 			for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
 				TestNet.Cycle(ltime)
@@ -314,8 +314,8 @@ func TestNetLearn(t *testing.T) {
 			inLay.ApplyExt(inpat)
 			outLay.ApplyExt(inpat)
 
-			TestNet.TrialInit()
-			ltime.TrialStart()
+			TestNet.AlphaCycInit()
+			ltime.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
 				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
 					TestNet.Cycle(ltime)
@@ -457,7 +457,7 @@ func TestInhibAct(t *testing.T) {
 	InhibNet.StyleParams(Pars[0], false) // false) // true) // no msg
 	InhibNet.Build()
 	InhibNet.InitWts()
-	InhibNet.TrialInit() // get GScale
+	InhibNet.AlphaCycInit() // get GScale
 
 	InhibNet.InitWts()
 	InhibNet.InitExt()
@@ -489,8 +489,8 @@ func TestInhibAct(t *testing.T) {
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
-		InhibNet.TrialInit()
-		ltime.TrialStart()
+		InhibNet.AlphaCycInit()
+		ltime.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
 			for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
 				InhibNet.Cycle(ltime)

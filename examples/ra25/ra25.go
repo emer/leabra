@@ -2,7 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
+// ra25 runs a simple random-associator four-layer leabra network
+// that uses the standard supervised learning paradigm to learn
+// mappings between 25 random input / output patterns
+// defined over 5x5 input / output layers (i.e., 25 units)
 package main
 
 import (
@@ -32,6 +35,19 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+// todo:
+//
+// * make etable/eplot2d.Plot which encapsulates the SVGEditor and
+//   shows its columns -- basically replicating behavior of C++ GraphView for eaiser
+//   dynamic selection of what to plot, how to plot it, etc.
+//   Trick is how to make it also customizable via code..
+//
+// * LogTrainTrial, LogTestTrial, LogTestCycle and associated plots
+//
+// * etable/eview.TableView (gridview -- is there a gonum version?) and TableEdit (spreadsheet-like editor)
+//   and show these in another tab for the input patterns
+//
+
 // this is the stub main for gogi that calls our actual mainrun function, at end of file
 func main() {
 	gimain.Main(func() {
@@ -60,12 +76,12 @@ var DefaultParams = emer.ParamStyle{
 // these are the plot color names to use in order for successive lines -- feel free to choose your own!
 var PlotColorNames = []string{"black", "red", "blue", "ForestGreen", "purple", "orange", "brown", "chartreuse", "navy", "cyan", "magenta", "tan", "salmon", "yellow4", "SkyBlue", "pink"}
 
-// SimState maintains everything about this simulation, and we define all the
-// functionality as methods on this type -- this makes it easier to add additional
-// state information as needed, and not have to worry about passing arguments around
-// and it also makes it much easier to support interactive stepping of the model etc.
-// This can be edited directly by the user to access any elements of the simulation.
-type SimState struct {
+// Sim encapsulates the entire simulation model, and we define all the
+// functionality as methods on this struct.  This structure keeps all relevant
+// state information organized and available without having to pass everything around
+// as arguments to methods, and provides the core GUI interface (note the view tags
+// for the fields which provide hints to how things should be displayed).
+type Sim struct {
 	Net        *leabra.Network `view:"no-inline"`
 	Pats       *etable.Table   `view:"no-inline"`
 	EpcLog     *etable.Table   `view:"no-inline"`
@@ -101,21 +117,23 @@ type SimState struct {
 	RndSeed    int64            `view:"-" desc:"the current random seed"`
 }
 
-// Sim is the overall state for this simulation
-var Sim SimState
+// TheSim is the overall state for this simulation
+var TheSim Sim
 
 // New creates new blank elements
-func (ss *SimState) New() {
+func (ss *Sim) New() {
 	ss.Net = &leabra.Network{}
 	ss.Pats = &etable.Table{}
 	ss.EpcLog = &etable.Table{}
 	ss.Params = DefaultParams
 	ss.RndSeed = 1
 	ss.ViewOn = true
+	ss.TrainUpdt = leabra.AlphaCycle
+	ss.TestUpdt = leabra.Cycle
 }
 
 // Config configures all the elements using the standard functions
-func (ss *SimState) Config() {
+func (ss *Sim) Config() {
 	ss.ConfigNet()
 	ss.OpenPats()
 	ss.ConfigEpcLog()
@@ -123,7 +141,7 @@ func (ss *SimState) Config() {
 
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
-func (ss *SimState) Init() {
+func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
 	if ss.MaxEpcs == 0 { // allow user override
 		ss.MaxEpcs = 50
@@ -142,48 +160,107 @@ func (ss *SimState) Init() {
 
 // NewRndSeed gets a new random seed based on current time -- otherwise uses
 // the same random seed for every run
-func (ss *SimState) NewRndSeed() {
+func (ss *Sim) NewRndSeed() {
 	ss.RndSeed = time.Now().UnixNano()
 }
 
-// RunTrial runs one alpha-trial (100 msec, 4 quarters)			 of processing
-// this does NOT call TrialInc (so it can be used flexibly)
-// but it does use the Trial counter to determine which pattern to present.
-func (ss *SimState) RunTrial() {
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-	inPats := ss.Pats.ColByName("Input").(*etensor.Float32)
-	outPats := ss.Pats.ColByName("Output").(*etensor.Float32)
-
-	pidx := ss.Trial
-	if !ss.Sequential {
-		pidx = ss.Porder[ss.Trial]
+func (ss *Sim) UpdateView() {
+	if ss.NetView != nil {
+		ss.NetView.Update()
 	}
+}
 
-	inp, _ := inPats.SubSpace(2, []int{pidx})
-	outp, _ := outPats.SubSpace(2, []int{pidx})
-	inLay.ApplyExt(inp)
-	outLay.ApplyExt(outp)
+////////////////////////////////////////////////////////////////////////////////
+// 	    Running the Network, starting bottom-up..
 
-	ss.Net.TrialInit()
-	ss.Time.TrialStart()
+// AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
+// External inputs must have already been applied prior to calling,
+// using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
+// If train is true, then learning DWt or WtFmDWt calls are made.
+// Handles netview updating within scope of AlphaCycle
+func (ss *Sim) AlphaCyc(train bool) {
+	viewUpdt := ss.TrainUpdt
+	if !train {
+		viewUpdt = ss.TestUpdt
+	}
+	ss.Net.AlphaCycInit()
+	ss.Time.AlphaCycStart()
 	for qtr := 0; qtr < 4; qtr++ {
 		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
 			ss.Net.Cycle(&ss.Time)
 			ss.Time.CycleInc()
+			if ss.ViewOn {
+				switch viewUpdt {
+				case leabra.Cycle:
+					ss.UpdateView()
+				case leabra.FastSpike:
+					if (cyc+1)%10 == 0 {
+						ss.UpdateView()
+					}
+				}
+			}
 		}
 		ss.Net.QuarterFinal(&ss.Time)
 		ss.Time.QuarterInc()
+		if ss.ViewOn {
+			switch viewUpdt {
+			case leabra.Quarter:
+				ss.UpdateView()
+			case leabra.Phase:
+				if qtr >= 2 {
+					ss.UpdateView()
+				}
+			}
+		}
 	}
 
-	if !ss.Test {
+	if train {
 		ss.Net.DWt()
 		ss.Net.WtFmDWt()
 	}
+	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
+		ss.UpdateView()
+	}
 }
 
-// TrialInc increments counters after one trial of processing
-func (ss *SimState) TrialInc() {
+// ApplyInputs applies input patterns from given row of given Table.
+// It is good practice to have this be a separate method with appropriate
+// args so that it can be used for various different contexts
+// (training, testing, etc).
+func (ss *Sim) ApplyInputs(pats *etable.Table, row int) {
+	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
+	// going to the same layers, but good practice and cheap anyway
+
+	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inPats := pats.ColByName(inLay.Nm).(*etensor.Float32)
+	outPats := pats.ColByName(outLay.Nm).(*etensor.Float32)
+
+	// SubSpace gets the 2D cell at given row in tensor column
+	inp, _ := inPats.SubSpace(2, []int{row})
+	outp, _ := outPats.SubSpace(2, []int{row})
+	inLay.ApplyExt(inp)
+	outLay.ApplyExt(outp)
+}
+
+// TrainTrial runs one trial of training (Trial is an environmentally-defined
+// term -- see leabra.TimeScales for different standard terminology).
+// In other models, this function might be more naturally expressed in other terms.
+func (ss *Sim) TrainTrial() {
+	row := ss.Trial
+	if !ss.Sequential {
+		row = ss.Porder[ss.Trial]
+	}
+	ss.ApplyInputs(ss.Pats, row)
+	ss.AlphaCyc(true)   // train
+	ss.TrialStats(true) // accumulate
+
+	// To allow for interactive single-step running, all of the higher temporal
+	// scales must be incorporated into the trial level run method.
+	// This is a good general principle for even more complex environments:
+	// there should be a single method call that gets the next "step" of the
+	// environment, and all the higher levels of temporal structure should all
+	// be properly updated through this one lowest-level method call.
 	ss.Trial++
 	np := ss.Pats.NumRows()
 	if ss.Trial >= np {
@@ -191,13 +268,20 @@ func (ss *SimState) TrialInc() {
 		if ss.Plot {
 			ss.PlotEpcLog()
 		}
-		ss.EpochInc()
+		ss.Trial = 0
+		ss.Epoch++
+		erand.PermuteInts(ss.Porder)
+		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
+			ss.UpdateView()
+		}
 	}
 }
 
 // TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
-// accum is true
-func (ss *SimState) TrialStats(accum bool) (sse, avgsse, cosdiff float32) {
+// accum is true.  Note that we're accumulating stats here on the Sim side so the
+// core algorithm side remains as simple as possible, and doesn't need to worry about
+// different time-scales over which stats could be accumulated etc.
+func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float32) {
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 	cosdiff = outLay.CosDiff.Cos
 	sse, avgsse = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
@@ -212,18 +296,10 @@ func (ss *SimState) TrialStats(accum bool) (sse, avgsse, cosdiff float32) {
 	return
 }
 
-// EpochInc increments counters after one epoch of processing and updates a new random
-// order of permuted inputs for the next epoch
-func (ss *SimState) EpochInc() {
-	ss.Trial = 0
-	ss.Epoch++
-	erand.PermuteInts(ss.Porder)
-}
-
 // LogEpoch adds data from current epoch to the EpochLog table -- computes epoch
 // averages prior to logging.
 // Epoch counter is assumed to not have yet been incremented.
-func (ss *SimState) LogEpoch() {
+func (ss *Sim) LogEpoch() {
 	ss.EpcLog.SetNumRows(ss.Epoch + 1)
 	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
 	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
@@ -254,30 +330,11 @@ func (ss *SimState) LogEpoch() {
 
 }
 
-func (ss *SimState) UpdateView() {
-	if ss.NetView != nil {
-		ss.NetView.Update()
-	}
-}
-
-// StepTrial does one alpha trial of processing and increments everything etc
-// for interactive running.
-func (ss *SimState) StepTrial() {
-	ss.RunTrial()
-	ss.TrialStats(!ss.Test) // accumulate if not doing testing
-	ss.TrialInc()           // does LogEpoch, EpochInc automatically
-	if ss.ViewOn {
-		ss.UpdateView()
-	}
-}
-
-// StepEpoch runs for remainder of this epoch
-func (ss *SimState) StepEpoch() {
+// TrainEpoch runs training trials for remainder of this epoch
+func (ss *Sim) TrainEpoch() {
 	curEpc := ss.Epoch
 	for {
-		ss.RunTrial()
-		ss.TrialStats(!ss.Test) // accumulate if not doing testing
-		ss.TrialInc()           // does LogEpoch, EpochInc automatically
+		ss.TrainTrial()
 		if ss.StopNow || ss.Epoch > curEpc {
 			break
 		}
@@ -285,30 +342,61 @@ func (ss *SimState) StepEpoch() {
 }
 
 // Train runs the full training from this point onward
-func (ss *SimState) Train() {
+func (ss *Sim) Train() {
 	ss.StopNow = false
+	stEpc := ss.Epoch
 	tmr := timer.Time{}
 	tmr.Start()
 	for {
-		ss.StepTrial()
+		ss.TrainTrial()
 		if ss.StopNow || ss.Epoch >= ss.MaxEpcs {
 			break
 		}
 	}
 	tmr.Stop()
-	epcs := ss.Epoch
+	epcs := ss.Epoch - stEpc
 	fmt.Printf("Took %6g secs for %v epochs, avg per epc: %6g\n", tmr.TotalSecs(), epcs, tmr.TotalSecs()/float64(epcs))
 }
 
 // Stop tells the sim to stop running
-func (ss *SimState) Stop() {
+func (ss *Sim) Stop() {
 	ss.StopNow = true
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Testing
+
+// TestTrial runs one trial of testing -- always sequentially presented inputs
+func (ss *Sim) TestTrial() {
+	row := ss.Trial
+	ss.ApplyInputs(ss.Pats, row)
+	ss.AlphaCyc(false)   // !train
+	ss.TrialStats(false) // !accumulate
+	ss.Trial++
+	// todo: trial log, cycle log
+	np := ss.Pats.NumRows()
+	if ss.Trial >= np {
+		ss.Trial = 0
+		if ss.ViewOn && ss.TestUpdt > leabra.AlphaCycle {
+			ss.UpdateView()
+		}
+		// todo: test epoch log
+	}
+}
+
+// TestAll runs through the full set of testing items
+func (ss *Sim) TestAll() {
+	np := ss.Pats.NumRows()
+	ss.Trial = 0
+	for trl := 0; trl < np; trl++ {
+		ss.TestTrial()
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Config methods
 
-func (ss *SimState) ConfigNet() {
+func (ss *Sim) ConfigNet() {
 	net := ss.Net
 	net.InitName(net, "RA25")
 	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
@@ -334,7 +422,7 @@ func (ss *SimState) ConfigNet() {
 	net.InitWts()
 }
 
-func (ss *SimState) ConfigPats() {
+func (ss *Sim) ConfigPats() {
 	dt := ss.Pats
 	dt.SetFromSchema(etable.Schema{
 		{"Name", etensor.STRING, nil, nil},
@@ -347,7 +435,7 @@ func (ss *SimState) ConfigPats() {
 	dt.SaveCSV("random_5x5_25_gen.dat", ',', true)
 }
 
-func (ss *SimState) OpenPats() {
+func (ss *Sim) OpenPats() {
 	dt := ss.Pats
 	err := dt.OpenCSV("random_5x5_25.dat", '\t')
 	if err != nil {
@@ -355,7 +443,7 @@ func (ss *SimState) OpenPats() {
 	}
 }
 
-func (ss *SimState) ConfigEpcLog() {
+func (ss *Sim) ConfigEpcLog() {
 	dt := ss.EpcLog
 	dt.SetFromSchema(etable.Schema{
 		{"Epoch", etensor.INT64, nil, nil},
@@ -373,7 +461,7 @@ func (ss *SimState) ConfigEpcLog() {
 }
 
 // PlotEpcLog plots given epoch log using PlotVals Y axis columns into EpcPlotSvg
-func (ss *SimState) PlotEpcLog() *plot.Plot {
+func (ss *Sim) PlotEpcLog() *plot.Plot {
 	if !ss.EpcPlotSvg.IsVisible() {
 		return nil
 	}
@@ -400,13 +488,13 @@ func (ss *SimState) PlotEpcLog() *plot.Plot {
 }
 
 // SaveEpcPlot plots given epoch log using PlotVals Y axis columns and saves to .svg file
-func (ss *SimState) SaveEpcPlot(fname string) {
+func (ss *Sim) SaveEpcPlot(fname string) {
 	plt := ss.PlotEpcLog()
 	plt.Save(5, 5, fname)
 }
 
 // ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *SimState) ConfigGui() *gi.Window {
+func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
@@ -477,17 +565,31 @@ func (ss *SimState) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.StepTrial()
+			ss.TrainTrial()
 			vp.FullRender2DTree()
 		})
 
 	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.StepEpoch()
+			ss.TrainEpoch()
 			vp.FullRender2DTree()
 		})
 
-	// tbar.AddSep("file")
+	tbar.AddSeparator("test")
+
+	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd"}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.TestTrial()
+			vp.FullRender2DTree()
+		})
+
+	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd"}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.TestAll()
+			vp.FullRender2DTree()
+		})
+
+	tbar.AddSeparator("file")
 
 	tbar.AddAction(gi.ActOpts{Label: "Epoch Plot", Icon: "update"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
@@ -560,9 +662,9 @@ func mainrun() {
 	// gi.Render2DTrace = true
 	//
 	// todo: args
-	Sim.New()
-	Sim.Config()
-	Sim.Init()
-	win := Sim.ConfigGui()
+	TheSim.New()
+	TheSim.Config()
+	TheSim.Init()
+	win := TheSim.ConfigGui()
 	win.StartEventLoop()
 }

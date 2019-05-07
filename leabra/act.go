@@ -72,7 +72,7 @@ func (ac *ActParams) InitGeGi(nrn *Neuron) {
 }
 
 // DecayState decays the activation state toward initial values in proportion to given decay parameter
-// Called with ac.Init.Decay by Layer during TrialInit
+// Called with ac.Init.Decay by Layer during AlphaCycInit
 func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 	if decay > 0 { // no-op for most, but not all..
 		nrn.Act -= decay * (nrn.Act - ac.Init.Act)
@@ -133,7 +133,7 @@ func (ac *ActParams) GeGiFmInc(nrn *Neuron) {
 	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
 
 	// first place noise is required -- generate here!
-	if ac.Noise.Type != NoNoise && !ac.Noise.TrialFixed && ac.Noise.Dist != erand.Mean {
+	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != erand.Mean {
 		nrn.Noise = float32(ac.Noise.Gen(-1))
 	}
 	if ac.Noise.Type == GeNoise {
@@ -450,15 +450,15 @@ const (
 // ActNoiseParams contains parameters for activation-level noise
 type ActNoiseParams struct {
 	erand.RndParams
-	Type       ActNoiseType `desc:"where and how to add processing noise"`
-	TrialFixed bool         `desc:"keep the same noise value over the entire trial -- prevents noise from being washed out and produces a stable effect that can be better used for learning -- this is strongly recommended for most learning situations"`
+	Type  ActNoiseType `desc:"where and how to add processing noise"`
+	Fixed bool         `desc:"keep the same noise value over the entire alpha cycle -- prevents noise from being washed out and produces a stable effect that can be better used for learning -- this is strongly recommended for most learning situations"`
 }
 
 func (an *ActNoiseParams) Update() {
 }
 
 func (an *ActNoiseParams) Defaults() {
-	an.TrialFixed = true
+	an.Fixed = true
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

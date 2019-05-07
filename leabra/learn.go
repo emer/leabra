@@ -50,7 +50,7 @@ func (ln *LearnNeurParams) AvgsFmAct(nrn *Neuron) {
 }
 
 // AvgLFmAct computes long-term average activation value, and learning factor, from current AvgM.
-// Called at start of new trial.
+// Called at start of new alpha-cycle.
 func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 	ln.AvgL.AvgLFmAvgM(nrn.AvgM, &nrn.AvgL, &nrn.AvgLLrn)
 }
@@ -203,13 +203,13 @@ func (aa *LrnActAvgParams) Defaults() {
 // which is used for driving BCM-style hebbian learning in XCAL -- this form of learning
 // increases contrast of weights and generally decreases overall activity of neuron,
 // to prevent "hog" units -- it is computed as a running average of the (gain multiplied)
-// medium-time-scale average activation at the end of the trial.
+// medium-time-scale average activation at the end of the alpha-cycle.
 // Also computes an adaptive amount of BCM learning, AvgLLrn, based on AvgL.
 type AvgLParams struct {
 	Init   float32 `def:"0.4" min:"0" max:"1" desc:"initial AvgL value at start of training"`
 	Gain   float32 `def:"1.5;2;2.5;3;4;5" min:"0" desc:"gain multiplier on activation used in computing the running average AvgL value that is the key floating threshold in the BCM Hebbian learning rule -- when using the DELTA_FF_FB learning rule, it should generally be 2x what it was before with the old XCAL_CHL rule, i.e., default of 5 instead of 2.5 -- it is a good idea to experiment with this parameter a bit -- the default is on the high-side, so typically reducing a bit from initial default is a good direction"`
 	Min    float32 `def:"0.2" min:"0" desc:"miniumum AvgL value -- running average cannot go lower than this value even when it otherwise would due to inactivity -- default value is generally good and typically does not need to be changed"`
-	Tau    float32 `def:"10" min:"1" desc:"time constant for updating the running average AvgL -- AvgL moves toward gain*act with this time constant on every trial - longer time constants can also work fine, but the default of 10 allows for quicker reaction to beneficial weight changes"`
+	Tau    float32 `def:"10" min:"1" desc:"time constant for updating the running average AvgL -- AvgL moves toward gain*act with this time constant on every alpha-cycle - longer time constants can also work fine, but the default of 10 allows for quicker reaction to beneficial weight changes"`
 	LrnMax float32 `def:"0.5" min:"0" desc:"maximum AvgLLrn value, which is amount of learning driven by AvgL factor -- when AvgL is at its maximum value (i.e., gain, as act does not exceed 1), then AvgLLrn will be at this maximum value -- by default, strong amounts of this homeostatic Hebbian form of learning can be used when the receiving unit is highly active -- this will then tend to bring down the average activity of units -- the default of 0.5, in combination with the err_mod flag, works well for most models -- use around 0.0004 for a single fixed value (with err_mod flag off)"`
 	LrnMin float32 `def:"0.0001;0.0004" min:"0" desc:"miniumum AvgLLrn value (amount of learning driven by AvgL factor) -- if AvgL is at its minimum value, then AvgLLrn will be at this minimum value -- neurons that are not overly active may not need to increase the contrast of their weights as much -- use around 0.0004 for a single fixed value (with err_mod flag off)"`
 	ErrMod bool    `def:"true" desc:"modulate amount learning by normalized level of error within layer"`
@@ -262,10 +262,10 @@ func (al *AvgLParams) Defaults() {
 // CosDiffParams specify how to integrate cosine of difference between plus and minus phase activations
 // Used to modulate amount of hebbian learning, and overall learning rate.
 type CosDiffParams struct {
-	Tau float32 `def:"100" min:"1" desc:"time constant in trials (roughly how long significant change takes, 1.4 x half-life) for computing running average CosDiff value for the layer, CosDiffAvg = cosine difference between ActM and ActP -- this is an important statistic for how much phase-based difference there is between phases in this layer -- it is used in standard X_COS_DIFF modulation of l_mix in LeabraConSpec, and for modulating learning rate as a function of predictability in the DeepLeabra predictive auto-encoder learning -- running average variance also computed with this: cos_diff_var"`
-	//   bool          lrate_mod; // modulate learning rate in this layer as a function of the cos_diff on this trial relative to running average cos_diff values (see avg_tau) -- lrate_mod = cos_diff_lrate_mult * (cos_diff / cos_diff_avg) -- if this layer is less predictable than previous trials, we don't learn as much
-	//   float         lrmod_z_thr; // #DEF_-1.5 #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc threshold for setting learning rate modulation to zero, as function of z-normalized cos_diff value on this trial -- normalization computed using incrementally computed average and variance values -- this essentially has the network ignoring trials where the diff was significantly below average -- replaces the manual unlearnable trial mechanism
-	//   bool          set_net_unlrn;  // #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc set the network-level unlearnable_trial flag based on our learning rate modulation factor -- only makes sense for one layer to do this
+	Tau float32 `def:"100" min:"1" desc:"time constant in alpha-cycles (roughly how long significant change takes, 1.4 x half-life) for computing running average CosDiff value for the layer, CosDiffAvg = cosine difference between ActM and ActP -- this is an important statistic for how much phase-based difference there is between phases in this layer -- it is used in standard X_COS_DIFF modulation of l_mix in LeabraConSpec, and for modulating learning rate as a function of predictability in the DeepLeabra predictive auto-encoder learning -- running average variance also computed with this: cos_diff_var"`
+	//   bool          lrate_mod; // modulate learning rate in this layer as a function of the cos_diff on this alpha-cycle relative to running average cos_diff values (see avg_tau) -- lrate_mod = cos_diff_lrate_mult * (cos_diff / cos_diff_avg) -- if this layer is less predictable than previous alpha-cycles, we don't learn as much
+	//   float         lrmod_z_thr; // #DEF_-1.5 #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc threshold for setting learning rate modulation to zero, as function of z-normalized cos_diff value on this alpha-cycle -- normalization computed using incrementally computed average and variance values -- this essentially has the network ignoring alpha-cycles where the diff was significantly below average -- replaces the manual unlearnable alpha-cycle mechanism
+	//   bool          set_net_unlrn;  // #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc set the network-level unlearnable_alpha-cycle flag based on our learning rate modulation factor -- only makes sense for one layer to do this
 
 	Dt  float32 `inactive:"+" view:"-" desc:"rate constant = 1 / Tau"`
 	DtC float32 `inactive:"+" view:"-" desc:"complement of rate constant = 1 - Dt"`
@@ -318,7 +318,7 @@ func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
 
 // CosDiffStats holds cosine-difference statistics at the layer level
 type CosDiffStats struct {
-	Cos        float32 `desc:"cosine (normalized dot product) activation difference between ActP and ActM on this trial for this layer -- computed by CosDiffFmActs at end of QuarterFinal for quarter = 3"`
+	Cos        float32 `desc:"cosine (normalized dot product) activation difference between ActP and ActM on this alpha-cycle for this layer -- computed by CosDiffFmActs at end of QuarterFinal for quarter = 3"`
 	Avg        float32 `desc:"running average of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, and used for modulating BCM Hebbian learning (see AvgLrn) and overall learning rate"`
 	Var        float32 `desc:"running variance of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, used for modulating overall learning rate"`
 	AvgLrn     float32 `desc:"1 - Avg and 0 for non-Hidden layers"`

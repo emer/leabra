@@ -149,8 +149,8 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 			inLay.ApplyExt(inp)
 			outLay.ApplyExt(outp)
 
-			net.TrialInit()
-			ltime.TrialStart()
+			net.AlphaCycInit()
+			ltime.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
 				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
 					net.Cycle(ltime)

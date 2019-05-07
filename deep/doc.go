@@ -22,7 +22,7 @@ also are the basis for directly computing the DeepBurst activation signal that
 reflects the deep layer 5 IB bursting activation, via thresholding of the superficial
 layer activations (Bursting is thought to have a higher threshold).
 
-* The alpha-trial quarter(s) when DeepBurst is updated and broadcast is set in
+* The alpha-cycle quarter(s) when DeepBurst is updated and broadcast is set in
 DeepBurstParams.BurstQtr (defaults to Q4, can also be e.g., Q2 and Q4 for beta
 frequency updating).  During this quarter(s), the DeepBurst from Super layers is
 continuously sent via BurstTRC projections to TRC layers (using efficient

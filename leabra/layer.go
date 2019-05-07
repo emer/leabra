@@ -390,10 +390,10 @@ func (ly *Layer) ApplyExt1D(ext []float32) {
 	}
 }
 
-// TrialInit handles all initialization at start of new input pattern, including computing
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
 // netinput scaling from running average activation etc.
 // should already have presented the external input to the network at this point.
-func (ly *Layer) TrialInit() {
+func (ly *Layer) AlphaCycInit() {
 	ly.LeabraLay.AvgLFmAvgM()
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
@@ -402,7 +402,7 @@ func (ly *Layer) TrialInit() {
 		ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 	}
 	ly.LeabraLay.GScaleFmAvgAct()
-	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.TrialFixed && ly.Act.Noise.Dist != erand.Mean {
+	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
 		ly.LeabraLay.GenNoise()
 	}
 	ly.LeabraLay.DecayState(ly.Act.Init.Decay)
@@ -488,7 +488,7 @@ func (ly *Layer) DecayState(decay float32) {
 	}
 }
 
-// HardClamp hard-clamps the activations in the layer -- called during TrialInit for hard-clamped Input layers
+// HardClamp hard-clamps the activations in the layer -- called during AlphaCycInit for hard-clamped Input layers
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
