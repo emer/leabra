@@ -18,6 +18,7 @@ import (
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
 	"github.com/goki/gi/gi"
+	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"
 )
@@ -32,6 +33,8 @@ type NetworkStru struct {
 	Layers  []emer.Layer
 	WtsFile string                `desc:"filename of last weights file loaded or saved"`
 	LayMap  map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
+	MinPos  mat32.Vec3            `view:"-" desc:"minimum display position in network"`
+	MaxPos  mat32.Vec3            `view:"-" desc:"maximum display position in network"`
 
 	NThreads int                    `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
 	ThrLay   [][]emer.Layer         `view:"-" inactive:"+" desc:"layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build"`
@@ -49,10 +52,11 @@ func (nt *NetworkStru) InitName(net emer.Network, name string) {
 }
 
 // emer.Network interface methods:
-func (nt *NetworkStru) Name() string             { return nt.Nm }
-func (nt *NetworkStru) Label() string            { return nt.Nm }
-func (nt *NetworkStru) NLayers() int             { return len(nt.Layers) }
-func (nt *NetworkStru) Layer(idx int) emer.Layer { return nt.Layers[idx] }
+func (nt *NetworkStru) Name() string                  { return nt.Nm }
+func (nt *NetworkStru) Label() string                 { return nt.Nm }
+func (nt *NetworkStru) NLayers() int                  { return len(nt.Layers) }
+func (nt *NetworkStru) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
+func (nt *NetworkStru) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
 // Will create the layer map if it is nil or a different size than layers slice,
@@ -92,7 +96,7 @@ func (nt *NetworkStru) BuildThreads() {
 		if ly.IsOff() {
 			continue
 		}
-		nthr = ints.MaxInt(nthr, ly.LayThread())
+		nthr = ints.MaxInt(nthr, ly.Thread())
 	}
 	nt.NThreads = nthr + 1
 	nt.ThrLay = make([][]emer.Layer, nt.NThreads)
@@ -103,7 +107,7 @@ func (nt *NetworkStru) BuildThreads() {
 		if ly.IsOff() {
 			continue
 		}
-		th := ly.LayThread()
+		th := ly.Thread()
 		nt.ThrLay[th] = append(nt.ThrLay[th], ly)
 	}
 	for th := 0; th < nt.NThreads; th++ {
@@ -120,15 +124,62 @@ func (nt *NetworkStru) StdVertLayout() {
 	lstnm := ""
 	for li, ly := range nt.Layers {
 		if li == 0 {
-			ly.SetLayRel(relpos.Rel{Rel: relpos.NoRel})
+			ly.SetRelPos(relpos.Rel{Rel: relpos.NoRel})
 			lstnm = ly.Name()
 		} else {
-			ly.SetLayRel(relpos.Rel{Rel: relpos.Above, Other: lstnm, XAlign: relpos.Middle, YAlign: relpos.Front})
+			ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstnm, XAlign: relpos.Middle, YAlign: relpos.Front})
 		}
 	}
 }
 
-// todo: compute positions
+// Layout computes the 3D layout of layers based on their relative position settings
+func (nt *NetworkStru) Layout() {
+	for itr := 0; itr < 2; itr++ {
+		var lstly emer.Layer
+		for _, ly := range nt.Layers {
+			rp := ly.RelPos()
+			var oly emer.Layer
+			if lstly != nil && rp.Rel == relpos.NoRel {
+				oly = lstly
+				ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
+			} else {
+				if rp.Other != "" {
+					var err error
+					oly, err = nt.LayerByNameTry(rp.Other)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+				} else if lstly != nil {
+					oly = lstly
+					ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
+				}
+			}
+			if oly != nil {
+				ly.SetPos(rp.Pos(oly.Pos(), oly.Size(), ly.Size()))
+			}
+			lstly = ly
+		}
+	}
+	nt.BoundsUpdt()
+}
+
+// BoundsUpdt updates the Min / Max display bounds for 3D display
+func (nt *NetworkStru) BoundsUpdt() {
+	mn := mat32.NewVec3Scalar(mat32.Infinity)
+	mx := mat32.Vec3Zero
+	for _, ly := range nt.Layers {
+		ps := ly.Pos()
+		sz := ly.Size()
+		ru := ps
+		ru.X += sz.X
+		ru.Y += sz.Y
+		mn.SetMax(ps)
+		mx.SetMax(ru)
+	}
+	nt.MaxPos = mn
+	nt.MaxPos = mx
+}
 
 // StyleParams applies a given styles to layers and receiving projections,
 // depending on the style specification (.Class, #Name, Type) and target value of params
@@ -229,6 +280,7 @@ func (nt *NetworkStru) Build() error {
 			emsg += err.Error() + "\n"
 		}
 	}
+	nt.Layout()
 	nt.BuildThreads()
 	nt.StartThreads()
 	if emsg != "" {

@@ -74,11 +74,13 @@ type SimState struct {
 	Epoch      int
 	Trial      int
 	Time       leabra.Time
-	UpdtView   bool     `desc:"update the network display while running"`
-	Plot       bool     `desc:"update the epoch plot while running?"`
-	PlotVals   []string `desc:"values to plot in epoch plot"`
-	Sequential bool     `desc:"set to true to present items in sequential order"`
-	Test       bool     `desc:"set to true to not call learning methods"`
+	ViewOn     bool              `desc:"whether to update the network view while running"`
+	TrainUpdt  leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
+	TestUpdt   leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	Plot       bool              `desc:"update the epoch plot while running?"`
+	PlotVals   []string          `desc:"values to plot in epoch plot"`
+	Sequential bool              `desc:"set to true to present items in sequential order"`
+	Test       bool              `desc:"set to true to not call learning methods"`
 
 	// statistics
 	EpcSSE     float32 `inactive:"+" desc:"last epoch's total sum squared error"`
@@ -109,7 +111,7 @@ func (ss *SimState) New() {
 	ss.EpcLog = &etable.Table{}
 	ss.Params = DefaultParams
 	ss.RndSeed = 1
-	ss.UpdtView = true
+	ss.ViewOn = true
 }
 
 // Config configures all the elements using the standard functions
@@ -264,7 +266,7 @@ func (ss *SimState) StepTrial() {
 	ss.RunTrial()
 	ss.TrialStats(!ss.Test) // accumulate if not doing testing
 	ss.TrialInc()           // does LogEpoch, EpochInc automatically
-	if ss.UpdtView {
+	if ss.ViewOn {
 		ss.UpdateView()
 	}
 }

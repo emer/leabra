@@ -24,7 +24,7 @@ type Layer struct {
 	Act     ActParams       `desc:"Activation parameters and methods for computing activations"`
 	Inhib   InhibParams     `desc:"Inhibition parameters and methods for computing layer-level inhibition"`
 	Learn   LearnNeurParams `desc:"Learning parameters and methods that operate at the neuron level"`
-	Neurons []Neuron        `desc:"slice of neurons for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	Neurons []Neuron        `desc:"slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values."`
 	Pools   []Pool          `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
 	CosDiff CosDiffStats    `desc:"cosine difference between ActM, ActP stats"`
 }
@@ -93,7 +93,7 @@ func (ly *Layer) UnitVals(varNm string) ([]float32, error) {
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitVal(varNm string, idx []int) (float32, error) {
-	fidx := ly.Shape.Offset(idx)
+	fidx := ly.Shp.Offset(idx)
 	nn := len(ly.Neurons)
 	if fidx < 0 || fidx >= nn {
 		return 0, fmt.Errorf("Layer UnitVal index: %v out of range, N = %v", fidx, nn)
@@ -118,10 +118,10 @@ func (ly *Layer) UnitVal1D(varNm string, idx int) (float32, error) {
 
 // BuildSubPools initializes neuron start / end indexes for sub-pools
 func (ly *Layer) BuildSubPools() {
-	if ly.Shape.NumDims() != 4 {
+	if !ly.Is4D() {
 		return
 	}
-	sh := ly.Shape.Shapes()
+	sh := ly.Shp.Shapes()
 	spy := sh[0]
 	spx := sh[1]
 	lastOff := 0
@@ -129,7 +129,7 @@ func (ly *Layer) BuildSubPools() {
 	for py := 0; py < spy; py++ {
 		for px := 0; px < spx; px++ {
 			idx := []int{py, px, 0, 0}
-			off := ly.Shape.Offset(idx)
+			off := ly.Shp.Offset(idx)
 			if off == 0 {
 				continue
 			}
@@ -184,7 +184,7 @@ func (ly *Layer) BuildPrjns() error {
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.
 func (ly *Layer) Build() error {
-	nu := ly.Shape.Len()
+	nu := ly.Shp.Len()
 	if nu == 0 {
 		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Nm)
 	}
@@ -276,7 +276,7 @@ func (ly *Layer) InitWtSym() {
 			continue
 		}
 		// key ordering constraint on which way weights are copied
-		if p.RecvLay().LayIndex() < p.SendLay().LayIndex() {
+		if p.RecvLay().Index() < p.SendLay().Index() {
 			continue
 		}
 		rpj, has := ly.RecipToSendPrjn(p)
@@ -303,10 +303,10 @@ func (ly *Layer) InitExt() {
 func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 	clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
 	toTarg = false
-	if ly.Type == emer.Target {
+	if ly.Typ == emer.Target {
 		setmsk = bitflag.Mask32(int(NeurHasTarg))
 		toTarg = true
-	} else if ly.Type == emer.Compare {
+	} else if ly.Typ == emer.Compare {
 		setmsk = bitflag.Mask32(int(NeurHasCmpr))
 		toTarg = true
 	} else {
@@ -321,19 +321,19 @@ func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt(ext *etensor.Float32) {
-	if ext.NumDims() != ly.Shape.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4) {
+	if ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4) {
 		ly.ApplyExt1D(ext.Values)
 		return
 	}
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
 	if ext.NumDims() == 2 {
-		ymx := ints.MinInt(ext.Dim(0), ly.Shape.Dim(0))
-		xmx := ints.MinInt(ext.Dim(1), ly.Shape.Dim(1))
+		ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
+		xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
 		for y := 0; y < ymx; y++ {
 			for x := 0; x < xmx; x++ {
 				idx := []int{y, x}
 				vl := ext.Value(idx)
-				i := ly.Shape.Offset(idx)
+				i := ly.Shp.Offset(idx)
 				nrn := &ly.Neurons[i]
 				if toTarg {
 					nrn.Targ = vl
@@ -346,17 +346,17 @@ func (ly *Layer) ApplyExt(ext *etensor.Float32) {
 		}
 		return
 	}
-	ypmx := ints.MinInt(ext.Dim(0), ly.Shape.Dim(0))
-	xpmx := ints.MinInt(ext.Dim(1), ly.Shape.Dim(1))
-	ynmx := ints.MinInt(ext.Dim(2), ly.Shape.Dim(2))
-	xnmx := ints.MinInt(ext.Dim(3), ly.Shape.Dim(3))
+	ypmx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
+	xpmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
+	ynmx := ints.MinInt(ext.Dim(2), ly.Shp.Dim(2))
+	xnmx := ints.MinInt(ext.Dim(3), ly.Shp.Dim(3))
 	for yp := 0; yp < ypmx; yp++ {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, yp}
 					vl := ext.Value(idx)
-					i := ly.Shape.Offset(idx)
+					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]
 					if toTarg {
 						nrn.Targ = vl
@@ -406,7 +406,7 @@ func (ly *Layer) TrialInit() {
 		ly.LeabraLay.GenNoise()
 	}
 	ly.LeabraLay.DecayState(ly.Act.Init.Decay)
-	if ly.Act.Clamp.Hard && ly.Type == emer.Input {
+	if ly.Act.Clamp.Hard && ly.Typ == emer.Input {
 		ly.LeabraLay.HardClamp()
 	}
 }
@@ -440,7 +440,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
 		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
-		if pj.Type == emer.Inhib {
+		if pj.Typ == emer.Inhib {
 			totGiRel += pj.WtScale.Rel
 		} else {
 			totGeRel += pj.WtScale.Rel
@@ -452,7 +452,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 			continue
 		}
 		pj := p.(LeabraPrjn).AsLeabra()
-		if pj.Type == emer.Inhib {
+		if pj.Typ == emer.Inhib {
 			if totGiRel > 0 {
 				pj.GScale /= totGiRel
 			}
@@ -679,7 +679,7 @@ func (ly *Layer) CosDiffFmActs() {
 
 	ly.Learn.CosDiff.AvgVarFmCos(&ly.CosDiff.Avg, &ly.CosDiff.Var, ly.CosDiff.Cos)
 
-	if ly.Type != emer.Hidden {
+	if ly.Typ != emer.Hidden {
 		ly.CosDiff.AvgLrn = 0 // no BCM for non-hidden layers
 		ly.CosDiff.ModAvgLLrn = 0
 	} else {

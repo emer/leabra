@@ -89,3 +89,97 @@ const (
 	Q4
 	QuartersN
 )
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  TimeScales
+
+// TimeScales are the different time scales associated with overall simulation running, and
+// can be used to parameterize the updating and control flow of simulations at different scales.
+// The definitions become increasingly subjective imprecise as the time scales increase.
+// This is not used directly in the algorithm code -- all control is responsibility of the
+// end simulation.  This list is designed to standardize terminology across simulations and
+// establish a common conceptual framework for time -- it can easily be extended in specific
+// simulations to add needed additional levels, although using one of the existing standard
+// values is recommended wherever possible.
+type TimeScales int32
+
+//go:generate stringer -type=TimeScales
+
+var KiT_TimeScales = kit.Enums.AddEnum(TimeScalesN, false, nil)
+
+func (ev TimeScales) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
+func (ev *TimeScales) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+
+// The time scales
+const (
+	// Cycle is the finest time scale -- typically 1 msec -- a single activation update.
+	Cycle TimeScales = iota
+
+	// FastSpike is typically 10 cycles = 10 msec (100hz) = the fastest spiking time
+	// generally observed in the brain.  This can be useful for visualizing updates
+	// at a granularity in between Cycle and Quarter.
+	FastSpike
+
+	// Quarter is typically 25 cycles = 25 msec (40hz) = 1/4 of the 100 msec alpha trial
+	// This is also the GammaCycle (gamma = 40hz), but we use Quarter functionally
+	// by virtue of there being 4 per AlphaCycle.
+	Quarter
+
+	// Phase is either Minus or Plus phase -- Minus = first 3 quarters, Plus = last quarter
+	Phase
+
+	// BetaCycle is typically 50 cycles = 50 msec (20 hz) = one beta-frequency cycle.
+	// Gating in the basal ganglia and associated updating in prefrontal cortex
+	// occurs at this frequency.
+	BetaCycle
+
+	// AlphaCycle is typically 100 cycles = 100 msec (10 hz) = one alpha-frequency cycle,
+	// which is the fundamental unit of learning in posterior cortex.
+	AlphaCycle
+
+	// ThetaCycle is typically 200 cycles = 200 msec (5 hz) = two alpha-frequency cycles.
+	// This is the modal duration of a saccade, the update frequency of medial temporal lobe
+	// episodic memory, and the minimal predictive learning cycle (perceive an Alpha 1, predict on 2).
+	ThetaCycle
+
+	// Trial is one unit of behavior in an experiment -- it is typically environmentally defined
+	// instead of endogenously defined in terms of basic brain rhythms.  In the minimal case it
+	// typically corresponds to one AlphaCycle, but again should be used for environmental timing.
+	Trial
+
+	// Sequence is a sequential group of Trials -- environmentally defined (see also Event).
+	Sequence
+
+	// Epoch is a collection of Trials, Sequences or Episodes that constitute a "representative sample"
+	// of the environment.  In the simplest case, it is the entire collection of Trials used for training.
+	Epoch
+
+	// Batch is a complete run of a model, from training to testing, etc.  Often multiple batches are run
+	// to obtain statistics over initial random weights etc.   See also Expt.
+	Batch
+
+	// Episode is an environmental episode, intended to be the smallest unit of naturalistic experience
+	// that coheres unto itself (e.g., something that could be described in a sentence).
+	// Typically this is on the time scale of a few seconds: e.g., reaching for something, catching a ball.
+	Episode
+
+	// Scene is a sequence of episodes that constitutes the next larger-scale coherent unit
+	// of naturalistic experience corresponding e.g., to a scene in a movie.
+	// Typically consists of episodes that all take place in one location over e.g., a minute or so.
+	// This could be a paragraph or a page or so in a book.
+	Scene
+
+	// Event is a sequence of scenes that constitutes the next larger-scale unit of naturalistic experience
+	// e.g., going to the grocery store or eating at a restaurant, attending a wedding or other "event".
+	// This could be a chapter in a book.
+	Event
+
+	// Subject is similar to Batch, but defined in behavioral experiment terms -- one individual
+	// simulated subject run through a particular experimental procedure.
+	Subject
+
+	// Expt is an entire experiment -- a group of Subjects all run through a given protocol.
+	Expt
+
+	TimeScalesN
+)

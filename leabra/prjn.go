@@ -212,8 +212,8 @@ func (pj *Prjn) Build() error {
 		return err
 	}
 	pj.Syns = make([]Synapse, len(pj.SConIdx))
-	rsh := pj.Recv.LayShape()
-	//	ssh := pj.Send.LayShape()
+	rsh := pj.Recv.Shape()
+	//	ssh := pj.Send.Shape()
 	rlen := rsh.Len()
 	pj.GInc = make([]float32, rlen)
 	pj.WbRecv = make([]WtBalRecvPrjn, rlen)
@@ -295,7 +295,7 @@ func (pj *Prjn) SendGDelta(si int, delta float32) {
 // RecvGInc increments the receiver's GeInc or GiInc from that of all the projections.
 func (pj *Prjn) RecvGInc() {
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if pj.Type == emer.Inhib {
+	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
 			rn.GiInc += pj.GInc[ri]
@@ -393,7 +393,7 @@ func (pj *Prjn) WtBalFmWt() {
 	}
 
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if rlay.Type == emer.Target {
+	if rlay.Typ == emer.Target {
 		return
 	}
 	for ri := range rlay.Neurons {

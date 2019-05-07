@@ -20,12 +20,12 @@ import (
 type PrjnStru struct {
 	LeabraPrj   LeabraPrjn    `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraPrjn, which can always be used to extract the true underlying type of object when prjn is embedded in other structs -- function receivers do not have this ability so this is necessary."`
 	Off         bool          `desc:"inactivate this projection -- allows for easy experimentation"`
-	Class       string        `desc:"Class is for applying parameter styles, can be space separated multple tags"`
+	Cls         string        `desc:"Class is for applying parameter styles, can be space separated multple tags"`
 	Notes       string        `desc:"can record notes about this projection here"`
 	Recv        emer.Layer    `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
 	Send        emer.Layer    `desc:"sending layer for this projection"`
 	Pat         prjn.Pattern  `desc:"pattern of connectivity"`
-	Type        emer.PrjnType `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Class parameter styles (e.g., .Back etc)"`
+	Typ         emer.PrjnType `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
 	RConN       []int32       `view:"-" desc:"number of recv connections for each neuron in the receiving layer, as a flat list"`
 	RConNAvgMax emer.AvgMax   `inactive:"+" desc:"average and maximum number of recv connections in the receiving layer"`
 	RConIdxSt   []int32       `view:"-" desc:"starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN"`
@@ -45,17 +45,17 @@ func (ps *PrjnStru) Init(prjn emer.Prjn) {
 	ps.LeabraPrj = prjn.(LeabraPrjn)
 }
 
-func (ps *PrjnStru) PrjnClass() string   { return ps.Class }
-func (ps *PrjnStru) SetClass(cls string) { ps.Class = cls }
-func (ps *PrjnStru) PrjnName() string {
+func (ps *PrjnStru) Class() string       { return ps.Cls }
+func (ps *PrjnStru) SetClass(cls string) { ps.Cls = cls }
+func (ps *PrjnStru) Name() string {
 	return ps.Send.Name() + "To" + ps.Recv.Name()
 }
-func (ps *PrjnStru) Label() string             { return ps.PrjnName() }
+func (ps *PrjnStru) Label() string             { return ps.Name() }
 func (ps *PrjnStru) RecvLay() emer.Layer       { return ps.Recv }
 func (ps *PrjnStru) SendLay() emer.Layer       { return ps.Send }
 func (ps *PrjnStru) Pattern() prjn.Pattern     { return ps.Pat }
-func (ps *PrjnStru) PrjType() emer.PrjnType    { return ps.Type }
-func (ps *PrjnStru) SetType(typ emer.PrjnType) { ps.Type = typ }
+func (ps *PrjnStru) Type() emer.PrjnType       { return ps.Typ }
+func (ps *PrjnStru) SetType(typ emer.PrjnType) { ps.Typ = typ }
 func (ps *PrjnStru) IsOff() bool {
 	return ps.Off || ps.Recv.IsOff() || ps.Send.IsOff()
 }
@@ -66,7 +66,7 @@ func (ps *PrjnStru) Connect(slay, rlay emer.Layer, pat prjn.Pattern, typ emer.Pr
 	ps.Send = slay
 	ps.Recv = rlay
 	ps.Pat = pat
-	ps.Type = typ
+	ps.Typ = typ
 }
 
 // Validate tests for non-nil settings for the projection -- returns error
@@ -104,8 +104,8 @@ func (ps *PrjnStru) BuildStru() error {
 	if err != nil {
 		return err
 	}
-	ssh := ps.Send.LayShape()
-	rsh := ps.Recv.LayShape()
+	ssh := ps.Send.Shape()
+	rsh := ps.Recv.Shape()
 	sendn, recvn, cons := ps.Pat.Connect(ssh, rsh, ps.Recv == ps.Send)
 	slen := ssh.Len()
 	rlen := rsh.Len()
@@ -199,8 +199,8 @@ func (ps *PrjnStru) String() string {
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
 func (ps *PrjnStru) StyleParam(sel string, pars emer.Params, setMsg bool) bool {
-	cls := ps.Class + " " + ps.Type.String()
-	if emer.StyleMatch(sel, ps.PrjnName(), cls, "Prjn") {
+	cls := ps.Cls + " " + ps.Typ.String()
+	if emer.StyleMatch(sel, ps.Name(), cls, "Prjn") {
 		return ps.LeabraPrj.SetParams(pars, setMsg) // note: going through LeabraPrj interface ensures correct method called
 	}
 	return false

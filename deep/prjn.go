@@ -39,7 +39,7 @@ func (pj *Prjn) Build() error {
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.LayShape()
+	rsh := pj.Recv.Shape()
 	rlen := rsh.Len()
 	pj.DeepCtxtGeInc = make([]float32, rlen)
 	pj.TRCBurstGeInc = make([]float32, rlen)
@@ -143,7 +143,7 @@ func (pj *Prjn) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
-	if pj.Type == BurstCtxt {
+	if pj.Typ == BurstCtxt {
 		pj.LeabraPrj.(DeepPrjn).DWtDeepCtxt()
 	} else {
 		pj.Prjn.DWt()
