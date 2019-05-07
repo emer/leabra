@@ -142,44 +142,53 @@ const (
 	// episodic memory, and the minimal predictive learning cycle (perceive an Alpha 1, predict on 2).
 	ThetaCycle
 
-	// Trial is one unit of behavior in an experiment -- it is typically environmentally defined
-	// instead of endogenously defined in terms of basic brain rhythms.  In the minimal case it
-	// typically corresponds to one AlphaCycle, but again should be used for environmental timing.
-	Trial
-
-	// Sequence is a sequential group of Trials -- environmentally defined (see also Event).
-	Sequence
-
-	// Epoch is a collection of Trials, Sequences or Episodes that constitute a "representative sample"
-	// of the environment.  In the simplest case, it is the entire collection of Trials used for training.
-	Epoch
-
-	// Batch is a complete run of a model, from training to testing, etc.  Often multiple batches are run
-	// to obtain statistics over initial random weights etc.   See also Expt.
-	Batch
-
-	// Episode is an environmental episode, intended to be the smallest unit of naturalistic experience
-	// that coheres unto itself (e.g., something that could be described in a sentence).
-	// Typically this is on the time scale of a few seconds: e.g., reaching for something, catching a ball.
-	Episode
-
-	// Scene is a sequence of episodes that constitutes the next larger-scale coherent unit
-	// of naturalistic experience corresponding e.g., to a scene in a movie.
-	// Typically consists of episodes that all take place in one location over e.g., a minute or so.
-	// This could be a paragraph or a page or so in a book.
-	Scene
-
-	// Event is a sequence of scenes that constitutes the next larger-scale unit of naturalistic experience
-	// e.g., going to the grocery store or eating at a restaurant, attending a wedding or other "event".
-	// This could be a chapter in a book.
+	// Event is the smallest unit of naturalistic experience that coheres unto itself
+	// (e.g., something that could be described in a sentence).
+	// Typically this is on the time scale of a few seconds: e.g., reaching for
+	// something, catching a ball.
 	Event
 
-	// Subject is similar to Batch, but defined in behavioral experiment terms -- one individual
-	// simulated subject run through a particular experimental procedure.
-	Subject
+	// Trial is one unit of behavior in an experiment -- it is typically environmentally
+	// defined instead of endogenously defined in terms of basic brain rhythms.
+	// In the minimal case it could be one AlphaCycle, but could be multiple, and
+	// could encompass multiple Events (e.g., one event is fixation, next is stimulus,
+	// last is response)
+	Trial
 
-	// Expt is an entire experiment -- a group of Subjects all run through a given protocol.
+	// Sequence is a sequential group of Trials (not always needed).
+	Sequence
+
+	// Block is a collection of Trials, Sequences or Events, often used in experiments
+	// when conditions are varied across blocks.
+	Block
+
+	// Epoch is used in two different contexts.  In machine learning, it represents a
+	// collection of Trials, Sequences or Events that constitute a "representative sample"
+	// of the environment.  In the simplest case, it is the entire collection of Trials
+	// used for training.  In electrophysiology, it is a timing window used for organizing
+	// the analysis of electrode data.
+	Epoch
+
+	// Run is a complete run of a model / subject, from training to testing, etc.
+	// Often multiple runs are done in an Expt to obtain statistics over initial
+	// random weights etc.
+	Run
+
+	// Expt is an entire experiment -- multiple Runs through a given protocol / set of
+	// parameters.
 	Expt
+
+	// Scene is a sequence of events that constitutes the next larger-scale coherent unit
+	// of naturalistic experience corresponding e.g., to a scene in a movie.
+	// Typically consists of events that all take place in one location over
+	// e.g., a minute or so. This could be a paragraph or a page or so in a book.
+	Scene
+
+	// Episode is a sequence of scenes that constitutes the next larger-scale unit
+	// of naturalistic experience e.g., going to the grocery store or eating at a
+	// restaurant, attending a wedding or other "event".
+	// This could be a chapter in a book.
+	Episode
 
 	TimeScalesN
 )

@@ -9,9 +9,9 @@ import (
 
 var _ = errors.New("dummy error")
 
-const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleTrialSequenceEpochBatchEpisodeSceneEventSubjectExptTimeScalesN"
+const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleEventTrialSequenceBlockEpochRunExptSceneEpisodeTimeScalesN"
 
-var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 68, 73, 78, 85, 90, 95, 102, 106, 117}
+var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 65, 73, 78, 83, 86, 90, 95, 102, 113}
 
 func (i TimeScales) String() string {
 	if i < 0 || i >= TimeScales(len(_TimeScales_index)-1) {
