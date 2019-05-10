@@ -15,25 +15,21 @@ import (
 	"time"
 
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/eplot"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
+	"github.com/emer/etable/eplot"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
-	"github.com/goki/gi/svg"
-	"github.com/goki/gi/units"
 	"github.com/goki/ki/ki"
 	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 )
 
 // todo:
@@ -96,7 +92,6 @@ type Sim struct {
 	TrainUpdt  leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt   leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 	Plot       bool              `desc:"update the epoch plot while running?"`
-	PlotVals   []string          `desc:"values to plot in epoch plot"`
 	Sequential bool              `desc:"set to true to present items in sequential order"`
 	Test       bool              `desc:"set to true to not call learning methods"`
 
@@ -113,7 +108,7 @@ type Sim struct {
 	SumCosDiff float32          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
 	CntErr     int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
 	Porder     []int            `view:"-" inactive:"+" desc:"permuted pattern order"`
-	EpcPlotSvg *svg.Editor      `view:"-" desc:"the epoch plot svg editor"`
+	EpcPlot    *eplot.Plot2D    `view:"-" desc:"the epoch plot"`
 	NetView    *netview.NetView `view:"-" desc:"the network viewer"`
 	StopNow    bool             `view:"-" desc:"flag to stop running"`
 	RndSeed    int64            `view:"-" desc:"the current random seed"`
@@ -475,41 +470,24 @@ func (ss *Sim) ConfigEpcLog() {
 		{"Hid2 ActAvg", etensor.FLOAT32, nil, nil},
 		{"Out ActAvg", etensor.FLOAT32, nil, nil},
 	}, 0)
-	ss.PlotVals = []string{"SSE", "Pct Err"}
 	ss.Plot = true
 }
 
-// PlotEpcLog plots given epoch log using PlotVals Y axis columns into EpcPlotSvg
-func (ss *Sim) PlotEpcLog() *plot.Plot {
-	if !ss.EpcPlotSvg.IsVisible() {
-		return nil
+// PlotEpcLog plots given epoch log using PlotVals Y axis columns into EpcPlot
+func (ss *Sim) PlotEpcLog() {
+	if !ss.EpcPlot.IsVisible() {
+		return
 	}
-	dt := ss.EpcLog
-	plt, _ := plot.New() // todo: keep around?
-	plt.Title.Text = "Random Associator Epoch Log"
-	plt.X.Label.Text = "Epoch"
-	plt.Y.Label.Text = "Y"
-
-	const lineWidth = 1
-
-	for i, cl := range ss.PlotVals {
-		xy, _ := eplot.NewTableXYNames(dt, "Epoch", cl)
-		l, _ := plotter.NewLine(xy)
-		l.LineStyle.Width = vg.Points(lineWidth)
-		clr, _ := gi.ColorFromString(PlotColorNames[i%len(PlotColorNames)], nil)
-		l.LineStyle.Color = clr
-		plt.Add(l)
-		plt.Legend.Add(cl, l)
+	if ss.EpcPlot.Table != ss.EpcLog {
+		ss.EpcPlot.SetTable(ss.EpcLog)
 	}
-	plt.Legend.Top = true
-	eplot.PlotViewSVG(plt, ss.EpcPlotSvg, 5, 5, 2)
-	return plt
+	ss.EpcPlot.Update()
 }
 
 // SaveEpcPlot plots given epoch log using PlotVals Y axis columns and saves to .svg file
 func (ss *Sim) SaveEpcPlot(fname string) {
-	plt := ss.PlotEpcLog()
-	plt.Save(5, 5, fname)
+	ss.PlotEpcLog()
+	// plt.Save(5, 5, fname)
 }
 
 // ConfigGui configures the GoGi gui interface for this simulation,
@@ -553,15 +531,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 
-	svge := tv.AddNewTab(svg.KiT_Editor, "Epc Plot").(*svg.Editor)
-	svge.InitScale()
-	svge.Fill = true
-	svge.SetProp("background-color", "white")
-	svge.SetProp("width", units.NewValue(float32(width/2), units.Px))
-	svge.SetProp("height", units.NewValue(float32(height-100), units.Px))
-	svge.SetStretchMaxWidth()
-	svge.SetStretchMaxHeight()
-	ss.EpcPlotSvg = svge
+	eplt := tv.AddNewTab(eplot.KiT_Plot2D, "Epc Plot").(*eplot.Plot2D)
+	eplt.SetTable(ss.EpcLog)
+	ss.EpcPlot = eplt
+	ss.EpcPlot.Params.Title = "Random Associator Epoch Log"
+	ss.EpcPlot.Params.XAxisCol = "Epoch"
 
 	split.SetSplits(.3, .7)
 
