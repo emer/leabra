@@ -34,11 +34,6 @@ import (
 
 // todo:
 //
-// * make etable/eplot2d.Plot which encapsulates the SVGEditor and
-//   shows its columns -- basically replicating behavior of C++ GraphView for eaiser
-//   dynamic selection of what to plot, how to plot it, etc.
-//   Trick is how to make it also customizable via code..
-//
 // * LogTrainTrial, LogTestTrial, LogTestCycle and associated plots
 //
 // * etable/eview.TableView (gridview -- is there a gonum version?) and TableEdit (spreadsheet-like editor)
@@ -69,9 +64,6 @@ var DefaultParams = emer.ParamStyle{
 		"Prjn.WtScale.Rel": 0.2, // this is generally quite important
 	}},
 }
-
-// these are the plot color names to use in order for successive lines -- feel free to choose your own!
-var PlotColorNames = []string{"black", "red", "blue", "ForestGreen", "purple", "orange", "brown", "chartreuse", "navy", "cyan", "magenta", "tan", "salmon", "yellow4", "SkyBlue", "pink"}
 
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
@@ -473,21 +465,31 @@ func (ss *Sim) ConfigEpcLog() {
 	ss.Plot = true
 }
 
-// PlotEpcLog plots given epoch log using PlotVals Y axis columns into EpcPlot
+func (ss *Sim) ConfigEpcPlot() {
+	ss.EpcPlot.Params.Title = "Leabra Random Associator 25 Epoch Plot"
+	ss.EpcPlot.Params.XAxisCol = "Epoch"
+	// order of params: on, fixMin, min, fixMax, max
+	ss.EpcPlot.SetColParams("Epoch", false, true, 0, false, 0)
+	ss.EpcPlot.SetColParams("SSE", false, true, 0, false, 0)
+	ss.EpcPlot.SetColParams("Avg SSE", false, true, 0, false, 0)
+	ss.EpcPlot.SetColParams("Pct Err", true, true, 0, true, 1) // default plot
+	ss.EpcPlot.SetColParams("Pct Cor", true, true, 0, true, 1) // default plot
+	ss.EpcPlot.SetColParams("CosDiff", false, true, 0, true, 1)
+	ss.EpcPlot.SetColParams("Hid1 ActAvg", false, true, 0, true, 1)
+	ss.EpcPlot.SetColParams("Hid2 ActAvg", false, true, 0, true, 1)
+	ss.EpcPlot.SetColParams("Out ActAvg", false, true, 0, true, 1)
+}
+
+// PlotEpcLog updates the epoch log plot
 func (ss *Sim) PlotEpcLog() {
 	if !ss.EpcPlot.IsVisible() {
 		return
 	}
 	if ss.EpcPlot.Table != ss.EpcLog {
 		ss.EpcPlot.SetTable(ss.EpcLog)
+		ss.ConfigEpcPlot()
 	}
 	ss.EpcPlot.Update()
-}
-
-// SaveEpcPlot plots given epoch log using PlotVals Y axis columns and saves to .svg file
-func (ss *Sim) SaveEpcPlot(fname string) {
-	ss.PlotEpcLog()
-	// plt.Save(5, 5, fname)
 }
 
 // ConfigGui configures the GoGi gui interface for this simulation,
@@ -531,11 +533,10 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 
-	eplt := tv.AddNewTab(eplot.KiT_Plot2D, "Epc Plot").(*eplot.Plot2D)
+	eplt := tv.AddNewTab(eplot.KiT_Plot2D, "EpcPlot").(*eplot.Plot2D)
 	eplt.SetTable(ss.EpcLog)
 	ss.EpcPlot = eplt
-	ss.EpcPlot.Params.Title = "Random Associator Epoch Log"
-	ss.EpcPlot.Params.XAxisCol = "Epoch"
+	ss.ConfigEpcPlot()
 
 	split.SetSplits(.3, .7)
 
@@ -584,30 +585,15 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddSeparator("file")
 
-	tbar.AddAction(gi.ActOpts{Label: "Epoch Plot", Icon: "update"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.PlotEpcLog()
-		})
-
 	tbar.AddAction(gi.ActOpts{Label: "Save Wts", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.Net.SaveWtsJSON("ra25_net_trained.wts") // todo: call method to prompt
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Save Log", Icon: "file-save"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.EpcLog.SaveCSV("ra25_epc.dat", ',', true)
-		})
-
-	tbar.AddAction(gi.ActOpts{Label: "Save Plot", Icon: "file-save"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.SaveEpcPlot("ra25_cur_epc_plot.svg")
-		})
-
 	tbar.AddAction(gi.ActOpts{Label: "Save Params", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			// todo: need save / load methods for these
-			// ss.EpcLog.SaveCSV("ra25_epc.dat", ',', true)
+			//
 		})
 
 	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new"}, win.This(),
