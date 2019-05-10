@@ -83,14 +83,15 @@ var PlotColorNames = []string{"black", "red", "blue", "ForestGreen", "purple", "
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net        *leabra.Network `view:"no-inline"`
-	Pats       *etable.Table   `view:"no-inline"`
-	EpcLog     *etable.Table   `view:"no-inline"`
-	Params     emer.ParamStyle `view:"no-inline"`
-	MaxEpcs    int             `desc:"maximum number of epochs to run"`
-	Epoch      int
-	Trial      int
-	Time       leabra.Time
+	Net        *leabra.Network   `view:"no-inline"`
+	Pats       *etable.Table     `view:"no-inline"`
+	EpcLog     *etable.Table     `view:"no-inline"`
+	Params     emer.ParamStyle   `view:"no-inline"`
+	MaxEpcs    int               `desc:"maximum number of epochs to run"`
+	Epoch      int               `desc:"current epoch"`
+	Trial      int               `desc:"current trial"`
+	TrialName  string            `inactive:"+" desc:"current trial name"`
+	Time       leabra.Time       `desc:"leabra timing parameters and state"`
 	ViewOn     bool              `desc:"whether to update the network view while running"`
 	TrainUpdt  leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt   leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
@@ -165,9 +166,16 @@ func (ss *Sim) NewRndSeed() {
 	ss.RndSeed = time.Now().UnixNano()
 }
 
+// Counters returns a string of the current counter state
+// use tabs to achieve a reasonable formatting overall
+// and add a few tabs at the end to allow for expansion..
+func (ss *Sim) Counters() string {
+	return fmt.Sprintf("Epoch:\t%d\tTrial:\t%d\tName:\t%v\t\t\t", ss.Epoch, ss.Trial, ss.TrialName)
+}
+
 func (ss *Sim) UpdateView() {
 	if ss.NetView != nil {
-		ss.NetView.Update()
+		ss.NetView.Update(ss.Counters())
 	}
 }
 
@@ -236,6 +244,8 @@ func (ss *Sim) ApplyInputs(pats *etable.Table, row int) {
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 	inPats := pats.ColByName(inLay.Nm).(*etensor.Float32)
 	outPats := pats.ColByName(outLay.Nm).(*etensor.Float32)
+	names := pats.ColByName("Name").(*etensor.String)
+	ss.TrialName = names.Values[row]
 
 	// SubSpace gets the 2D cell at given row in tensor column
 	inp, _ := inPats.SubSpace(2, []int{row})
@@ -387,10 +397,14 @@ func (ss *Sim) TestTrial() {
 
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
+	ss.StopNow = false
 	np := ss.Pats.NumRows()
 	ss.Trial = 0
 	for trl := 0; trl < np; trl++ {
 		ss.TestTrial()
+		if ss.StopNow {
+			break
+		}
 	}
 }
 
@@ -576,7 +590,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.TrainEpoch()
+			go ss.TrainEpoch()
 			vp.FullRender2DTree()
 		})
 
@@ -590,7 +604,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.TestAll()
+			go ss.TestAll()
 			vp.FullRender2DTree()
 		})
 
