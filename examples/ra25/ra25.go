@@ -29,6 +29,7 @@ import (
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ki"
+	"github.com/goki/ki/kit"
 	"gonum.org/v1/plot"
 )
 
@@ -106,6 +107,10 @@ type Sim struct {
 	RndSeed    int64            `view:"-" desc:"the current random seed"`
 }
 
+// this registers this Sim Type and gives it properties that e.g.,
+// prompt for filename for save methods.
+var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
+
 // TheSim is the overall state for this simulation
 var TheSim Sim
 
@@ -162,7 +167,8 @@ func (ss *Sim) Counters() string {
 
 func (ss *Sim) UpdateView() {
 	if ss.NetView != nil {
-		ss.NetView.Update(ss.Counters())
+		ss.NetView.Update(ss.Counters()) // this is a lot slower but anyway we need the counters
+		// ss.NetView.Update("")
 	}
 }
 
@@ -361,6 +367,18 @@ func (ss *Sim) Stop() {
 	ss.StopNow = true
 }
 
+// SaveWeights saves the network weights -- when called with giv.CallMethod
+// it will auto-prompt for filename
+func (ss *Sim) SaveWeights(filename gi.FileName) {
+	ss.Net.SaveWtsJSON(filename)
+}
+
+// SaveParams saves the current params -- when called with giv.CallMethod
+// it will auto-prompt for filename
+func (ss *Sim) SaveParams(filename gi.FileName) {
+	// ss.Net.SaveWeights(filename)
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Testing
 
@@ -514,26 +532,21 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	split := gi.AddNewSplitView(mfr, "split")
 	split.Dim = gi.X
-	// split.SetProp("horizontal-align", "center")
-	// split.SetProp("margin", 2.0) // raw numbers = px = 96 dpi pixels
 	split.SetStretchMaxWidth()
 	split.SetStretchMaxHeight()
 
 	sv := giv.AddNewStructView(split, "sv")
 	sv.SetStruct(ss, nil)
-	// sv.SetStretchMaxWidth()
-	// sv.SetStretchMaxHeight()
 
 	tv := gi.AddNewTabView(split, "tv")
 
 	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
-	nv.SetStretchMaxWidth()
-	nv.SetStretchMaxHeight()
 	nv.Var = "Act"
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 
 	eplt := tv.AddNewTab(eplot.KiT_Plot2D, "EpcPlot").(*eplot.Plot2D)
+	eplt.Params.XAxisCol = "Epoch"
 	eplt.SetTable(ss.EpcLog)
 	ss.EpcPlot = eplt
 	ss.ConfigEpcPlot()
@@ -587,13 +600,12 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "Save Wts", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.Net.SaveWtsJSON("ra25_net_trained.wts") // todo: call method to prompt
+			giv.CallMethod(ss, "SaveWeights", vp) // this auto prompts for filename using file chooser
 		})
 
 	tbar.AddAction(gi.ActOpts{Label: "Save Params", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			// todo: need save / load methods for these
-			//
+			giv.CallMethod(ss, "SaveParams", vp) // this auto prompts for filename using file chooser
 		})
 
 	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new"}, win.This(),
@@ -633,6 +645,30 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	win.MainMenuUpdated()
 	return win
+}
+
+// These props register Save methods so they can be used
+var SimProps = ki.Props{
+	"CallMethods": ki.PropSlice{
+		{"SaveWeights", ki.Props{
+			"desc": "save network weights to file",
+			"icon": "file-save",
+			"Args": ki.PropSlice{
+				{"File Name", ki.Props{
+					"ext": ".wts",
+				}},
+			},
+		}},
+		{"SaveParams", ki.Props{
+			"desc": "save parameters to file",
+			"icon": "file-save",
+			"Args": ki.PropSlice{
+				{"File Name", ki.Props{
+					"ext": ".params",
+				}},
+			},
+		}},
+	},
 }
 
 func mainrun() {
