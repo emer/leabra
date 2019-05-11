@@ -35,7 +35,7 @@ import (
 
 // todo:
 //
-// * LogTrainTrial, LogTestTrial, LogTestCycle and associated plots
+// * colorscale in giv, including gui
 //
 // * etable/eview.TableView (gridview -- is there a gonum version?) and TableEdit (spreadsheet-like editor)
 //   and show these in another tab for the input patterns
@@ -73,8 +73,10 @@ var DefaultParams = emer.ParamStyle{
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 	Net        *leabra.Network   `view:"no-inline"`
-	Pats       *etable.Table     `view:"no-inline"`
-	EpcLog     *etable.Table     `view:"no-inline"`
+	Pats       *etable.Table     `view:"no-inline" desc:"the training patterns"`
+	EpcLog     *etable.Table     `view:"no-inline" desc:"epoch-level log data"`
+	TstTrlLog  *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
+	TstCycLog  *etable.Table     `view:"no-inline" desc:"testing cycle-level log data"`
 	Params     emer.ParamStyle   `view:"no-inline"`
 	MaxEpcs    int               `desc:"maximum number of epochs to run"`
 	Epoch      int               `desc:"current epoch"`
@@ -84,11 +86,13 @@ type Sim struct {
 	ViewOn     bool              `desc:"whether to update the network view while running"`
 	TrainUpdt  leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt   leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
-	Plot       bool              `desc:"update the epoch plot while running?"`
 	Sequential bool              `desc:"set to true to present items in sequential order"`
 	Test       bool              `desc:"set to true to not call learning methods"`
 
 	// statistics
+	TrlSSE     float32 `inactive:"+" desc:"current trial's sum squared error"`
+	TrlAvgSSE  float32 `inactive:"+" desc:"current trial's average sum squared error"`
+	TrlCosDiff float32 `inactive:"+" desc:"current trial's cosine difference"`
 	EpcSSE     float32 `inactive:"+" desc:"last epoch's total sum squared error"`
 	EpcAvgSSE  float32 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
 	EpcPctErr  float32 `inactive:"+" desc:"last epoch's percent of trials that had SSE > 0 (subject to .5 unit-wise tolerance)"`
@@ -101,8 +105,10 @@ type Sim struct {
 	SumCosDiff float32          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
 	CntErr     int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
 	Porder     []int            `view:"-" inactive:"+" desc:"permuted pattern order"`
-	EpcPlot    *eplot.Plot2D    `view:"-" desc:"the epoch plot"`
 	NetView    *netview.NetView `view:"-" desc:"the network viewer"`
+	EpcPlot    *eplot.Plot2D    `view:"-" desc:"the epoch plot"`
+	TstTrlPlot *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
+	TstCycPlot *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
 	StopNow    bool             `view:"-" desc:"flag to stop running"`
 	RndSeed    int64            `view:"-" desc:"the current random seed"`
 }
@@ -119,6 +125,8 @@ func (ss *Sim) New() {
 	ss.Net = &leabra.Network{}
 	ss.Pats = &etable.Table{}
 	ss.EpcLog = &etable.Table{}
+	ss.TstTrlLog = &etable.Table{}
+	ss.TstCycLog = &etable.Table{}
 	ss.Params = DefaultParams
 	ss.RndSeed = 1
 	ss.ViewOn = true
@@ -131,6 +139,8 @@ func (ss *Sim) Config() {
 	ss.ConfigNet()
 	ss.OpenPats()
 	ss.ConfigEpcLog()
+	ss.ConfigTstTrlLog()
+	ss.ConfigTstCycLog()
 }
 
 // Init restarts the run, and initializes everything, including network weights
@@ -190,6 +200,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 	for qtr := 0; qtr < 4; qtr++ {
 		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
 			ss.Net.Cycle(&ss.Time)
+			if !train {
+				ss.LogTstCyc(ss.Time.Cycle)
+			}
 			ss.Time.CycleInc()
 			if ss.ViewOn {
 				switch viewUpdt {
@@ -268,10 +281,7 @@ func (ss *Sim) TrainTrial() {
 	ss.Trial++
 	np := ss.Pats.NumRows()
 	if ss.Trial >= np {
-		ss.LogEpoch()
-		if ss.Plot {
-			ss.PlotEpcLog()
-		}
+		ss.LogEpc()
 		ss.Trial = 0
 		ss.Epoch++
 		erand.PermuteInts(ss.Porder)
@@ -287,51 +297,17 @@ func (ss *Sim) TrainTrial() {
 // different time-scales over which stats could be accumulated etc.
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float32) {
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-	cosdiff = outLay.CosDiff.Cos
-	sse, avgsse = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	ss.TrlCosDiff = outLay.CosDiff.Cos
+	ss.TrlSSE, ss.TrlAvgSSE = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	if accum {
-		ss.SumSSE += sse
-		ss.SumAvgSSE += avgsse
-		ss.SumCosDiff += cosdiff
-		if sse != 0 {
+		ss.SumSSE += ss.TrlSSE
+		ss.SumAvgSSE += ss.TrlAvgSSE
+		ss.SumCosDiff += ss.TrlCosDiff
+		if ss.TrlSSE != 0 {
 			ss.CntErr++
 		}
 	}
 	return
-}
-
-// LogEpoch adds data from current epoch to the EpochLog table -- computes epoch
-// averages prior to logging.
-// Epoch counter is assumed to not have yet been incremented.
-func (ss *Sim) LogEpoch() {
-	ss.EpcLog.SetNumRows(ss.Epoch + 1)
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-
-	np := float32(ss.Pats.NumRows())
-	ss.EpcSSE = ss.SumSSE / np
-	ss.SumSSE = 0
-	ss.EpcAvgSSE = ss.SumAvgSSE / np
-	ss.SumAvgSSE = 0
-	ss.EpcPctErr = float32(ss.CntErr) / np
-	ss.CntErr = 0
-	ss.EpcPctCor = 1 - ss.EpcPctErr
-	ss.EpcCosDiff = ss.SumCosDiff / np
-	ss.SumCosDiff = 0
-
-	epc := ss.Epoch
-
-	ss.EpcLog.ColByName("Epoch").SetFloat1D(epc, float64(epc))
-	ss.EpcLog.ColByName("SSE").SetFloat1D(epc, float64(ss.EpcSSE))
-	ss.EpcLog.ColByName("Avg SSE").SetFloat1D(epc, float64(ss.EpcAvgSSE))
-	ss.EpcLog.ColByName("Pct Err").SetFloat1D(epc, float64(ss.EpcPctErr))
-	ss.EpcLog.ColByName("Pct Cor").SetFloat1D(epc, float64(ss.EpcPctCor))
-	ss.EpcLog.ColByName("CosDiff").SetFloat1D(epc, float64(ss.EpcCosDiff))
-	ss.EpcLog.ColByName("Hid1 ActAvg").SetFloat1D(epc, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
-	ss.EpcLog.ColByName("Hid2 ActAvg").SetFloat1D(epc, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
-	ss.EpcLog.ColByName("Out ActAvg").SetFloat1D(epc, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
-
 }
 
 // TrainEpoch runs training trials for remainder of this epoch
@@ -388,6 +364,8 @@ func (ss *Sim) TestTrial() {
 	ss.ApplyInputs(ss.Pats, row)
 	ss.AlphaCyc(false)   // !train
 	ss.TrialStats(false) // !accumulate
+	ss.LogTstTrl()
+
 	ss.Trial++
 	// todo: trial log, cycle log
 	np := ss.Pats.NumRows()
@@ -467,6 +445,44 @@ func (ss *Sim) OpenPats() {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// 		Logging
+
+// LogEpc adds data from current epoch to the EpcLog table.
+// computes epoch averages prior to logging.
+// Epoch counter is assumed to not have yet been incremented.
+func (ss *Sim) LogEpc() {
+	ss.EpcLog.SetNumRows(ss.Epoch + 1)
+	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+
+	np := float32(ss.Pats.NumRows())
+	ss.EpcSSE = ss.SumSSE / np
+	ss.SumSSE = 0
+	ss.EpcAvgSSE = ss.SumAvgSSE / np
+	ss.SumAvgSSE = 0
+	ss.EpcPctErr = float32(ss.CntErr) / np
+	ss.CntErr = 0
+	ss.EpcPctCor = 1 - ss.EpcPctErr
+	ss.EpcCosDiff = ss.SumCosDiff / np
+	ss.SumCosDiff = 0
+
+	epc := ss.Epoch
+
+	ss.EpcLog.ColByName("Epoch").SetFloat1D(epc, float64(epc))
+	ss.EpcLog.ColByName("SSE").SetFloat1D(epc, float64(ss.EpcSSE))
+	ss.EpcLog.ColByName("Avg SSE").SetFloat1D(epc, float64(ss.EpcAvgSSE))
+	ss.EpcLog.ColByName("Pct Err").SetFloat1D(epc, float64(ss.EpcPctErr))
+	ss.EpcLog.ColByName("Pct Cor").SetFloat1D(epc, float64(ss.EpcPctCor))
+	ss.EpcLog.ColByName("CosDiff").SetFloat1D(epc, float64(ss.EpcCosDiff))
+	ss.EpcLog.ColByName("Hid1 ActAvg").SetFloat1D(epc, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
+	ss.EpcLog.ColByName("Hid2 ActAvg").SetFloat1D(epc, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
+	ss.EpcLog.ColByName("Out ActAvg").SetFloat1D(epc, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
+
+	ss.EpcPlot.Update()
+}
+
 func (ss *Sim) ConfigEpcLog() {
 	dt := ss.EpcLog
 	dt.SetFromSchema(etable.Schema{
@@ -480,7 +496,6 @@ func (ss *Sim) ConfigEpcLog() {
 		{"Hid2 ActAvg", etensor.FLOAT32, nil, nil},
 		{"Out ActAvg", etensor.FLOAT32, nil, nil},
 	}, 0)
-	ss.Plot = true
 }
 
 func (ss *Sim) ConfigEpcPlot() {
@@ -493,22 +508,108 @@ func (ss *Sim) ConfigEpcPlot() {
 	ss.EpcPlot.SetColParams("Pct Err", true, true, 0, true, 1) // default plot
 	ss.EpcPlot.SetColParams("Pct Cor", true, true, 0, true, 1) // default plot
 	ss.EpcPlot.SetColParams("CosDiff", false, true, 0, true, 1)
-	ss.EpcPlot.SetColParams("Hid1 ActAvg", false, true, 0, true, 1)
-	ss.EpcPlot.SetColParams("Hid2 ActAvg", false, true, 0, true, 1)
-	ss.EpcPlot.SetColParams("Out ActAvg", false, true, 0, true, 1)
+	ss.EpcPlot.SetColParams("Hid1 ActAvg", false, true, 0, true, .5)
+	ss.EpcPlot.SetColParams("Hid2 ActAvg", false, true, 0, true, .5)
+	ss.EpcPlot.SetColParams("Out ActAvg", false, true, 0, true, .5)
 }
 
-// PlotEpcLog updates the epoch log plot
-func (ss *Sim) PlotEpcLog() {
-	if !ss.EpcPlot.IsVisible() {
-		return
-	}
-	if ss.EpcPlot.Table != ss.EpcLog {
-		ss.EpcPlot.SetTable(ss.EpcLog)
-		ss.ConfigEpcPlot()
-	}
-	ss.EpcPlot.Update()
+// LogTstTrl adds data from current trial to the TstTrlLog table.
+// log only contains Pats.NumRows() entries
+func (ss *Sim) LogTstTrl() {
+	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+
+	trl := ss.Trial
+
+	ss.TstTrlLog.ColByName("Trial").SetFloat1D(trl, float64(trl))
+	ss.TstTrlLog.ColByName("TrialName").SetString1D(trl, ss.TrialName)
+	ss.TstTrlLog.ColByName("SSE").SetFloat1D(trl, float64(ss.TrlSSE))
+	ss.TstTrlLog.ColByName("Avg SSE").SetFloat1D(trl, float64(ss.TrlAvgSSE))
+	ss.TstTrlLog.ColByName("CosDiff").SetFloat1D(trl, float64(ss.TrlCosDiff))
+	ss.TstTrlLog.ColByName("Hid1 ActM.Avg").SetFloat1D(trl, float64(hid1Lay.Pools[0].ActM.Avg))
+	ss.TstTrlLog.ColByName("Hid2 ActM.Avg").SetFloat1D(trl, float64(hid2Lay.Pools[0].ActM.Avg))
+	ss.TstTrlLog.ColByName("Out ActM.Avg").SetFloat1D(trl, float64(outLay.Pools[0].ActM.Avg))
+
+	ss.TstTrlPlot.Update()
 }
+
+func (ss *Sim) ConfigTstTrlLog() {
+	dt := ss.TstTrlLog
+	np := ss.Pats.NumRows()
+	dt.SetFromSchema(etable.Schema{
+		{"Trial", etensor.INT64, nil, nil},
+		{"TrialName", etensor.STRING, nil, nil},
+		{"SSE", etensor.FLOAT32, nil, nil},
+		{"Avg SSE", etensor.FLOAT32, nil, nil},
+		{"CosDiff", etensor.FLOAT32, nil, nil},
+		{"Hid1 ActM.Avg", etensor.FLOAT32, nil, nil},
+		{"Hid2 ActM.Avg", etensor.FLOAT32, nil, nil},
+		{"Out ActM.Avg", etensor.FLOAT32, nil, nil},
+	}, np)
+}
+
+func (ss *Sim) ConfigTstTrlPlot() {
+	ss.TstTrlPlot.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
+	ss.TstTrlPlot.Params.XAxisCol = "Trial"
+	// order of params: on, fixMin, min, fixMax, max
+	ss.TstTrlPlot.SetColParams("Trial", false, true, 0, false, 0)
+	ss.TstTrlPlot.SetColParams("Trial Name", false, true, 0, false, 0)
+	ss.TstTrlPlot.SetColParams("SSE", false, true, 0, false, 0)
+	ss.TstTrlPlot.SetColParams("Avg SSE", true, true, 0, false, 0)
+	ss.TstTrlPlot.SetColParams("CosDiff", true, true, 0, true, 1)
+	ss.TstTrlPlot.SetColParams("Hid1 ActM.Avg", true, true, 0, true, .5)
+	ss.TstTrlPlot.SetColParams("Hid2 ActM.Avg", true, true, 0, true, .5)
+	ss.TstTrlPlot.SetColParams("Out ActM.Avg", true, true, 0, true, .5)
+}
+
+// LogTstCyc adds data from current trial to the TstCycLog table.
+// log only contains Pats.NumRows() entries
+func (ss *Sim) LogTstCyc(cyc int) {
+	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+
+	ss.TstCycLog.ColByName("Cycle").SetFloat1D(cyc, float64(cyc))
+	ss.TstCycLog.ColByName("Hid1 Ge.Avg").SetFloat1D(cyc, float64(hid1Lay.Pools[0].Ge.Avg))
+	ss.TstCycLog.ColByName("Hid2 Ge.Avg").SetFloat1D(cyc, float64(hid2Lay.Pools[0].Ge.Avg))
+	ss.TstCycLog.ColByName("Out Ge.Avg").SetFloat1D(cyc, float64(outLay.Pools[0].Ge.Avg))
+	ss.TstCycLog.ColByName("Hid1 Act.Avg").SetFloat1D(cyc, float64(hid1Lay.Pools[0].Act.Avg))
+	ss.TstCycLog.ColByName("Hid2 Act.Avg").SetFloat1D(cyc, float64(hid2Lay.Pools[0].Act.Avg))
+	ss.TstCycLog.ColByName("Out Act.Avg").SetFloat1D(cyc, float64(outLay.Pools[0].Act.Avg))
+
+	ss.TstCycPlot.Update()
+}
+
+func (ss *Sim) ConfigTstCycLog() {
+	dt := ss.TstCycLog
+	np := 100 // max cycles
+	dt.SetFromSchema(etable.Schema{
+		{"Cycle", etensor.INT64, nil, nil},
+		{"Hid1 Ge.Avg", etensor.FLOAT32, nil, nil},
+		{"Hid2 Ge.Avg", etensor.FLOAT32, nil, nil},
+		{"Out Ge.Avg", etensor.FLOAT32, nil, nil},
+		{"Hid1 Act.Avg", etensor.FLOAT32, nil, nil},
+		{"Hid2 Act.Avg", etensor.FLOAT32, nil, nil},
+		{"Out Act.Avg", etensor.FLOAT32, nil, nil},
+	}, np)
+}
+
+func (ss *Sim) ConfigTstCycPlot() {
+	ss.TstCycPlot.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
+	ss.TstCycPlot.Params.XAxisCol = "Cycle"
+	// order of params: on, fixMin, min, fixMax, max
+	ss.TstCycPlot.SetColParams("Cycle", false, true, 0, false, 0)
+	ss.TstCycPlot.SetColParams("Hid1 Ge.Avg", true, true, 0, true, .5)
+	ss.TstCycPlot.SetColParams("Hid2 Ge.Avg", true, true, 0, true, .5)
+	ss.TstCycPlot.SetColParams("Out Ge.Avg", true, true, 0, true, .5)
+	ss.TstCycPlot.SetColParams("Hid1 Act.Avg", true, true, 0, true, .5)
+	ss.TstCycPlot.SetColParams("Hid2 Act.Avg", true, true, 0, true, .5)
+	ss.TstCycPlot.SetColParams("Out Act.Avg", true, true, 0, true, .5)
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// 		Gui
 
 // ConfigGui configures the GoGi gui interface for this simulation,
 func (ss *Sim) ConfigGui() *gi.Window {
@@ -545,11 +646,23 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 
-	eplt := tv.AddNewTab(eplot.KiT_Plot2D, "EpcPlot").(*eplot.Plot2D)
-	eplt.Params.XAxisCol = "Epoch"
-	eplt.SetTable(ss.EpcLog)
-	ss.EpcPlot = eplt
+	plt := tv.AddNewTab(eplot.KiT_Plot2D, "EpcPlot").(*eplot.Plot2D)
+	plt.Params.XAxisCol = "Epoch"
+	plt.SetTable(ss.EpcLog)
+	ss.EpcPlot = plt
 	ss.ConfigEpcPlot()
+
+	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot").(*eplot.Plot2D)
+	plt.Params.XAxisCol = "Trial"
+	plt.SetTable(ss.TstTrlLog)
+	ss.TstTrlPlot = plt
+	ss.ConfigTstTrlPlot()
+
+	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstCycPlot").(*eplot.Plot2D)
+	plt.Params.XAxisCol = "Cycle"
+	plt.SetTable(ss.TstCycLog)
+	ss.TstCycPlot = plt
+	ss.ConfigTstCycPlot()
 
 	split.SetSplits(.3, .7)
 
