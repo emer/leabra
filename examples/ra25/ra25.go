@@ -714,11 +714,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddSeparator("file")
 
-	tbar.AddAction(gi.ActOpts{Label: "Save Wts", Icon: "file-save"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			giv.CallMethod(ss, "SaveWeights", vp) // this auto prompts for filename using file chooser
-		})
-
 	tbar.AddAction(gi.ActOpts{Label: "Save Params", Icon: "file-save"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			giv.CallMethod(ss, "SaveParams", vp) // this auto prompts for filename using file chooser
