@@ -554,7 +554,7 @@ func (ss *Sim) ConfigTstTrlPlot() {
 	ss.TstTrlPlot.Params.XAxisCol = "Trial"
 	// order of params: on, fixMin, min, fixMax, max
 	ss.TstTrlPlot.SetColParams("Trial", false, true, 0, false, 0)
-	ss.TstTrlPlot.SetColParams("Trial Name", false, true, 0, false, 0)
+	ss.TstTrlPlot.SetColParams("TrialName", false, true, 0, false, 0)
 	ss.TstTrlPlot.SetColParams("SSE", false, true, 0, false, 0)
 	ss.TstTrlPlot.SetColParams("Avg SSE", true, true, 0, false, 0)
 	ss.TstTrlPlot.SetColParams("CosDiff", true, true, 0, true, 1)
@@ -643,6 +643,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
 	nv.Var = "Act"
+	// nv.Params.ColorMap = "Jet" // default is ColdHot
+	// which fares pretty well in terms of discussion here:
+	// https://matplotlib.org/tutorials/colors/colormaps.html
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 
