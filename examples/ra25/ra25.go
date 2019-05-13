@@ -236,6 +236,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView()
 	}
+	if !train {
+		ss.TstCycPlot.Update() // make sure up-to-date at end
+	}
 }
 
 // ApplyInputs applies input patterns from given row of given Table.
@@ -347,12 +350,6 @@ func (ss *Sim) Stop() {
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename gi.FileName) {
 	ss.Net.SaveWtsJSON(filename)
-}
-
-// SaveParams saves the current params -- when called with giv.CallMethod
-// it will auto-prompt for filename
-func (ss *Sim) SaveParams(filename gi.FileName) {
-	// ss.Net.SaveWeights(filename)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -578,7 +575,9 @@ func (ss *Sim) LogTstCyc(cyc int) {
 	ss.TstCycLog.ColByName("Hid2 Act.Avg").SetFloat1D(cyc, float64(hid2Lay.Pools[0].Act.Avg))
 	ss.TstCycLog.ColByName("Out Act.Avg").SetFloat1D(cyc, float64(outLay.Pools[0].Act.Avg))
 
-	ss.TstCycPlot.Update()
+	if cyc%5 == 0 { // too slow to do every cyc
+		ss.TstCycPlot.Update()
+	}
 }
 
 func (ss *Sim) ConfigTstCycLog() {
@@ -712,12 +711,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddSeparator("file")
-
-	tbar.AddAction(gi.ActOpts{Label: "Save Params", Icon: "file-save"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			giv.CallMethod(ss, "SaveParams", vp) // this auto prompts for filename using file chooser
-		})
+	tbar.AddSeparator("misc")
 
 	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
