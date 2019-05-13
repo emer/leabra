@@ -228,6 +228,34 @@ func (ly *Layer) ReadWtsJSON(r io.Reader) error {
 	return nil
 }
 
+// VarRange returns the min / max values for given variable
+// todo: support r. s. projection values
+func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
+	sz := len(ly.Neurons)
+	if sz == 0 {
+		return
+	}
+	vidx := 0
+	vidx, err = NeuronVarByName(varNm)
+	if err != nil {
+		return
+	}
+
+	v0 := ly.Neurons[0].VarByIndex(vidx)
+	min = v0
+	max = v0
+	for i := 1; i < sz; i++ {
+		vl := ly.Neurons[i].VarByIndex(vidx)
+		if vl < min {
+			min = vl
+		}
+		if vl > max {
+			max = vl
+		}
+	}
+	return
+}
+
 // note: all basic computation can be performed on layer-level and prjn level
 
 //////////////////////////////////////////////////////////////////////////////////////

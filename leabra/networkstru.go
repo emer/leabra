@@ -348,6 +348,31 @@ func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
 	return nil
 }
 
+// VarRange returns the min / max values for given variable
+// todo: support r. s. projection values
+func (nt *NetworkStru) VarRange(varNm string) (min, max float32, err error) {
+	first := true
+	for _, ly := range nt.Layers {
+		lmin, lmax, lerr := ly.VarRange(varNm)
+		if lerr != nil {
+			err = lerr
+			return
+		}
+		if first {
+			min = lmin
+			max = lmax
+			continue
+		}
+		if lmin < min {
+			min = lmin
+		}
+		if lmax > max {
+			max = lmax
+		}
+	}
+	return
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Threading infrastructure
 
