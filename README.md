@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/emer/leabra)](https://goreportcard.com/report/github.com/emer/leabra)
 [![GoDoc](https://godoc.org/github.com/emer/leabra?status.svg)](https://godoc.org/github.com/emer/leabra)
+[![Travis](https://travis-ci.com/emer/leabra.svg?branch=master)](https://travis-ci.com/emer/leabra)
 
 This is the Go implementation of the Leabra algorithm for biologically-based models of cognition, based on the [Go emergent](https://github.com/emer/emergent) framework (with Python interface).
 
