@@ -200,6 +200,17 @@ func (nt *NetworkStru) StyleParamSet(pset emer.ParamSet, setMsg bool) {
 	}
 }
 
+// NonDefaultParams returns a listing of all parameters in the Network that
+// are not at their default values -- useful for setting param styles etc.
+func (nt *NetworkStru) NonDefaultParams() string {
+	nds := ""
+	for _, ly := range nt.Layers {
+		nd := ly.NonDefaultParams()
+		nds += nd
+	}
+	return nds
+}
+
 // AddLayer adds a new layer with given name and shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential -- see
 // AddLayer2D and 4D for convenience methods for those.  4D layers enable

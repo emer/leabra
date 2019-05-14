@@ -8,6 +8,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/etensor"
+	"github.com/goki/gi/giv"
 	"github.com/goki/gi/mat32"
 )
 
@@ -157,4 +158,15 @@ func (ls *LayerStru) StyleParams(psty emer.ParamStyle, setMsg bool) {
 	for _, psl := range psty {
 		ls.StyleParam(psl.Sel, psl.Params, setMsg)
 	}
+}
+
+// NonDefaultParams returns a listing of all parameters in the Layer that
+// are not at their default values -- useful for setting param styles etc.
+func (ls *LayerStru) NonDefaultParams() string {
+	nds := giv.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
+	for _, pj := range ls.RecvPrjns {
+		pnd := pj.NonDefaultParams()
+		nds += pnd
+	}
+	return nds
 }

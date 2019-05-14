@@ -11,6 +11,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
+	"github.com/goki/gi/giv"
 )
 
 // PrjnStru contains the basic structural information for specifying a projection of synaptic
@@ -215,4 +216,12 @@ func (ps *PrjnStru) StyleParams(psty emer.ParamStyle, setMsg bool) {
 	for _, psl := range psty {
 		ps.StyleParam(psl.Sel, psl.Params, setMsg)
 	}
+}
+
+// NonDefaultParams returns a listing of all parameters in the Layer that
+// are not at their default values -- useful for setting param styles etc.
+func (ps *PrjnStru) NonDefaultParams() string {
+	pth := ps.Recv.Name() + "." + ps.Name() // redundant but clearer..
+	nds := giv.StructNonDefFieldsStr(ps.LeabraPrj, pth)
+	return nds
 }

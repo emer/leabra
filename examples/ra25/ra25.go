@@ -33,14 +33,6 @@ import (
 	"gonum.org/v1/plot"
 )
 
-// todo:
-//
-// * colorscale in giv, including gui
-//
-// * etable/eview.TableView (gridview -- is there a gonum version?) and TableEdit (spreadsheet-like editor)
-//   and show these in another tab for the input patterns
-//
-
 // this is the stub main for gogi that calls our actual mainrun function, at end of file
 func main() {
 	gimain.Main(func() {
