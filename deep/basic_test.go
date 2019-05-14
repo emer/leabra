@@ -5,9 +5,7 @@
 package deep
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/chewxy/math32"
@@ -88,17 +86,17 @@ func TestMakeNet(t *testing.T) {
 	TestNet.InitWts()
 	TestNet.AlphaCycInit() // get GScale
 
-	var buf bytes.Buffer
-	TestNet.WriteWtsJSON(&buf)
-	wb := buf.Bytes()
-	// fmt.Printf("TestNet Weights:\n\n%v\n", string(wb))
-
-	fp, err := os.Create("testdata/testnet.wts")
-	defer fp.Close()
-	if err != nil {
-		t.Error(err)
-	}
-	fp.Write(wb)
+	// var buf bytes.Buffer
+	// TestNet.WriteWtsJSON(&buf)
+	// wb := buf.Bytes()
+	// // fmt.Printf("TestNet Weights:\n\n%v\n", string(wb))
+	//
+	// fp, err := os.Create("testdata/testnet.wts")
+	// defer fp.Close()
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	// fp.Write(wb)
 }
 
 func TestInPats(t *testing.T) {
@@ -410,15 +408,15 @@ func TestNetLearn(t *testing.T) {
 	CmprFloats(hidwt, hidWts, "hid Wt", t)
 	CmprFloats(outwt, outWts, "out Wt", t)
 
-	var buf bytes.Buffer
-	TestNet.WriteWtsJSON(&buf)
-	wb := buf.Bytes()
-	// fmt.Printf("TestNet Trained Weights:\n\n%v\n", string(wb))
-
-	fp, err := os.Create("testdata/testnet_train.wts")
-	defer fp.Close()
-	if err != nil {
-		t.Error(err)
-	}
-	fp.Write(wb)
+	// var buf bytes.Buffer
+	// TestNet.WriteWtsJSON(&buf)
+	// wb := buf.Bytes()
+	// // fmt.Printf("TestNet Trained Weights:\n\n%v\n", string(wb))
+	//
+	// fp, err := os.Create("testdata/testnet_train.wts")
+	// defer fp.Close()
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	// fp.Write(wb)
 }
