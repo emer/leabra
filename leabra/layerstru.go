@@ -6,6 +6,7 @@ package leabra
 
 import (
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/gi/giv"
@@ -40,8 +41,9 @@ func (ls *LayerStru) InitName(lay emer.Layer, name string) {
 
 func (ls *LayerStru) Name() string                 { return ls.Nm }
 func (ls *LayerStru) Label() string                { return ls.Nm }
-func (ls *LayerStru) Class() string                { return ls.Cls }
+func (ls *LayerStru) Class() string                { return ls.Typ.String() + " " + ls.Cls }
 func (ls *LayerStru) SetClass(cls string)          { ls.Cls = cls }
+func (ls *LayerStru) TypeName() string             { return "Layer" } // always, for params..
 func (ls *LayerStru) Type() emer.LayerType         { return ls.Typ }
 func (ls *LayerStru) SetType(typ emer.LayerType)   { ls.Typ = typ }
 func (ls *LayerStru) IsOff() bool                  { return ls.Off }
@@ -128,36 +130,32 @@ func (ls *LayerStru) Config(shape []int, typ emer.LayerType) {
 	ls.Typ = typ
 }
 
-// StyleParam applies a given style to either this layer or the receiving projections in this layer
-// depending on the style specification (.Class, #Name, Type) and target value of params.
-// returns true if applied successfully.
+// ApplyParams applies given parameter style Sheet to this layer and its recv projections.
+// Calls UpdateParams on anything set to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
-func (ls *LayerStru) StyleParam(sel string, pars emer.Params, setMsg bool) bool {
-	cls := ls.Cls + " " + ls.Typ.String()
-	if emer.StyleMatch(sel, ls.Nm, cls, "Layer") {
-		if ls.LeabraLay.SetParams(pars, setMsg) { // note: going through LeabraLay interface is key
-			return true // done -- otherwise, might be for prjns
-		}
+// returns true if any params were set, and error if there were any errors.
+func (ls *LayerStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+	applied := false
+	var rerr error
+	app, err := pars.Apply(ls.LeabraLay, setMsg) // essential to go through LeabraPrj
+	if app {
+		ls.LeabraLay.UpdateParams()
+		applied = true
 	}
-	set := false
+	if err != nil {
+		rerr = err
+	}
 	for _, pj := range ls.RecvPrjns {
-		did := pj.StyleParam(sel, pars, setMsg)
-		if did {
-			set = true
+		app, err = pj.ApplyParams(pars, setMsg)
+		if app {
+			applied = true
+		}
+		if err != nil {
+			rerr = err
 		}
 	}
-	return set
-}
-
-// StyleParams applies a given styles to either this layer or the receiving projections in this layer
-// depending on the selector specification (.Class, #Name, Type) and target value of params
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-func (ls *LayerStru) StyleParams(psty emer.ParamStyle, setMsg bool) {
-	for _, psl := range psty {
-		ls.StyleParam(psl.Sel, psl.Params, setMsg)
-	}
+	return applied, rerr
 }
 
 // NonDefaultParams returns a listing of all parameters in the Layer that

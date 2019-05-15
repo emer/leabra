@@ -45,20 +45,6 @@ func (pj *Prjn) UpdateParams() {
 	pj.Learn.Update()
 }
 
-// SetParams sets given parameters to this prjn, if the target type is Prjn
-// calls UpdateParams to ensure derived parameters are all updated.
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-func (pj *Prjn) SetParams(pars emer.Params, setMsg bool) bool {
-	trg := pars.Target()
-	if trg != "Prjn" {
-		return false
-	}
-	pars.Set(pj, setMsg)
-	pj.UpdateParams()
-	return true
-}
-
 func (pj *Prjn) SynVarNames() []string {
 	return SynapseVars
 }

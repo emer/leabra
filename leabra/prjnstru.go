@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/gi/giv"
@@ -46,7 +47,8 @@ func (ps *PrjnStru) Init(prjn emer.Prjn) {
 	ps.LeabraPrj = prjn.(LeabraPrjn)
 }
 
-func (ps *PrjnStru) Class() string       { return ps.Cls }
+func (ps *PrjnStru) TypeName() string    { return "Prjn" } // always, for params..
+func (ps *PrjnStru) Class() string       { return ps.Typ.String() + " " + ps.Cls }
 func (ps *PrjnStru) SetClass(cls string) { ps.Cls = cls }
 func (ps *PrjnStru) Name() string {
 	return ps.Send.Name() + "To" + ps.Recv.Name()
@@ -194,28 +196,17 @@ func (ps *PrjnStru) String() string {
 	return str
 }
 
-// StyleParam applies a given style to this projection
-// depending on the style specification (.Class, #Name, Type) and target value of params.
-// .PrjType is automatically recognized as a .Class type (e.g., .Forward vs. .Back etc)
+// ApplyParams applies given parameter style Sheet to this projection.
+// Calls UpdateParams if anything set to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
-func (ps *PrjnStru) StyleParam(sel string, pars emer.Params, setMsg bool) bool {
-	cls := ps.Cls + " " + ps.Typ.String()
-	if emer.StyleMatch(sel, ps.Name(), cls, "Prjn") {
-		return ps.LeabraPrj.SetParams(pars, setMsg) // note: going through LeabraPrj interface ensures correct method called
+// returns true if any params were set, and error if there were any errors.
+func (ps *PrjnStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+	app, err := pars.Apply(ps.LeabraPrj, setMsg) // essential to go through LeabraPrj
+	if app {
+		ps.LeabraPrj.UpdateParams()
 	}
-	return false
-}
-
-// StyleParams applies a given styles to either this prjn
-// depending on the style specification (.Class, #Name, Type) and target value of params.
-// .PrjType is automatically recognized as a .Class type (e.g., .Forward vs. .Back etc)
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-func (ps *PrjnStru) StyleParams(psty emer.ParamStyle, setMsg bool) {
-	for _, psl := range psty {
-		ps.StyleParam(psl.Sel, psl.Params, setMsg)
-	}
+	return app, err
 }
 
 // NonDefaultParams returns a listing of all parameters in the Layer that

@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
@@ -181,23 +182,24 @@ func (nt *NetworkStru) BoundsUpdt() {
 	nt.MaxPos = mx
 }
 
-// StyleParams applies a given styles to layers and receiving projections,
-// depending on the style specification (.Class, #Name, Type) and target value of params
+// ApplyParams applies given parameter style Sheet to layers and prjns in this network.
+// Calls UpdateParams to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
-func (nt *NetworkStru) StyleParams(psty emer.ParamStyle, setMsg bool) {
+// returns true if any params were set, and error if there were any errors.
+func (nt *NetworkStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+	applied := false
+	var rerr error
 	for _, ly := range nt.Layers {
-		ly.StyleParams(psty, setMsg)
+		app, err := ly.ApplyParams(pars, setMsg)
+		if app {
+			applied = true
+		}
+		if err != nil {
+			rerr = err
+		}
 	}
-}
-
-// StyleParamSet applies given set of ParamStyles to the layers and projections in network
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-func (nt *NetworkStru) StyleParamSet(pset emer.ParamSet, setMsg bool) {
-	for _, psty := range pset {
-		nt.StyleParams(psty, setMsg)
-	}
+	return applied, rerr
 }
 
 // NonDefaultParams returns a listing of all parameters in the Network that

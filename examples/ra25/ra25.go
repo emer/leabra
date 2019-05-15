@@ -17,6 +17,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/netview"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
@@ -40,99 +41,49 @@ func main() {
 	})
 }
 
-var ParamSets = emer.ParamSets{
-	"Optimized": emer.ParamSet{ // these are the best params
-		"Network": emer.ParamStyle{ // network params apply to network..
-			{"Prjn", emer.Params{
-				"Prjn.Learn.Norm.On":     1,
-				"Prjn.Learn.Momentum.On": 1,
-				"Prjn.Learn.WtBal.On":    0,
-			}},
-			{"Layer", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.8, // this is the default
-			}},
-			{"#Output", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.4, // this turns out to be critical for small output layer
-			}},
-			{".Back", emer.Params{
-				"Prjn.WtScale.Rel": 0.2, // this is generally quite important
-			}},
+var ParamSets = params.Sets{
+	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+				Params: params.Params{
+					"Prjn.Learn.Norm.On":     1,
+					"Prjn.Learn.Momentum.On": 1,
+					"Prjn.Learn.WtBal.On":    0,
+				}},
+			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": 1.8,
+				}},
+			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": 1.4,
+				}},
+			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": 0.2,
+				}},
 		},
-		"Sim": emer.ParamStyle{ // sim params apply to sim object
-			{"Sim", emer.Params{ // this is redundant..
-				"Sim.MaxEpcs": 50,
-			}},
+		"Sim": &params.Sheet{ // sim params apply to sim object
+			{Sel: "Sim", Desc: "best params always finish in this time",
+				Params: params.Params{
+					"Sim.MaxEpcs": 50,
+				}},
 		},
-	},
-	"DefOutInhib": emer.ParamSet{ // default output inhibition
-		"Network": emer.ParamStyle{ // network params apply to network..
-			{"Prjn", emer.Params{
-				"Prjn.Learn.Norm.On":     1,
-				"Prjn.Learn.Momentum.On": 1,
-				"Prjn.Learn.WtBal.On":    0,
-			}},
-			{"Layer", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.8, // this is the default
-			}},
-			{"#Output", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.8, // not optimized
-			}},
-			{".Back", emer.Params{
-				"Prjn.WtScale.Rel": 0.2, // this is generally quite important
-			}},
+	}},
+	{Name: "DefaultInhib", Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "#Output", Desc: "go back to default",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": 1.8,
+				}},
 		},
-		"Sim": emer.ParamStyle{ // sim params apply to sim object
-			{"Sim", emer.Params{ // this is redundant..
-				"Sim.MaxEpcs": 100,
-			}},
+		"Sim": &params.Sheet{ // sim params apply to sim object
+			{Sel: "Sim", Desc: "takes longer -- generally doesn't finish..",
+				Params: params.Params{
+					"Sim.MaxEpcs": 100,
+				}},
 		},
-	},
-	"NoMomentNorm": emer.ParamSet{ // no momentum or normalization
-		"Network": emer.ParamStyle{ // network params apply to network..
-			{"Prjn", emer.Params{
-				"Prjn.Learn.Norm.On":     0,
-				"Prjn.Learn.Momentum.On": 0,
-				"Prjn.Learn.WtBal.On":    0,
-			}},
-			{"Layer", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.8, // this is the default
-			}},
-			{"#Output", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.4, // this turns out to be critical for small output layer
-			}},
-			{".Back", emer.Params{
-				"Prjn.WtScale.Rel": 0.2, // this is generally quite important
-			}},
-		},
-		"Sim": emer.ParamStyle{ // sim params apply to sim object
-			{"Sim", emer.Params{ // this is redundant..
-				"Sim.MaxEpcs": 50,
-			}},
-		},
-	},
-	"WtBalOn": emer.ParamSet{ // weight balance on
-		"Network": emer.ParamStyle{ // network params apply to network..
-			{"Prjn", emer.Params{
-				"Prjn.Learn.Norm.On":     1,
-				"Prjn.Learn.Momentum.On": 1,
-				"Prjn.Learn.WtBal.On":    1,
-			}},
-			{"Layer", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.8, // this is the default
-			}},
-			{"#Output", emer.Params{
-				"Layer.Inhib.Layer.Gi": 1.4, // this turns out to be critical for small output layer
-			}},
-			{".Back", emer.Params{
-				"Prjn.WtScale.Rel": 0.2, // this is generally quite important
-			}},
-		},
-		"Sim": emer.ParamStyle{ // sim params apply to sim object
-			{"Sim", emer.Params{ // this is redundant..
-				"Sim.MaxEpcs": 50,
-			}},
-		},
-	},
+	}},
 }
 
 // Sim encapsulates the entire simulation model, and we define all the
@@ -146,8 +97,8 @@ type Sim struct {
 	EpcLog     *etable.Table     `view:"no-inline" desc:"epoch-level log data"`
 	TstTrlLog  *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
 	TstCycLog  *etable.Table     `view:"no-inline" desc:"testing cycle-level log data"`
-	Params     emer.ParamSets    `view:"no-inline"`
-	ParamSet   string            `desc:"which set of parameters to use"`
+	Params     params.Sets       `view:"no-inline" desc:"full collection of param sets"`
+	ParamSet   string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
 	MaxEpcs    int               `desc:"maximum number of epochs to run"`
 	Epoch      int               `desc:"current epoch"`
 	Trial      int               `desc:"current trial"`
@@ -198,7 +149,6 @@ func (ss *Sim) New() {
 	ss.TstTrlLog = &etable.Table{}
 	ss.TstCycLog = &etable.Table{}
 	ss.Params = ParamSets
-	ss.ParamSet = "Optimized"
 	ss.RndSeed = 1
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
@@ -492,26 +442,35 @@ func (ss *Sim) ConfigNet() {
 	net.InitWts()
 }
 
-// SetParams sets the network and sim params for current ParamSet -- if setMsg = true
-// then we output a message for each param that was set.
+// SetParams sets the network and sim params for "Base" and then current ParamSet
+// if setMsg = true then we output a message for each param that was set.
 func (ss *Sim) SetParams(setMsg bool) error {
-	pset, ok := ss.Params[ss.ParamSet]
-	if !ok {
-		err := fmt.Errorf("Param Set named %v not found", ss.ParamSet)
-		gi.PromptDialog(nil, gi.DlgOpts{Title: "Param Set Not Found", Prompt: err.Error()}, true, false, nil, nil)
-		log.Println(err)
+	err := ss.SetParamsSet("Base", setMsg)
+	if ss.ParamSet != "" && ss.ParamSet != "Base" {
+		err = ss.SetParamsSet(ss.ParamSet, setMsg)
+	}
+	return err
+}
+
+// SetParamsSet sets the network and sim params for given params.Set name.
+// if setMsg = true then we output a message for each param that was set.
+func (ss *Sim) SetParamsSet(setNm string, setMsg bool) error {
+	pset, err := ss.Params.SetByNameTry(setNm)
+	if err != nil {
 		return err
 	}
-	netp, ok := pset["Network"]
-	if !ok {
-		err := fmt.Errorf("Param Style named Network not found -- all Network params must be in a Style of that name")
-		gi.PromptDialog(nil, gi.DlgOpts{Title: "Param Style Not Found", Prompt: err.Error()}, true, false, nil, nil)
-		log.Println(err)
+	netp, err := pset.SheetByNameTry("Network")
+	if err != nil {
 		return err
 	}
-	ss.Net.StyleParams(netp, setMsg)
-	// todo: process Sim params
-	return nil
+	_, err = ss.Net.ApplyParams(netp, setMsg)
+
+	simp, ok := pset.Sheets["Sim"]
+	if !ok {
+		return nil // no err -- maybe doesn't have
+	}
+	simp.Apply(ss, setMsg)
+	return err
 }
 
 func (ss *Sim) ConfigPats() {
