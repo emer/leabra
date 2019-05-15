@@ -4,11 +4,11 @@
 
 package deep
 
-import "github.com/emer/emergent/emer"
+import "github.com/emer/etable/minmax"
 
 // deep.Pool contains extra statistics used in DeepLeabra
 type Pool struct {
-	ActNoAttn  emer.AvgMax
-	TRCBurstGe emer.AvgMax
-	AttnGe     emer.AvgMax
+	ActNoAttn  minmax.AvgMax32
+	TRCBurstGe minmax.AvgMax32
+	AttnGe     minmax.AvgMax32
 }

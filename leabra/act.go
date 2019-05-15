@@ -6,8 +6,8 @@ package leabra
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/etable/minmax"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
 )
@@ -27,7 +27,7 @@ type ActParams struct {
 	Erev       Chans           `view:"inline" desc:"[Defaults: 1, .3, .25, .1] reversal potentials for each channel"`
 	Clamp      ClampParams     `view:"inline" desc:"how external inputs drive neural activations"`
 	Noise      ActNoiseParams  `view:"inline" desc:"how, where, when, and how much noise to add to activations"`
-	VmRange    emer.MinMax     `view:"inline" desc:"range for Vm membrane potential -- [0, 2.0] by default"`
+	VmRange    minmax.F32      `view:"inline" desc:"range for Vm membrane potential -- [0, 2.0] by default"`
 	ErevSubThr Chans           `inactive:"+" view:"-" desc:"Erev - Act.Thr for each channel -- used in computing GeThrFmG among others"`
 	ThrSubErev Chans           `inactive:"+" view:"-" desc:"Act.Thr - Erev for each channel -- used in computing GeThrFmG among others"`
 }
@@ -513,11 +513,11 @@ func (ws *WtScaleParams) FullScale(savg, snu, ncon float32) float32 {
 
 // ClampParams are for specifying how external inputs are clamped onto network activation values
 type ClampParams struct {
-	Hard    bool        `def:"true" desc:"whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)"`
-	Range   emer.MinMax `viewif:"Hard" desc:"range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function"`
-	Gain    float32     `viewif:"!Hard" def:"0.02:0.5" desc:"soft clamp gain factor (Ge += Gain * Ext)"`
-	Avg     bool        `viewif:"!Hard" desc:"compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs"`
-	AvgGain float32     `viewif:"!Hard && Avg" def:"0.2" desc:"gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)"`
+	Hard    bool       `def:"true" desc:"whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)"`
+	Range   minmax.F32 `viewif:"Hard" desc:"range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function"`
+	Gain    float32    `viewif:"!Hard" def:"0.02:0.5" desc:"soft clamp gain factor (Ge += Gain * Ext)"`
+	Avg     bool       `viewif:"!Hard" desc:"compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs"`
+	AvgGain float32    `viewif:"!Hard && Avg" def:"0.2" desc:"gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)"`
 }
 
 func (cp *ClampParams) Update() {

@@ -4,20 +4,20 @@
 
 package leabra
 
-import "github.com/emer/emergent/emer"
+import "github.com/emer/etable/minmax"
 
 // Pool contains computed values for FFFB inhibition, and various other state values for layers
 // and pools (unit groups) that can be subject to inhibition, including:
 // * average / max stats on Ge and Act that drive inhibition
 // * average activity overall that is used for normalizing netin (at layer level)
 type Pool struct {
-	StIdx, EdIdx int         `desc:"starting and ending (exlusive) indexes for the list of neurons in this pool"`
-	Inhib        FFFBInhib   `desc:"FFFB inhibition computed values"`
-	Ge           emer.AvgMax `desc:"average and max Ge excitatory conductance values, which drive FF inhibition"`
-	Act          emer.AvgMax `desc:"average and max Act activation values, which drive FB inhibition"`
-	ActM         emer.AvgMax `desc:"minus phase average and max Act activation values, for ActAvg updt"`
-	ActP         emer.AvgMax `desc:"plus phase average and max Act activation values, for ActAvg updt"`
-	ActAvg       ActAvg      `desc:"running-average activation levels used for netinput scaling and adaptive inhibition"`
+	StIdx, EdIdx int             `desc:"starting and ending (exlusive) indexes for the list of neurons in this pool"`
+	Inhib        FFFBInhib       `desc:"FFFB inhibition computed values"`
+	Ge           minmax.AvgMax32 `desc:"average and max Ge excitatory conductance values, which drive FF inhibition"`
+	Act          minmax.AvgMax32 `desc:"average and max Act activation values, which drive FB inhibition"`
+	ActM         minmax.AvgMax32 `desc:"minus phase average and max Act activation values, for ActAvg updt"`
+	ActP         minmax.AvgMax32 `desc:"plus phase average and max Act activation values, for ActAvg updt"`
+	ActAvg       ActAvg          `desc:"running-average activation levels used for netinput scaling and adaptive inhibition"`
 }
 
 func (pl *Pool) Init() {

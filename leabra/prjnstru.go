@@ -12,6 +12,7 @@ import (
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
+	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/giv"
 )
 
@@ -20,23 +21,23 @@ import (
 // The exact same struct object is added to the Recv and Send layers, and it manages everything
 // about the connectivity, and methods on the Prjn handle all the relevant computation.
 type PrjnStru struct {
-	LeabraPrj   LeabraPrjn    `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraPrjn, which can always be used to extract the true underlying type of object when prjn is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Off         bool          `desc:"inactivate this projection -- allows for easy experimentation"`
-	Cls         string        `desc:"Class is for applying parameter styles, can be space separated multple tags"`
-	Notes       string        `desc:"can record notes about this projection here"`
-	Recv        emer.Layer    `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
-	Send        emer.Layer    `desc:"sending layer for this projection"`
-	Pat         prjn.Pattern  `desc:"pattern of connectivity"`
-	Typ         emer.PrjnType `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
-	RConN       []int32       `view:"-" desc:"number of recv connections for each neuron in the receiving layer, as a flat list"`
-	RConNAvgMax emer.AvgMax   `inactive:"+" desc:"average and maximum number of recv connections in the receiving layer"`
-	RConIdxSt   []int32       `view:"-" desc:"starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN"`
-	RConIdx     []int32       `view:"-" desc:"index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
-	RSynIdx     []int32       `view:"-" desc:"index of synaptic state values for each recv unit x connection, for the receiver projection which does not own the synapses, and instead indexes into sender-ordered list"`
-	SConN       []int32       `view:"-" desc:"number of sending connections for each neuron in the sending layer, as a flat list"`
-	SConNAvgMax emer.AvgMax   `inactive:"+" desc:"average and maximum number of sending connections in the sending layer"`
-	SConIdxSt   []int32       `view:"-" desc:"starting index into ConIdx list for each neuron in sending layer -- just a list incremented by ConN"`
-	SConIdx     []int32       `view:"-" desc:"index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
+	LeabraPrj   LeabraPrjn      `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraPrjn, which can always be used to extract the true underlying type of object when prjn is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	Off         bool            `desc:"inactivate this projection -- allows for easy experimentation"`
+	Cls         string          `desc:"Class is for applying parameter styles, can be space separated multple tags"`
+	Notes       string          `desc:"can record notes about this projection here"`
+	Recv        emer.Layer      `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
+	Send        emer.Layer      `desc:"sending layer for this projection"`
+	Pat         prjn.Pattern    `desc:"pattern of connectivity"`
+	Typ         emer.PrjnType   `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
+	RConN       []int32         `view:"-" desc:"number of recv connections for each neuron in the receiving layer, as a flat list"`
+	RConNAvgMax minmax.AvgMax32 `inactive:"+" desc:"average and maximum number of recv connections in the receiving layer"`
+	RConIdxSt   []int32         `view:"-" desc:"starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN"`
+	RConIdx     []int32         `view:"-" desc:"index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
+	RSynIdx     []int32         `view:"-" desc:"index of synaptic state values for each recv unit x connection, for the receiver projection which does not own the synapses, and instead indexes into sender-ordered list"`
+	SConN       []int32         `view:"-" desc:"number of sending connections for each neuron in the sending layer, as a flat list"`
+	SConNAvgMax minmax.AvgMax32 `inactive:"+" desc:"average and maximum number of sending connections in the sending layer"`
+	SConIdxSt   []int32         `view:"-" desc:"starting index into ConIdx list for each neuron in sending layer -- just a list incremented by ConN"`
+	SConIdx     []int32         `view:"-" desc:"index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
 }
 
 // emer.Prjn interface
@@ -157,7 +158,7 @@ func (ps *PrjnStru) BuildStru() error {
 
 // SetNIdxSt sets the *ConN and *ConIdxSt values given n tensor from Pat.
 // Returns total number of connections for this direction.
-func (ps *PrjnStru) SetNIdxSt(n *[]int32, avgmax *emer.AvgMax, idxst *[]int32, tn *etensor.Int32) int32 {
+func (ps *PrjnStru) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int32, tn *etensor.Int32) int32 {
 	ln := tn.Len()
 	tnv := tn.Values
 	*n = make([]int32, ln)
