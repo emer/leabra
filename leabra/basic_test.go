@@ -10,6 +10,7 @@ import (
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
 )
@@ -23,47 +24,47 @@ var InPats *etensor.Float32
 // number of distinct sets of learning parameters to test
 const NLrnPars = 4
 
-var Pars = [NLrnPars]emer.ParamStyle{
-	{
-		{"Prjn", emer.Params{
-			"Prjn.Learn.WtInit.Var":  0, // for reproducibility, identical weights
-			"Prjn.Learn.Norm.On":     0,
-			"Prjn.Learn.Momentum.On": 0,
-		}},
-		{".Back", emer.Params{
-			"Prjn.WtScale.Rel": 0.2,
-		}},
-	},
-	{
-		{"Prjn", emer.Params{
-			"Prjn.Learn.WtInit.Var":  0, // for reproducibility, identical weights
-			"Prjn.Learn.Norm.On":     1,
-			"Prjn.Learn.Momentum.On": 0,
-		}},
-		{".Back", emer.Params{
-			"Prjn.WtScale.Rel": 0.2,
-		}},
-	},
-	{
-		{"Prjn", emer.Params{
-			"Prjn.Learn.WtInit.Var":  0, // for reproducibility, identical weights
-			"Prjn.Learn.Norm.On":     0,
-			"Prjn.Learn.Momentum.On": 1,
-		}},
-		{".Back", emer.Params{
-			"Prjn.WtScale.Rel": 0.2,
-		}},
-	},
-	{
-		{"Prjn", emer.Params{
-			"Prjn.Learn.WtInit.Var":  0, // for reproducibility, identical weights
-			"Prjn.Learn.Norm.On":     1,
-			"Prjn.Learn.Momentum.On": 1,
-		}},
-		{".Back", emer.Params{
-			"Prjn.WtScale.Rel": 0.2,
-		}},
-	},
+// Note: subsequent params applied after Base
+var ParamSets = params.Sets{
+	{Name: "Base", Desc: "base testing", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
+				Params: params.Params{
+					"Prjn.Learn.WtInit.Var":  0,
+					"Prjn.Learn.Norm.On":     0,
+					"Prjn.Learn.Momentum.On": 0,
+				}},
+			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": 0.2,
+				}},
+		},
+	}},
+	{Name: "NormOn", Desc: "Learn.Norm on", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "norm on",
+				Params: params.Params{
+					"Prjn.Learn.Norm.On": 1,
+				}},
+		},
+	}},
+	{Name: "MomentOn", Desc: "Learn.Momentum on", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "moment on",
+				Params: params.Params{
+					"Prjn.Learn.Momentum.On": 1,
+				}},
+		},
+	}},
+	{Name: "NormMomentOn", Desc: "both Learn.Momentum and Norm on", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "moment on",
+				Params: params.Params{
+					"Prjn.Learn.Momentum.On": 1,
+					"Prjn.Learn.Norm.On":     1,
+				}},
+		},
+	}},
 }
 
 func TestMakeNet(t *testing.T) {
@@ -77,7 +78,7 @@ func TestMakeNet(t *testing.T) {
 	TestNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
 
 	TestNet.Defaults()
-	TestNet.StyleParams(Pars[0], false) // false) // true) // no msg
+	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
 	TestNet.Build()
 	TestNet.InitWts()
 	TestNet.AlphaCycInit() // get GScale
@@ -298,7 +299,8 @@ func TestNetLearn(t *testing.T) {
 
 	for ti := 0; ti < NLrnPars; ti++ {
 		TestNet.Defaults()
-		TestNet.StyleParams(Pars[ti], false) // no msg
+		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
+		TestNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
 		TestNet.InitWts()
 		TestNet.InitExt()
 
@@ -452,7 +454,7 @@ func TestInhibAct(t *testing.T) {
 	InhibNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
 
 	InhibNet.Defaults()
-	InhibNet.StyleParams(Pars[0], false) // false) // true) // no msg
+	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg
 	InhibNet.Build()
 	InhibNet.InitWts()
 	InhibNet.AlphaCycInit() // get GScale

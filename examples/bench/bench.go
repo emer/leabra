@@ -18,6 +18,7 @@ import (
 
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/timer"
@@ -31,14 +32,34 @@ var Pats *etable.Table
 var EpcLog *etable.Table
 var Thread = false // much slower for small net
 
-var Pars = emer.ParamStyle{
-	{"Prjn", emer.Params{
-		"Prjn.Learn.Norm.On":     1,
-		"Prjn.Learn.Momentum.On": 1,
-		"Prjn.Learn.WtBal.On":    1,
-	}},
-	{".Back", emer.Params{
-		"Prjn.WtScale.Rel": 0.2, // this is generally quite important
+var ParamSets = params.Sets{
+	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+				Params: params.Params{
+					"Prjn.Learn.Norm.On":     1,
+					"Prjn.Learn.Momentum.On": 1,
+					"Prjn.Learn.WtBal.On":    0,
+				}},
+			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": 1.8,
+				}},
+			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": 1.4,
+				}},
+			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": 0.2,
+				}},
+		},
+		"Sim": &params.Sheet{ // sim params apply to sim object
+			{Sel: "Sim", Desc: "best params always finish in this time",
+				Params: params.Params{
+					"Sim.MaxEpcs": 50,
+				}},
+		},
 	}},
 }
 
@@ -74,7 +95,7 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	}
 
 	net.Defaults()
-	net.StyleParams(Pars, false) // no msg
+	net.ApplyParams(ParamSets[0].Sheets["Network"], false) // no msg
 	net.Build()
 	net.InitWts()
 }

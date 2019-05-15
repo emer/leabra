@@ -56,20 +56,6 @@ func (ly *Layer) UpdateParams() {
 	ly.DeepAttn.Update()
 }
 
-// SetParams sets given parameters to this layer, if the target type is Layer
-// calls UpdateParams to ensure derived parameters are all updated.
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-func (ly *Layer) SetParams(pars emer.Params, setMsg bool) bool {
-	trg := pars.Target()
-	if trg != "Layer" {
-		return false
-	}
-	pars.Set(ly, setMsg)
-	ly.UpdateParams()
-	return true
-}
-
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (ly *Layer) UnitVarNames() []string {
 	return AllNeuronVars

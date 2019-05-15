@@ -84,6 +84,23 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
+	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "no norm or momentum",
+				Params: params.Params{
+					"Prjn.Learn.Norm.On":     0,
+					"Prjn.Learn.Momentum.On": 0,
+				}},
+		},
+	}},
+	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
+		"Network": &params.Sheet{
+			{Sel: "Prjn", Desc: "weight bal on",
+				Params: params.Params{
+					"Prjn.Learn.WtBal.On": 1,
+				}},
+		},
+	}},
 }
 
 // Sim encapsulates the entire simulation model, and we define all the
