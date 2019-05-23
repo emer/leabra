@@ -40,10 +40,15 @@ type LeabraLayer interface {
 	// InitExt initializes external input state -- called prior to apply ext
 	InitExt()
 
-	// ApplyExt applies external input in the form of an etensor.Float32
+	// ApplyExt applies external input in the form of an etensor.Tensor
 	// If the layer is a Target or Compare layer type, then it goes in Targ
 	// otherwise it goes in Ext.
-	ApplyExt(ext *etensor.Float32)
+	ApplyExt(ext etensor.Tensor)
+
+	// ApplyExt1D applies external input in the form of a flat 1-dimensional slice of floats
+	// If the layer is a Target or Compare layer type, then it goes in Targ
+	// otherwise it goes in Ext
+	ApplyExt1D(ext []float64)
 
 	// AlphaCycInit handles all initialization at start of new input pattern, including computing
 	// netinput scaling from running average activation etc.

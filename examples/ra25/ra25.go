@@ -25,6 +25,7 @@ import (
 	"github.com/emer/etable/eplot"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
+	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
@@ -289,16 +290,19 @@ func (ss *Sim) ApplyInputs(pats *etable.Table, row int) {
 
 	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-	inPats := pats.ColByName(inLay.Nm).(*etensor.Float32)
-	outPats := pats.ColByName(outLay.Nm).(*etensor.Float32)
 	names := pats.ColByName("Name").(*etensor.String)
 	ss.TrialName = names.Values[row]
 
-	// SubSpace gets the 2D cell at given row in tensor column
-	inp, _ := inPats.SubSpace(2, []int{row})
-	outp, _ := outPats.SubSpace(2, []int{row})
-	inLay.ApplyExt(inp)
-	outLay.ApplyExt(outp)
+	inPats, err := pats.RowCellByNameTry(inLay.Nm, row)
+	if err != nil {
+		log.Println(err)
+	}
+	outPats, err := pats.RowCellByNameTry(outLay.Nm, row)
+	if err != nil {
+		log.Println(err)
+	}
+	inLay.ApplyExt(inPats)
+	outLay.ApplyExt(outPats)
 }
 
 // TrainTrial runs one trial of training (Trial is an environmentally-defined

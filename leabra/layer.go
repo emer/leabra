@@ -334,9 +334,9 @@ func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 // is iterated separately, so any mismatch preserves dimensional structure.
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
-func (ly *Layer) ApplyExt(ext *etensor.Float32) {
+func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 	if ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4) {
-		ly.ApplyExt1D(ext.Values)
+		ly.LeabraLay.ApplyExt1D(ext.Floats1D())
 		return
 	}
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
@@ -346,7 +346,7 @@ func (ly *Layer) ApplyExt(ext *etensor.Float32) {
 		for y := 0; y < ymx; y++ {
 			for x := 0; x < xmx; x++ {
 				idx := []int{y, x}
-				vl := ext.Value(idx)
+				vl := float32(ext.FloatVal(idx))
 				i := ly.Shp.Offset(idx)
 				nrn := &ly.Neurons[i]
 				if toTarg {
@@ -369,7 +369,7 @@ func (ly *Layer) ApplyExt(ext *etensor.Float32) {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, yp}
-					vl := ext.Value(idx)
+					vl := float32(ext.FloatVal(idx))
 					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]
 					if toTarg {
@@ -388,12 +388,12 @@ func (ly *Layer) ApplyExt(ext *etensor.Float32) {
 // ApplyExt1D applies external input in the form of a flat 1-dimensional slice of floats
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
-func (ly *Layer) ApplyExt1D(ext []float32) {
+func (ly *Layer) ApplyExt1D(ext []float64) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
 	mx := ints.MinInt(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		vl := ext[i]
+		vl := float32(ext[i])
 		if toTarg {
 			nrn.Targ = vl
 		} else {
