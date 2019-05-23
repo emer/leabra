@@ -14,3 +14,7 @@
 # mac thing
 .DS_Store
 
+# No GoLand files
+/.idea/*:wq
+
+
