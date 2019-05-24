@@ -293,11 +293,11 @@ func (ss *Sim) ApplyInputs(pats *etable.Table, row int) {
 	names := pats.ColByName("Name").(*etensor.String)
 	ss.TrialName = names.Values[row]
 
-	inPats, err := pats.RowCellByNameTry(inLay.Nm, row)
+	inPats, err := pats.CellTensorByNameTry(inLay.Nm, row)
 	if err != nil {
 		log.Println(err)
 	}
-	outPats, err := pats.RowCellByNameTry(outLay.Nm, row)
+	outPats, err := pats.CellTensorByNameTry(outLay.Nm, row)
 	if err != nil {
 		log.Println(err)
 	}
