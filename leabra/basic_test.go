@@ -30,13 +30,13 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
 				Params: params.Params{
-					"Prjn.Learn.WtInit.Var":  0,
-					"Prjn.Learn.Norm.On":     0,
-					"Prjn.Learn.Momentum.On": 0,
+					"Prjn.Learn.WtInit.Var":  "0",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.Momentum.On": "false",
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": 0.2,
+					"Prjn.WtScale.Rel": "0.2",
 				}},
 		},
 	}},
@@ -44,7 +44,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "norm on",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On": 1,
+					"Prjn.Learn.Norm.On": "true",
 				}},
 		},
 	}},
@@ -52,7 +52,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": 1,
+					"Prjn.Learn.Momentum.On": "true",
 				}},
 		},
 	}},
@@ -60,8 +60,8 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": 1,
-					"Prjn.Learn.Norm.On":     1,
+					"Prjn.Learn.Momentum.On": "true",
+					"Prjn.Learn.Norm.On":     "true",
 				}},
 		},
 	}},
