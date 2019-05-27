@@ -566,8 +566,6 @@ func (ss *Sim) LogEpc() {
 	ss.EpcCosDiff = ss.SumCosDiff / np
 	ss.SumCosDiff = 0
 
-	// todo: put these methods in env:
-
 	ss.EpcLog.ColByName("Run").SetFloat1D(epc, float64(ss.TrainEnv.Run.Cur))
 	ss.EpcLog.ColByName("Epoch").SetFloat1D(epc, float64(epc))
 	ss.EpcLog.ColByName("SSE").SetFloat1D(epc, float64(ss.EpcSSE))
