@@ -173,6 +173,8 @@ func (ss *Sim) New() {
 
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
+	//ss.ConfigPats()
+	ss.OpenPats()
 	ss.ConfigEnv()
 	ss.ConfigNet()
 	ss.ConfigEpcLog()
@@ -184,13 +186,8 @@ func (ss *Sim) Config() {
 // and resets the epoch log table
 func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
-	ss.TrainEnv.Table = ss.Pats // just in case a new set of pats was selected..
-	ss.TrainEnv.Validate()
-	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-	ss.TrainEnv.Init(0)
-	ss.TestEnv.Table = ss.Pats // note: could select an untrained split from a master table..
-	ss.TestEnv.Validate()
-	ss.TestEnv.Init(0)
+	ss.ConfigEnv() // re-config env just in case a different set of patterns was
+	// selected or patterns have been modified etc
 	ss.StopNow = false
 	ss.Time.Reset()
 	ss.SetParams(false) // no set msg
@@ -432,9 +429,6 @@ func (ss *Sim) TestAll() {
 // Config methods
 
 func (ss *Sim) ConfigEnv() {
-	//ss.ConfigPats()
-	ss.OpenPats()
-
 	if ss.MaxRuns == 0 { // allow user override
 		ss.MaxRuns = 10
 	}
@@ -444,15 +438,23 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
-	ss.TrainEnv.Table = ss.Pats // just in case a new set of pats was selected..
+	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
-	ss.TestEnv.Table = ss.Pats // note: could select an untrained split from a master table..
+	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
+
+	// note: to create a train / test split of pats, do this:
+	// all := etable.NewIdxView(ss.Pats)
+	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
+	// ss.TrainEnv.Table = splits.Splits[0]
+	// ss.TestEnv.Table = splits.Splits[1]
+
+	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 }
 
