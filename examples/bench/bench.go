@@ -160,8 +160,8 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 		erand.PermuteInts(porder)
 		outCosDiff := float32(0)
 		cntErr := 0
-		sse := float32(0)
-		avgSSE := float32(0)
+		sse := 0.0
+		avgSSE := 0.0
 		for pi := 0; pi < np; pi++ {
 			ppi := porder[pi]
 			inp := inPats.SubSpace(2, []int{ppi})
@@ -191,19 +191,19 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 			}
 		}
 		outCosDiff /= float32(np)
-		sse /= float32(np)
-		avgSSE /= float32(np)
-		pctErr := float32(cntErr) / float32(np)
+		sse /= float64(np)
+		avgSSE /= float64(np)
+		pctErr := float64(cntErr) / float64(np)
 		pctCor := 1 - pctErr
 		// fmt.Printf("epc: %v  \tCosDiff: %v \tAvgCosDif: %v\n", epc, outCosDiff, outLay.CosDiff.Avg)
 		epcLog.ColByName("Epoch").SetFloat1D(epc, float64(epc))
 		epcLog.ColByName("CosDiff").SetFloat1D(epc, float64(outCosDiff))
 		epcLog.ColByName("AvgCosDiff").SetFloat1D(epc, float64(outLay.CosDiff.Avg))
-		epcLog.ColByName("SSE").SetFloat1D(epc, float64(sse))
-		epcLog.ColByName("Avg SSE").SetFloat1D(epc, float64(avgSSE))
+		epcLog.ColByName("SSE").SetFloat1D(epc, sse)
+		epcLog.ColByName("Avg SSE").SetFloat1D(epc, avgSSE)
 		epcLog.ColByName("Count Err").SetFloat1D(epc, float64(cntErr))
-		epcLog.ColByName("Pct Err").SetFloat1D(epc, float64(pctErr))
-		epcLog.ColByName("Pct Cor").SetFloat1D(epc, float64(pctCor))
+		epcLog.ColByName("Pct Err").SetFloat1D(epc, pctErr)
+		epcLog.ColByName("Pct Cor").SetFloat1D(epc, pctCor)
 		epcLog.ColByName("Hid1 ActAvg").SetFloat1D(epc, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
 		epcLog.ColByName("Hid2 ActAvg").SetFloat1D(epc, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
 		epcLog.ColByName("Out ActAvg").SetFloat1D(epc, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
