@@ -738,25 +738,27 @@ func (ly *Layer) WtBalFmWt() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Stats
 
+// note: use float64 for stats as that is best for logging
+
 // MSE returns the sum-squared-error and mean-squared-error
 // over the layer, in terms of ActP - ActM (valid even on non-target layers FWIW).
 // Uses the given tolerance per-unit to count an error at all
 // (e.g., .5 = activity just has to be on the right side of .5).
-func (ly *Layer) MSE(tol float32) (sse, mse float32) {
+func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 	nn := len(ly.Neurons)
 	if nn == 0 {
 		return 0, 0
 	}
-	sse = float32(0)
+	sse = 0.0
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		d := nrn.ActP - nrn.ActM
 		if math32.Abs(d) < tol {
 			continue
 		}
-		sse += d * d
+		sse += float64(d * d)
 	}
-	return sse, sse / float32(nn)
+	return sse, sse / float64(nn)
 }
 
 // SSE returns the sum-squared-error over the layer, in terms of ActP - ActM
@@ -764,7 +766,7 @@ func (ly *Layer) MSE(tol float32) (sse, mse float32) {
 // Uses the given tolerance per-unit to count an error at all
 // (e.g., .5 = activity just has to be on the right side of .5).
 // Use this in Python which only allows single return values.
-func (ly *Layer) SSE(tol float32) float32 {
+func (ly *Layer) SSE(tol float32) float64 {
 	sse, _ := ly.MSE(tol)
 	return sse
 }
