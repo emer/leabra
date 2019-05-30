@@ -61,11 +61,11 @@ func (ly *Layer) UnitVarNames() []string {
 	return AllNeuronVars
 }
 
-// UnitVals is emer.Layer interface method to return values of given variable
-func (ly *Layer) UnitVals(varNm string) ([]float32, error) {
+// UnitValsTry is emer.Layer interface method to return values of given variable
+func (ly *Layer) UnitValsTry(varNm string) ([]float32, error) {
 	vidx, err := leabra.NeuronVarByName(varNm)
 	if err == nil {
-		return ly.Layer.UnitVals(varNm)
+		return ly.Layer.UnitValsTry(varNm)
 	}
 	vidx, err = NeuronVarByName(varNm)
 	if err != nil {
@@ -79,12 +79,12 @@ func (ly *Layer) UnitVals(varNm string) ([]float32, error) {
 	return vs, nil
 }
 
-// UnitVal returns value of given variable name on given unit,
+// UnitValTry returns value of given variable name on given unit,
 // using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int) (float32, error) {
+func (ly *Layer) UnitValTry(varNm string, idx []int) (float32, error) {
 	_, err := leabra.NeuronVarByName(varNm)
 	if err == nil {
-		return ly.Layer.UnitVal(varNm, idx)
+		return ly.Layer.UnitValTry(varNm, idx)
 	}
 	fidx := ly.Shp.Offset(idx)
 	nn := len(ly.DeepNeurs)
@@ -95,12 +95,12 @@ func (ly *Layer) UnitVal(varNm string, idx []int) (float32, error) {
 	return dnr.VarByName(varNm)
 }
 
-// UnitVal1D returns value of given variable name on given unit,
+// UnitVal1DTry returns value of given variable name on given unit,
 // using 1-dimensional index.
-func (ly *Layer) UnitVal1D(varNm string, idx int) (float32, error) {
+func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	_, err := leabra.NeuronVarByName(varNm)
 	if err == nil {
-		return ly.Layer.UnitVal1D(varNm, idx)
+		return ly.Layer.UnitVal1DTry(varNm, idx)
 	}
 	nn := len(ly.DeepNeurs)
 	if idx < 0 || idx >= nn {

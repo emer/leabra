@@ -64,7 +64,7 @@ func (ly *Layer) UnitVarNames() []string {
 
 // UnitVals is emer.Layer interface method to return values of given variable
 func (ly *Layer) UnitVals(varNm string) []float32 {
-	uv, _ := ly.UnitValsTry(varNm)
+	uv, _ := ly.LeabraLay.UnitValsTry(varNm)
 	return uv
 }
 
@@ -85,7 +85,7 @@ func (ly *Layer) UnitValsTry(varNm string) ([]float32, error) {
 // UnitValsTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
 func (ly *Layer) UnitValsTensor(varNm string) etensor.Tensor {
-	uv, _ := ly.UnitValsTensorTry(varNm)
+	uv, _ := ly.LeabraLay.UnitValsTensorTry(varNm)
 	return uv
 }
 
@@ -102,7 +102,7 @@ func (ly *Layer) UnitValsTensorTry(varNm string) (etensor.Tensor, error) {
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
-	uv, _ := ly.UnitValTry(varNm, idx)
+	uv, _ := ly.LeabraLay.UnitValTry(varNm, idx)
 	return uv
 }
 
@@ -121,7 +121,7 @@ func (ly *Layer) UnitValTry(varNm string, idx []int) (float32, error) {
 // UnitVal1D returns value of given variable name on given unit,
 // using 1-dimensional index.
 func (ly *Layer) UnitVal1D(varNm string, idx int) float32 {
-	uv, _ := ly.UnitVal1DTry(varNm, idx)
+	uv, _ := ly.LeabraLay.UnitVal1DTry(varNm, idx)
 	return uv
 }
 

@@ -49,8 +49,9 @@ func (pj *Prjn) SynVarNames() []string {
 	return SynapseVars
 }
 
-// SynVals returns values of given variable name on synapses for each synapse in the projection
-// using the natural ordering of the synapses (sender based for Leabra)
+// SynVals returns values of given variable name on synapses
+// for each synapse in the projection using the natural ordering
+// of the synapses (sender based for Leabra)
 func (pj *Prjn) SynVals(varnm string) []float32 {
 	vl := make([]float32, len(pj.Syns))
 	for si := range pj.Syns {
@@ -63,10 +64,40 @@ func (pj *Prjn) SynVals(varnm string) []float32 {
 	return vl
 }
 
+// SynValsTry returns values of given variable name on synapses
+// for each synapse in the projection using the natural ordering
+// of the synapses (sender based for Leabra)
+func (pj *Prjn) SynValsTry(varnm string) ([]float32, error) {
+	vl := make([]float32, len(pj.Syns))
+	notOk := false
+	for si := range pj.Syns {
+		sy := &pj.Syns[si]
+		sv, ok := sy.VarByName(varnm)
+		if ok {
+			vl[si] = sv
+		} else {
+			notOk = true
+			break
+		}
+	}
+	if notOk {
+		return vl, fmt.Errorf("leabra.Prjn SynValsTry: variable named: %v not valid", varnm)
+	}
+	return vl, nil
+}
+
 // SynVal returns value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes)
+// returns nil for access errors.
+func (pj *Prjn) SynVal(varnm string, sidx, ridx int) float32 {
+	sv, _ := pj.SynValTry(varnm, sidx, ridx)
+	return sv
+}
+
+// SynValTry returns value of given variable name on the synapse
+// between given send, recv unit indexes (1D, flat indexes)
 // returns error for access errors.
-func (pj *Prjn) SynVal(varnm string, sidx, ridx int) (float32, error) {
+func (pj *Prjn) SynValTry(varnm string, sidx, ridx int) (float32, error) {
 	slay := pj.Send.(LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
 	nr := len(rlay.Neurons)
