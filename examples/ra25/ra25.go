@@ -589,9 +589,15 @@ func (ss *Sim) ParamsName() string {
 	return ss.ParamSet
 }
 
-// SetParams sets the network and sim params for "Base" and then current ParamSet
+// SetParams sets the params for "Base" and then current ParamSet.
+// If sheet is empty, then it applies all avail sheets (e.g., Network, Sim)
+// otherwise just the named sheet
 // if setMsg = true then we output a message for each param that was set.
 func (ss *Sim) SetParams(sheet string, setMsg bool) error {
+	if sheet == "" {
+		// this is important for catching typos and ensuring that all sheets can be used
+		ss.Params.ValidateSheets([]string{"Network", "Sim"})
+	}
 	err := ss.SetParamsSet("Base", sheet, setMsg)
 	if ss.ParamSet != "" && ss.ParamSet != "Base" {
 		err = ss.SetParamsSet(ss.ParamSet, sheet, setMsg)
@@ -599,7 +605,9 @@ func (ss *Sim) SetParams(sheet string, setMsg bool) error {
 	return err
 }
 
-// SetParamsSet sets the network and sim params for given params.Set name.
+// SetParamsSet sets the params for given params.Set name.
+// If sheet is empty, then it applies all avail sheets (e.g., Network, Sim)
+// otherwise just the named sheet
 // if setMsg = true then we output a message for each param that was set.
 func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	pset, err := ss.Params.SetByNameTry(setNm)
@@ -607,19 +615,17 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 		return err
 	}
 	if sheet == "" || sheet == "Network" {
-		netp, err := pset.SheetByNameTry("Network")
-		if err != nil {
-			return err
+		netp, ok := pset.Sheets["Network"]
+		if ok {
+			ss.Net.ApplyParams(netp, setMsg)
 		}
-		_, err = ss.Net.ApplyParams(netp, setMsg)
 	}
 
 	if sheet == "" || sheet == "Sim" {
 		simp, ok := pset.Sheets["Sim"]
-		if !ok {
-			return nil // no err -- maybe doesn't have
+		if ok {
+			simp.Apply(ss, setMsg)
 		}
-		simp.Apply(ss, setMsg)
 	}
 	// note: if you have more complex environments with parameters, definitely add
 	// sheets for them, e.g., "TrainEnv", "TestEnv" etc
@@ -1237,6 +1243,44 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	// 		win.Close()
 	// 	})
 
+	inQuitPrompt := false
+	gi.SetQuitReqFunc(func() {
+		if inQuitPrompt {
+			return
+		}
+		inQuitPrompt = true
+		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Quit?",
+			Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, true, true,
+			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+				if sig == int64(gi.DialogAccepted) {
+					gi.Quit()
+				} else {
+					inQuitPrompt = false
+				}
+			})
+	})
+
+	// gi.SetQuitCleanFunc(func() {
+	// 	fmt.Printf("Doing final Quit cleanup here..\n")
+	// })
+
+	inClosePrompt := false
+	win.SetCloseReqFunc(func(w *gi.Window) {
+		if inClosePrompt {
+			return
+		}
+		inClosePrompt = true
+		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Close Window?",
+			Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, true, true,
+			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+				if sig == int64(gi.DialogAccepted) {
+					gi.Quit()
+				} else {
+					inClosePrompt = false
+				}
+			})
+	})
+
 	win.SetCloseCleanFunc(func(w *gi.Window) {
 		go gi.Quit() // once main window is closed, quit
 	})
@@ -1275,6 +1319,7 @@ func (ss *Sim) CmdArgs() {
 	var saveEpcLog bool
 	var saveRunLog bool
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
+	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")

@@ -60,9 +60,9 @@ Most of the code is commented and should be read directly for how to do things. 
 
 These are things that remain to be done:
 
-- [ ] param sheet name validator -- makes sure names that are there are all valid relative to a list provided -- very basic -- replace current err msg in SetParams..
+- [ ] add precision option for log csv output -- currently crazy accurate with float64's
 
-- [ ] gui quit prompt to allow save before quitting.
+- [ ] add crash save function that saves stuff when crashing?
 
 - [ ] fix some crashing in graph updating / tab switching
 
