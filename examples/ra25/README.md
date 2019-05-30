@@ -35,6 +35,15 @@ To determine the real performance impact of any of the params, you typically nee
 * Now you can go back to the params, duplicate one of the sets, and start entering your own custom set of params to explore, and see if you can beat the Base settings!  Just click on the `*params.Sel` button after `Network` to get the actual parameters being set, which are contained in that named `Sheet`.
 * Click on the `Net` button on the left and then on one of the layers, and so-on into the parameters at the layer level (`Act`, `Inhib`, `Learn`), and if you click on one of the `Prjn`s, you can see parameters at the projection level.  You should be able to see the path for specifying any of these params in the Params sets.
 
+## Running from command line
+
+Type this at the command line:
+```bash
+./ra25 -help
+```
+
+To see a list of args that you can pass -- passing any arg will cause the model to run without the gui, and save log files and, optionally, final weights files for each run.
+
 # Code organization and notes
 
 Most of the code is commented and should be read directly for how to do things.  Here are just a few general organizational notes about code structure overall.
@@ -58,8 +67,6 @@ These are things that remain to be done:
 - [ ] hog stats
 
 - [ ] net rel stats
-
-- [ ] startup args and -nogui mode.
 
 - [ ] neg draw for plots
 

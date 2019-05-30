@@ -10,6 +10,9 @@ See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installati
 
 # Current Status / News
 
+* 6/2019: see the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25) for a fully functional demo.
+
+
 * 4/2019: separated this `leabra` repository from the overall `emergent` repository, to make it easier to fork and save / modify just the algorithm components of the system independent of the overall emergent infrastructure.  You just need to replace "github.com/emer/emergent/leabra/leabra" -> "github.com/emer/leabra/leabra" in your imports.
 
 * 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/leabra25ra` code using Python, including the GUI etc.

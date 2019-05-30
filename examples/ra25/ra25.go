@@ -9,9 +9,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/emer/emergent/emer"
@@ -125,6 +127,7 @@ type Sim struct {
 	RunStats     *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
 	Params       params.Sets       `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
+	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files)"`
 	MaxRuns      int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
 	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
@@ -147,18 +150,23 @@ type Sim struct {
 	FirstZero  int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
 
 	// internal state - view:"-"
-	SumSSE     float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAvgSSE  float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumCosDiff float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	CntErr     int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
-	NetView    *netview.NetView `view:"-" desc:"the network viewer"`
-	TrnEpcPlot *eplot.Plot2D    `view:"-" desc:"the training epoch plot"`
-	TstEpcPlot *eplot.Plot2D    `view:"-" desc:"the testing epoch plot"`
-	TstTrlPlot *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
-	TstCycPlot *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
-	RunPlot    *eplot.Plot2D    `view:"-" desc:"the run plot"`
-	StopNow    bool             `view:"-" desc:"flag to stop running"`
-	RndSeed    int64            `view:"-" desc:"the current random seed"`
+	SumSSE       float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAvgSSE    float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumCosDiff   float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	CntErr       int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
+	NetView      *netview.NetView `view:"-" desc:"the network viewer"`
+	TrnEpcPlot   *eplot.Plot2D    `view:"-" desc:"the training epoch plot"`
+	TstEpcPlot   *eplot.Plot2D    `view:"-" desc:"the testing epoch plot"`
+	TstTrlPlot   *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
+	TstCycPlot   *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
+	RunPlot      *eplot.Plot2D    `view:"-" desc:"the run plot"`
+	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
+	RunFile      *os.File         `view:"-" desc:"log file"`
+	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
+	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
+	StopNow      bool             `view:"-" desc:"flag to stop running"`
+	RndSeed      int64            `view:"-" desc:"the current random seed"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -206,7 +214,7 @@ func (ss *Sim) Init() {
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
 	ss.StopNow = false
-	ss.SetParams("", false) // all sheets, no set msg
+	ss.SetParams("", ss.LogSetParams) // all sheets
 	ss.NewRun()
 	ss.UpdateView(true)
 }
@@ -351,7 +359,11 @@ func (ss *Sim) TrainTrial() {
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
 	ss.LogRun()
-	// todo: ss.Net.SaveWts()
+	if ss.SaveWts {
+		fnm := ss.WeightsFileName()
+		fmt.Printf("Saving Weights to: %v\n", fnm)
+		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+	}
 }
 
 // NewRun intializes a new run of the model, using the TrainEnv.Run counter
@@ -560,13 +572,21 @@ func (ss *Sim) ConfigNet() {
 	// }
 
 	net.Defaults()
-	ss.SetParams("Network", true) // only set Network params
+	ss.SetParams("Network", ss.LogSetParams) // only set Network params
 	err := net.Build()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	net.InitWts()
+}
+
+// ParamsName returns name of current set of parameters
+func (ss *Sim) ParamsName() string {
+	if ss.ParamSet == "" {
+		return "Base"
+	}
+	return ss.ParamSet
 }
 
 // SetParams sets the network and sim params for "Base" and then current ParamSet
@@ -634,6 +654,32 @@ func (ss *Sim) OpenPats() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
+// RunName returns a name for this run that combines Tag and Params -- add this to
+// any file names that are saved.
+func (ss *Sim) RunName() string {
+	if ss.Tag != "" {
+		return ss.Tag + "_" + ss.ParamsName()
+	} else {
+		return ss.ParamsName()
+	}
+}
+
+// RunEpochName returns a string with the run and epoch numbers with leading zeros, suitable
+// for using in weights file names.  Uses 3, 5 digits for each.
+func (ss *Sim) RunEpochName(run, epc int) string {
+	return fmt.Sprintf("%03d_%05d", run, epc)
+}
+
+// WeightsFileName returns default current weights file name
+func (ss *Sim) WeightsFileName() string {
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
+}
+
+// LogFileName returns default log file name
+func (ss *Sim) LogFileName(lognm string) string {
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
+}
+
 //////////////////////////////////////////////
 //  TrnEpcLog
 
@@ -676,6 +722,12 @@ func (ss *Sim) LogTrnEpc() {
 	dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
 
 	ss.TrnEpcPlot.Update()
+	if ss.TrnEpcFile != nil {
+		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
+			dt.WriteCSVHeaders(ss.TrnEpcFile, '\t')
+		}
+		dt.WriteCSVRow(ss.TrnEpcFile, row, '\t', true)
+	}
 }
 
 func (ss *Sim) ConfigTrnEpcLog() {
@@ -942,10 +994,7 @@ func (ss *Sim) LogRun() {
 	epcix := etable.NewIdxView(epclog)
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
 
-	params := ss.ParamSet
-	if params == "" {
-		params = "Base"
-	}
+	params := ss.ParamsName()
 
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
@@ -963,6 +1012,12 @@ func (ss *Sim) LogRun() {
 	ss.RunStats = spl.AggsToTable(false)
 
 	ss.RunPlot.Update()
+	if ss.RunFile != nil {
+		if row == 0 {
+			dt.WriteCSVHeaders(ss.RunFile, '\t')
+		}
+		dt.WriteCSVRow(ss.RunFile, row, '\t', true)
+	}
 }
 
 func (ss *Sim) ConfigRunLog() {
@@ -1214,15 +1269,65 @@ var SimProps = ki.Props{
 	},
 }
 
+func (ss *Sim) CmdArgs() {
+	ss.NoGui = true
+	var nogui bool
+	var saveEpcLog bool
+	var saveRunLog bool
+	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
+	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
+	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
+	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
+	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
+	flag.Parse()
+	ss.Init()
+
+	if ss.ParamSet != "" {
+		fmt.Printf("Using ParamSet: %s\n", ss.ParamSet)
+	}
+
+	if saveEpcLog {
+		var err error
+		fnm := ss.LogFileName("epc")
+		ss.TrnEpcFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.TrnEpcFile = nil
+		} else {
+			fmt.Printf("Saving epoch log to: %v\n", fnm)
+			defer ss.TrnEpcFile.Close()
+		}
+	}
+	if saveRunLog {
+		var err error
+		fnm := ss.LogFileName("run")
+		ss.RunFile, err = os.Create(fnm)
+		if err != nil {
+			log.Println(err)
+			ss.RunFile = nil
+		} else {
+			fmt.Printf("Saving run log to: %v\n", fnm)
+			defer ss.RunFile.Close()
+		}
+	}
+	if ss.SaveWts {
+		fmt.Printf("Saving final weights per run\n")
+	}
+	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	ss.Train()
+}
+
 func mainrun() {
-	// gi3d.Update3DTrace = true
-	// gi.Update2DTrace = true
-	// gi.Render2DTrace = true
-	//
-	// todo: args
 	TheSim.New()
 	TheSim.Config()
-	TheSim.Init()
-	win := TheSim.ConfigGui()
-	win.StartEventLoop()
+
+	if len(os.Args) > 1 {
+		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	} else {
+		TheSim.Init()
+		win := TheSim.ConfigGui()
+		win.StartEventLoop()
+	}
 }
