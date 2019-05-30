@@ -32,6 +32,7 @@ import (
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
+	"github.com/goki/gi/oswin"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 	"gonum.org/v1/plot"
@@ -182,7 +183,7 @@ func (ss *Sim) New() {
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
-	ss.TestInterval = 10
+	ss.TestInterval = 5
 }
 
 // Config configures all the elements using the standard functions
@@ -205,7 +206,7 @@ func (ss *Sim) Init() {
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
 	ss.StopNow = false
-	ss.SetParams(false) // no set msg
+	ss.SetParams("", false) // all sheets, no set msg
 	ss.NewRun()
 	ss.UpdateView(true)
 }
@@ -363,6 +364,7 @@ func (ss *Sim) NewRun() {
 	ss.Net.InitWts()
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
+	ss.TstEpcLog.SetNumRows(0)
 }
 
 // InitStats initializes all the statistics, especially important for the
@@ -477,6 +479,17 @@ func (ss *Sim) TestTrial() {
 	ss.LogTstTrl()
 }
 
+// TestItem tests given item which is at given index in test item list
+func (ss *Sim) TestItem(idx int) {
+	cur := ss.TestEnv.Trial.Cur
+	ss.TestEnv.Trial.Cur = idx
+	ss.TestEnv.SetTrialName()
+	ss.ApplyInputs(&ss.TestEnv)
+	ss.AlphaCyc(false)   // !train
+	ss.TrialStats(false) // !accumulate
+	ss.TestEnv.Trial.Cur = cur
+}
+
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
 	ss.StopNow = false
@@ -547,39 +560,49 @@ func (ss *Sim) ConfigNet() {
 	// }
 
 	net.Defaults()
-	ss.SetParams(true)
-	net.Build()
+	ss.SetParams("Network", true) // only set Network params
+	err := net.Build()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	net.InitWts()
 }
 
 // SetParams sets the network and sim params for "Base" and then current ParamSet
 // if setMsg = true then we output a message for each param that was set.
-func (ss *Sim) SetParams(setMsg bool) error {
-	err := ss.SetParamsSet("Base", setMsg)
+func (ss *Sim) SetParams(sheet string, setMsg bool) error {
+	err := ss.SetParamsSet("Base", sheet, setMsg)
 	if ss.ParamSet != "" && ss.ParamSet != "Base" {
-		err = ss.SetParamsSet(ss.ParamSet, setMsg)
+		err = ss.SetParamsSet(ss.ParamSet, sheet, setMsg)
 	}
 	return err
 }
 
 // SetParamsSet sets the network and sim params for given params.Set name.
 // if setMsg = true then we output a message for each param that was set.
-func (ss *Sim) SetParamsSet(setNm string, setMsg bool) error {
+func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	pset, err := ss.Params.SetByNameTry(setNm)
 	if err != nil {
 		return err
 	}
-	netp, err := pset.SheetByNameTry("Network")
-	if err != nil {
-		return err
+	if sheet == "" || sheet == "Network" {
+		netp, err := pset.SheetByNameTry("Network")
+		if err != nil {
+			return err
+		}
+		_, err = ss.Net.ApplyParams(netp, setMsg)
 	}
-	_, err = ss.Net.ApplyParams(netp, setMsg)
 
-	simp, ok := pset.Sheets["Sim"]
-	if !ok {
-		return nil // no err -- maybe doesn't have
+	if sheet == "" || sheet == "Sim" {
+		simp, ok := pset.Sheets["Sim"]
+		if !ok {
+			return nil // no err -- maybe doesn't have
+		}
+		simp.Apply(ss, setMsg)
 	}
-	simp.Apply(ss, setMsg)
+	// note: if you have more complex environments with parameters, definitely add
+	// sheets for them, e.g., "TrainEnv", "TestEnv" etc
 	return err
 }
 
@@ -804,6 +827,8 @@ func (ss *Sim) LogTstEpc() {
 	ss.TstErrLog = trlix.NewTable()
 
 	allsp := split.All(trlix)
+	split.Agg(allsp, "SSE", agg.AggSum)
+	split.Agg(allsp, "AvgSSE", agg.AggMean)
 	split.Agg(allsp, "InAct", agg.AggMean)
 	split.Agg(allsp, "OutActM", agg.AggMean)
 	split.Agg(allsp, "OutActP", agg.AggMean)
@@ -1044,36 +1069,36 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.Init()
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Train", Icon: "run"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Train", Icon: "run", Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			go ss.Train()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.Stop()
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd", Tooltip: "Advances one training trial at a time."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.TrainTrial()
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd", Tooltip: "Advances one epoch (complete set of training patterns) at a time."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			go ss.TrainEpoch()
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Run", Icon: "fast-fwd"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Step Run", Icon: "fast-fwd", Tooltip: "Advances one full training Run at a time."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			go ss.TrainRun()
 			vp.FullRender2DTree()
@@ -1081,23 +1106,54 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddSeparator("test")
 
-	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.TestTrial()
 			vp.FullRender2DTree()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "Test Item", Icon: "step-fwd", Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode."}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			gi.StringPromptDialog(vp, "", "Test Item",
+				gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
+				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+					dlg := send.(*gi.Dialog)
+					if sig == int64(gi.DialogAccepted) {
+						val := gi.StringPromptDialogValue(dlg)
+						idxs := ss.TestEnv.Table.RowsByString("Name", val, true, true) // contains, ignoreCase
+						if len(idxs) == 0 {
+							gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, true, false, nil, nil)
+						} else {
+							fmt.Printf("testing index: %v\n", idxs[0])
+							ss.TestItem(idxs[0])
+						}
+					}
+				})
+		})
+
+	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd", Tooltip: "Tests all of the testing trials."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			go ss.TestAll()
 			vp.FullRender2DTree()
 		})
 
+	tbar.AddSeparator("log")
+
+	tbar.AddAction(gi.ActOpts{Label: "Reset RunLog", Icon: "reset", Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used"}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunLog.SetNumRows(0)
+		})
+
 	tbar.AddSeparator("misc")
 
-	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new"}, win.This(),
+	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new", Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.NewRndSeed()
+		})
+
+	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			oswin.TheApp.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)
