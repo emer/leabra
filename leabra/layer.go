@@ -63,7 +63,13 @@ func (ly *Layer) UnitVarNames() []string {
 }
 
 // UnitVals is emer.Layer interface method to return values of given variable
-func (ly *Layer) UnitVals(varNm string) ([]float32, error) {
+func (ly *Layer) UnitVals(varNm string) []float32 {
+	uv, _ := ly.UnitValsTry(varNm)
+	return uv
+}
+
+// UnitValsTry is emer.Layer interface method to return values of given variable
+func (ly *Layer) UnitValsTry(varNm string) ([]float32, error) {
 	vidx, err := NeuronVarByName(varNm)
 	if err != nil {
 		return nil, err
@@ -76,9 +82,33 @@ func (ly *Layer) UnitVals(varNm string) ([]float32, error) {
 	return vs, nil
 }
 
+// UnitValsTensor returns values of given variable name on unit
+// for each unit in the layer, as a float32 tensor in same shape as layer units.
+func (ly *Layer) UnitValsTensor(varNm string) etensor.Tensor {
+	uv, _ := ly.UnitValsTensorTry(varNm)
+	return uv
+}
+
+// UnitValsTensorTry returns values of given variable name on unit
+// for each unit in the layer, as a float32 tensor in same shape as layer units.
+func (ly *Layer) UnitValsTensorTry(varNm string) (etensor.Tensor, error) {
+	vls, err := ly.UnitValsTry(varNm)
+	if err != nil {
+		return nil, err
+	}
+	return etensor.NewFloat32Shape(&ly.Shp, vls), nil
+}
+
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int) (float32, error) {
+func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
+	uv, _ := ly.UnitValTry(varNm, idx)
+	return uv
+}
+
+// UnitValTry returns value of given variable name on given unit,
+// using shape-based dimensional index
+func (ly *Layer) UnitValTry(varNm string, idx []int) (float32, error) {
 	fidx := ly.Shp.Offset(idx)
 	nn := len(ly.Neurons)
 	if fidx < 0 || fidx >= nn {
@@ -90,7 +120,14 @@ func (ly *Layer) UnitVal(varNm string, idx []int) (float32, error) {
 
 // UnitVal1D returns value of given variable name on given unit,
 // using 1-dimensional index.
-func (ly *Layer) UnitVal1D(varNm string, idx int) (float32, error) {
+func (ly *Layer) UnitVal1D(varNm string, idx int) float32 {
+	uv, _ := ly.UnitVal1DTry(varNm, idx)
+	return uv
+}
+
+// UnitVal1DTry returns value of given variable name on given unit,
+// using 1-dimensional index.
+func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	nn := len(ly.Neurons)
 	if idx < 0 || idx >= nn {
 		return 0, fmt.Errorf("Layer UnitVal1D index: %v out of range, N = %v", idx, nn)

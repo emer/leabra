@@ -118,6 +118,7 @@ type Sim struct {
 	TstEpcLog    *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
 	TstTrlLog    *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
 	TstErrLog    *etable.Table     `view:"no-inline" desc:"log of all test trials where errors were made"`
+	TstErrStats  *etable.Table     `view:"no-inline" desc:"stats on test trials where errors were made"`
 	TstCycLog    *etable.Table     `view:"no-inline" desc:"testing cycle-level log data"`
 	RunLog       *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	RunStats     *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
@@ -617,7 +618,6 @@ func (ss *Sim) OpenPats() {
 // computes epoch averages prior to logging.
 func (ss *Sim) LogTrnEpc() {
 	dt := ss.TrnEpcLog
-	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
 	row := dt.Rows
 	ss.TrnEpcLog.SetNumRows(row + 1)
 
@@ -625,7 +625,9 @@ func (ss *Sim) LogTrnEpc() {
 	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
+	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
 	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
+
 	ss.EpcSSE = ss.SumSSE / nt
 	ss.SumSSE = 0
 	ss.EpcAvgSSE = ss.SumAvgSSE / nt
@@ -639,16 +641,16 @@ func (ss *Sim) LogTrnEpc() {
 		ss.FirstZero = epc
 	}
 
-	dt.ColByName("Run").SetFloat1D(row, float64(ss.TrainEnv.Run.Cur))
-	dt.ColByName("Epoch").SetFloat1D(row, float64(epc))
-	dt.ColByName("SSE").SetFloat1D(row, ss.EpcSSE)
-	dt.ColByName("AvgSSE").SetFloat1D(row, ss.EpcAvgSSE)
-	dt.ColByName("PctErr").SetFloat1D(row, ss.EpcPctErr)
-	dt.ColByName("PctCor").SetFloat1D(row, ss.EpcPctCor)
-	dt.ColByName("CosDiff").SetFloat1D(row, ss.EpcCosDiff)
-	dt.ColByName("Hid1 ActAvg").SetFloat1D(row, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.ColByName("Hid2 ActAvg").SetFloat1D(row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.ColByName("Out ActAvg").SetFloat1D(row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
+	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("SSE", row, ss.EpcSSE)
+	dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
+	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
+	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
+	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
+	dt.SetCellFloat("Hid1 ActAvg", row, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
+	dt.SetCellFloat("Hid2 ActAvg", row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
+	dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
 
 	ss.TrnEpcPlot.Update()
 }
@@ -695,32 +697,44 @@ func (ss *Sim) ConfigTrnEpcPlot() {
 // LogTstTrl adds data from current trial to the TstTrlLog table.
 // log only contains Pats.NumRows() entries
 func (ss *Sim) LogTstTrl() {
+	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
 	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
 	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
+	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
+
 	trl := ss.TestEnv.Trial.Cur
 	dt := ss.TstTrlLog
 
-	dt.ColByName("Trial").SetFloat1D(trl, float64(trl))
-	dt.ColByName("TrialName").SetString1D(trl, ss.TestEnv.TrialName)
-	dt.ColByName("SSE").SetFloat1D(trl, ss.TrlSSE)
-	dt.ColByName("AvgSSE").SetFloat1D(trl, ss.TrlAvgSSE)
-	dt.ColByName("CosDiff").SetFloat1D(trl, ss.TrlCosDiff)
-	dt.ColByName("Hid1 ActM.Avg").SetFloat1D(trl, float64(hid1Lay.Pools[0].ActM.Avg))
-	dt.ColByName("Hid2 ActM.Avg").SetFloat1D(trl, float64(hid2Lay.Pools[0].ActM.Avg))
-	dt.ColByName("Out ActM.Avg").SetFloat1D(trl, float64(outLay.Pools[0].ActM.Avg))
+	dt.SetCellFloat("Epoch", trl, float64(epc))
+	dt.SetCellFloat("Trial", trl, float64(trl))
+	dt.SetCellString("TrialName", trl, ss.TestEnv.TrialName)
+	dt.SetCellFloat("SSE", trl, ss.TrlSSE)
+	dt.SetCellFloat("AvgSSE", trl, ss.TrlAvgSSE)
+	dt.SetCellFloat("CosDiff", trl, ss.TrlCosDiff)
+	dt.SetCellFloat("Hid1 ActM.Avg", trl, float64(hid1Lay.Pools[0].ActM.Avg))
+	dt.SetCellFloat("Hid2 ActM.Avg", trl, float64(hid2Lay.Pools[0].ActM.Avg))
+	dt.SetCellFloat("Out ActM.Avg", trl, float64(outLay.Pools[0].ActM.Avg))
+
+	dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
+	dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
+	dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
 
 	ss.TstTrlPlot.Update()
 }
 
 func (ss *Sim) ConfigTstTrlLog() {
+	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+
 	dt := ss.TstTrlLog
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
 	dt.SetMetaData("read-only", "true")
 	nt := ss.TestEnv.Table.Len() // number in view
 	dt.SetFromSchema(etable.Schema{
+		{"Epoch", etensor.INT64, nil, nil},
 		{"Trial", etensor.INT64, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
@@ -729,6 +743,9 @@ func (ss *Sim) ConfigTstTrlLog() {
 		{"Hid1 ActM.Avg", etensor.FLOAT64, nil, nil},
 		{"Hid2 ActM.Avg", etensor.FLOAT64, nil, nil},
 		{"Out ActM.Avg", etensor.FLOAT64, nil, nil},
+		{"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
+		{"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
+		{"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
 	}, nt)
 }
 
@@ -737,6 +754,7 @@ func (ss *Sim) ConfigTstTrlPlot() {
 	plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
 	plt.Params.XAxisCol = "Trial"
 	// order of params: on, fixMin, min, fixMax, max
+	plt.SetColParams("Epoch", false, true, 0, false, 0)
 	plt.SetColParams("Trial", false, true, 0, false, 0)
 	plt.SetColParams("TrialName", false, true, 0, false, 0)
 	plt.SetColParams("SSE", false, true, 0, false, 0)
@@ -745,6 +763,10 @@ func (ss *Sim) ConfigTstTrlPlot() {
 	plt.SetColParams("Hid1 ActM.Avg", true, true, 0, true, .5)
 	plt.SetColParams("Hid2 ActM.Avg", true, true, 0, true, .5)
 	plt.SetColParams("Out ActM.Avg", true, true, 0, true, .5)
+
+	plt.SetColParams("InAct", false, true, 0, true, 1)
+	plt.SetColParams("OutActM", false, true, 0, true, 1)
+	plt.SetColParams("OutActP", false, true, 0, true, 1)
 }
 
 //////////////////////////////////////////////
@@ -761,25 +783,32 @@ func (ss *Sim) LogTstEpc() {
 
 	// note: this shows how to use agg methods to compute summary data from another
 	// data table, instead of incrementing on the Sim
-	dt.ColByName("Run").SetFloat1D(row, float64(ss.TrainEnv.Run.Cur))
-	dt.ColByName("Epoch").SetFloat1D(row, float64(epc))
-	dt.ColByName("SSE").SetFloat1D(row, agg.Sum(tix, "SSE")[0])
-	dt.ColByName("AvgSSE").SetFloat1D(row, agg.Mean(tix, "AvgSSE")[0])
-	dt.ColByName("PctErr").SetFloat1D(row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val > 0
 	})[0])
-	dt.ColByName("PctCor").SetFloat1D(row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val == 0
 	})[0])
-	dt.ColByName("CosDiff").SetFloat1D(row, agg.Mean(tix, "CosDiff")[0])
+	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
 
 	// todo: how to grab acts from layer as tensor and record to table.
 
-	ix := etable.NewIdxView(dt)
-	ix.Filter(func(et *etable.Table, row int) bool {
-		return et.CellFloatByName("SSE", row) > 0 // include error trials
+	trlix := etable.NewIdxView(trl)
+	trlix.Filter(func(et *etable.Table, row int) bool {
+		return et.CellFloat("SSE", row) > 0 // include error trials
 	})
-	ss.TstErrLog = ix.NewTable()
+	ss.TstErrLog = trlix.NewTable()
+
+	allsp := split.All(trlix)
+	split.Agg(allsp, "InAct", agg.AggMean)
+	split.Agg(allsp, "OutActM", agg.AggMean)
+	split.Agg(allsp, "OutActP", agg.AggMean)
+
+	ss.TstErrStats = allsp.AggsToTable(false)
 
 	ss.TstEpcPlot.Update()
 }
@@ -828,13 +857,13 @@ func (ss *Sim) LogTstCyc(cyc int) {
 	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
-	dt.ColByName("Cycle").SetFloat1D(cyc, float64(cyc))
-	dt.ColByName("Hid1 Ge.Avg").SetFloat1D(cyc, float64(hid1Lay.Pools[0].Ge.Avg))
-	dt.ColByName("Hid2 Ge.Avg").SetFloat1D(cyc, float64(hid2Lay.Pools[0].Ge.Avg))
-	dt.ColByName("Out Ge.Avg").SetFloat1D(cyc, float64(outLay.Pools[0].Ge.Avg))
-	dt.ColByName("Hid1 Act.Avg").SetFloat1D(cyc, float64(hid1Lay.Pools[0].Act.Avg))
-	dt.ColByName("Hid2 Act.Avg").SetFloat1D(cyc, float64(hid2Lay.Pools[0].Act.Avg))
-	dt.ColByName("Out Act.Avg").SetFloat1D(cyc, float64(outLay.Pools[0].Act.Avg))
+	dt.SetCellFloat("Cycle", cyc, float64(cyc))
+	dt.SetCellFloat("Hid1 Ge.Avg", cyc, float64(hid1Lay.Pools[0].Ge.Avg))
+	dt.SetCellFloat("Hid2 Ge.Avg", cyc, float64(hid2Lay.Pools[0].Ge.Avg))
+	dt.SetCellFloat("Out Ge.Avg", cyc, float64(outLay.Pools[0].Ge.Avg))
+	dt.SetCellFloat("Hid1 Act.Avg", cyc, float64(hid1Lay.Pools[0].Act.Avg))
+	dt.SetCellFloat("Hid2 Act.Avg", cyc, float64(hid2Lay.Pools[0].Act.Avg))
+	dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
 
 	if cyc%5 == 0 { // too slow to do every cyc
 		ss.TstCycPlot.Update()
@@ -893,14 +922,14 @@ func (ss *Sim) LogRun() {
 		params = "Base"
 	}
 
-	dt.ColByName("Run").SetFloat1D(row, float64(run))
-	dt.ColByName("Params").SetString1D(row, params)
-	dt.ColByName("FirstZero").SetFloat1D(row, float64(ss.FirstZero))
-	dt.ColByName("SSE").SetFloat1D(row, agg.Mean(epcix, "SSE")[0])
-	dt.ColByName("AvgSSE").SetFloat1D(row, agg.Mean(epcix, "AvgSSE")[0])
-	dt.ColByName("PctErr").SetFloat1D(row, agg.Mean(epcix, "PctErr")[0])
-	dt.ColByName("PctCor").SetFloat1D(row, agg.Mean(epcix, "PctCor")[0])
-	dt.ColByName("CosDiff").SetFloat1D(row, agg.Mean(epcix, "CosDiff")[0])
+	dt.SetCellFloat("Run", row, float64(run))
+	dt.SetCellString("Params", row, params)
+	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
+	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
+	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
+	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
 
 	runix := etable.NewIdxView(dt)
 	spl := split.GroupBy(runix, []string{"Params"})

@@ -26,9 +26,11 @@ Most of the code is commented and should be read directly for how to do things. 
 
 These are things that remain to be done:
 
-- [ ] record layer activities in test trial and also do agg stats on them in errs
+- [x] err log -- demonstrates filtering
 
-- [ ] bug in structview: not updating -- saw that in full rebuild on marbles too -- think it might be due to removal of update code in style2d -- need to put that back in..
+- [x] record layer activities in test trial and also do agg stats on them in errs
+
+- [x] bug in structview: not updating -- saw that in full rebuild on marbles too -- think it might be due to removal of update code in style2d -- need to put that back in..
 
 - [ ] hog stats
 
@@ -44,4 +46,4 @@ These are things that remain to be done:
 
 - [ ] reset all data -- for tables that accumulate (run?)
 
-- [ ] err
+
