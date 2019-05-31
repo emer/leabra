@@ -64,7 +64,7 @@ These are things that remain to be done:
 
 - [ ] add crash save function that saves stuff when crashing?
 
-- [ ] fix some crashing in graph updating / tab switching
+- [x] fix some crashing in graph updating / tab switching -- report any remaining issues!
 
 - [ ] python version update
 

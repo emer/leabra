@@ -948,7 +948,7 @@ func (ss *Sim) LogTstCyc(cyc int) {
 	dt.SetCellFloat("Hid2 Act.Avg", cyc, float64(hid2Lay.Pools[0].Act.Avg))
 	dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
 
-	if cyc%5 == 0 { // too slow to do every cyc
+	if cyc%10 == 0 { // too slow to do every cyc
 		ss.TstCycPlot.Update()
 	}
 }
