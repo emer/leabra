@@ -23,7 +23,6 @@ import (
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
-	"github.com/emer/emergent/timer"
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/eplot"
 	"github.com/emer/etable/etable"
@@ -154,7 +153,9 @@ type Sim struct {
 	SumAvgSSE    float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
 	SumCosDiff   float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
 	CntErr       int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
+	Win          *gi.Window       `view:"-" desc:"main GUI window"`
 	NetView      *netview.NetView `view:"-" desc:"the network viewer"`
+	ToolBar      *gi.ToolBar      `view:"-" desc:"the master toolbar"`
 	TrnEpcPlot   *eplot.Plot2D    `view:"-" desc:"the training epoch plot"`
 	TstEpcPlot   *eplot.Plot2D    `view:"-" desc:"the testing epoch plot"`
 	TstTrlPlot   *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
@@ -165,6 +166,7 @@ type Sim struct {
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
 	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
+	IsRunning    bool             `view:"-" desc:"true if sim is running"`
 	StopNow      bool             `view:"-" desc:"flag to stop running"`
 	RndSeed      int64            `view:"-" desc:"the current random seed"`
 }
@@ -337,7 +339,6 @@ func (ss *Sim) TrainTrial() {
 		}
 		if epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
 			ss.TestAll()
-			ss.StopNow = false // keep going
 		}
 		if epc >= ss.MaxEpcs { // done with training..
 			ss.RunEnd()
@@ -426,6 +427,7 @@ func (ss *Sim) TrainEpoch() {
 			break
 		}
 	}
+	ss.Stopped()
 }
 
 // TrainRun runs training trials for remainder of run
@@ -438,28 +440,35 @@ func (ss *Sim) TrainRun() {
 			break
 		}
 	}
+	ss.Stopped()
 }
 
 // Train runs the full training from this point onward
 func (ss *Sim) Train() {
 	ss.StopNow = false
-	stEpc := ss.TrainEnv.Epoch.Cur
-	tmr := timer.Time{}
-	tmr.Start()
 	for {
 		ss.TrainTrial()
 		if ss.StopNow {
 			break
 		}
 	}
-	tmr.Stop()
-	epcs := ss.TrainEnv.Epoch.Prv - stEpc
-	fmt.Printf("Took %6g secs for %v epochs, avg per epc: %6g\n", tmr.TotalSecs(), epcs, tmr.TotalSecs()/float64(epcs))
+	ss.Stopped()
 }
 
 // Stop tells the sim to stop running
 func (ss *Sim) Stop() {
 	ss.StopNow = true
+}
+
+// Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar
+func (ss *Sim) Stopped() {
+	ss.IsRunning = false
+	if ss.ToolBar != nil {
+		ss.ToolBar.UpdateActions()
+	}
+	if ss.Win != nil {
+		ss.Win.WinViewport2D().FullRender2DTree()
+	}
 }
 
 // SaveWeights saves the network weights -- when called with giv.CallMethod
@@ -481,8 +490,8 @@ func (ss *Sim) TestTrial() {
 		if ss.ViewOn && ss.TestUpdt > leabra.AlphaCycle {
 			ss.UpdateView(false)
 		}
-		ss.StopNow = true
 		ss.LogTstEpc()
+		return
 	}
 
 	ss.ApplyInputs(&ss.TestEnv)
@@ -504,14 +513,20 @@ func (ss *Sim) TestItem(idx int) {
 
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
-	ss.StopNow = false
 	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
 	for {
 		ss.TestTrial()
-		if ss.StopNow {
+		_, _, chg := ss.TestEnv.Counter(env.Epoch)
+		if chg || ss.StopNow {
 			break
 		}
 	}
+}
+
+// RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
+func (ss *Sim) RunTestAll() {
+	ss.TestAll()
+	ss.Stopped()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1079,6 +1094,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar := gi.AddNewToolBar(mfr, "tbar")
 	tbar.SetStretchMaxWidth()
+	ss.ToolBar = tbar
 
 	split := gi.AddNewSplitView(mfr, "split")
 	split.Dim = gi.X
@@ -1130,73 +1146,112 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.Init()
-			vp.FullRender2DTree()
-		})
+	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.Init()
+		vp.FullRender2DTree()
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Train", Icon: "run", Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "Train", Icon: "run", Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.IsRunning)
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
+			tbar.UpdateActions()
 			go ss.Train()
-		})
-
-	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.Stop()
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd", Tooltip: "Advances one training trial at a time."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.Stop()
+		vp.FullRender2DTree()
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd", Tooltip: "Advances one training trial at a time.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
 			ss.TrainTrial()
+			ss.IsRunning = false
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd", Tooltip: "Advances one epoch (complete set of training patterns) at a time."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "Step Epoch", Icon: "fast-fwd", Tooltip: "Advances one epoch (complete set of training patterns) at a time.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
+			tbar.UpdateActions()
 			go ss.TrainEpoch()
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Step Run", Icon: "fast-fwd", Tooltip: "Advances one full training Run at a time."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "Step Run", Icon: "fast-fwd", Tooltip: "Advances one full training Run at a time.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
+			tbar.UpdateActions()
 			go ss.TrainRun()
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
 	tbar.AddSeparator("test")
 
-	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
 			ss.TestTrial()
+			ss.IsRunning = false
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Test Item", Icon: "step-fwd", Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			gi.StringPromptDialog(vp, "", "Test Item",
-				gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
-				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-					dlg := send.(*gi.Dialog)
-					if sig == int64(gi.DialogAccepted) {
-						val := gi.StringPromptDialogValue(dlg)
-						idxs := ss.TestEnv.Table.RowsByString("Name", val, true, true) // contains, ignoreCase
-						if len(idxs) == 0 {
-							gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, true, false, nil, nil)
-						} else {
+	tbar.AddAction(gi.ActOpts{Label: "Test Item", Icon: "step-fwd", Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		gi.StringPromptDialog(vp, "", "Test Item",
+			gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
+			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+				dlg := send.(*gi.Dialog)
+				if sig == int64(gi.DialogAccepted) {
+					val := gi.StringPromptDialogValue(dlg)
+					idxs := ss.TestEnv.Table.RowsByString("Name", val, true, true) // contains, ignoreCase
+					if len(idxs) == 0 {
+						gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, true, false, nil, nil)
+					} else {
+						if !ss.IsRunning {
+							ss.IsRunning = true
 							fmt.Printf("testing index: %v\n", idxs[0])
 							ss.TestItem(idxs[0])
+							ss.IsRunning = false
 						}
 					}
-				})
-		})
+				}
+			})
+	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd", Tooltip: "Tests all of the testing trials."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			go ss.TestAll()
+	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd", Tooltip: "Tests all of the testing trials.", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
+	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if !ss.IsRunning {
+			ss.IsRunning = true
+			tbar.UpdateActions()
+			go ss.RunTestAll()
 			vp.FullRender2DTree()
-		})
+		}
+	})
 
 	tbar.AddSeparator("log")
 
