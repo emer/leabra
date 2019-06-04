@@ -29,9 +29,9 @@ type LayFunChan chan func(ly LeabraLayer)
 
 // leabra.NetworkStru holds the basic structural components of a network (layers)
 type NetworkStru struct {
-	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Nm      string       `desc:"overall name of network -- helps discriminate if there are multiple"`
-	Layers  []emer.Layer
+	EmerNet emer.Network          `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	Nm      string                `desc:"overall name of network -- helps discriminate if there are multiple"`
+	Layers  emer.Layers           `desc:"list of layers"`
 	WtsFile string                `desc:"filename of last weights file loaded or saved"`
 	LayMap  map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
 	MinPos  mat32.Vec3            `view:"-" desc:"minimum display position in network"`
@@ -273,8 +273,8 @@ func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, ty
 	pj := nt.EmerNet.NewPrjn() // essential to use EmerNet interface here!
 	pj.Init(pj)
 	pj.Connect(send, recv, pat, typ)
-	recv.RecvPrjnList().Add(pj)
-	send.SendPrjnList().Add(pj)
+	recv.RecvPrjns().Add(pj)
+	send.SendPrjns().Add(pj)
 	return pj
 }
 

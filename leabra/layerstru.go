@@ -26,8 +26,8 @@ type LayerStru struct {
 	Rel       relpos.Rel     `view:"inline" desc:"Spatial relationship to other layer, determines positioning"`
 	Ps        mat32.Vec3     `desc:"position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis."`
 	Idx       int            `desc:"a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers."`
-	RecvPrjns emer.PrjnList  `desc:"list of receiving projections into this layer from other layers"`
-	SendPrjns emer.PrjnList  `desc:"list of sending projections from this layer to other layers"`
+	RcvPrjns  emer.Prjns     `desc:"list of receiving projections into this layer from other layers"`
+	SndPrjns  emer.Prjns     `desc:"list of sending projections from this layer to other layers"`
 }
 
 // emer.Layer interface methods
@@ -39,31 +39,31 @@ func (ls *LayerStru) InitName(lay emer.Layer, name string) {
 	ls.Nm = name
 }
 
-func (ls *LayerStru) Name() string                 { return ls.Nm }
-func (ls *LayerStru) Label() string                { return ls.Nm }
-func (ls *LayerStru) Class() string                { return ls.Typ.String() + " " + ls.Cls }
-func (ls *LayerStru) SetClass(cls string)          { ls.Cls = cls }
-func (ls *LayerStru) TypeName() string             { return "Layer" } // always, for params..
-func (ls *LayerStru) Type() emer.LayerType         { return ls.Typ }
-func (ls *LayerStru) SetType(typ emer.LayerType)   { ls.Typ = typ }
-func (ls *LayerStru) IsOff() bool                  { return ls.Off }
-func (ls *LayerStru) SetOff(off bool)              { ls.Off = off }
-func (ls *LayerStru) Shape() *etensor.Shape        { return &ls.Shp }
-func (ls *LayerStru) Is2D() bool                   { return ls.Shp.NumDims() == 2 }
-func (ls *LayerStru) Is4D() bool                   { return ls.Shp.NumDims() == 4 }
-func (ls *LayerStru) Thread() int                  { return ls.Thr }
-func (ls *LayerStru) SetThread(thr int)            { ls.Thr = thr }
-func (ls *LayerStru) RelPos() relpos.Rel           { return ls.Rel }
-func (ls *LayerStru) Pos() mat32.Vec3              { return ls.Ps }
-func (ls *LayerStru) SetPos(pos mat32.Vec3)        { ls.Ps = pos }
-func (ls *LayerStru) Index() int                   { return ls.Idx }
-func (ls *LayerStru) SetIndex(idx int)             { ls.Idx = idx }
-func (ls *LayerStru) RecvPrjnList() *emer.PrjnList { return &ls.RecvPrjns }
-func (ls *LayerStru) NRecvPrjns() int              { return len(ls.RecvPrjns) }
-func (ls *LayerStru) RecvPrjn(idx int) emer.Prjn   { return ls.RecvPrjns[idx] }
-func (ls *LayerStru) SendPrjnList() *emer.PrjnList { return &ls.SendPrjns }
-func (ls *LayerStru) NSendPrjns() int              { return len(ls.SendPrjns) }
-func (ls *LayerStru) SendPrjn(idx int) emer.Prjn   { return ls.SendPrjns[idx] }
+func (ls *LayerStru) Name() string               { return ls.Nm }
+func (ls *LayerStru) Label() string              { return ls.Nm }
+func (ls *LayerStru) Class() string              { return ls.Typ.String() + " " + ls.Cls }
+func (ls *LayerStru) SetClass(cls string)        { ls.Cls = cls }
+func (ls *LayerStru) TypeName() string           { return "Layer" } // always, for params..
+func (ls *LayerStru) Type() emer.LayerType       { return ls.Typ }
+func (ls *LayerStru) SetType(typ emer.LayerType) { ls.Typ = typ }
+func (ls *LayerStru) IsOff() bool                { return ls.Off }
+func (ls *LayerStru) SetOff(off bool)            { ls.Off = off }
+func (ls *LayerStru) Shape() *etensor.Shape      { return &ls.Shp }
+func (ls *LayerStru) Is2D() bool                 { return ls.Shp.NumDims() == 2 }
+func (ls *LayerStru) Is4D() bool                 { return ls.Shp.NumDims() == 4 }
+func (ls *LayerStru) Thread() int                { return ls.Thr }
+func (ls *LayerStru) SetThread(thr int)          { ls.Thr = thr }
+func (ls *LayerStru) RelPos() relpos.Rel         { return ls.Rel }
+func (ls *LayerStru) Pos() mat32.Vec3            { return ls.Ps }
+func (ls *LayerStru) SetPos(pos mat32.Vec3)      { ls.Ps = pos }
+func (ls *LayerStru) Index() int                 { return ls.Idx }
+func (ls *LayerStru) SetIndex(idx int)           { ls.Idx = idx }
+func (ls *LayerStru) RecvPrjns() *emer.Prjns     { return &ls.RcvPrjns }
+func (ls *LayerStru) NRecvPrjns() int            { return len(ls.RcvPrjns) }
+func (ls *LayerStru) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
+func (ls *LayerStru) SendPrjns() *emer.Prjns     { return &ls.SndPrjns }
+func (ls *LayerStru) NSendPrjns() int            { return len(ls.SndPrjns) }
+func (ls *LayerStru) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
 
 func (ls *LayerStru) SetRelPos(rel relpos.Rel) {
 	ls.Rel = rel
@@ -116,7 +116,7 @@ func (ls *LayerStru) NPools() int {
 //  S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
 // returns false if not found.
 func (ls *LayerStru) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
-	for _, rpj := range ls.RecvPrjns {
+	for _, rpj := range ls.RcvPrjns {
 		if rpj.SendLay() == spj.RecvLay() {
 			return rpj, true
 		}
@@ -146,7 +146,7 @@ func (ls *LayerStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 	if err != nil {
 		rerr = err
 	}
-	for _, pj := range ls.RecvPrjns {
+	for _, pj := range ls.RcvPrjns {
 		app, err = pj.ApplyParams(pars, setMsg)
 		if app {
 			applied = true
@@ -162,7 +162,7 @@ func (ls *LayerStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 // are not at their default values -- useful for setting param styles etc.
 func (ls *LayerStru) NonDefaultParams() string {
 	nds := giv.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
-	for _, pj := range ls.RecvPrjns {
+	for _, pj := range ls.RcvPrjns {
 		pnd := pj.NonDefaultParams()
 		nds += pnd
 	}

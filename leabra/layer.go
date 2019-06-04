@@ -41,7 +41,7 @@ func (ly *Layer) Defaults() {
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
 	ly.Inhib.Layer.On = true
-	for _, pj := range ly.RecvPrjns {
+	for _, pj := range ly.RcvPrjns {
 		pj.Defaults()
 	}
 }
@@ -52,7 +52,7 @@ func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
-	for _, pj := range ly.RecvPrjns {
+	for _, pj := range ly.RcvPrjns {
 		pj.UpdateParams()
 	}
 }
@@ -188,7 +188,7 @@ func (ly *Layer) BuildPools(nu int) error {
 // BuildPrjns builds the projections, recv-side
 func (ly *Layer) BuildPrjns() error {
 	emsg := ""
-	for _, pj := range ly.RecvPrjns {
+	for _, pj := range ly.RcvPrjns {
 		if pj.IsOff() {
 			continue
 		}
@@ -231,7 +231,7 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", ly.Nm)))
 	// todo: save average activity state
 	depth++
-	for _, pj := range ly.RecvPrjns {
+	for _, pj := range ly.RcvPrjns {
 		if pj.IsOff() {
 			continue
 		}
@@ -287,7 +287,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 // InitWts initializes the weight values in the network, i.e., resetting learning
 // Also calls InitActs
 func (ly *Layer) InitWts() {
-	for _, p := range ly.SendPrjns {
+	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -322,7 +322,7 @@ func (ly *Layer) InitActs() {
 
 // InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 func (ly *Layer) InitWtSym() {
-	for _, p := range ly.SendPrjns {
+	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -480,7 +480,7 @@ func (ly *Layer) AvgLFmAvgM() {
 func (ly *Layer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -498,7 +498,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		}
 	}
 
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -557,7 +557,7 @@ func (ly *Layer) InitGInc() {
 		nrn.GeInc = 0
 		nrn.GiInc = 0
 	}
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -573,8 +573,7 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
-				for si := range ly.SendPrjns {
-					sp := ly.SendPrjns[si]
+				for _, sp := range ly.SndPrjns {
 					if sp.IsOff() {
 						continue
 					}
@@ -584,8 +583,7 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 			}
 		} else if nrn.ActSent > ly.Act.OptThresh.Send {
 			delta := -nrn.ActSent // un-send the last above-threshold activation to get back to 0
-			for si := range ly.SendPrjns {
-				sp := ly.SendPrjns[si]
+			for _, sp := range ly.SndPrjns {
 				if sp.IsOff() {
 					continue
 				}
@@ -598,7 +596,7 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *Layer) GFmInc(ltime *Time) {
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -744,7 +742,7 @@ func (ly *Layer) CosDiffFmActs() {
 
 // DWt computes the weight change (learning) -- calls DWt method on sending projections
 func (ly *Layer) DWt() {
-	for _, p := range ly.SendPrjns {
+	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -754,7 +752,7 @@ func (ly *Layer) DWt() {
 
 // WtFmDWt updates the weights from delta-weight changes -- on the sending projections
 func (ly *Layer) WtFmDWt() {
-	for _, p := range ly.SendPrjns {
+	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -764,7 +762,7 @@ func (ly *Layer) WtFmDWt() {
 
 // WtBalFmWt computes the Weight Balance factors based on average recv weights
 func (ly *Layer) WtBalFmWt() {
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}

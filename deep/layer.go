@@ -152,7 +152,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 	totGiRel := float32(0)
 	totTrcRel := float32(0)
 	totAttnRel := float32(0)
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -176,7 +176,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		}
 	}
 
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -222,8 +222,7 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
-				for si := range ly.SendPrjns {
-					sp := ly.SendPrjns[si]
+				for _, sp := range ly.SndPrjns {
 					if sp.IsOff() {
 						continue
 					}
@@ -244,8 +243,7 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 			}
 		} else if nrn.ActSent > ly.Act.OptThresh.Send {
 			delta := -nrn.ActSent // un-send the last above-threshold activation to get back to 0
-			for si := range ly.SendPrjns {
-				sp := ly.SendPrjns[si]
+			for _, sp := range ly.SndPrjns {
 				if sp.IsOff() {
 					continue
 				}
@@ -285,7 +283,7 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 	}
 	ly.Layer.GFmInc(ltime) // regular
 	if ly.DeepAttn.On {
-		for _, p := range ly.RecvPrjns {
+		for _, p := range ly.RcvPrjns {
 			if p.IsOff() {
 				continue
 			}
@@ -415,8 +413,7 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 		if dnr.DeepBurst > ly.Act.OptThresh.Send {
 			delta := dnr.DeepBurst - dnr.DeepBurstSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
-				for si := range ly.SendPrjns {
-					sp := ly.SendPrjns[si]
+				for _, sp := range ly.SndPrjns {
 					if sp.IsOff() {
 						continue
 					}
@@ -431,8 +428,7 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 			}
 		} else if dnr.DeepBurstSent > ly.Act.OptThresh.Send {
 			delta := -dnr.DeepBurstSent // un-send the last above-threshold activation to get back to 0
-			for si := range ly.SendPrjns {
-				sp := ly.SendPrjns[si]
+			for _, sp := range ly.SndPrjns {
 				if sp.IsOff() {
 					continue
 				}
@@ -453,7 +449,7 @@ func (ly *Layer) TRCBurstGeFmInc(ltime *leabra.Time) {
 	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
 		return
 	}
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
@@ -494,8 +490,7 @@ func (ly *Layer) SendDeepCtxtGe(ltime *leabra.Time) {
 	for ni := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[ni]
 		if dnr.DeepBurst > ly.Act.OptThresh.Send {
-			for si := range ly.SendPrjns {
-				sp := ly.SendPrjns[si]
+			for _, sp := range ly.SndPrjns {
 				if sp.IsOff() {
 					continue
 				}
@@ -521,7 +516,7 @@ func (ly *Layer) DeepCtxtFmGe(ltime *leabra.Time) {
 		dnr := &ly.DeepNeurs[ni]
 		dnr.DeepCtxtGe = 0
 	}
-	for _, p := range ly.RecvPrjns {
+	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
