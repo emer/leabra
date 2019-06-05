@@ -1264,6 +1264,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	tbar.AddAction(gi.ActOpts{Label: "Reset RunLog", Icon: "reset", Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used"}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunLog.SetNumRows(0)
+			ss.RunPlot.Update()
 		})
 
 	tbar.AddSeparator("misc")
