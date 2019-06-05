@@ -240,8 +240,8 @@ func (ss *Sim) Counters(train bool) string {
 
 func (ss *Sim) UpdateView(train bool) {
 	if ss.NetView != nil {
-		ss.NetView.Update(ss.Counters(train)) // this is a lot slower but anyway we need the counters
-		// ss.NetView.Update("")
+		// note: essential to use Go version of update when called from another goroutine
+		ss.NetView.GoUpdate(ss.Counters(train)) // note: using counters is significantly slower..
 	}
 }
 
@@ -463,11 +463,14 @@ func (ss *Sim) Stop() {
 // Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar
 func (ss *Sim) Stopped() {
 	ss.IsRunning = false
-	if ss.ToolBar != nil {
-		ss.ToolBar.UpdateActions()
-	}
 	if ss.Win != nil {
-		ss.Win.WinViewport2D().FullRender2DTree()
+		vp := ss.Win.WinViewport2D()
+		vp.BlockUpdates()
+		if ss.ToolBar != nil {
+			ss.ToolBar.UpdateActions()
+		}
+		vp.UnblockUpdates()
+		vp.SetNeedsFullRender()
 	}
 }
 
@@ -525,6 +528,7 @@ func (ss *Sim) TestAll() {
 
 // RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
 func (ss *Sim) RunTestAll() {
+	ss.StopNow = false
 	ss.TestAll()
 	ss.Stopped()
 }
@@ -742,7 +746,8 @@ func (ss *Sim) LogTrnEpc() {
 	dt.SetCellFloat("Hid2 ActAvg", row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
 	dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
 
-	ss.TrnEpcPlot.Update()
+	// note: essential to use Go version of update when called from another goroutine
+	ss.TrnEpcPlot.GoUpdate()
 	if ss.TrnEpcFile != nil {
 		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, '\t')
@@ -817,7 +822,8 @@ func (ss *Sim) LogTstTrl() {
 	dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
 	dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
 
-	ss.TstTrlPlot.Update()
+	// note: essential to use Go version of update when called from another goroutine
+	ss.TstTrlPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTstTrlLog() {
@@ -908,7 +914,8 @@ func (ss *Sim) LogTstEpc() {
 
 	ss.TstErrStats = allsp.AggsToTable(false)
 
-	ss.TstEpcPlot.Update()
+	// note: essential to use Go version of update when called from another goroutine
+	ss.TstEpcPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTstEpcLog() {
@@ -964,7 +971,8 @@ func (ss *Sim) LogTstCyc(cyc int) {
 	dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
 
 	if cyc%10 == 0 { // too slow to do every cyc
-		ss.TstCycPlot.Update()
+		// note: essential to use Go version of update when called from another goroutine
+		ss.TstCycPlot.GoUpdate()
 	}
 }
 
@@ -1032,7 +1040,8 @@ func (ss *Sim) LogRun() {
 	split.Desc(spl, "PctCor")
 	ss.RunStats = spl.AggsToTable(false)
 
-	ss.RunPlot.Update()
+	// note: essential to use Go version of update when called from another goroutine
+	ss.RunPlot.GoUpdate()
 	if ss.RunFile != nil {
 		if row == 0 {
 			dt.WriteCSVHeaders(ss.RunFile, '\t')
@@ -1086,6 +1095,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	plot.DefaultFont = "Helvetica"
 
 	win := gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, true)
+	ss.Win = win
 
 	vp := win.WinViewport2D()
 	updt := vp.UpdateStart()
@@ -1150,7 +1160,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		act.SetActiveStateUpdt(!ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Init()
-		vp.FullRender2DTree()
+		vp.SetNeedsFullRender()
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Train", Icon: "run", Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
@@ -1161,7 +1171,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			tbar.UpdateActions()
 			go ss.Train()
-			vp.FullRender2DTree()
 		}
 	})
 
@@ -1169,7 +1178,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		act.SetActiveStateUpdt(ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Stop()
-		vp.FullRender2DTree()
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Step Trial", Icon: "step-fwd", Tooltip: "Advances one training trial at a time.", UpdateFunc: func(act *gi.Action) {
@@ -1179,7 +1187,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			ss.TrainTrial()
 			ss.IsRunning = false
-			vp.FullRender2DTree()
+			vp.SetNeedsFullRender()
 		}
 	})
 
@@ -1190,7 +1198,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			tbar.UpdateActions()
 			go ss.TrainEpoch()
-			vp.FullRender2DTree()
 		}
 	})
 
@@ -1201,7 +1208,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			tbar.UpdateActions()
 			go ss.TrainRun()
-			vp.FullRender2DTree()
 		}
 	})
 
@@ -1214,7 +1220,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			ss.TestTrial()
 			ss.IsRunning = false
-			vp.FullRender2DTree()
+			vp.SetNeedsFullRender()
 		}
 	})
 
@@ -1236,6 +1242,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 							fmt.Printf("testing index: %v\n", idxs[0])
 							ss.TestItem(idxs[0])
 							ss.IsRunning = false
+							vp.SetNeedsFullRender()
 						}
 					}
 				}
@@ -1249,7 +1256,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.IsRunning = true
 			tbar.UpdateActions()
 			go ss.RunTestAll()
-			vp.FullRender2DTree()
 		}
 	})
 
@@ -1426,6 +1432,7 @@ func mainrun() {
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
+		// gi.Update2DTrace = true
 		TheSim.Init()
 		win := TheSim.ConfigGui()
 		win.StartEventLoop()
