@@ -36,7 +36,6 @@ import (
 	"github.com/goki/gi/oswin"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"gonum.org/v1/plot"
 )
 
 // this is the stub main for gogi that calls our actual mainrun function, at end of file
@@ -46,6 +45,8 @@ func main() {
 	})
 }
 
+// ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
+// selected to apply on top of that
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
@@ -304,7 +305,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	}
 }
 
-// ApplyInputs applies input patterns from given environment.
+// ApplyInputs applies input patterns from given envirbonment.
 // It is good practice to have this be a separate method with appropriate
 // args so that it can be used for various different contexts
 // (training, testing, etc).
@@ -402,6 +403,7 @@ func (ss *Sim) InitStats() {
 // accum is true.  Note that we're accumulating stats here on the Sim side so the
 // core algorithm side remains as simple as possible, and doesn't need to worry about
 // different time-scales over which stats could be accumulated etc.
+// You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 	ss.TrlCosDiff = float64(outLay.CosDiff.Cos)
@@ -796,7 +798,7 @@ func (ss *Sim) ConfigTrnEpcPlot() {
 //  TstTrlLog
 
 // LogTstTrl adds data from current trial to the TstTrlLog table.
-// log only contains Pats.NumRows() entries
+// log always contains number of testing items
 func (ss *Sim) LogTstTrl() {
 	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
 	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
@@ -808,6 +810,7 @@ func (ss *Sim) LogTstTrl() {
 	trl := ss.TestEnv.Trial.Cur
 	dt := ss.TstTrlLog
 
+	dt.SetCellFloat("Run", trl, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", trl, float64(epc))
 	dt.SetCellFloat("Trial", trl, float64(trl))
 	dt.SetCellString("TrialName", trl, ss.TestEnv.TrialName)
@@ -836,6 +839,7 @@ func (ss *Sim) ConfigTstTrlLog() {
 	dt.SetMetaData("read-only", "true")
 	nt := ss.TestEnv.Table.Len() // number in view
 	dt.SetFromSchema(etable.Schema{
+		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
 		{"Trial", etensor.INT64, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
@@ -856,6 +860,7 @@ func (ss *Sim) ConfigTstTrlPlot() {
 	plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
 	plt.Params.XAxisCol = "Trial"
 	// order of params: on, fixMin, min, fixMax, max
+	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("Epoch", false, true, 0, false, 0)
 	plt.SetColParams("Trial", false, true, 0, false, 0)
 	plt.SetColParams("TrialName", false, true, 0, false, 0)
@@ -897,8 +902,6 @@ func (ss *Sim) LogTstEpc() {
 	})[0])
 	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
 
-	// todo: how to grab acts from layer as tensor and record to table.
-
 	trlix := etable.NewIdxView(trl)
 	trlix.Filter(func(et *etable.Table, row int) bool {
 		return et.CellFloat("SSE", row) > 0 // include error trials
@@ -922,6 +925,7 @@ func (ss *Sim) ConfigTstEpcLog() {
 	dt := ss.TstEpcLog
 	dt.SetMetaData("name", "TstEpcLog")
 	dt.SetMetaData("desc", "Summary stats for testing trials")
+	dt.SetMetaData("read-only", "true")
 	dt.SetFromSchema(etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
@@ -951,7 +955,7 @@ func (ss *Sim) ConfigTstEpcPlot() {
 //  TstCycLog
 
 // LogTstCyc adds data from current trial to the TstCycLog table.
-// log only contains Pats.NumRows() entries
+// log just has 100 cycles, is overwritten
 func (ss *Sim) LogTstCyc(cyc int) {
 	dt := ss.TstCycLog
 	if dt.Rows <= cyc {
@@ -1091,8 +1095,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	gi.SetAppName("ra25")
 	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
-
-	plot.DefaultFont = "Helvetica"
 
 	win := gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, true)
 	ss.Win = win
