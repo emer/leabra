@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from leabra import go, gi, giv
+from leabra import go, gi, giv, etable, etview, params
 
 import pandas as pd
 
@@ -25,7 +25,12 @@ def EditGoObjCB(recv, send, sig, data):
     cv = classviews[nms[0]]
     flds = cv.Class.__dict__
     fld = getattr(cv.Class, nms[1])
-    dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+    if isinstance(fld, etable.Table):
+        dlg = etview.TableViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+    elif isinstance(fld, params.Sets):
+        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+    else:
+        dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)
@@ -159,6 +164,7 @@ class ClassView(object):
             else:
                 vw = gi.TextField(self.Frame.AddNewChild(gi.KiT_TextField(), self.Name + ":" + nm))
                 vw.SetText(str(val))
+                vw.SetPropStr("min-width", "10em")
                 vw.TextFieldSig.Connect(self.Frame, SetStrValCB)
                 if self.HasTagValue(tags, "inactive", "+"):
                     vw.SetInactive()

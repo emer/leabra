@@ -136,6 +136,20 @@ func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	return nrn.VarByName(varNm)
 }
 
+// Pool returns pool at given index
+func (ly *Layer) Pool(idx int) *Pool {
+	return &(ly.Pools[idx])
+}
+
+// PoolTry returns pool at given index, returns error if index is out of range
+func (ly *Layer) PoolTry(idx int) (*Pool, error) {
+	np := len(ly.Pools)
+	if idx < 0 || idx >= np {
+		return nil, fmt.Errorf("Layer Pool index: %v out of range, N = %v", idx, np)
+	}
+	return &(ly.Pools[idx]), nil
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Build
 

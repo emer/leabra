@@ -52,7 +52,7 @@ def TrainCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.Train(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
+        TheSim.Train()
 
 def StopCB(recv, send, sig, data):
     TheSim.Stop()
@@ -69,13 +69,13 @@ def StepEpochCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.TrainEpoch(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
+        TheSim.TrainEpoch()
 
 def StepRunCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.TrainRun(goRun=True)  # goRun = run in separate go routine -- otherwise unresponsive
+        TheSim.TrainRun()
 
 def TestTrialCB(recv, send, sig, data):
     if not TheSim.IsRunning:
@@ -98,7 +98,7 @@ def TestAllCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.RunTestAll(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
+        TheSim.RunTestAll()
 
 def ResetRunLogCB(recv, send, sig, data):
     TheSim.RunLog.SetNumRows(0)
@@ -112,7 +112,7 @@ def ReadmeCB(recv, send, sig, data):
     TheSim.NewRndSeed()
 
 def FilterSSE(et, row):
-    return et.CellFloat("SSE", row) > 0 # include error trials    
+    return etable.Table(handle=et).CellFloat("SSE", row) > 0 # include error trials    
 
 def UpdtFuncNotRunning(act):
     act.SetActiveStateUpdt(not TheSim.IsRunning)
@@ -246,7 +246,7 @@ class Sim(object):
         self.RunFile    = 0
         self.SaveWts    = False
         self.NoGui        = False
-        self.LogSetParams = False
+        self.LogSetParams = False # True
         self.IsRunning    = False
         self.StopNow    = False
         self.RndSeed    = 0
@@ -336,6 +336,7 @@ class Sim(object):
         If train is true, then learning DWt or WtFmDWt calls are made.
         Handles netview updating within scope of AlphaCycle
         """
+        self.Win.PollEvents() # this is essential for GUI responsiveness while running
         viewUpdt = self.TrainUpdt
         if not train:
             viewUpdt = self.TestUpdt
@@ -460,18 +461,18 @@ class Sim(object):
         """ InitStats initializes all the statistics, especially important for the
             cumulative epoch stats -- called at start of new run """
         # accumulators
-        self.SumSSE = 0
-        self.SumAvgSSE = 0
-        self.SumCosDiff = 0
-        self.CntErr = 0
+        self.SumSSE = 0.0
+        self.SumAvgSSE = 0.0
+        self.SumCosDiff = 0.0
+        self.CntErr = 0.0
         self.FirstZero = -1
         # clear rest just to make Sim look initialized
-        self.TrlSSE = 0
-        self.TrlAvgSSE = 0
-        self.EpcSSE = 0
-        self.EpcAvgSSE = 0
-        self.EpcPctErr = 0
-        self.EpcCosDiff = 0
+        self.TrlSSE = 0.0
+        self.TrlAvgSSE = 0.0
+        self.EpcSSE = 0.0
+        self.EpcAvgSSE = 0.0
+        self.EpcPctErr = 0.0
+        self.EpcCosDiff = 0.0
     
     def TrialStats(self, accum):
         """
@@ -484,7 +485,7 @@ class Sim(object):
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         self.TrlCosDiff = outLay.CosDiff.Cos
         self.TrlSSE = outLay.SSE(0.5) # 0.5 = per-unit tolerance -- right side of .5
-        self.TrlAvgSEE = self.TrlSSE / len(outLay.Neurons)
+        self.TrlAvgSEE = self.TrlSSE # / len(outLay.Neurons)
         if accum:
             self.SumSSE += self.TrlSSE
             self.SumAvgSSE += self.TrlAvgSSE
@@ -668,13 +669,13 @@ class Sim(object):
         if pset == go.nil:
             return
         if sheet == "" or sheet == "Network":
-            if "Network" in pset.Sheets:
-                netp = pset.Sheets["Network"]
-                self.Net.ApplyParams(netp, setMsg)
+            # if "Network" in pset.Sheets:
+            netp = pset.SheetByNameTry("Network")
+            self.Net.ApplyParams(netp, setMsg)
         if sheet == "" or sheet == "Sim":
-            if "Sim" in pset.Sheets:
-                simp = pset.Sheets["Sim"]
-                simp.Apply(self, setMsg)
+            # if "Sim" in pset.Sheets:
+            simp = pset.SheetByNameTry("Sim")
+            # simp.Apply(self, setMsg) # todo need a version for python class!
         # note: if you have more complex environments with parameters, definitely add
         # sheets for them, e.g., "TrainEnv", "TestEnv" etc
 
@@ -767,9 +768,9 @@ class Sim(object):
         dt.SetCellFloat("PctErr", row, self.EpcPctErr)
         dt.SetCellFloat("PctCor", row, self.EpcPctCor)
         dt.SetCellFloat("CosDiff", row, self.EpcCosDiff)
-        dt.SetCellFloat("Hid1 ActAvg", row, leabra.Pool(hid1Lay.Pools[0]).ActAvg.ActPAvgEff)
-        dt.SetCellFloat("Hid2 ActAvg", row, leabra.Pool(hid2Lay.Pools[0]).ActAvg.ActPAvgEff)
-        dt.SetCellFloat("Out ActAvg", row, leabra.Pool(outLay.Pools[0]).ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Hid1 ActAvg", row, hid1Lay.Pool(0).ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Hid2 ActAvg", row, hid2Lay.Pool(0).ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Out ActAvg", row, outLay.Pool(0).ActAvg.ActPAvgEff)
         
         # note: essential to use Go version of update when called from another goroutine
         if self.TrnEpcPlot != 0:
@@ -849,9 +850,9 @@ class Sim(object):
         dt.SetCellFloat("SSE", trl, self.TrlSSE)
         dt.SetCellFloat("AvgSSE", trl, self.TrlAvgSSE)
         dt.SetCellFloat("CosDiff", trl, self.TrlCosDiff)
-        dt.SetCellFloat("Hid1 ActM.Avg", trl, leabra.Pool(hid1Lay.Pools[0]).ActM.Avg)
-        dt.SetCellFloat("Hid2 ActM.Avg", trl, leabra.Pool(hid2Lay.Pools[0]).ActM.Avg)
-        dt.SetCellFloat("Out ActM.Avg", trl, leabra.Pool(outLay.Pools[0]).ActM.Avg)
+        dt.SetCellFloat("Hid1 ActM.Avg", trl, hid1Lay.Pool(0).ActM.Avg)
+        dt.SetCellFloat("Hid2 ActM.Avg", trl, hid2Lay.Pool(0).ActM.Avg)
+        dt.SetCellFloat("Out ActM.Avg", trl, outLay.Pool(0).ActM.Avg)
         
         dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
         dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
@@ -869,6 +870,7 @@ class Sim(object):
         dt.SetMetaData("name", "TstTrlLog")
         dt.SetMetaData("desc", "Record of testing per input pattern")
         dt.SetMetaData("read-only", "true")
+        nt = self.TestEnv.Table.Len() # number in view
         
         sc = etable.Schema()
         sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
@@ -884,7 +886,7 @@ class Sim(object):
         sc.append(etable.Column("InAct", etensor.FLOAT64, inLay.Shp.Shp, nilStrs))
         sc.append(etable.Column("OutActM", etensor.FLOAT64, outLay.Shp.Shp, nilStrs))
         sc.append(etable.Column("OutActP", etensor.FLOAT64, outLay.Shp.Shp, nilStrs))
-        dt.SetFromSchema(sc, 0)
+        dt.SetFromSchema(sc, nt)
         
 
     def ConfigTstTrlPlot(self):
@@ -998,12 +1000,12 @@ class Sim(object):
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         
         dt.SetCellFloat("Cycle", cyc, cyc)
-        dt.SetCellFloat("Hid1 Ge.Avg", cyc, leabra.Pool(hid1Lay.Pools[0]).Ge.Avg)
-        dt.SetCellFloat("Hid2 Ge.Avg", cyc, leabra.Pool(hid2Lay.Pools[0]).Ge.Avg)
-        dt.SetCellFloat("Out Ge.Avg", cyc, leabra.Pool(outLay.Pools[0]).Ge.Avg)
-        dt.SetCellFloat("Hid1 Act.Avg", cyc, leabra.Pool(hid1Lay.Pools[0]).Act.Avg)
-        dt.SetCellFloat("Hid2 Act.Avg", cyc, leabra.Pool(hid2Lay.Pools[0]).Act.Avg)
-        dt.SetCellFloat("Out Act.Avg", cyc, leabra.Pool(outLay.Pools[0]).Act.Avg)
+        dt.SetCellFloat("Hid1 Ge.Avg", cyc, hid1Lay.Pool(0).Ge.Avg)
+        dt.SetCellFloat("Hid2 Ge.Avg", cyc, hid2Lay.Pool(0).Ge.Avg)
+        dt.SetCellFloat("Out Ge.Avg", cyc, outLay.Pool(0).Ge.Avg)
+        dt.SetCellFloat("Hid1 Act.Avg", cyc, hid1Lay.Pool(0).Act.Avg)
+        dt.SetCellFloat("Hid2 Act.Avg", cyc, hid2Lay.Pool(0).Act.Avg)
+        dt.SetCellFloat("Out Act.Avg", cyc, outLay.Pool(0).Act.Avg)
         
         if self.TstCycPlot != 0 and cyc % 10 == 0: # too slow to do every cyc
             # note: essential to use Go version of update when called from another goroutine
@@ -1052,8 +1054,8 @@ class Sim(object):
         # compute mean over last N epochs for run level
         nlast = 10
         epcix = etable.NewIdxView(epclog)
-        #epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
-        print(epcix.Idxs[epcix.Len()-nlast-1:])
+        epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
+        # print(epcix.Idxs[epcix.Len()-nlast-1:])
         
         params = self.ParamsName()
         
