@@ -16,7 +16,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, etensor, params, netview, rand, erand, gi, giv
+from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, split, etensor, params, netview, rand, erand, gi, giv
 
 # this is in-process and will be an installable module under GoGi later
 import pygiv
@@ -52,7 +52,7 @@ def TrainCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.Train()
+        TheSim.Train(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
 
 def StopCB(recv, send, sig, data):
     TheSim.Stop()
@@ -69,13 +69,13 @@ def StepEpochCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.TrainEpoch()
+        TheSim.TrainEpoch(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
 
 def StepRunCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.TrainRun()
+        TheSim.TrainRun(goRun=True)  # goRun = run in separate go routine -- otherwise unresponsive
 
 def TestTrialCB(recv, send, sig, data):
     if not TheSim.IsRunning:
@@ -98,7 +98,7 @@ def TestAllCB(recv, send, sig, data):
     if not TheSim.IsRunning:
         TheSim.IsRunning = True
         TheSim.ToolBar.UpdateActions()
-        TheSim.RunTestAll()
+        TheSim.RunTestAll(goRun=True) # goRun = run in separate go routine -- otherwise unresponsive
 
 def ResetRunLogCB(recv, send, sig, data):
     TheSim.RunLog.SetNumRows(0)
@@ -233,16 +233,16 @@ class Sim(object):
         self.SumAvgSSE  = 0.0
         self.SumCosDiff = 0.0
         self.CntErr     = 0.0
-        self.Win        = gi.Window()
-        self.vp         = gi.Viewport2D()
-        self.ToolBar    = gi.ToolBar()
-        self.NetView    = netview.NetView()
-        self.TrnEpcPlot = eplot.Plot2D()
-        self.TstEpcPlot = eplot.Plot2D()
-        self.TstTrlPlot = eplot.Plot2D()
-        self.TstCycPlot = eplot.Plot2D()
-        self.RunPlot    = eplot.Plot2D()
-        self.TrnEpcFile = 0 # todo: file  
+        self.Win        = 0
+        self.vp         = 0
+        self.ToolBar    = 0
+        self.NetView    = 0
+        self.TrnEpcPlot = 0
+        self.TstEpcPlot = 0
+        self.TstTrlPlot = 0
+        self.TstCycPlot = 0
+        self.RunPlot    = 0
+        self.TrnEpcFile = 0
         self.RunFile    = 0
         self.SaveWts    = False
         self.NoGui        = False
@@ -324,7 +324,7 @@ class Sim(object):
             return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.TestEnv.TrialName)
 
     def UpdateView(self, train):
-        if self.NetView != go.nil:
+        if self.NetView != 0:
             # note: essential to use Go version of update when called from another goroutine
             self.NetView.GoUpdate(self.Counters(train)) # note: using counters is significantly slower..
 
@@ -366,8 +366,8 @@ class Sim(object):
             self.Net.WtFmDWt()
         if self.ViewOn and viewUpdt == leabra.AlphaCycle:
               self.UpdateView(train)
-        if not train:
-            self.TstCycPlot.Update()
+        if self.TstCycPlot != 0 and not train:
+            self.TstCycPlot.GoUpdate()
 
     def ApplyInputs(self, en):
         """
@@ -489,7 +489,7 @@ class Sim(object):
             self.SumSSE += self.TrlSSE
             self.SumAvgSSE += self.TrlAvgSSE
             self.SumCosDiff += self.TrlCosDiff
-            if sse != 0:
+            if self.TrlSSE != 0:
                 self.CntErr += 1.0
 
     def TrainEpoch(self):
@@ -523,12 +523,12 @@ class Sim(object):
 
     def Stop(self):
         """ Stop tells the sim to stop running """
-        self.StopNow = true
+        self.StopNow = True
 
     def Stopped(self):
         """ Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar """
         self.IsRunning = False
-        if self.Win != go.nil:
+        if self.Win != 0:
             self.vp.BlockUpdates()
             if self.ToolBar != go.nil:
                 self.ToolBar.UpdateActions()
@@ -573,7 +573,7 @@ class Sim(object):
         self.TestEnv.Init(self.TrainEnv.Run.Cur)
         while True:
             self.TestTrial()
-            ch = env.CounterChg(self.TestEnv, env.Epoch)
+            chg = env.CounterChg(self.TestEnv, env.Epoch)
             if chg or self.StopNow:
                 break
 
@@ -696,7 +696,7 @@ class Sim(object):
         self.Pats = dt
         dt.SetMetaData("name", "TrainPats")
         dt.SetMetaData("desc", "Training patterns")
-        dt.OpenCSV("random_5x5_25.dat", 9) # 9 = tab
+        dt.OpenCSV("random_5x5_25.dat", etable.Tab)
         # Note: here's how to read into a pandas DataFrame
         # dt = pd.read_csv("random_5x5_25.dat", sep='\t')
         # dt = dt.drop(columns="_H:")
@@ -767,16 +767,18 @@ class Sim(object):
         dt.SetCellFloat("PctErr", row, self.EpcPctErr)
         dt.SetCellFloat("PctCor", row, self.EpcPctCor)
         dt.SetCellFloat("CosDiff", row, self.EpcCosDiff)
-        dt.SetCellFloat("Hid1 ActAvg", row, hid1Lay.Pools[0].ActAvg.ActPAvgEff)
-        dt.SetCellFloat("Hid2 ActAvg", row, hid2Lay.Pools[0].ActAvg.ActPAvgEff)
-        dt.SetCellFloat("Out ActAvg", row, outLay.Pools[0].ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Hid1 ActAvg", row, leabra.Pool(hid1Lay.Pools[0]).ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Hid2 ActAvg", row, leabra.Pool(hid2Lay.Pools[0]).ActAvg.ActPAvgEff)
+        dt.SetCellFloat("Out ActAvg", row, leabra.Pool(outLay.Pools[0]).ActAvg.ActPAvgEff)
         
         # note: essential to use Go version of update when called from another goroutine
-        self.TrnEpcPlot.GoUpdate()
-        if self.TrnEpcFile != go.nil:
+        if self.TrnEpcPlot != 0:
+            self.TrnEpcPlot.GoUpdate()
+            
+        if self.TrnEpcFile != 0:
             if self.TrainEnv.Run.Cur == 0 and epc == 0:
-                dt.WriteCSVHeaders(self.TrnEpcFile, 9) # 9 = tab
-            dt.WriteCSVRow(self.TrnEpcFile, row, 9, True) # 9 = tab
+                dt.WriteCSVHeaders(self.TrnEpcFile, etable.Tab)
+            dt.WriteCSVRow(self.TrnEpcFile, row, etable.Tab, True)
 
         # note: this is how you log to a pandas.DataFrame
         # nwdat = [epc, self.EpcSSE, self.EpcAvgSSE, self.EpcPctErr, self.EpcPctCor, self.EpcCosDiff, 0, 0, 0]
@@ -847,16 +849,17 @@ class Sim(object):
         dt.SetCellFloat("SSE", trl, self.TrlSSE)
         dt.SetCellFloat("AvgSSE", trl, self.TrlAvgSSE)
         dt.SetCellFloat("CosDiff", trl, self.TrlCosDiff)
-        dt.SetCellFloat("Hid1 ActM.Avg", trl, hid1Lay.Pools[0].ActM.Avg)
-        dt.SetCellFloat("Hid2 ActM.Avg", trl, hid2Lay.Pools[0].ActM.Avg)
-        dt.SetCellFloat("Out ActM.Avg", trl, outLay.Pools[0].ActM.Avg)
+        dt.SetCellFloat("Hid1 ActM.Avg", trl, leabra.Pool(hid1Lay.Pools[0]).ActM.Avg)
+        dt.SetCellFloat("Hid2 ActM.Avg", trl, leabra.Pool(hid2Lay.Pools[0]).ActM.Avg)
+        dt.SetCellFloat("Out ActM.Avg", trl, leabra.Pool(outLay.Pools[0]).ActM.Avg)
         
         dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
         dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
         dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
         
         # note: essential to use Go version of update when called from another goroutine
-        self.TstTrlPlot.GoUpdate()
+        if self.TstTrlPlot != 0:
+            self.TstTrlPlot.GoUpdate()
 
     def ConfigTstTrlLog(self):
         inLay = leabra.Layer(self.Net.LayerByName("Input"))
@@ -896,9 +899,9 @@ class Sim(object):
         plt.SetColParams("SSE", False, True, 0, False, 0)
         plt.SetColParams("AvgSSE", False, True, 0, False, 0)
         plt.SetColParams("CosDiff", True, True, 0, True, 1)
-        plt.SetColParams("Hid1 ActAvg", True, True, 0, True, .5)
-        plt.SetColParams("Hid2 ActAvg", True, True, 0, True, .5)
-        plt.SetColParams("Out ActAvg", True, True, 0, True, .5)
+        plt.SetColParams("Hid1 ActM.Avg", True, True, 0, True, .5)
+        plt.SetColParams("Hid2 ActM.Avg", True, True, 0, True, .5)
+        plt.SetColParams("Out ActM.Avg", True, True, 0, True, .5)
 
         plt.SetColParams("InAct", False, True, 0, True, 1)
         plt.SetColParams("OutActM", False, True, 0, True, 1)
@@ -926,8 +929,8 @@ class Sim(object):
         dt.SetCellFloat("Epoch", row, epc)
         dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
         dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
-        dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", lambda idx, val: val > 0)[0])
-        dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", lambda idx, val: val == 0)[0])
+        # dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", lambda idx, val: val > 0)[0])
+        # dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", lambda idx, val: val == 0)[0])
         dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
         
         trlix = etable.NewIdxView(trl)
@@ -945,7 +948,8 @@ class Sim(object):
         self.TstErrStats = allsp.AggsToTable(False)
         
         # note: essential to use Go version of update when called from another goroutine
-        self.TstEpcPlot.GoUpdate()
+        if self.TstEpcPlot != 0:
+            self.TstEpcPlot.GoUpdate()
 
     def ConfigTstEpcLog(self):
         dt = self.TstEpcLog
@@ -994,14 +998,14 @@ class Sim(object):
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         
         dt.SetCellFloat("Cycle", cyc, cyc)
-        dt.SetCellFloat("Hid1 Ge.Avg", cyc, hid1Lay.Pools[0].Ge.Avg)
-        dt.SetCellFloat("Hid2 Ge.Avg", cyc, hid2Lay.Pools[0].Ge.Avg)
-        dt.SetCellFloat("Out Ge.Avg", cyc, outLay.Pools[0].Ge.Avg)
-        dt.SetCellFloat("Hid1 Act.Avg", cyc, hid1Lay.Pools[0].Act.Avg)
-        dt.SetCellFloat("Hid2 Act.Avg", cyc, hid2Lay.Pools[0].Act.Avg)
-        dt.SetCellFloat("Out Act.Avg", cyc, outLay.Pools[0].Act.Avg)
+        dt.SetCellFloat("Hid1 Ge.Avg", cyc, leabra.Pool(hid1Lay.Pools[0]).Ge.Avg)
+        dt.SetCellFloat("Hid2 Ge.Avg", cyc, leabra.Pool(hid2Lay.Pools[0]).Ge.Avg)
+        dt.SetCellFloat("Out Ge.Avg", cyc, leabra.Pool(outLay.Pools[0]).Ge.Avg)
+        dt.SetCellFloat("Hid1 Act.Avg", cyc, leabra.Pool(hid1Lay.Pools[0]).Act.Avg)
+        dt.SetCellFloat("Hid2 Act.Avg", cyc, leabra.Pool(hid2Lay.Pools[0]).Act.Avg)
+        dt.SetCellFloat("Out Act.Avg", cyc, leabra.Pool(outLay.Pools[0]).Act.Avg)
         
-        if cyc % 10 == 0: # too slow to do every cyc
+        if self.TstCycPlot != 0 and cyc % 10 == 0: # too slow to do every cyc
             # note: essential to use Go version of update when called from another goroutine
             self.TstCycPlot.GoUpdate()
 
@@ -1048,7 +1052,8 @@ class Sim(object):
         # compute mean over last N epochs for run level
         nlast = 10
         epcix = etable.NewIdxView(epclog)
-        epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
+        #epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
+        print(epcix.Idxs[epcix.Len()-nlast-1:])
         
         params = self.ParamsName()
         
@@ -1068,11 +1073,13 @@ class Sim(object):
         self.RunStats = spl.AggsToTable(False)
         
         # note: essential to use Go version of update when called from another goroutine
-        self.RunPlot.GoUpdate()
-        if self.RunFile != go.nil:
+        if self.RunPlot != 0:
+            self.RunPlot.GoUpdate()
+            
+        if self.RunFile != 0:
             if row == 0:
-                dt.WriteCSVHeaders(self.RunFile, 9) # 9 = tab
-            dt.WriteCSVRow(self.RunFile, row, 9, True) # 9 = tab
+                dt.WriteCSVHeaders(self.RunFile, etable.Tab)
+            dt.WriteCSVRow(self.RunFile, row, etable.Tab, True)
             
     def ConfigRunLog(self):
         dt = self.RunLog
@@ -1142,7 +1149,7 @@ class Sim(object):
         tv.AddTab(nv, "NetView")
         nv.Var = "Act"
         nv.SetNet(self.Net)
-        self.NetVew = nv
+        self.NetView = nv
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TrnEpcPlot")

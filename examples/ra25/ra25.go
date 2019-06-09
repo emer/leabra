@@ -301,7 +301,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 		ss.UpdateView(train)
 	}
 	if !train {
-		ss.TstCycPlot.Update() // make sure up-to-date at end
+		ss.TstCycPlot.GoUpdate() // make sure up-to-date at end
 	}
 }
 
@@ -328,6 +328,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 // TrainTrial runs one trial of training using TrainEnv
 func (ss *Sim) TrainTrial() {
+	gi.PollEvents()
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
 
 	// Key to query counters FIRST because current state is in NEXT epoch
@@ -672,7 +673,7 @@ func (ss *Sim) OpenPats() {
 	dt := ss.Pats
 	dt.SetMetaData("name", "TrainPats")
 	dt.SetMetaData("desc", "Training patterns")
-	err := dt.OpenCSV("random_5x5_25.dat", '\t')
+	err := dt.OpenCSV("random_5x5_25.dat", etable.Tab)
 	if err != nil {
 		log.Println(err)
 	}
@@ -752,9 +753,9 @@ func (ss *Sim) LogTrnEpc() {
 	ss.TrnEpcPlot.GoUpdate()
 	if ss.TrnEpcFile != nil {
 		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
-			dt.WriteCSVHeaders(ss.TrnEpcFile, '\t')
+			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 		}
-		dt.WriteCSVRow(ss.TrnEpcFile, row, '\t', true)
+		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab, true)
 	}
 }
 
@@ -1048,9 +1049,9 @@ func (ss *Sim) LogRun() {
 	ss.RunPlot.GoUpdate()
 	if ss.RunFile != nil {
 		if row == 0 {
-			dt.WriteCSVHeaders(ss.RunFile, '\t')
+			dt.WriteCSVHeaders(ss.RunFile, etable.Tab)
 		}
-		dt.WriteCSVRow(ss.RunFile, row, '\t', true)
+		dt.WriteCSVRow(ss.RunFile, row, etable.Tab, true)
 	}
 }
 
