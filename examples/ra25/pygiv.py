@@ -6,6 +6,28 @@ from leabra import go, gi, giv, etable, etview, params
 
 import pandas as pd
 
+# ApplyParams applies params.Sheet to cls
+def ApplyParams(cls, sheet, setMsg):
+    flds = cls.__dict__
+    for sl in sheet:
+        sel = params.Sel(handle=sl)
+        for nm, val in sel.Params:
+            flnm = nm.split('.')[1]
+            print("name: %s, value: %s\n" % (flnm, val))
+            if flnm in flds:
+                cur = getattr(cls, flnm)
+                if isinstance(cur, int):
+                    setattr(cls, flnm, int(val))
+                elif isinstance(cur, float):
+                    setattr(cls, flnm, float(val))
+                else:
+                    setattr(cls, flnm, val)
+                if setMsg:
+                    print("Field named: %s set to value: %s\n" % (flnm, val))
+            else:
+                print("ApplyParams error: field: %s not found in class\n" % flnm)
+                
+
 # classviews is a dictionary of classviews -- needed for callbacks
 classviews = {}
 
@@ -25,12 +47,13 @@ def EditGoObjCB(recv, send, sig, data):
     cv = classviews[nms[0]]
     flds = cv.Class.__dict__
     fld = getattr(cv.Class, nms[1])
+    title = nms[1]
     if isinstance(fld, etable.Table):
-        dlg = etview.TableViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+        dlg = etview.TableViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
     elif isinstance(fld, params.Sets):
-        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
     else:
-        dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=nm), go.nil, go.nil)
+        dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)

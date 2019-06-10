@@ -1,4 +1,4 @@
-#!/usr/local/bin/pyleabra -i
+#!/usr/local/bin/pyleabra
 
 # Copyright (c) 2019, The Emergent Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
@@ -27,7 +27,7 @@ import matplotlib
 matplotlib.use('SVG')
 #import matplotlib.pyplot as plt
 #plt.rcParams['svg.fonttype'] = 'none'  # essential for not rendering fonts as paths
-import io
+import io, sys, getopt
 
 # note: xarray or pytorch TensorDataSet can be used instead of pandas for input / output
 # patterns and recording of "log" data for plotting
@@ -85,14 +85,28 @@ def TestTrialCB(recv, send, sig, data):
         TheSim.ClassView.Update()
         TheSim.vp.SetNeedsFullRender()
 
+def TestItemCB2(recv, send, sig, data):
+    win = gi.Window(handle=recv)
+    vp = win.WinViewport2D()
+    dlg = gi.Dialog(handle=send)
+    if sig != gi.DialogAccepted:
+        return
+    val = gi.StringPromptDialogValue(dlg)
+    idxs = TheSim.TestEnv.Table.RowsByString("Name", val, True, True) # contains, ignoreCase
+    if len(idxs) == 0:
+        gi.PromptDialog(vp, gi.DlgOpts(Title="Name Not Found", Prompt="No patterns found containing: " + val), True, False, go.nil, go.nil)
+    else:
+        if not TheSim.IsRunning:
+            TheSim.IsRunning = True
+            print("testing index: %s\n" % idxs[0])
+            TheSim.TestItem(idxs[0])
+            TheSim.IsRunning = False
+            vp.SetNeedsFullRender()
+
 def TestItemCB(recv, send, sig, data):
-    # todo: do full
-    if not TheSim.IsRunning:
-        TheSim.IsRunning = True
-        TheSim.TestTrial()
-        TheSim.IsRunning = False
-        TheSim.ClassView.Update()
-        TheSim.vp.SetNeedsFullRender()
+    win = gi.Window(handle=recv)
+    gi.StringPromptDialog(win.WinViewport2D(), "", "Test Item",
+        gi.DlgOpts(Title="Test Item", Prompt="Enter the Name of a given input pattern to test (case insensitive, contains given string."), win, TestItemCB2)
 
 def TestAllCB(recv, send, sig, data):
     if not TheSim.IsRunning:
@@ -108,8 +122,7 @@ def NewRndSeedCB(recv, send, sig, data):
     TheSim.NewRndSeed()
 
 def ReadmeCB(recv, send, sig, data):
-    # todo: add wrapper for oswin.OpenURL so don't need to include it..
-    TheSim.NewRndSeed()
+    gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
 
 def FilterSSE(et, row):
     return etable.Table(handle=et).CellFloat("SSE", row) > 0 # include error trials    
@@ -119,70 +132,6 @@ def UpdtFuncNotRunning(act):
     
 def UpdtFuncRunning(act):
     act.SetActiveStateUpdt(TheSim.IsRunning)
-
-# ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
-# selected to apply on top of that
-ParamSets = params.Sets({
-	params.Set(Name="Base", Desc="these are the best params", Sheets=params.Sheets({
-		"Network": params.Sheet({
-			params.Sel(Sel="Prjn", Desc="norm and momentum on works better, but wt bal is not better for smaller nets",
-				Params=params.Params({
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
-				}).handle),
-			params.Sel(Sel="Layer", Desc="using default 1.8 inhib for all of network -- can explore",
-				Params=params.Params({
-					"Layer.Inhib.Layer.Gi": "1.8",
-				}).handle),
-			params.Sel(Sel="#Output", Desc="output definitely needs lower inhib -- true for smaller layers in general",
-				Params=params.Params({
-					"Layer.Inhib.Layer.Gi": "1.4",
-				}).handle),
-			params.Sel(Sel=".Back", Desc="top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
-				Params=params.Params({
-					"Prjn.WtScale.Rel": "0.2",
-				}).handle),
-   		}).handle,
-		"Sim": params.Sheet({
-			params.Sel(Sel="Sim", Desc="best params always finish in this time",
-				Params=params.Params({
-					"Sim.MaxEpcs": "50",
-				}).handle),
-		}).handle,
-	}).handle),
-	params.Set(Name="DefaultInhib", Desc="output uses default inhib instead of lower", Sheets=params.Sheets({
-		"Network": params.Sheet({
-			params.Sel(Sel="#Output", Desc="go back to default",
-				Params=params.Params({
-					"Layer.Inhib.Layer.Gi": "1.8",
-				}).handle),
-		}).handle,
-		"Sim": params.Sheet({
-			params.Sel(Sel="Sim", Desc="takes longer -- generally doesn't finish..",
-				Params=params.Params({
-					"Sim.MaxEpcs": "100",
-				}).handle),
-		}).handle,
-	}).handle),
-	params.Set(Name="NoMomentum", Desc="no momentum or normalization", Sheets=params.Sheets({
-		"Network": params.Sheet({
-			params.Sel(Sel="Prjn", Desc="no norm or momentum",
-				Params=params.Params({
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
-				}).handle),
-		}).handle,
-	}).handle),
-	params.Set(Name="WtBalOn", Desc="try with weight bal on", Sheets=params.Sheets({
-		"Network": params.Sheet({
-			params.Sel(Sel="Prjn", Desc="weight bal on",
-				Params=params.Params({
-					"Prjn.Learn.WtBal.On": "true",
-				}).handle),
-		}).handle,
-	}).handle),
-})
 
 class Sim(object):
     """
@@ -203,7 +152,7 @@ class Sim(object):
         self.TstCycLog   = etable.Table()
         self.RunLog      = etable.Table()
         self.RunStats    = etable.Table()
-        self.Params     = ParamSets
+        self.Params     = params.Sets()
         self.ParamSet = ""
         self.Tag      = ""
         self.MaxRuns  = 10
@@ -288,8 +237,81 @@ class Sim(object):
         }
 
 
+    def InitParams(self):
+        """
+        Sets the default set of parameters -- Base is always applied, and others can be optionally
+        selected to apply on top of that
+        """
+        self.Params.OpenJSON("ra25_std.params")
+
+        # todo: the following expression SHOULD produce the same results but it ends up
+        # adding the items in a random order relative to what is shown here -- each time
+        # the order is different.  very strange
+        # pars = params.Set(Name="Base", Desc="these are the best params", Sheets=params.Sheets({
+        #         "Network": params.Sheet({
+        #             params.Sel(Sel="Prjn", Desc="norm and momentum on works better, but wt bal is not better for smaller nets",
+        #                 Params=params.Params({
+        #                     "Prjn.Learn.Norm.On":     "true",
+        #                     "Prjn.Learn.Momentum.On": "true",
+        #                     "Prjn.Learn.WtBal.On":    "false",
+        #                 }).handle),
+        #             params.Sel(Sel="Layer", Desc="using default 1.8 inhib for all of network -- can explore",
+        #                 Params=params.Params({
+        #                     "Layer.Inhib.Layer.Gi": "1.8",
+        #                 }).handle),
+        #             params.Sel(Sel="#Output", Desc="output definitely needs lower inhib -- true for smaller layers in general",
+        #                 Params=params.Params({
+        #                     "Layer.Inhib.Layer.Gi": "1.4",
+        #                 }).handle),
+        #             params.Sel(Sel=".Back", Desc="top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+        #                 Params=params.Params({
+        #                     "Prjn.WtScale.Rel": "0.2",
+        #                 }).handle),
+        #             }).handle,
+        #         "Sim": params.Sheet({
+        #             params.Sel(Sel="Sim", Desc="best params always finish in this time",
+        #                 Params=params.Params({
+        #                     "Sim.MaxEpcs": "50",
+        #                 }).handle),
+        #             }).handle,
+        #     }).handle),
+        # params.Set(Name="DefaultInhib", Desc="output uses default inhib instead of lower", Sheets=params.Sheets({
+        #         "Network": params.Sheet({
+        #             params.Sel(Sel="#Output", Desc="go back to default",
+        #                 Params=params.Params({
+        #                     "Layer.Inhib.Layer.Gi": "1.8",
+        #                    }).handle),
+        #                 }).handle,
+        #         "Sim": params.Sheet({
+        #             params.Sel(Sel="Sim", Desc="takes longer -- generally doesn't finish..",
+        #                 Params=params.Params({
+        #                     "Sim.MaxEpcs": "100",
+        #                }).handle),
+        #             }).handle,
+        #      }).handle),
+        # params.Set(Name="NoMomentum", Desc="no momentum or normalization", Sheets=params.Sheets({
+        #         "Network": params.Sheet({
+        #             params.Sel(Sel="Prjn", Desc="no norm or momentum",
+        #                 Params=params.Params({
+        #                     "Prjn.Learn.Norm.On":     "false",
+        #                     "Prjn.Learn.Momentum.On": "false",
+        #                 }).handle),
+        #             }).handle,
+        #         }).handle),
+        # params.Set(Name="WtBalOn", Desc="try with weight bal on", Sheets=params.Sheets({
+        #         "Network": params.Sheet({
+        #             params.Sel(Sel="Prjn", Desc="weight bal on",
+        #                Params=params.Params({
+        #                    "Prjn.Learn.WtBal.On": "true",
+        #                }).handle),
+        #            }).handle,
+        #        }).handle),
+        # })
+
+
     def Config(self):
         """Config configures all the elements using the standard functions"""
+        self.InitParams()
         self.OpenPats()
         self.ConfigEnv()
         self.ConfigNet()
@@ -336,7 +358,8 @@ class Sim(object):
         If train is true, then learning DWt or WtFmDWt calls are made.
         Handles netview updating within scope of AlphaCycle
         """
-        self.Win.PollEvents() # this is essential for GUI responsiveness while running
+        if self.Win != 0:
+            self.Win.PollEvents() # this is essential for GUI responsiveness while running
         viewUpdt = self.TrainUpdt
         if not train:
             viewUpdt = self.TestUpdt
@@ -485,7 +508,7 @@ class Sim(object):
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         self.TrlCosDiff = outLay.CosDiff.Cos
         self.TrlSSE = outLay.SSE(0.5) # 0.5 = per-unit tolerance -- right side of .5
-        self.TrlAvgSEE = self.TrlSSE # / len(outLay.Neurons)
+        self.TrlAvgSSE = self.TrlSSE / len(outLay.Neurons)
         if accum:
             self.SumSSE += self.TrlSSE
             self.SumAvgSSE += self.TrlAvgSSE
@@ -669,13 +692,13 @@ class Sim(object):
         if pset == go.nil:
             return
         if sheet == "" or sheet == "Network":
-            # if "Network" in pset.Sheets:
-            netp = pset.SheetByNameTry("Network")
-            self.Net.ApplyParams(netp, setMsg)
+            if "Network" in pset.Sheets:
+                netp = pset.SheetByNameTry("Network")
+                self.Net.ApplyParams(netp, setMsg)
         if sheet == "" or sheet == "Sim":
-            # if "Sim" in pset.Sheets:
-            simp = pset.SheetByNameTry("Sim")
-            # simp.Apply(self, setMsg) # todo need a version for python class!
+            if "Sim" in pset.Sheets:
+                simp = pset.SheetByNameTry("Sim")
+                pygiv.ApplyParams(self, simp, setMsg)
         # note: if you have more complex environments with parameters, definitely add
         # sheets for them, e.g., "TrainEnv", "TestEnv" etc
 
@@ -931,8 +954,8 @@ class Sim(object):
         dt.SetCellFloat("Epoch", row, epc)
         dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
         dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
-        # dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", lambda idx, val: val > 0)[0])
-        # dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", lambda idx, val: val == 0)[0])
+        dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", lambda idx, val: val > 0)[0])
+        dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", lambda idx, val: val == 0)[0])
         dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
         
         trlix = etable.NewIdxView(trl)
@@ -1054,7 +1077,7 @@ class Sim(object):
         # compute mean over last N epochs for run level
         nlast = 10
         epcix = etable.NewIdxView(epclog)
-        epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
+        epcix.Idxs = go.Slice_int(epcix.Idxs[epcix.Len()-nlast-1:])
         # print(epcix.Idxs[epcix.Len()-nlast-1:])
         
         params = self.ParamsName()
@@ -1259,10 +1282,42 @@ class Sim(object):
 # TheSim is the overall state for this simulation
 TheSim = Sim()
 
-TheSim.Config()
-TheSim.Init()
-TheSim.ConfigGui()
-# TheSim.Train()
-# TheSim.EpcLog.SaveCSV("ra25_epc.dat", ord(','), True)
+def usage():
+    print(sys.argv[0] + ' -params=<param set> -tag=<extra tag> -setparams -wts -epclog -runlog -nogui')
 
+def main(argv):
+    TheSim.Config()
+    TheSim.Init()
     
+    try:
+        opts, args = getopt.getopt(argv,"h:",["params=","tag=","runs=","setparams","wts","epclog","runlog","nogui"])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+    for opt, arg in opts:
+        print("opt: %s  arg: %s\n" % (opt, arg))
+        if opt == '-h':
+            usage()
+            sys.exit()
+        elif opt == "--tag":
+            TheSim.Tag = arg
+        elif opt == "--runs":
+            TheSim.MaxRuns = int(arg)
+            print("Running %d runs\n" % TheSim.MaxRuns)
+        elif opt == "setparams":
+            TheSim.LogSetParams = True
+        elif opt == "wts":
+            TheSim.SaveWts = True
+            print("Saving final weights per run\n")
+        # elif opt == "epclog":
+        #     fnm = ss.LogFileName("epc") 
+        #     TheSim.TrnEpcFile = etable.Create(fnm) # todo: need to parse os
+    
+    if len(argv) > 1:
+        TheSim.Train()
+    else:
+        TheSim.ConfigGui()
+        
+if __name__ == "__main__":
+    main(sys.argv[1:])
+

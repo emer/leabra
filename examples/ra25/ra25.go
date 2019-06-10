@@ -33,7 +33,6 @@ import (
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
-	"github.com/goki/gi/oswin"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 )
@@ -60,13 +59,13 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
 				}},
-			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
-				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.4",
-				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
+				}},
+			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi": "1.4",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
@@ -1280,7 +1279,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			oswin.TheApp.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)
