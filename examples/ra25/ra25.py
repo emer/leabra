@@ -16,7 +16,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, split, etensor, params, netview, rand, erand, gi, giv
+from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv
 
 # this is in-process and will be an installable module under GoGi later
 import pygiv
@@ -1306,12 +1306,17 @@ def main(argv):
             print("Running %d runs\n" % TheSim.MaxRuns)
         elif opt == "setparams":
             TheSim.LogSetParams = True
-        elif opt == "wts":
+        elif opt == "--wts":
             TheSim.SaveWts = True
             print("Saving final weights per run\n")
-        # elif opt == "epclog":
-        #     fnm = ss.LogFileName("epc") 
-        #     TheSim.TrnEpcFile = etable.Create(fnm) # todo: need to parse os
+        elif opt == "--epclog":
+            fnm = TheSim.LogFileName("epc") 
+            print("Saving epoch log to: %s\n" % fnm)
+            TheSim.TrnEpcFile = efile.Create(fnm)
+        elif opt == "--runlog":
+            fnm = TheSim.LogFileName("run") 
+            print("Saving run log to: %s\n" % fnm)
+            TheSim.RunFile = efile.Create(fnm)
     
     if len(argv) > 1:
         TheSim.Train()
