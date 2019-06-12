@@ -21,10 +21,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, relpos, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv
-
-# this is in-process and will be an installable module under GoGi later
-import pygiv
+from leabra import go, leabra, emer, relpos, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv, epygiv
 
 import importlib as il  #il.reload(ra25) -- doesn't seem to work for reasons unknown
 import io, sys, getopt
@@ -736,7 +733,7 @@ class Sim(object):
         if sheet == "" or sheet == "Sim":
             if "Sim" in pset.Sheets:
                 simp = pset.SheetByNameTry("Sim")
-                pygiv.ApplyParams(self, simp, setMsg)
+                epygiv.ApplyParams(self, simp, setMsg)
         # note: if you have more complex environments with parameters, definitely add
         # sheets for them, e.g., "TrainEnv", "TestEnv" etc
 
@@ -1204,7 +1201,7 @@ class Sim(object):
         split.SetStretchMaxWidth()
         split.SetStretchMaxHeight()
          
-        self.ClassView = pygiv.ClassView("ra25sv", self.Tags)
+        self.ClassView = epygiv.ClassView("ra25sv", self.Tags)
         self.ClassView.AddFrame(split)
         self.ClassView.SetClass(self)
 
