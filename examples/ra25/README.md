@@ -50,21 +50,17 @@ Most of the code is commented and should be read directly for how to do things. 
 
 * Good idea to keep all the code in one file so it is easy to share with others, although fine to split up too if it gets too big -- e.g., logging takes a lot of space and could be put in a separate file.
 
+* In Go, you can organize things however you want -- there are no constraints on order in Go code.  In Python, all the methods must be inside the main Sim class definition but otherwise order should not matter.
+
 * The GUI config and elements are all optional and the -nogui startup arg, along with other args, allows the model to be run without the gui.
 
 * If there is a more complex environment associated with the model, always put it in a separate file, so it can more easily be re-used across other models.
 
-* The params editor can easily save to a file, default named "params.go" with name *??* -- you can switch your project to using that as its default set of params to then easily always be using whatever params were saved last.
+* The params editor can easily save to a file, default named "params.go" with name `SavedParamsSets` -- you can switch your project to using that as its default set of params to then easily always be using whatever params were saved last.
 
 # TODO
 
 These are things that remain to be done:
-
-- [ ] add precision option for log csv output -- currently crazy accurate with float64's
-
-- [ ] add crash save function that saves stuff when crashing?
-
-- [ ] python version update
 
 - [ ] hog stats
 

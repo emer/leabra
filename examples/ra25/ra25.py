@@ -4,6 +4,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+# use:
+# pyleabra -i ra25.py 
+# to run in gui interactive mode from the command line (or pyleabra, import ra25)
+# see main function at the end for startup args
+
 # to run this python version of the demo:
 # * install gopy, currently in fork at https://github.com/goki/gopy
 #   e.g., 'go get github.com/goki/gopy -u ./...' and then cd to that package
@@ -22,16 +27,18 @@ from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, efil
 import pygiv
 
 import importlib as il  #il.reload(ra25) -- doesn't seem to work for reasons unknown
-import numpy as np
-import matplotlib
-matplotlib.use('SVG')
-#import matplotlib.pyplot as plt
-#plt.rcParams['svg.fonttype'] = 'none'  # essential for not rendering fonts as paths
 import io, sys, getopt
+# import numpy as np
+# import matplotlib
+# matplotlib.use('SVG')
+# import matplotlib.pyplot as plt
+# plt.rcParams['svg.fonttype'] = 'none'  # essential for not rendering fonts as paths
 
-# note: xarray or pytorch TensorDataSet can be used instead of pandas for input / output
-# patterns and recording of "log" data for plotting
-import pandas as pd
+# note: pandas, xarray or pytorch TensorDataSet can be used for input / output
+# patterns and recording of "log" data for plotting.  However, the etable.Table
+# has better GUI and API support, and handles tensor columns directly unlike
+# pandas.  Support for easy migration between these is forthcoming.
+# import pandas as pd
 
 # this will become Sim later.. 
 TheSim = 1
@@ -41,6 +48,9 @@ nilInts = go.Slice_int()
 
 # use this for e.g., etable.Column construction args where nil would be passed
 nilStrs = go.Slice_string()
+
+# LogPrec is precision for saving float values in logs
+LogPrec = 4
 
 # note: cannot use method callbacks -- must be separate functions
 def InitCB(recv, send, sig, data):
@@ -98,7 +108,7 @@ def TestItemCB2(recv, send, sig, data):
     else:
         if not TheSim.IsRunning:
             TheSim.IsRunning = True
-            print("testing index: %s\n" % idxs[0])
+            print("testing index: %s" % idxs[0])
             TheSim.TestItem(idxs[0])
             TheSim.IsRunning = False
             vp.SetNeedsFullRender()
@@ -161,7 +171,6 @@ class Sim(object):
         self.TestEnv  = env.FixedTable()
         self.Time     = leabra.Time()
         self.ViewOn   = True
-        self.Plot     = True
         self.TrainUpdt = leabra.AlphaCycle
         self.TestUpdt = leabra.Cycle
         self.TestInterval = 5
@@ -314,12 +323,12 @@ class Sim(object):
         self.InitParams()
         self.OpenPats()
         self.ConfigEnv()
-        self.ConfigNet()
-        self.ConfigTrnEpcLog()
-        self.ConfigTstEpcLog()
-        self.ConfigTstTrlLog()
-        self.ConfigTstCycLog()
-        self.ConfigRunLog()
+        self.ConfigNet(self.Net)
+        self.ConfigTrnEpcLog(self.TrnEpcLog)
+        self.ConfigTstEpcLog(self.TstEpcLog)
+        self.ConfigTstTrlLog(self.TstTrlLog)
+        self.ConfigTstCycLog(self.TstCycLog)
+        self.ConfigRunLog(self.RunLog)
 
     def Init(self):
         """Init restarts the run, and initializes everything, including network weights and resets the epoch log table"""
@@ -369,7 +378,7 @@ class Sim(object):
             for cyc in range(self.Time.CycPerQtr):
                 self.Net.Cycle(self.Time)
                 if not train:
-                    self.LogTstCyc(self.Time.Cycle)
+                    self.LogTstCyc(self.TstCycLog, self.Time.Cycle)
                 self.Time.CycleInc()
                 if self.ViewOn:
                     if viewUpdt == leabra.Cycle:
@@ -443,7 +452,7 @@ class Sim(object):
         epc = env.CounterCur(self.TrainEnv, env.Epoch)
         chg = env.CounterChg(self.TrainEnv, env.Epoch)
         if chg:
-            self.LogTrnEpc()
+            self.LogTrnEpc(self.TrnEpcLog)
             if self.ViewOn and self.TrainUpdt > leabra.AlphaCycle:
                 self.UpdateView(True)
             if epc % self.TestInterval == 0: # note: epc is *next* so won't trigger first time
@@ -463,10 +472,10 @@ class Sim(object):
 
     def RunEnd(self):
         """ RunEnd is called at the end of a run -- save weights, record final log, etc here """
-        self.LogRun()
+        self.LogRun(self.RunLog)
         if self.SaveWts:
             fnm = self.WeightsFileName()
-            fmt.Printf("Saving Weights to: %v\n", fnm)
+            fmt.Printf("Saving Weights to: %v", fnm)
             self.Net.SaveWtsJSON(gi.FileName(fnm))
 
     def NewRun(self):
@@ -573,13 +582,13 @@ class Sim(object):
         if chg:
             if self.ViewOn and self.TestUpdt > leabra.AlphaCycle:
                 self.UpdateView(False)
-            self.LogTstEpc()
+            self.LogTstEpc(self.TstEpcLog)
             return
             
         self.ApplyInputs(self.TestEnv)
         self.AlphaCyc(False)   # !train
         self.TrialStats(False) # !accumulate
-        self.LogTstTrl()
+        self.LogTstTrl(self.TstTrlLog)
 
 
     def TestItem(self, idx):
@@ -637,8 +646,7 @@ class Sim(object):
         self.TrainEnv.Init(0)
         self.TestEnv.Init(0)
 
-    def ConfigNet(self):
-        net = self.Net
+    def ConfigNet(self, net):
         net.InitName(net, "RA25")
         inLay = net.AddLayer2D("Input", 5, 5, emer.Input)
         hid1Lay = net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
@@ -756,12 +764,11 @@ class Sim(object):
     #############################
     #   TrnEpcLog
         
-    def LogTrnEpc(self):
+    def LogTrnEpc(self, dt):
         """
-        LogTrnEpc adds data from current epoch to the TrnEpcLog table
+        LogTrnEpc adds data from current epoch to a TrnEpcLog table
         computes epoch averages prior to logging.
         """
-        dt = self.TrnEpcLog
         row = dt.Rows
         self.TrnEpcLog.SetNumRows(row + 1)
         
@@ -809,11 +816,11 @@ class Sim(object):
         # nrow = len(self.EpcLog.index)
         # self.EpcLog.loc[nrow] = nwdat # note: this is reportedly rather slow
 
-    def ConfigTrnEpcLog(self):
-        dt = self.TrnEpcLog
+    def ConfigTrnEpcLog(self, dt):
         dt.SetMetaData("name", "TrnEpcLog")
         dt.SetMetaData("desc", "Record of performance over epochs of training")
         dt.SetMetaData("read-only", "true")
+        dt.SetMetaData("precision", str(LogPrec))
         
         sc = etable.Schema()
         sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
@@ -833,10 +840,10 @@ class Sim(object):
         # self.PlotVals = ["SSE", "Pct Err"]
         # self.Plot = True
 
-    def ConfigTrnEpcPlot(self):
-        plt = self.TrnEpcPlot
+    def ConfigTrnEpcPlot(self, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Epoch Plot"
         plt.Params.XAxisCol = "Epoch"
+        plt.SetTable(dt)
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Run", False, True, 0, False, 0)
         plt.SetColParams("Epoch", False, True, 0, False, 0)
@@ -848,11 +855,12 @@ class Sim(object):
         plt.SetColParams("Hid1 ActAvg", False, True, 0, True, .5)
         plt.SetColParams("Hid2 ActAvg", False, True, 0, True, .5)
         plt.SetColParams("Out ActAvg", False, True, 0, True, .5)
+        return plt
 
     #############################
     #   TstTrlLog
         
-    def LogTstTrl(self):
+    def LogTstTrl(self, dt):
         """
         LogTstTrl adds data from current epoch to the TstTrlLog table
         log always contains number of testing items
@@ -885,14 +893,14 @@ class Sim(object):
         if self.TstTrlPlot != 0:
             self.TstTrlPlot.GoUpdate()
 
-    def ConfigTstTrlLog(self):
+    def ConfigTstTrlLog(self, dt):
         inLay = leabra.Layer(self.Net.LayerByName("Input"))
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         
-        dt = self.TstTrlLog
         dt.SetMetaData("name", "TstTrlLog")
         dt.SetMetaData("desc", "Record of testing per input pattern")
         dt.SetMetaData("read-only", "true")
+        dt.SetMetaData("precision", str(LogPrec))
         nt = self.TestEnv.Table.Len() # number in view
         
         sc = etable.Schema()
@@ -912,10 +920,10 @@ class Sim(object):
         dt.SetFromSchema(sc, nt)
         
 
-    def ConfigTstTrlPlot(self):
-        plt = self.TstTrlPlot
+    def ConfigTstTrlPlot(self, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
         plt.Params.XAxisCol = "Trial"
+        plt.SetTable(dt)
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Run", False, True, 0, False, 0)
         plt.SetColParams("Epoch", False, True, 0, False, 0)
@@ -931,16 +939,16 @@ class Sim(object):
         plt.SetColParams("InAct", False, True, 0, True, 1)
         plt.SetColParams("OutActM", False, True, 0, True, 1)
         plt.SetColParams("OutActP", False, True, 0, True, 1)
+        return plt
         
     #############################
     #   TstEpcLog
         
-    def LogTstEpc(self):
+    def LogTstEpc(self, dt):
         """
         LogTstEpc adds data from current epoch to the TstEpcLog table
         log always contains number of testing items
         """
-        dt = self.TstEpcLog
         row = dt.Rows
         dt.SetNumRows(row + 1)
 
@@ -976,11 +984,11 @@ class Sim(object):
         if self.TstEpcPlot != 0:
             self.TstEpcPlot.GoUpdate()
 
-    def ConfigTstEpcLog(self):
-        dt = self.TstEpcLog
+    def ConfigTstEpcLog(self, dt):
         dt.SetMetaData("name", "TstEpcLog")
         dt.SetMetaData("desc", "Summary stats for testing trials")
         dt.SetMetaData("read-only", "true")
+        dt.SetMetaData("precision", str(LogPrec))
         
         sc = etable.Schema()
         sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
@@ -993,10 +1001,10 @@ class Sim(object):
         dt.SetFromSchema(sc, 0)
         
 
-    def ConfigTstEpcPlot(self):
-        plt = self.TstEpcPlot
+    def ConfigTstEpcPlot(self, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Testing Epoch Plot"
         plt.Params.XAxisCol = "Epoch"
+        plt.SetTable(dt)
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Run", False, True, 0, False, 0)
         plt.SetColParams("Epoch", False, True, 0, False, 0)
@@ -1005,16 +1013,16 @@ class Sim(object):
         plt.SetColParams("PctErr", True, True, 0, True, 1) # default plot
         plt.SetColParams("PctCor", True, True, 0, True, 1) # default plot
         plt.SetColParams("CosDiff", False, True, 0, True, 1)
+        return plt
         
     #############################
     #   TstCycLog
         
-    def LogTstCyc(self, cyc):
+    def LogTstCyc(self, dt, cyc):
         """
         LogTstCyc adds data from current trial to the TstCycLog table.
         log just has 100 cycles, is overwritten
         """
-        dt = self.TstCycLog
         if dt.Rows <= cyc:
             dt.SetNumRows(cyc + 1)
         
@@ -1034,11 +1042,11 @@ class Sim(object):
             # note: essential to use Go version of update when called from another goroutine
             self.TstCycPlot.GoUpdate()
 
-    def ConfigTstCycLog(self):
-        dt = self.TstCycLog
+    def ConfigTstCycLog(self, dt):
         dt.SetMetaData("name", "TstCycLog")
         dt.SetMetaData("desc", "Record of activity etc over one trial by cycle")
         dt.SetMetaData("read-only", "true")
+        dt.SetMetaData("precision", str(LogPrec))
         np = 100 # max cycles
         
         sc = etable.Schema()
@@ -1051,10 +1059,10 @@ class Sim(object):
         sc.append(etable.Column("Out Act.Avg", etensor.FLOAT64, nilInts, nilStrs))
         dt.SetFromSchema(sc, np)
         
-    def ConfigTstCycPlot(self):
-        plt = self.TstCycPlot
+    def ConfigTstCycPlot(self, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
         plt.Params.XAxisCol = "Cycle"
+        plt.SetTable(dt)
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Cycle", False, True, 0, False, 0)
         plt.SetColParams("Hid1 Ge.Avg", True, True, 0, True, .5)
@@ -1063,12 +1071,12 @@ class Sim(object):
         plt.SetColParams("Hid1 Act.Avg", True, True, 0, True, .5)
         plt.SetColParams("Hid2 Act.Avg", True, True, 0, True, .5)
         plt.SetColParams("Out Act.Avg", True, True, 0, True, .5)
+        return plt
 
     #############################
     #   RunLog
         
-    def LogRun(self):
-        dt = self.RunLog
+    def LogRun(self, dt):
         run = self.TrainEnv.Run.Cur # this is NOT triggered by increment yet -- use Cur
         row = dt.Rows
         self.RunLog.SetNumRows(row + 1)
@@ -1106,11 +1114,12 @@ class Sim(object):
                 dt.WriteCSVHeaders(self.RunFile, etable.Tab)
             dt.WriteCSVRow(self.RunFile, row, etable.Tab, True)
             
-    def ConfigRunLog(self):
-        dt = self.RunLog
+    def ConfigRunLog(self, dt):
         dt.SetMetaData("name", "RunLog")
         dt.SetMetaData("desc", "Record of performance at end of training")
         dt.SetMetaData("read-only", "true")
+        dt.SetMetaData("precision", str(LogPrec))
+        
         sc = etable.Schema()
         sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
         sc.append(etable.Column("Params", etensor.STRING, nilInts, nilStrs))
@@ -1122,10 +1131,10 @@ class Sim(object):
         sc.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
         dt.SetFromSchema(sc, 0)
 
-    def ConfigRunPlot(self):
-        plt = self.RunPlot
+    def ConfigRunPlot(self, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Run Plot"
         plt.Params.XAxisCol = "Run"
+        plt.SetTable(dt)
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Run", False, True, 0, False, 0)
         plt.SetColParams("FirstZero", True, True, 0, False, 0) # default plot
@@ -1134,6 +1143,7 @@ class Sim(object):
         plt.SetColParams("PctErr", False, True, 0, True, 1)
         plt.SetColParams("PctCor", False, True, 0, True, 1)
         plt.SetColParams("CosDiff", False, True, 0, True, 1)
+        return plt
 
     ##############################
     #   ConfigGui
@@ -1178,38 +1188,23 @@ class Sim(object):
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TrnEpcPlot")
-        plt.Params.XAxisCol = "Epoch"
-        plt.SetTable(self.TrnEpcLog)
-        self.TrnEpcPlot = plt
-        self.ConfigTrnEpcPlot()
+        self.TrnEpcPlot = self.ConfigTrnEpcPlot(plt, self.TrnEpcLog)
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TstTrlPlot")
-        plt.Params.XAxisCol = "Trial"
-        plt.SetTable(self.TstTrlLog)
-        self.TstTrlPlot = plt
-        self.ConfigTstTrlPlot()
+        self.TstTrlPlot = self.ConfigTstTrlPlot(plt, self.TstTrlLog)
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TstCycPlot")
-        plt.Params.XAxisCol = "Cycle"
-        plt.SetTable(self.TstCycLog)
-        self.TstCycPlot = plt
-        self.ConfigTstCycPlot()
+        self.TstCycPlot = self.ConfigTstCycPlot(plt, self.TstCycLog)
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TstEpcPlot")
-        plt.Params.XAxisCol = "Epoch"
-        plt.SetTable(self.TstEpcLog)
-        self.TstEpcPlot = plt
-        self.ConfigTstEpcPlot()
+        self.TstEpcPlot = self.ConfigTstEpcPlot(plt, self.TstEpcLog)
         
         plt = eplot.Plot2D()
         tv.AddTab(plt, "RunPlot")
-        plt.Params.XAxisCol = "Run"
-        plt.SetTable(self.RunLog)
-        self.RunPlot = plt
-        self.ConfigRunPlot()
+        self.RunPlot = self.ConfigRunPlot(plt, self.RunLog)
 
         split.SetSplitsList(go.Slice_float32([.3, .7]))
         
@@ -1283,19 +1278,32 @@ class Sim(object):
 TheSim = Sim()
 
 def usage():
-    print(sys.argv[0] + ' -params=<param set> -tag=<extra tag> -setparams -wts -epclog -runlog -nogui')
+    print(sys.argv[0] + " --params=<param set> --tag=<extra tag> --setparams --wts --epclog=0 --runlog=0 --nogui")
+    print("\t pyleabra -i %s to run in interactive, gui mode" % sys.argv[0])
+    print("\t --params=<param set> additional params to apply on top of Base (name must be in loaded Params")
+    print("\t --tag=<extra tag>    tag is appended to file names to uniquely identify this run") 
+    print("\t --runs=<n>           number of runs to do")
+    print("\t --setparams          show the parameter values that are set")
+    print("\t --wts                save final trained weights after every run")
+    print("\t --epclog=0/False     turn off save training epoch log data to file named by param set, tag")
+    print("\t --runlog=0/False     turn off save run log data to file named by param set, tag")
+    print("\t --nogui              if no other args needed, this prevents running under the gui")
 
 def main(argv):
     TheSim.Config()
-    TheSim.Init()
-    
+
+    # print("n args: %d" % len(argv))
+    TheSim.NoGui = len(argv) > 0
+    saveEpcLog = True
+    saveRunLog = True
+        
     try:
-        opts, args = getopt.getopt(argv,"h:",["params=","tag=","runs=","setparams","wts","epclog","runlog","nogui"])
+        opts, args = getopt.getopt(argv,"h:",["params=","tag=","runs=","setparams","wts","epclog=","runlog=","nogui"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
     for opt, arg in opts:
-        print("opt: %s  arg: %s\n" % (opt, arg))
+        # print("opt: %s  arg: %s" % (opt, arg))
         if opt == '-h':
             usage()
             sys.exit()
@@ -1303,26 +1311,40 @@ def main(argv):
             TheSim.Tag = arg
         elif opt == "--runs":
             TheSim.MaxRuns = int(arg)
-            print("Running %d runs\n" % TheSim.MaxRuns)
-        elif opt == "setparams":
+            print("Running %d runs" % TheSim.MaxRuns)
+        elif opt == "--setparams":
             TheSim.LogSetParams = True
         elif opt == "--wts":
             TheSim.SaveWts = True
-            print("Saving final weights per run\n")
+            print("Saving final weights per run")
         elif opt == "--epclog":
-            fnm = TheSim.LogFileName("epc") 
-            print("Saving epoch log to: %s\n" % fnm)
-            TheSim.TrnEpcFile = efile.Create(fnm)
+            if arg.lower() == "false" or arg == "0":
+                saveEpcLog = False
         elif opt == "--runlog":
-            fnm = TheSim.LogFileName("run") 
-            print("Saving run log to: %s\n" % fnm)
-            TheSim.RunFile = efile.Create(fnm)
+            if arg.lower() == "false" or arg == "0":
+                saveRunLog = False
+        elif opt == "--nogui":
+            TheSim.NoGui = True
+
+    TheSim.Init()
+            
+    if TheSim.NoGui:
+        if saveEpcLog:
+            fnm = TheSim.LogFileName("epc") 
+            print("Saving epoch log to: %s" % fnm)
+            TheSim.TrnEpcFile = efile.Create(fnm)
     
-    if len(argv) > 1:
+        if saveRunLog:
+            fnm = TheSim.LogFileName("run") 
+            print("Saving run log to: %s" % fnm)
+            TheSim.RunFile = efile.Create(fnm)
+            
         TheSim.Train()
     else:
         TheSim.ConfigGui()
+        print("Note: run pyleabra -i ra25.py to run in interactive mode, or just pyleabra, then 'import ra25'")
+        print("for non-gui background running, here are the args:")
+        usage()
         
-if __name__ == "__main__":
-    main(sys.argv[1:])
+main(sys.argv[1:])
 

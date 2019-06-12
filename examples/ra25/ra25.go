@@ -14,6 +14,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/emer/emergent/emer"
@@ -43,6 +44,9 @@ func main() {
 		mainrun()
 	})
 }
+
+// LogPrec is precision for saving float values in logs
+const LogPrec = 4
 
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
@@ -201,12 +205,12 @@ func (ss *Sim) Config() {
 	//ss.ConfigPats()
 	ss.OpenPats()
 	ss.ConfigEnv()
-	ss.ConfigNet()
-	ss.ConfigTrnEpcLog()
-	ss.ConfigTstEpcLog()
-	ss.ConfigTstTrlLog()
-	ss.ConfigTstCycLog()
-	ss.ConfigRunLog()
+	ss.ConfigNet(ss.Net)
+	ss.ConfigTrnEpcLog(ss.TrnEpcLog)
+	ss.ConfigTstEpcLog(ss.TstEpcLog)
+	ss.ConfigTstTrlLog(ss.TstTrlLog)
+	ss.ConfigTstCycLog(ss.TstCycLog)
+	ss.ConfigRunLog(ss.RunLog)
 }
 
 // Init restarts the run, and initializes everything, including network weights
@@ -265,7 +269,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
 			ss.Net.Cycle(&ss.Time)
 			if !train {
-				ss.LogTstCyc(ss.Time.Cycle)
+				ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
 			}
 			ss.Time.CycleInc()
 			if ss.ViewOn {
@@ -334,7 +338,7 @@ func (ss *Sim) TrainTrial() {
 	// if epoch counter has changed
 	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
 	if chg {
-		ss.LogTrnEpc()
+		ss.LogTrnEpc(ss.TrnEpcLog)
 		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
 			ss.UpdateView(true)
 		}
@@ -360,7 +364,7 @@ func (ss *Sim) TrainTrial() {
 
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
-	ss.LogRun()
+	ss.LogRun(ss.RunLog)
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %v\n", fnm)
@@ -495,14 +499,14 @@ func (ss *Sim) TestTrial() {
 		if ss.ViewOn && ss.TestUpdt > leabra.AlphaCycle {
 			ss.UpdateView(false)
 		}
-		ss.LogTstEpc()
+		ss.LogTstEpc(ss.TstEpcLog)
 		return
 	}
 
 	ss.ApplyInputs(&ss.TestEnv)
 	ss.AlphaCyc(false)   // !train
 	ss.TrialStats(false) // !accumulate
-	ss.LogTstTrl()
+	ss.LogTstTrl(ss.TstTrlLog)
 }
 
 // TestItem tests given item which is at given index in test item list
@@ -568,8 +572,7 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Init(0)
 }
 
-func (ss *Sim) ConfigNet() {
-	net := ss.Net
+func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "RA25")
 	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
 	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
@@ -587,6 +590,8 @@ func (ss *Sim) ConfigNet() {
 	net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
 	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
 
+	// note: can set these to do parallel threaded computation across multiple cpus
+	// not worth it for this small of a model, but definitely helps for larger ones
 	// if Thread {
 	// 	hid2Lay.SetThread(1)
 	// 	outLay.SetThread(1)
@@ -712,8 +717,7 @@ func (ss *Sim) LogFileName(lognm string) string {
 
 // LogTrnEpc adds data from current epoch to the TrnEpcLog table.
 // computes epoch averages prior to logging.
-func (ss *Sim) LogTrnEpc() {
-	dt := ss.TrnEpcLog
+func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
 	ss.TrnEpcLog.SetNumRows(row + 1)
 
@@ -758,11 +762,12 @@ func (ss *Sim) LogTrnEpc() {
 	}
 }
 
-func (ss *Sim) ConfigTrnEpcLog() {
-	dt := ss.TrnEpcLog
+func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 	dt.SetMetaData("name", "TrnEpcLog")
 	dt.SetMetaData("desc", "Record of performance over epochs of training")
 	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
 	dt.SetFromSchema(etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
@@ -777,10 +782,10 @@ func (ss *Sim) ConfigTrnEpcLog() {
 	}, 0)
 }
 
-func (ss *Sim) ConfigTrnEpcPlot() {
-	plt := ss.TrnEpcPlot
+func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Leabra Random Associator 25 Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
+	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("Epoch", false, true, 0, false, 0)
@@ -792,6 +797,7 @@ func (ss *Sim) ConfigTrnEpcPlot() {
 	plt.SetColParams("Hid1 ActAvg", false, true, 0, true, .5)
 	plt.SetColParams("Hid2 ActAvg", false, true, 0, true, .5)
 	plt.SetColParams("Out ActAvg", false, true, 0, true, .5)
+	return plt
 }
 
 //////////////////////////////////////////////
@@ -799,7 +805,7 @@ func (ss *Sim) ConfigTrnEpcPlot() {
 
 // LogTstTrl adds data from current trial to the TstTrlLog table.
 // log always contains number of testing items
-func (ss *Sim) LogTstTrl() {
+func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
 	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
 	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
@@ -808,7 +814,6 @@ func (ss *Sim) LogTstTrl() {
 	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
 
 	trl := ss.TestEnv.Trial.Cur
-	dt := ss.TstTrlLog
 
 	dt.SetCellFloat("Run", trl, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", trl, float64(epc))
@@ -829,14 +834,15 @@ func (ss *Sim) LogTstTrl() {
 	ss.TstTrlPlot.GoUpdate()
 }
 
-func (ss *Sim) ConfigTstTrlLog() {
+func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
-	dt := ss.TstTrlLog
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
 	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
 	nt := ss.TestEnv.Table.Len() // number in view
 	dt.SetFromSchema(etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
@@ -855,10 +861,10 @@ func (ss *Sim) ConfigTstTrlLog() {
 	}, nt)
 }
 
-func (ss *Sim) ConfigTstTrlPlot() {
-	plt := ss.TstTrlPlot
+func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
 	plt.Params.XAxisCol = "Trial"
+	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("Epoch", false, true, 0, false, 0)
@@ -874,13 +880,13 @@ func (ss *Sim) ConfigTstTrlPlot() {
 	plt.SetColParams("InAct", false, true, 0, true, 1)
 	plt.SetColParams("OutActM", false, true, 0, true, 1)
 	plt.SetColParams("OutActP", false, true, 0, true, 1)
+	return plt
 }
 
 //////////////////////////////////////////////
 //  TstEpcLog
 
-func (ss *Sim) LogTstEpc() {
-	dt := ss.TstEpcLog
+func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	row := dt.Rows
 	dt.SetNumRows(row + 1)
 
@@ -921,11 +927,12 @@ func (ss *Sim) LogTstEpc() {
 	ss.TstEpcPlot.GoUpdate()
 }
 
-func (ss *Sim) ConfigTstEpcLog() {
-	dt := ss.TstEpcLog
+func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 	dt.SetMetaData("name", "TstEpcLog")
 	dt.SetMetaData("desc", "Summary stats for testing trials")
 	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
 	dt.SetFromSchema(etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
@@ -937,10 +944,10 @@ func (ss *Sim) ConfigTstEpcLog() {
 	}, 0)
 }
 
-func (ss *Sim) ConfigTstEpcPlot() {
-	plt := ss.TstEpcPlot
+func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Leabra Random Associator 25 Testing Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
+	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("Epoch", false, true, 0, false, 0)
@@ -949,6 +956,7 @@ func (ss *Sim) ConfigTstEpcPlot() {
 	plt.SetColParams("PctErr", true, true, 0, true, 1) // default plot
 	plt.SetColParams("PctCor", true, true, 0, true, 1) // default plot
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
+	return plt
 }
 
 //////////////////////////////////////////////
@@ -956,8 +964,7 @@ func (ss *Sim) ConfigTstEpcPlot() {
 
 // LogTstCyc adds data from current trial to the TstCycLog table.
 // log just has 100 cycles, is overwritten
-func (ss *Sim) LogTstCyc(cyc int) {
-	dt := ss.TstCycLog
+func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	if dt.Rows <= cyc {
 		dt.SetNumRows(cyc + 1)
 	}
@@ -980,11 +987,12 @@ func (ss *Sim) LogTstCyc(cyc int) {
 	}
 }
 
-func (ss *Sim) ConfigTstCycLog() {
-	dt := ss.TstCycLog
+func (ss *Sim) ConfigTstCycLog(dt *etable.Table) {
 	dt.SetMetaData("name", "TstCycLog")
 	dt.SetMetaData("desc", "Record of activity etc over one trial by cycle")
 	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
 	np := 100 // max cycles
 	dt.SetFromSchema(etable.Schema{
 		{"Cycle", etensor.INT64, nil, nil},
@@ -997,10 +1005,10 @@ func (ss *Sim) ConfigTstCycLog() {
 	}, np)
 }
 
-func (ss *Sim) ConfigTstCycPlot() {
-	plt := ss.TstCycPlot
+func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
 	plt.Params.XAxisCol = "Cycle"
+	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Cycle", false, true, 0, false, 0)
 	plt.SetColParams("Hid1 Ge.Avg", true, true, 0, true, .5)
@@ -1009,14 +1017,14 @@ func (ss *Sim) ConfigTstCycPlot() {
 	plt.SetColParams("Hid1 Act.Avg", true, true, 0, true, .5)
 	plt.SetColParams("Hid2 Act.Avg", true, true, 0, true, .5)
 	plt.SetColParams("Out Act.Avg", true, true, 0, true, .5)
+	return plt
 }
 
 //////////////////////////////////////////////
 //  RunLog
 
 // LogRun adds data from current run to the RunLog table.
-func (ss *Sim) LogRun() {
-	dt := ss.RunLog
+func (ss *Sim) LogRun(dt *etable.Table) {
 	run := ss.TrainEnv.Run.Cur // this is NOT triggered by increment yet -- use Cur
 	row := dt.Rows
 	ss.RunLog.SetNumRows(row + 1)
@@ -1054,11 +1062,12 @@ func (ss *Sim) LogRun() {
 	}
 }
 
-func (ss *Sim) ConfigRunLog() {
-	dt := ss.RunLog
+func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 	dt.SetMetaData("name", "RunLog")
 	dt.SetMetaData("desc", "Record of performance at end of training")
 	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
 	dt.SetFromSchema(etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Params", etensor.STRING, nil, nil},
@@ -1071,10 +1080,10 @@ func (ss *Sim) ConfigRunLog() {
 	}, 0)
 }
 
-func (ss *Sim) ConfigRunPlot() {
-	plt := ss.RunPlot
+func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Leabra Random Associator 25 Run Plot"
 	plt.Params.XAxisCol = "Run"
+	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("FirstZero", true, true, 0, false, 0) // default plot
@@ -1083,6 +1092,7 @@ func (ss *Sim) ConfigRunPlot() {
 	plt.SetColParams("PctErr", false, true, 0, true, 1)
 	plt.SetColParams("PctCor", false, true, 0, true, 1)
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
+	return plt
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1127,34 +1137,19 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	ss.NetView = nv
 
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrnEpcPlot").(*eplot.Plot2D)
-	plt.Params.XAxisCol = "Epoch"
-	plt.SetTable(ss.TrnEpcLog)
-	ss.TrnEpcPlot = plt
-	ss.ConfigTrnEpcPlot()
+	ss.TrnEpcPlot = ss.ConfigTrnEpcPlot(plt, ss.TrnEpcLog)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot").(*eplot.Plot2D)
-	plt.Params.XAxisCol = "Trial"
-	plt.SetTable(ss.TstTrlLog)
-	ss.TstTrlPlot = plt
-	ss.ConfigTstTrlPlot()
+	ss.TstTrlPlot = ss.ConfigTstTrlPlot(plt, ss.TstTrlLog)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstCycPlot").(*eplot.Plot2D)
-	plt.Params.XAxisCol = "Cycle"
-	plt.SetTable(ss.TstCycLog)
-	ss.TstCycPlot = plt
-	ss.ConfigTstCycPlot()
+	ss.TstCycPlot = ss.ConfigTstCycPlot(plt, ss.TstCycLog)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TstEpcPlot").(*eplot.Plot2D)
-	plt.Params.XAxisCol = "Epoch"
-	plt.SetTable(ss.TstEpcLog)
-	ss.TstEpcPlot = plt
-	ss.ConfigTstEpcPlot()
+	ss.TstEpcPlot = ss.ConfigTstEpcPlot(plt, ss.TstEpcLog)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "RunPlot").(*eplot.Plot2D)
-	plt.Params.XAxisCol = "Run"
-	plt.SetTable(ss.RunLog)
-	ss.RunPlot = plt
-	ss.ConfigRunPlot()
+	ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
 
 	split.SetSplits(.3, .7)
 

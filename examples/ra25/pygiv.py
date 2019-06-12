@@ -13,7 +13,7 @@ def ApplyParams(cls, sheet, setMsg):
         sel = params.Sel(handle=sl)
         for nm, val in sel.Params:
             flnm = nm.split('.')[1]
-            print("name: %s, value: %s\n" % (flnm, val))
+            # print("name: %s, value: %s\n" % (flnm, val))
             if flnm in flds:
                 cur = getattr(cls, flnm)
                 if isinstance(cur, int):
