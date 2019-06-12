@@ -5,9 +5,13 @@
 package leabra
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"math/rand"
+	"strings"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
@@ -16,6 +20,8 @@ import (
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"
+	"github.com/goki/ki/ki"
+	"github.com/goki/ki/kit"
 )
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
@@ -28,6 +34,8 @@ type Layer struct {
 	Pools   []Pool          `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
 	CosDiff CosDiffStats    `desc:"cosine difference between ActM, ActP stats"`
 }
+
+var KiT_Layer = kit.Types.AddType(&Layer{}, LayerProps)
 
 // AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
 // this to return the base Layer type, so that the LeabraLayer interface does not
@@ -55,6 +63,33 @@ func (ly *Layer) UpdateParams() {
 	for _, pj := range ly.RcvPrjns {
 		pj.UpdateParams()
 	}
+}
+
+// JsonToParams reformates json output to suitable params display output
+func JsonToParams(b []byte) string {
+	br := strings.Replace(string(b), `"`, ``, -1)
+	br = strings.Replace(br, ",\n", "", -1)
+	br = strings.Replace(br, "{\n", "{", -1)
+	br = strings.Replace(br, "} ", "}\n  ", -1)
+	br = strings.Replace(br, "\n }", " }", -1)
+	br = strings.Replace(br, "\n  }\n", " }", -1)
+	return br[1:] + "\n"
+}
+
+// AllParams returns a listing of all parameters in the Layer
+func (ly *Layer) AllParams() string {
+	str := "/////////////////////////////////////////////////\nLayer: " + ly.Nm + "\n"
+	b, _ := json.MarshalIndent(&ly.Act, "", " ")
+	str += "Act: {\n " + JsonToParams(b)
+	b, _ = json.MarshalIndent(&ly.Inhib, "", " ")
+	str += "Inhib: {\n " + JsonToParams(b)
+	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
+	str += "Learn: {\n " + JsonToParams(b)
+	for _, pj := range ly.RcvPrjns {
+		pstr := pj.AllParams()
+		str += pstr
+	}
+	return str
 }
 
 // UnitVarNames returns a list of variable names available on the units in this layer
@@ -400,6 +435,9 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 				vl := float32(ext.FloatVal(idx))
 				i := ly.Shp.Offset(idx)
 				nrn := &ly.Neurons[i]
+				if nrn.IsOff() {
+					continue
+				}
 				if toTarg {
 					nrn.Targ = vl
 				} else {
@@ -423,6 +461,9 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 					vl := float32(ext.FloatVal(idx))
 					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]
+					if nrn.IsOff() {
+						continue
+					}
 					if toTarg {
 						nrn.Targ = vl
 					} else {
@@ -444,6 +485,9 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 	mx := ints.MinInt(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
+		if nrn.IsOff() {
+			continue
+		}
 		vl := float32(ext[i])
 		if toTarg {
 			nrn.Targ = vl
@@ -480,6 +524,9 @@ func (ly *Layer) AlphaCycInit() {
 func (ly *Layer) AvgLFmAvgM() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ly.Learn.AvgLFmAvgM(nrn)
 		if ly.Learn.AvgL.ErrMod {
 			nrn.AvgLLrn *= ly.CosDiff.ModAvgLLrn
@@ -541,6 +588,9 @@ func (ly *Layer) GenNoise() {
 func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ly.Act.DecayState(nrn, decay)
 	}
 	for pi := range ly.Pools { // decaying average act is essential for inhib
@@ -557,6 +607,9 @@ func (ly *Layer) DecayState(decay float32) {
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ly.Act.HardClamp(nrn)
 	}
 }
@@ -568,6 +621,9 @@ func (ly *Layer) HardClamp() {
 func (ly *Layer) InitGInc() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		nrn.GeInc = 0
 		nrn.GiInc = 0
 	}
@@ -584,6 +640,9 @@ func (ly *Layer) InitGInc() {
 func (ly *Layer) SendGDelta(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
@@ -618,6 +677,9 @@ func (ly *Layer) GFmInc(ltime *Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ly.Act.GeGiFmInc(nrn)
 	}
 }
@@ -647,6 +709,9 @@ func (ly *Layer) InhibFmGeAct(ltime *Time) {
 			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
 			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 				nrn := &ly.Neurons[ni]
+				if nrn.IsOff() {
+					continue
+				}
 				ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
 				nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 			}
@@ -654,6 +719,9 @@ func (ly *Layer) InhibFmGeAct(ltime *Time) {
 	} else {
 		for ni := lpl.StIdx; ni < lpl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
 			ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
 			nrn.Gi = lpl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 		}
@@ -665,6 +733,9 @@ func (ly *Layer) InhibFmGeAct(ltime *Time) {
 func (ly *Layer) ActFmG(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ly.Act.VmFmG(nrn)
 		ly.Act.ActFmG(nrn)
 		ly.Learn.AvgsFmAct(nrn)
@@ -678,6 +749,9 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 		pl.Act.Init()
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
 			pl.Act.UpdateVal(nrn.Act, ni)
 		}
 		pl.Act.CalcAvg()
@@ -699,6 +773,9 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		if ltime.Quarter == 2 { // end of minus phase
 			nrn.ActM = nrn.Act
 			if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
@@ -727,6 +804,9 @@ func (ly *Layer) CosDiffFmActs() {
 	ssp := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		ap := nrn.ActP - avgP // zero mean
 		am := nrn.ActM - avgM
 		cosv += ap * am
@@ -801,6 +881,9 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 	sse = 0.0
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		d := nrn.ActP - nrn.ActM
 		if math32.Abs(d) < tol {
 			continue
@@ -818,4 +901,71 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 func (ly *Layer) SSE(tol float32) float64 {
 	sse, _ := ly.MSE(tol)
 	return sse
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Lesion
+
+// UnLesionNeurons unlesions (clears the Off flag) for all neurons in the layer
+func (ly *Layer) UnLesionNeurons() {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		nrn.ClearFlag(NeurOff)
+	}
+}
+
+// LesionNeurons lesions (sets the Off flag) for given proportion (0-1) of neurons in layer
+// returns number of neurons lesioned.  Emits error if prop > 1 as indication that percent
+// might have been passed
+func (ly *Layer) LesionNeurons(prop float32) int {
+	ly.UnLesionNeurons()
+	if prop > 1 {
+		log.Printf("LesionNeurons got a proportion > 1 -- must be 0-1 as *proportion* (not percent) of neurons to lesion: %v\n", prop)
+		return 0
+	}
+	nn := len(ly.Neurons)
+	if nn == 0 {
+		return 0
+	}
+	p := rand.Perm(nn)
+	nl := int(prop * float32(nn))
+	for i := 0; i < nl; i++ {
+		nrn := &ly.Neurons[p[i]]
+		nrn.SetFlag(NeurOff)
+	}
+	return nl
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Layer props for gui
+
+var LayerProps = ki.Props{
+	"ToolBar": ki.PropSlice{
+		{"Defaults", ki.Props{
+			"icon": "reset",
+			"desc": "return all parameters to their intial default values",
+		}},
+		{"InitWts", ki.Props{
+			"icon": "update",
+			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+		}},
+		{"InitActs", ki.Props{
+			"icon": "update",
+			"desc": "initialize the layer's activation values",
+		}},
+		{"sep-act", ki.BlankProp{}},
+		{"LesionNeurons", ki.Props{
+			"icon": "close",
+			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+			"Args": ki.PropSlice{
+				{"Proportion", ki.Props{
+					"desc": "proportion (0 -- 1) of neurons to lesion",
+				}},
+			},
+		}},
+		{"UnLesionNeurons", ki.Props{
+			"icon": "reset",
+			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+		}},
+	},
 }

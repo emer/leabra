@@ -10,8 +10,7 @@ See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installati
 
 # Current Status / News
 
-* 6/2019: see the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25) for a fully functional demo.
-
+* 6/12/2019: **Initial beta release** -- see the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25) for a fully functional demo.  This example code is now sufficiently feature complete to provide a reasonable starting point for creating your own simulations, with both the Go and Python versions closely matched in functionality so you can choose either way (or explore both!).  We expect that although there will certainly be changes and improvements etc (there are many planned additions already), the existing code should be reasonably stable at this point, with only relatively minor changes to the API -- it is now safe to start building your own models!   Please file issues on github (use the emergent repository's issue tracker) for any bugs or other issues you find.
 
 * 4/2019: separated this `leabra` repository from the overall `emergent` repository, to make it easier to fork and save / modify just the algorithm components of the system independent of the overall emergent infrastructure.  You just need to replace "github.com/emer/emergent/leabra/leabra" -> "github.com/emer/leabra/leabra" in your imports.
 

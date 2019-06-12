@@ -14,6 +14,20 @@ Results are total time for 1, 2, 4 threads, on my macbook.
 * GINOR:  35.334  24.768   17.794
 ```
 
+## Go emergent 6/2019 after a few bugfixes, etc: significantly faster!
+
+```
+* SMALL:   1.46   3.63   3.96
+* MEDIUM:  1.87   2.46   2.32
+* LARGE:  11.38   8.48   6.03
+* HUGE:   19.53   14.52   11.29
+* GINOR:  26.93   20.66   15.71
+```
+
+now really just as fast overall, if not faster, than C++!
+
+note: only tiny changes after adding IsOff check for all neuron-level computation.
+
 ## Go emergent, per-layer threads, thread pool, optimized range synapse code
 
 ```

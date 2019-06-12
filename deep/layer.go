@@ -206,6 +206,9 @@ func (ly *Layer) DecayState(decay float32) {
 	ly.Layer.DecayState(decay)
 	for ni := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[ni]
+		// if dnr.IsOff() { // not worth checking..
+		// 	continue
+		// }
 		dnr.ActNoAttn -= decay * (dnr.ActNoAttn - ly.Act.Init.Act)
 		dnr.DeepBurstSent = 0
 	}
@@ -219,6 +222,9 @@ func (ly *Layer) DecayState(decay float32) {
 func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
@@ -273,6 +279,9 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 		if lpl.TRCBurstGe.Max > 0.1 { // have some actual input
 			for ni := range ly.Neurons {
 				nrn := &ly.Neurons[ni]
+				if nrn.IsOff() {
+					continue
+				}
 				dnr := &ly.DeepNeurs[ni]
 				ly.Act.GRawFmInc(nrn) // key to integrate and reset Inc's
 				geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe)
@@ -331,8 +340,11 @@ func (ly *Layer) DeepAttnFmG(ltime *leabra.Time) {
 	lpl := &ly.DeepPools[0]
 	attnMax := lpl.AttnGe.Max
 	for ni := range ly.DeepNeurs {
-		dnr := &ly.DeepNeurs[ni]
 		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		dnr := &ly.DeepNeurs[ni]
 		switch {
 		case !ly.DeepAttn.On:
 			dnr.DeepAttn = 1
@@ -393,6 +405,10 @@ func (ly *Layer) DeepBurstFmAct(ltime *leabra.Time) {
 	thr := actAvg + ly.DeepBurst.ThrRel*(actMax-actAvg)
 	thr = math32.Max(thr, ly.DeepBurst.ThrAbs)
 	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		dnr := &ly.DeepNeurs[ni]
 		burst := float32(0)
 		if dnr.ActNoAttn > thr {
@@ -409,6 +425,10 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 		return
 	}
 	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		dnr := &ly.DeepNeurs[ni]
 		if dnr.DeepBurst > ly.Act.OptThresh.Send {
 			delta := dnr.DeepBurst - dnr.DeepBurstSent
@@ -488,6 +508,10 @@ func (ly *Layer) SendDeepCtxtGe(ltime *leabra.Time) {
 		return
 	}
 	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		dnr := &ly.DeepNeurs[ni]
 		if dnr.DeepBurst > ly.Act.OptThresh.Send {
 			for _, sp := range ly.SndPrjns {
@@ -528,6 +552,10 @@ func (ly *Layer) DeepCtxtFmGe(ltime *leabra.Time) {
 		pj.RecvDeepCtxtGeInc()
 	}
 	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
 		dnr := &ly.DeepNeurs[ni]
 		dnr.DeepCtxt = ly.DeepCtxt.DeepCtxtFmGe(dnr.DeepCtxtGe, dnr.DeepCtxt)
 	}

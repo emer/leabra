@@ -5,8 +5,10 @@
 package leabra
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
@@ -43,6 +45,14 @@ func (pj *Prjn) Defaults() {
 func (pj *Prjn) UpdateParams() {
 	pj.WtScale.Update()
 	pj.Learn.Update()
+}
+
+// AllParams returns a listing of all parameters in the Layer
+func (pj *Prjn) AllParams() string {
+	str := "///////////////////////////////////////////////////\nPrjn: " + pj.Name() + "\n"
+	b, _ := json.MarshalIndent(&pj.Learn, "", " ")
+	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " WtInit: {", "\n  WtInit: {", -1)
+	return str
 }
 
 func (pj *Prjn) SynVarNames() []string {

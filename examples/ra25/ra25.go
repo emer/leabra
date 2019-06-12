@@ -200,6 +200,9 @@ func (ss *Sim) New() {
 	ss.TestInterval = 5
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// 		Configs
+
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
 	//ss.ConfigPats()
@@ -212,6 +215,81 @@ func (ss *Sim) Config() {
 	ss.ConfigTstCycLog(ss.TstCycLog)
 	ss.ConfigRunLog(ss.RunLog)
 }
+
+func (ss *Sim) ConfigEnv() {
+	if ss.MaxRuns == 0 { // allow user override
+		ss.MaxRuns = 10
+	}
+	if ss.MaxEpcs == 0 { // allow user override
+		ss.MaxEpcs = 50
+	}
+
+	ss.TrainEnv.Nm = "TrainEnv"
+	ss.TrainEnv.Dsc = "training params and state"
+	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TrainEnv.Validate()
+	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
+
+	ss.TestEnv.Nm = "TestEnv"
+	ss.TestEnv.Dsc = "testing params and state"
+	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TestEnv.Sequential = true
+	ss.TestEnv.Validate()
+
+	// note: to create a train / test split of pats, do this:
+	// all := etable.NewIdxView(ss.Pats)
+	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
+	// ss.TrainEnv.Table = splits.Splits[0]
+	// ss.TestEnv.Table = splits.Splits[1]
+
+	ss.TrainEnv.Init(0)
+	ss.TestEnv.Init(0)
+}
+
+func (ss *Sim) ConfigNet(net *leabra.Network) {
+	net.InitName(net, "RA25")
+	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
+	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
+	hid2Lay := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
+	outLay := net.AddLayer2D("Output", 5, 5, emer.Target)
+
+	// use this to position layers relative to each other
+	// default is Above, YAlign = Front, XAlign = Center
+	hid2Lay.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
+
+	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
+
+	// note: see emergent/prjn module for all the options on how to connect
+	// NewFull returns a new prjn.Full connectivity pattern
+	net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+
+	// note: can set these to do parallel threaded computation across multiple cpus
+	// not worth it for this small of a model, but definitely helps for larger ones
+	// if Thread {
+	// 	hid2Lay.SetThread(1)
+	// 	outLay.SetThread(1)
+	// }
+
+	// note: if you wanted to change a layer type from e.g., Target to Compare, do this:
+	// outLay.SetType(emer.Compare)
+	// that would mean that the output layer doesn't reflect target values in plus phase
+	// and thus removes error-driven learning -- but stats are still computed.
+
+	net.Defaults()
+	ss.SetParams("Network", ss.LogSetParams) // only set Network params
+	err := net.Build()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	net.InitWts()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 	    Init, utils
 
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
@@ -539,73 +617,8 @@ func (ss *Sim) RunTestAll() {
 	ss.Stopped()
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
-// Config methods
-
-func (ss *Sim) ConfigEnv() {
-	if ss.MaxRuns == 0 { // allow user override
-		ss.MaxRuns = 10
-	}
-	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 50
-	}
-
-	ss.TrainEnv.Nm = "TrainEnv"
-	ss.TrainEnv.Dsc = "training params and state"
-	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
-	ss.TrainEnv.Validate()
-	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
-
-	ss.TestEnv.Nm = "TestEnv"
-	ss.TestEnv.Dsc = "testing params and state"
-	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
-	ss.TestEnv.Sequential = true
-	ss.TestEnv.Validate()
-
-	// note: to create a train / test split of pats, do this:
-	// all := etable.NewIdxView(ss.Pats)
-	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
-	// ss.TrainEnv.Table = splits.Splits[0]
-	// ss.TestEnv.Table = splits.Splits[1]
-
-	ss.TrainEnv.Init(0)
-	ss.TestEnv.Init(0)
-}
-
-func (ss *Sim) ConfigNet(net *leabra.Network) {
-	net.InitName(net, "RA25")
-	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2Lay := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
-	outLay := net.AddLayer2D("Output", 5, 5, emer.Target)
-
-	// use this to position layers relative to each other
-	// default is Above, YAlign = Front, XAlign = Center
-	hid2Lay.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
-
-	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
-
-	net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
-
-	// note: can set these to do parallel threaded computation across multiple cpus
-	// not worth it for this small of a model, but definitely helps for larger ones
-	// if Thread {
-	// 	hid2Lay.SetThread(1)
-	// 	outLay.SetThread(1)
-	// }
-
-	net.Defaults()
-	ss.SetParams("Network", ss.LogSetParams) // only set Network params
-	err := net.Build()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	net.InitWts()
-}
+/////////////////////////////////////////////////////////////////////////
+//   Params setting
 
 // ParamsName returns name of current set of parameters
 func (ss *Sim) ParamsName() string {

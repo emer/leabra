@@ -21,7 +21,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv
+from leabra import go, leabra, emer, relpos, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv
 
 # this is in-process and will be an installable module under GoGi later
 import pygiv
@@ -52,7 +52,9 @@ nilStrs = go.Slice_string()
 # LogPrec is precision for saving float values in logs
 LogPrec = 4
 
-# note: cannot use method callbacks -- must be separate functions
+# note: we cannot use methods for callbacks from Go -- must be separate functions
+# so below are all the callbacks from the GUI toolbar actions
+
 def InitCB(recv, send, sig, data):
     TheSim.Init()
     TheSim.ClassView.Update()
@@ -142,6 +144,10 @@ def UpdtFuncNotRunning(act):
     
 def UpdtFuncRunning(act):
     act.SetActiveStateUpdt(TheSim.IsRunning)
+
+    
+#####################################################    
+#     Sim
 
 class Sim(object):
     """
@@ -318,6 +324,9 @@ class Sim(object):
         # })
 
 
+    ######################################
+    #   Configs
+
     def Config(self):
         """Config configures all the elements using the standard functions"""
         self.InitParams()
@@ -330,6 +339,73 @@ class Sim(object):
         self.ConfigTstCycLog(self.TstCycLog)
         self.ConfigRunLog(self.RunLog)
 
+    def ConfigEnv(self): 
+        if self.MaxRuns == 0: # allow user override
+            self.MaxRuns = 10
+        if self.MaxEpcs == 0: # allow user override
+            self.MaxEpcs = 50
+        
+        self.TrainEnv.Nm = "TrainEnv"
+        self.TrainEnv.Dsc = "training params and state"
+        self.TrainEnv.Table = etable.NewIdxView(self.Pats)
+        self.TrainEnv.Validate()
+        self.TrainEnv.Run.Max = self.MaxRuns # note: we are not setting epoch max -- do that manually
+        
+        self.TestEnv.Nm = "TestEnv"
+        self.TestEnv.Dsc = "testing params and state"
+        self.TestEnv.Table = etable.NewIdxView(self.Pats)
+        self.TestEnv.Sequential = True
+        self.TestEnv.Validate()
+        
+        # note: to create a train / test split of pats, do this:
+        # all = etable.NewIdxView(self.Pats)
+        # splits = split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
+        # self.TrainEnv.Table = splits.Splits[0]
+        # self.TestEnv.Table = splits.Splits[1]
+        
+        self.TrainEnv.Init(0)
+        self.TestEnv.Init(0)
+
+    def ConfigNet(self, net):
+        net.InitName(net, "RA25")
+        inLay = net.AddLayer2D("Input", 5, 5, emer.Input)
+        hid1Lay = net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
+        hid2Lay = net.AddLayer2D("Hidden2", 7, 7, emer.Hidden)
+        outLay = net.AddLayer2D("Output", 5, 5, emer.Target)
+        
+        # use this to position layers relative to each other
+        # default is Above, YAlign = Front, XAlign = Center
+        hid2Lay.SetRelPos(relpos.Rel(Rel=relpos.RightOf, Other="Hidden1", YAlign=relpos.Front, Space=2))
+
+        # note: see emergent/prjn module for all the options on how to connect
+        # NewFull returns a new prjn.Full connectivity pattern
+        net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
+        net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
+        net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
+        
+        net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
+        net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+        
+        # note: can set these to do parallel threaded computation across multiple cpus
+        # not worth it for this small of a model, but definitely helps for larger ones
+        # if Thread {
+        #     hid2Lay.SetThread(1)
+        #     outLay.SetThread(1)
+        # }
+  
+        # note: if you wanted to change a layer type from e.g., Target to Compare, do this:
+        # outLay.SetType(emer.Compare)
+        # that would mean that the output layer doesn't reflect target values in plus phase
+        # and thus removes error-driven learning -- but stats are still computed.
+
+        net.Defaults()
+        self.SetParams("Network", self.LogSetParams) # only set Network params
+        net.Build()
+        net.InitWts()
+
+    ######################################
+    #   Init, utils
+        
     def Init(self):
         """Init restarts the run, and initializes everything, including network weights and resets the epoch log table"""
         rand.Seed(self.RndSeed)
@@ -359,6 +435,9 @@ class Sim(object):
             # note: essential to use Go version of update when called from another goroutine
             self.NetView.GoUpdate(self.Counters(train)) # note: using counters is significantly slower..
 
+    ######################################
+    #   Running the network
+    
     def AlphaCyc(self, train):
         """
         AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)     of processing.
@@ -615,55 +694,6 @@ class Sim(object):
         self.StopNow = False
         self.TestAll()
         self.Stopped()
-
-    ##########################################
-    #   Config methods
-
-    def ConfigEnv(self): 
-        if self.MaxRuns == 0: # allow user override
-            self.MaxRuns = 10
-        if self.MaxEpcs == 0: # allow user override
-            self.MaxEpcs = 50
-        
-        self.TrainEnv.Nm = "TrainEnv"
-        self.TrainEnv.Dsc = "training params and state"
-        self.TrainEnv.Table = etable.NewIdxView(self.Pats)
-        self.TrainEnv.Validate()
-        self.TrainEnv.Run.Max = self.MaxRuns # note: we are not setting epoch max -- do that manually
-        
-        self.TestEnv.Nm = "TestEnv"
-        self.TestEnv.Dsc = "testing params and state"
-        self.TestEnv.Table = etable.NewIdxView(self.Pats)
-        self.TestEnv.Sequential = True
-        self.TestEnv.Validate()
-        
-        # note: to create a train / test split of pats, do this:
-        # all = etable.NewIdxView(self.Pats)
-        # splits = split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
-        # self.TrainEnv.Table = splits.Splits[0]
-        # self.TestEnv.Table = splits.Splits[1]
-        
-        self.TrainEnv.Init(0)
-        self.TestEnv.Init(0)
-
-    def ConfigNet(self, net):
-        net.InitName(net, "RA25")
-        inLay = net.AddLayer2D("Input", 5, 5, emer.Input)
-        hid1Lay = net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-        hid2Lay = net.AddLayer2D("Hidden2", 7, 7, emer.Hidden)
-        outLay = net.AddLayer2D("Output", 5, 5, emer.Target)
-        
-        net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-        net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-        net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
-        
-        net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
-        net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
-        
-        net.Defaults()
-        self.SetParams("Network", self.LogSetParams) # only set Network params
-        net.Build()
-        net.InitWts()
 
     ##########################################
     #   Params methods

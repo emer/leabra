@@ -115,6 +115,11 @@ func (nrn *Neuron) ClearMask(mask int32) {
 	bitflag.ClearMask32((*int32)(&nrn.Flags), mask)
 }
 
+// IsOff returns true if the neuron has been turned off (lesioned)
+func (nrn *Neuron) IsOff() bool {
+	return nrn.HasFlag(NeurOff)
+}
+
 // NeurFlags are bit-flags encoding relevant binary state for neurons
 type NeurFlags int32
 

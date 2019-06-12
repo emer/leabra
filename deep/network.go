@@ -29,15 +29,6 @@ func (nt *Network) NewPrjn() emer.Prjn {
 	return &Prjn{}
 }
 
-// EditLayer is gui method for accessing layers
-func (nt *Network) EditLayer(name string) *Layer {
-	ly, err := nt.LayerByNameTry(name)
-	if err != nil {
-		return nil
-	}
-	return ly.(*Layer)
-}
-
 // Defaults sets all the default parameters for all layers and projections
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()

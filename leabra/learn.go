@@ -167,10 +167,10 @@ type LrnActAvgParams struct {
 	LrnM  float32 `def:"0.1,0" min:"0" max:"1" desc:"how much of the medium term average activation to mix in with the short (plus phase) to compute the Neuron AvgSLrn variable that is used for the unit's short-term average in learning. This is important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place -- typically need faster time constant for updating S such that this trace of the M signal is lost -- can set SSTau=7 and set this to 0 but learning is generally somewhat worse"`
 	Init  float32 `def:"0.15" min:"0" max:"1" desc:"initial value for average"`
 
-	SSDt float32 `view:"-" inactive:"+" desc:"rate = 1 / tau"`
-	SDt  float32 `view:"-" inactive:"+" desc:"rate = 1 / tau"`
-	MDt  float32 `view:"-" inactive:"+" desc:"rate = 1 / tau"`
-	LrnS float32 `view:"-" inactive:"+" desc:"1-LrnM"`
+	SSDt float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	SDt  float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	MDt  float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	LrnS float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"1-LrnM"`
 }
 
 // AvgsFmAct computes averages based on current act
@@ -215,8 +215,8 @@ type AvgLParams struct {
 	ErrMod bool    `def:"true" desc:"modulate amount learning by normalized level of error within layer"`
 	ModMin float32 `def:"0.01" viewif:"ErrMod=true" desc:"minimum modulation value for ErrMod-- ensures a minimum amount of self-organizing learning even for network / layers that have a very small level of error signal"`
 
-	Dt      float32 `view:"-" inactive:"+" desc:"rate = 1 / tau"`
-	LrnFact float32 `view:"-" inactive:"+" desc:"(LrnMax - LrnMin) / (Gain - Min)"`
+	Dt      float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	LrnFact float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"(LrnMax - LrnMin) / (Gain - Min)"`
 }
 
 // AvgLFmAvgM computes long-term average activation value, and learning factor, from given
@@ -267,8 +267,8 @@ type CosDiffParams struct {
 	//   float         lrmod_z_thr; // #DEF_-1.5 #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc threshold for setting learning rate modulation to zero, as function of z-normalized cos_diff value on this alpha-cycle -- normalization computed using incrementally computed average and variance values -- this essentially has the network ignoring alpha-cycles where the diff was significantly below average -- replaces the manual unlearnable alpha-cycle mechanism
 	//   bool          set_net_unlrn;  // #CONDSHOW_ON_lrate_mod&&!lrmod_fm_trc set the network-level unlearnable_alpha-cycle flag based on our learning rate modulation factor -- only makes sense for one layer to do this
 
-	Dt  float32 `inactive:"+" view:"-" desc:"rate constant = 1 / Tau"`
-	DtC float32 `inactive:"+" view:"-" desc:"complement of rate constant = 1 - Dt"`
+	Dt  float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant = 1 / Tau"`
+	DtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement of rate constant = 1 - Dt"`
 }
 
 func (cd *CosDiffParams) Update() {
@@ -346,7 +346,7 @@ type XCalParams struct {
 	DThr    float32 `def:"0.0001,0.01" min:"0" desc:"minimum LTD threshold value below which no weight change occurs -- this is now *relative* to the threshold"`
 	LrnThr  float32 `def:"0.01" desc:"xcal learning threshold -- don't learn when sending unit activation is below this value in both phases -- due to the nature of the learning function being 0 when the sr coproduct is 0, it should not affect learning in any substantial way -- nonstandard learning algorithms that have different properties should ignore it"`
 
-	DRevRatio float32 `inactive:"+" view:"-" desc:"-(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!"`
+	DRevRatio float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"-(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!"`
 }
 
 func (xc *XCalParams) Update() {
@@ -489,8 +489,8 @@ type DWtNormParams struct {
 	LrComp   float32 `viewif:"On" min:"0" def:"0.15" desc:"overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels"`
 	Stats    bool    `viewif:"On" def:"false" desc:"record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection"`
 
-	DecayDt  float32 `inactive:"+" view:"-" desc:"rate constant of decay = 1 / decay_tau"`
-	DecayDtC float32 `inactive:"+" view:"-" desc:"complement rate constant of decay = 1 - (1 / decay_tau)"`
+	DecayDt  float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant of decay = 1 / decay_tau"`
+	DecayDtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement rate constant of decay = 1 - (1 / decay_tau)"`
 }
 
 // DWtNormParams updates the dwnorm running max_abs, slowly decaying value
@@ -528,8 +528,8 @@ type MomentumParams struct {
 	MTau   float32 `viewif:"On" min:"1" def:"10" desc:"time constant factor for integration of momentum -- 1/tau is dt (e.g., .1), and 1-1/tau (e.g., .95 or .9) is traditional momentum time-integration factor"`
 	LrComp float32 `viewif:"On" min:"0" def:"0.1" desc:"overall learning rate multiplier to compensate for changes due to JUST momentum without normalization -- allows for a common master learning rate to be used between different conditions -- generally should use .1 to compensate for just momentum itself"`
 
-	MDt  float32 `inactive:"+" view:"-" desc:"rate constant of momentum integration = 1 / m_tau"`
-	MDtC float32 `inactive:"+" view:"-" desc:"complement rate constant of momentum integration = 1 - (1 / m_tau)"`
+	MDt  float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant of momentum integration = 1 / m_tau"`
+	MDtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement rate constant of momentum integration = 1 - (1 / m_tau)"`
 }
 
 // MomentFmDWt updates synaptic moment variable based on dwt weight change value

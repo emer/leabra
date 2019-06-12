@@ -213,6 +213,16 @@ func (nt *NetworkStru) NonDefaultParams() string {
 	return nds
 }
 
+// AllParams returns a listing of all parameters in the Network.
+func (nt *NetworkStru) AllParams() string {
+	nds := ""
+	for _, ly := range nt.Layers {
+		nd := ly.AllParams()
+		nds += nd
+	}
+	return nds
+}
+
 // AddLayer adds a new layer with given name and shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential -- see
 // AddLayer2D and 4D for convenience methods for those.  4D layers enable

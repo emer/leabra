@@ -1,6 +1,6 @@
 # Leabra Random Associator 25 Example
 
-This example project serves as a demo and basic template for Leabra models.  It has been constructed to illustrate the most common types of functionality needed across models, to facilitate copy-paste programming.
+This example project serves as a demo and basic template for Leabra models -- you can use this as a starting point for creating your own models.  It has been constructed to illustrate the most common types of functionality needed across models, to facilitate copy-paste programming.
 
 # Running the model
 
@@ -26,6 +26,8 @@ The NetView will show cycle-by-cycle updates during testing, and you can see the
 
 Clicking on the `Params` button will pull up a set of parameters, the design and use of which are explained in detail on the wiki page: [Params](https://github.com/emer/emergent/wiki/Params).  When you hit `Init`, the `Base` ParamSet is always applied, and then if you enter the name of another ParamSet in the `ParamSet` field, that will then be applied after the Base, thereby overwriting those base default params with other ones to explore.
 
+To see any non-default parameter settings, the `Non Def Params` button in the NetView toolbar will show you those, and the `All Params` button will show you *all* of the parameters for every layer and projection in the network.  This is a good way to see all the parameters that are available.
+
 To determine the real performance impact of any of the params, you typically need to collect stats over multiple runs.  To see how this works, try the following:
 
 * Click on the `RunPlot` tab and hit `ResetRunLog` for good measure.
@@ -33,7 +35,8 @@ To determine the real performance impact of any of the params, you typically nee
 * When it finishes, you can click on the `RunStats` Table to see the summary stats for FirstZero and the average over the last 10 epochs of `PctCor`, and it labels this as using the Base params.
 * Now enter `NoMomentum` in the `ParamSet`, `Init` and `Train` again.  Then click on the `RunStats` table button again (it generates a new one after every complete set of runs, so you can just close the old one -- it won't Update to show new results).  You can now directly compare e.g., the Mean FirstZero Epoch, and see that the `Base` params are slightly faster than `NoMomentum`.
 * Now you can go back to the params, duplicate one of the sets, and start entering your own custom set of params to explore, and see if you can beat the Base settings!  Just click on the `*params.Sel` button after `Network` to get the actual parameters being set, which are contained in that named `Sheet`.
-* Click on the `Net` button on the left and then on one of the layers, and so-on into the parameters at the layer level (`Act`, `Inhib`, `Learn`), and if you click on one of the `Prjn`s, you can see parameters at the projection level.  You should be able to see the path for specifying any of these params in the Params sets.
+* Click on the `Net` button on the left and then on one of the layers, and so-on into the parameters at the layer level (`Act`, `Inhib`, `Learn`), and if you click on one of the `Prjn`s, you can see parameters at the projection level in `Learn`.  You should be able to see the path for specifying any of these params in the Params sets.
+* We are planning to add a function that will show you the path to any parameter via a context-menu action on its label..
 
 ## Running from command line
 
@@ -57,16 +60,6 @@ Most of the code is commented and should be read directly for how to do things. 
 * If there is a more complex environment associated with the model, always put it in a separate file, so it can more easily be re-used across other models.
 
 * The params editor can easily save to a file, default named "params.go" with name `SavedParamsSets` -- you can switch your project to using that as its default set of params to then easily always be using whatever params were saved last.
-
-# TODO
-
-These are things that remain to be done:
-
-- [ ] hog stats
-
-- [ ] net rel stats
-
-- [ ] neg draw for plots
 
 
 
