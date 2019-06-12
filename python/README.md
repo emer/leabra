@@ -4,7 +4,7 @@ You can now run the Go version of *emergent* via Python, using a newly-updated v
 
 See the [GoGi Python README](https://github.com/goki/gi/blob/master/python/README.md) for more details on how the python wrapper works and how to use it for GUI-level functionality.
 
-Note: ** You must follow the installation instructions in the above GoGi Python README ** to install the `gopy` program prior to running the further installation instructions below.  Given that emergent depends fully on GoGi, doing this first ensures that everything is all working prior to moving on to emergent itself.
+Note: **You must follow the installation instructions in the above GoGi Python README** to install the `gopy` program prior to running the further installation instructions below.  Given that emergent depends fully on GoGi, doing this first ensures that everything is all working prior to moving on to emergent itself.
 
 There is a Python version of the basic leabra demo in `examples/ra25/ra25.py`, which you can compare with the `ra25.go` to see how similar the python and Go code are.  While it is possible to use standard Python data structures such as `pandas` for the input / output patterns presented to the network, and recording a log of the results, there is extra GUI support for the Go-based `etable.Table`, so we are using that in the Python version as well.  We will include optimized functions for efficiently converting between the etable.Table and pandas and other such table-like data structures, but for now, you can simply save your data to a .csv and load it from there, to do further data analysis etc using your favorite workflow, etc.
 
