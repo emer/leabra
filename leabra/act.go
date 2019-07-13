@@ -163,8 +163,7 @@ func (ac *ActParams) VmFmG(nrn *Neuron) {
 
 // GeThrFmG computes the threshold for Ge based on other conductances
 func (ac *ActParams) GeThrFmG(nrn *Neuron) float32 {
-	gcL := ac.Gbar.L
-	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + gcL*ac.ErevSubThr.L) / ac.ThrSubErev.E)
+	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L) / ac.ThrSubErev.E)
 }
 
 // ActFmG computes rate-coded activation Act from conductances Ge and Gi
