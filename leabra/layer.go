@@ -617,15 +617,18 @@ func (ly *Layer) HardClamp() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// InitGInc initializes GeInc and GiIn increment -- optional
+// InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
+// including ActSent and G*Raw values.
+// called at start of trial always, and can be called optionally
+// when delta-based Ge computation needs to be updated (e.g., weights
+// might have changed strength)
 func (ly *Layer) InitGInc() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.GeInc = 0
-		nrn.GiInc = 0
+		ly.Act.InitGInc(nrn)
 	}
 	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {

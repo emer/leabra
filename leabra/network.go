@@ -89,6 +89,20 @@ func (nt *Network) InitExt() {
 	}
 }
 
+// InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
+// including ActSent and G*Raw values.
+// called at start of trial always (at layer level), and can be called optionally
+// when delta-based Ge computation needs to be updated (e.g., weights
+// might have changed strength)
+func (nt *Network) InitGInc() {
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		ly.(LeabraLayer).InitGInc()
+	}
+}
+
 // AlphaCycInit handles all initialization at start of new input pattern, including computing
 // netinput scaling from running average activation etc.
 func (nt *Network) AlphaCycInit() {

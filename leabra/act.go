@@ -61,9 +61,12 @@ func (ac *ActParams) Update() {
 ///////////////////////////////////////////////////////////////////////
 //  Init
 
-// InitGe initializes the Ge excitatory and Gi inhibitory conductance accumulation states
-// called at start of trial always
-func (ac *ActParams) InitGeGi(nrn *Neuron) {
+// InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
+// including ActSent and G*Raw values.
+// called at start of trial always, and can be called optionally
+// when delta-based Ge computation needs to be updated (e.g., weights
+// might have changed strength)
+func (ac *ActParams) InitGInc(nrn *Neuron) {
 	nrn.ActSent = 0
 	nrn.GeRaw = 0
 	nrn.GeInc = 0
@@ -83,7 +86,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 	}
 	nrn.ActDel = 0
 	nrn.Inet = 0
-	ac.InitGeGi(nrn)
+	ac.InitGInc(nrn)
 }
 
 // InitActs initializes activation state in neuron -- called during InitWts but otherwise not
@@ -99,7 +102,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Ext = 0
 	nrn.ActDel = 0
 
-	ac.InitGeGi(nrn)
+	ac.InitGInc(nrn)
 }
 
 ///////////////////////////////////////////////////////////////////////
