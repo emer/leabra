@@ -96,8 +96,12 @@ func (ls *LearnSynParams) Defaults() {
 // InitWts initializes weight values based on WtInit randomness parameters
 // It also updates the linear weight value based on the sigmoidal weight value
 func (ls *LearnSynParams) InitWts(syn *Synapse) {
+	if syn.Scale == 0 {
+		syn.Scale = 1
+	}
 	syn.Wt = float32(ls.WtInit.Gen(-1))
 	syn.LWt = ls.WtSig.LinFmSigWt(syn.Wt)
+	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
 	syn.DWt = 0
 	syn.Norm = 0
 	syn.Moment = 0
@@ -113,6 +117,7 @@ func (ls *LearnSynParams) LWtFmWt(syn *Synapse) {
 // effective weight is sigmoidally contrast-enhanced relative to the linear weight.
 func (ls *LearnSynParams) WtFmLWt(syn *Synapse) {
 	syn.Wt = ls.WtSig.SigFmLinWt(syn.LWt)
+	syn.Wt *= syn.Scale
 }
 
 // CHLdWt returns the error-driven and bcm Hebbian weight change components for the
@@ -128,7 +133,7 @@ func (ls *LearnSynParams) CHLdWt(suAvgSLrn, suAvgM, ruAvgSLrn, ruAvgM, ruAvgL fl
 // WtFmDWt updates the synaptic weights from accumulated weight changes
 // wbInc and wbDec are the weight balance factors, wt is the sigmoidal contrast-enhanced
 // weight and lwt is the linear weight value
-func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32) {
+func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, scale float32) {
 	if *dwt == 0 {
 		return
 	}
@@ -151,7 +156,7 @@ func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32) {
 	} else if *lwt > 1 {
 		*lwt = 1
 	}
-	*wt = ls.WtSig.SigFmLinWt(*lwt) //  todo: scale *
+	*wt = scale * ls.WtSig.SigFmLinWt(*lwt)
 	*dwt = 0
 	//    if(adapt_scale.on) {
 	//      adapt_scale.AdaptWtScale(scale, wt);

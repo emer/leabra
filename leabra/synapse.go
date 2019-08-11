@@ -13,9 +13,10 @@ type Synapse struct {
 	DWt    float32 `desc:"change in synaptic weight, from learning"`
 	Norm   float32 `desc:"DWt normalization factor -- reset to max of abs value of DWt, decays slowly down over time -- serves as an estimate of variance in weight changes over time"`
 	Moment float32 `desc:"momentum -- time-integrated DWt changes, to accumulate a consistent direction of weight change and cancel out dithering contradictory changes"`
+	Scale  float32 `desc:"scaling parameter for this connection: effective weight value is scaled by this factor -- useful for topographic connectivity patterns e.g., to enforce more distant connections to always be lower in magnitude than closer connections.  Value defaults to 1 (cannot be exactly 0 -- otherwise is automatically reset to 1 -- use a very small number to approximate 0).  Typically set by using the prjn.Pattern Weights() values where appropriate"`
 }
 
-var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment"}
+var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale"}
 
 var SynapseVarsMap map[string]int
 

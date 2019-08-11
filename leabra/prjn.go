@@ -286,8 +286,8 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 					rsy := &rpj.Syns[rsst+rci]
 					rsy.Wt = sy.Wt
 					rsy.LWt = sy.LWt
+					rsy.Scale = sy.Scale
 					// note: if we support SymFmTop then can have option to go other way
-					// also for Scale support, copy scales
 				}
 			}
 		}
@@ -403,12 +403,12 @@ func (pj *Prjn) WtFmDWt() {
 			sy := &pj.Syns[si]
 			ri := pj.SConIdx[si]
 			wb := &pj.WbRecv[ri]
-			pj.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt)
+			pj.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	} else {
 		for si := range pj.Syns {
 			sy := &pj.Syns[si]
-			pj.Learn.WtFmDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt)
+			pj.Learn.WtFmDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	}
 }
