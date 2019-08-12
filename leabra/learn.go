@@ -58,8 +58,6 @@ func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 ///////////////////////////////////////////////////////////////////////
 //  LearnSynParams
 
-// todo: lrate sched
-
 // leabra.LearnSynParams manages learning-related parameters at the synapse-level.
 type LearnSynParams struct {
 	Learn    bool            `desc:"enable learning for this projection"`
@@ -158,9 +156,6 @@ func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, s
 	}
 	*wt = scale * ls.WtSig.SigFmLinWt(*lwt)
 	*dwt = 0
-	//    if(adapt_scale.on) {
-	//      adapt_scale.AdaptWtScale(scale, wt);
-	//    }
 }
 
 // LrnActAvgParams has rate constants for averaging over activations at different time scales,

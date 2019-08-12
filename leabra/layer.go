@@ -510,6 +510,13 @@ func (ly *Layer) AlphaCycInit() {
 		ly.Inhib.ActAvg.AvgFmAct(&pl.ActAvg.ActPAvg, pl.ActP.Avg)
 		ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.ActQ0 = nrn.ActP
+	}
 	ly.LeabraLay.GScaleFmAvgAct()
 	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
 		ly.LeabraLay.GenNoise()
@@ -768,9 +775,10 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 func (ly *Layer) QuarterFinal(ltime *Time) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
-		if ltime.Quarter == 2 {
+		switch ltime.Quarter {
+		case 2:
 			pl.ActM = pl.Act
-		} else if ltime.Quarter == 3 {
+		case 3:
 			pl.ActP = pl.Act
 		}
 	}
@@ -779,13 +787,18 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 2 { // end of minus phase
+		switch ltime.Quarter {
+		case 0:
+			nrn.ActQ1 = nrn.Act
+		case 1:
+			nrn.ActQ2 = nrn.Act
+		case 2:
 			nrn.ActM = nrn.Act
 			if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
 				nrn.Ext = nrn.Targ
 				nrn.SetFlag(NeurHasExt)
 			}
-		} else if ltime.Quarter == 3 {
+		case 3:
 			nrn.ActP = nrn.Act
 			nrn.ActDif = nrn.ActP - nrn.ActM
 			nrn.ActAvg += ly.Act.Dt.AvgDt * (nrn.Act - nrn.ActAvg)

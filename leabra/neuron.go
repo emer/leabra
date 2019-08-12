@@ -38,8 +38,11 @@ type Neuron struct {
 	AvgLLrn float32 `desc:"how much to learn based on the long-term floating threshold (AvgL) for BCM-style Hebbian learning -- is modulated by level of AvgL itself (stronger Hebbian as average activation goes higher) and optionally the average amount of error experienced in the layer (to retain a common proportionality with the level of error-driven learning across layers)"`
 	AvgSLrn float32 `desc:"short time-scale activation average that is actually used for learning -- typically includes a small contribution from AvgM in addition to mostly AvgS, as determined by LrnActAvgParams.LrnM -- important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place"`
 
-	ActM   float32 `desc:"records the traditional posterior-cortical minus phase activation, as activation after third quarter of current alpha cycle"`
-	ActP   float32 `desc:"records the traditional posterior-cortical plus_phase activation, as activation at end of current alpha cycle"`
+	ActQ0  float32 `desc:"the activation state at start of current alpha cycle (same as the state at end of previous cycle)"`
+	ActQ1  float32 `desc:"the activation state at end of first quarter of current alpha cycle"`
+	ActQ2  float32 `desc:"the activation state at end of second quarter of current alpha cycle"`
+	ActM   float32 `desc:"the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation"`
+	ActP   float32 `desc:"the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation"`
 	ActDif float32 `desc:"ActP - ActM -- difference between plus and minus phase acts -- reflects the individual error gradient for this neuron in standard error-driven learning terms"`
 	ActDel float32 `desc:"delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place"`
 	ActAvg float32 `desc:"average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation"`
@@ -55,7 +58,7 @@ type Neuron struct {
 	GiInc   float32 `desc:"delta increment in GiRaw sent using SendGeDelta"`
 }
 
-var NeuronVars = []string{"Act", "Ge", "Gi", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GeInc", "GiRaw", "GiInc"}
+var NeuronVars = []string{"Act", "Ge", "Gi", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActQ0", "ActQ1", "ActQ2", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GeInc", "GiRaw", "GiInc"}
 
 var NeuronVarsMap map[string]int
 
