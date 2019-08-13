@@ -277,10 +277,18 @@ func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, ty
 
 // ConnectLayers establishes a projection between two layers,
 // adding to the recv and send projection lists on each side of the connection.
-// Returns false if not successful. Does not yet actually connect the units within the layers -- that
+// Does not yet actually connect the units within the layers -- that
 // requires Build.
 func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType) emer.Prjn {
 	pj := nt.EmerNet.NewPrjn() // essential to use EmerNet interface here!
+	return nt.ConnectLayersPrjn(send, recv, pat, typ, pj)
+}
+
+// ConnectLayersPrjn makes connection using given projection between two layers,
+// adding given prjn to the recv and send projection lists on each side of the connection.
+// Does not yet actually connect the units within the layers -- that
+// requires Build.
+func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
 	pj.Connect(send, recv, pat, typ)
 	recv.RecvPrjns().Add(pj)

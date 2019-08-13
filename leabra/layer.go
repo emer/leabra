@@ -457,7 +457,7 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
-					idx := []int{yp, xp, yn, yp}
+					idx := []int{yp, xp, yn, xn}
 					vl := float32(ext.FloatVal(idx))
 					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]

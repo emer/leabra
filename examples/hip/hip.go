@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// ra25 runs a simple random-associator four-layer leabra network
-// that uses the standard supervised learning paradigm to learn
-// mappings between 25 random input / output patterns
-// defined over 5x5 input / output layers (i.e., 25 units)
+// hip runs a hippocampus model on the AB-AC paired associate learning task
 package main
 
 import (
@@ -15,13 +12,13 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/agg"
@@ -30,6 +27,7 @@ import (
 	"github.com/emer/etable/etensor"
 	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/split"
+	"github.com/emer/leabra/hip"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
@@ -119,7 +117,11 @@ var ParamSets = params.Sets{
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 	Net          *leabra.Network   `view:"no-inline"`
-	Pats         *etable.Table     `view:"no-inline" desc:"the training patterns to use"`
+	TrainAB      *etable.Table     `view:"no-inline" desc:"AB training patterns to use"`
+	TrainAC      *etable.Table     `view:"no-inline" desc:"AC training patterns to use"`
+	TestAB       *etable.Table     `view:"no-inline" desc:"AB testing patterns to use"`
+	TestAC       *etable.Table     `view:"no-inline" desc:"AC testing patterns to use"`
+	TestLure     *etable.Table     `view:"no-inline" desc:"Lure testing patterns to use"`
 	TrnEpcLog    *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog    *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
 	TstTrlLog    *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
@@ -185,7 +187,11 @@ var TheSim Sim
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
 	ss.Net = &leabra.Network{}
-	ss.Pats = &etable.Table{}
+	ss.TrainAB = &etable.Table{}
+	ss.TrainAC = &etable.Table{}
+	ss.TestAB = &etable.Table{}
+	ss.TestAC = &etable.Table{}
+	ss.TestLure = &etable.Table{}
 	ss.TrnEpcLog = &etable.Table{}
 	ss.TstEpcLog = &etable.Table{}
 	ss.TstTrlLog = &etable.Table{}
@@ -205,7 +211,6 @@ func (ss *Sim) New() {
 
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
-	//ss.ConfigPats()
 	ss.OpenPats()
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
@@ -226,45 +231,58 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
-	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAB)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
-	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TestEnv.Table = etable.NewIdxView(ss.TestAB)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
-
-	// note: to create a train / test split of pats, do this:
-	// all := etable.NewIdxView(ss.Pats)
-	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
-	// ss.TrainEnv.Table = splits.Splits[0]
-	// ss.TestEnv.Table = splits.Splits[1]
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 }
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
-	net.InitName(net, "RA25")
-	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2Lay := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
-	outLay := net.AddLayer2D("Output", 5, 5, emer.Target)
+	net.InitName(net, "Hip")
+	in := net.AddLayer4D("Input", 6, 2, 3, 4, emer.Input)
+	ecin := net.AddLayer4D("ECin", 6, 2, 3, 4, emer.Hidden)
+	ecout := net.AddLayer4D("ECout", 6, 2, 3, 4, emer.Compare)
+	ca1 := net.AddLayer4D("CA1", 6, 2, 4, 10, emer.Hidden)
+	dg := net.AddLayer2D("DG", 25, 25, emer.Hidden)
+	ca3 := net.AddLayer2D("CA3", 30, 10, emer.Hidden)
 
-	// use this to position layers relative to each other
-	// default is Above, YAlign = Front, XAlign = Center
-	hid2Lay.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
+	ecin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 2})
+	ecout.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "ECin", YAlign: relpos.Front, Space: 2})
+	dg.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: "Input", YAlign: relpos.Front, XAlign: relpos.Left, Space: 0})
+	ca3.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: "DG", YAlign: relpos.Front, XAlign: relpos.Left, Space: 0})
+	ca1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "CA3", YAlign: relpos.Front, Space: 2})
 
-	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(in, ecin, prjn.NewOneToOne(), emer.Forward)
+	net.ConnectLayers(ecout, ecin, prjn.NewOneToOne(), emer.Back)
 
-	// note: see emergent/prjn module for all the options on how to connect
-	// NewFull returns a new prjn.Full connectivity pattern
-	net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+	// EC <-> CA1 encoder pathways
+	net.ConnectLayersPrjn(ecin, ca1, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
+	net.ConnectLayersPrjn(ca1, ecout, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
+	net.ConnectLayersPrjn(ecout, ca1, prjn.NewPoolOneToOne(), emer.Back, &hip.EcCa1Prjn{})
+
+	// Perforant pathway
+	ppath := prjn.NewUnifRnd()
+	ppath.PCon = 0.25
+
+	net.ConnectLayersPrjn(ecin, dg, ppath, emer.Forward, &hip.CHLPrjn{})
+	net.ConnectLayersPrjn(ecin, ca3, ppath, emer.Forward, &hip.CHLPrjn{})
+
+	// Mossy fibers
+	mossy := prjn.NewUnifRnd()
+	mossy.PCon = 0.05
+	net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
+
+	// Schafer collaterals
+	net.ConnectLayersPrjn(ca3, ca3, prjn.NewFull(), emer.Lateral, &hip.CHLPrjn{})
+	net.ConnectLayersPrjn(ca3, ca1, prjn.NewFull(), emer.Forward, &hip.CHLPrjn{})
 
 	// note: can set these to do parallel threaded computation across multiple cpus
 	// not worth it for this small of a model, but definitely helps for larger ones
@@ -395,16 +413,16 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	in := ss.Net.LayerByName("Input").(*leabra.Layer)
+	ecout := ss.Net.LayerByName("ECout").(*leabra.Layer)
 
-	inPats := en.State(inLay.Nm)
+	inPats := en.State(in.Nm)
 	if inPats != nil {
-		inLay.ApplyExt(inPats)
+		in.ApplyExt(inPats)
 	}
-	outPats := en.State(outLay.Nm)
+	outPats := en.State(ecout.Nm)
 	if outPats != nil {
-		outLay.ApplyExt(outPats)
+		ecout.ApplyExt(outPats)
 	}
 }
 
@@ -487,7 +505,7 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("ECout").(*leabra.Layer)
 	ss.TrlCosDiff = float64(outLay.CosDiff.Cos)
 	ss.TrlSSE, ss.TrlAvgSSE = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	if accum {
@@ -671,29 +689,45 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	return err
 }
 
-func (ss *Sim) ConfigPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
-	dt.SetMetaData("desc", "Training patterns")
-	dt.SetFromSchema(etable.Schema{
-		{"Name", etensor.STRING, nil, nil},
-		{"Input", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
-		{"Output", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
-	}, 25)
+// OpenPatReshape fixes C++ emergent shape which is reversed from Go
+func (ss *Sim) OpenPatReshape(dt *etable.Table, fname, fixnm string) {
+	err := dt.OpenCSV(gi.FileName(fname), etable.Tab)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	incol := dt.ColByName("Input")
+	inshp := incol.Shapes()
+	revshp := []int{inshp[0], inshp[4], inshp[3], inshp[2], inshp[1]}
+	dnms := []string{"Row", "PoolY", "PoolX", "UnY", "UnX"}
+	incol.SetShape(revshp, nil, dnms)
+	dt.ColByName("EC_out").SetShape(revshp, nil, dnms)
+	dt.ColNames[2] = "ECout"
+	dt.SaveCSV(gi.FileName(fixnm), etable.Tab, true)
+}
 
-	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
-	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.dat", ',', true)
+func (ss *Sim) OpenPat(dt *etable.Table, fname, desc string) {
+	err := dt.OpenCSV(gi.FileName(fname), etable.Tab)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	dt.SetMetaData("name", strings.TrimSuffix(fname, ".dat"))
+	dt.SetMetaData("desc", desc)
 }
 
 func (ss *Sim) OpenPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
-	dt.SetMetaData("desc", "Training patterns")
-	err := dt.OpenCSV("random_5x5_25.dat", etable.Tab)
-	if err != nil {
-		log.Println(err)
-	}
+	// one-time conversion from C++ patterns to Go patterns
+	// ss.OpenPatReshape(ss.TrainAB, "Train_AB.dat", "TrainAB.dat")
+	// ss.OpenPatReshape(ss.TrainAC, "Train_AC.dat", "TrainAC.dat")
+	// ss.OpenPatReshape(ss.TestAB, "Test_AB.dat", "TestAB.dat")
+	// ss.OpenPatReshape(ss.TestAC, "Test_AC.dat", "TestAC.dat")
+	// ss.OpenPatReshape(ss.TestLure, "Lure.dat", "TestLure.dat")
+	ss.OpenPat(ss.TrainAB, "TrainAB.dat", "AB Training Patterns")
+	ss.OpenPat(ss.TrainAC, "TrainAC.dat", "AC Training Patterns")
+	ss.OpenPat(ss.TestAB, "TestAB.dat", "AB Testing Patterns")
+	ss.OpenPat(ss.TestAC, "TestAC.dat", "AC Testing Patterns")
+	ss.OpenPat(ss.TestLure, "TestLure.dat", "Lure Testing Patterns")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -734,10 +768,10 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
 	ss.TrnEpcLog.SetNumRows(row + 1)
 
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-
+	// hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	// hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	//
 	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
 	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
 
@@ -761,9 +795,9 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
-	dt.SetCellFloat("Hid1 ActAvg", row, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.SetCellFloat("Hid2 ActAvg", row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
+	// dt.SetCellFloat("Hid1 ActAvg", row, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
+	// dt.SetCellFloat("Hid2 ActAvg", row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
+	// dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
@@ -789,14 +823,14 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"Hid1 ActAvg", etensor.FLOAT64, nil, nil},
-		{"Hid2 ActAvg", etensor.FLOAT64, nil, nil},
-		{"Out ActAvg", etensor.FLOAT64, nil, nil},
+		// {"Hid1 ActAvg", etensor.FLOAT64, nil, nil},
+		// {"Hid2 ActAvg", etensor.FLOAT64, nil, nil},
+		// {"Out ActAvg", etensor.FLOAT64, nil, nil},
 	}, 0)
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Epoch Plot"
+	plt.Params.Title = "Hippocampus Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -807,9 +841,9 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctErr", true, true, 0, true, 1) // default plot
 	plt.SetColParams("PctCor", true, true, 0, true, 1) // default plot
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
-	plt.SetColParams("Hid1 ActAvg", false, true, 0, true, .5)
-	plt.SetColParams("Hid2 ActAvg", false, true, 0, true, .5)
-	plt.SetColParams("Out ActAvg", false, true, 0, true, .5)
+	// plt.SetColParams("Hid1 ActAvg", false, true, 0, true, .5)
+	// plt.SetColParams("Hid2 ActAvg", false, true, 0, true, .5)
+	// plt.SetColParams("Out ActAvg", false, true, 0, true, .5)
 	return plt
 }
 
@@ -819,10 +853,10 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // LogTstTrl adds data from current trial to the TstTrlLog table.
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	// inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
+	// hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	// hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
 	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
 
@@ -835,21 +869,21 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("SSE", trl, ss.TrlSSE)
 	dt.SetCellFloat("AvgSSE", trl, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", trl, ss.TrlCosDiff)
-	dt.SetCellFloat("Hid1 ActM.Avg", trl, float64(hid1Lay.Pools[0].ActM.Avg))
-	dt.SetCellFloat("Hid2 ActM.Avg", trl, float64(hid2Lay.Pools[0].ActM.Avg))
-	dt.SetCellFloat("Out ActM.Avg", trl, float64(outLay.Pools[0].ActM.Avg))
+	// dt.SetCellFloat("Hid1 ActM.Avg", trl, float64(hid1Lay.Pools[0].ActM.Avg))
+	// dt.SetCellFloat("Hid2 ActM.Avg", trl, float64(hid2Lay.Pools[0].ActM.Avg))
+	// dt.SetCellFloat("Out ActM.Avg", trl, float64(outLay.Pools[0].ActM.Avg))
 
-	dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
-	dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
-	dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
+	// dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
+	// dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
+	// dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	// inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
+	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
@@ -865,17 +899,17 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"Hid1 ActM.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 ActM.Avg", etensor.FLOAT64, nil, nil},
-		{"Out ActM.Avg", etensor.FLOAT64, nil, nil},
-		{"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
-		{"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
-		{"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
+		// {"Hid1 ActM.Avg", etensor.FLOAT64, nil, nil},
+		// {"Hid2 ActM.Avg", etensor.FLOAT64, nil, nil},
+		// {"Out ActM.Avg", etensor.FLOAT64, nil, nil},
+		// {"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
+		// {"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
+		// {"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
 	}, nt)
 }
 
 func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
+	plt.Params.Title = "Hippocampus Test Trial Plot"
 	plt.Params.XAxisCol = "Trial"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -886,13 +920,13 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("SSE", false, true, 0, false, 0)
 	plt.SetColParams("AvgSSE", true, true, 0, false, 0)
 	plt.SetColParams("CosDiff", true, true, 0, true, 1)
-	plt.SetColParams("Hid1 ActM.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 ActM.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out ActM.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid1 ActM.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid2 ActM.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Out ActM.Avg", true, true, 0, true, .5)
 
-	plt.SetColParams("InAct", false, true, 0, true, 1)
-	plt.SetColParams("OutActM", false, true, 0, true, 1)
-	plt.SetColParams("OutActP", false, true, 0, true, 1)
+	// plt.SetColParams("InAct", false, true, 0, true, 1)
+	// plt.SetColParams("OutActM", false, true, 0, true, 1)
+	// plt.SetColParams("OutActP", false, true, 0, true, 1)
 	return plt
 }
 
@@ -930,9 +964,9 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	allsp := split.All(trlix)
 	split.Agg(allsp, "SSE", agg.AggSum)
 	split.Agg(allsp, "AvgSSE", agg.AggMean)
-	split.Agg(allsp, "InAct", agg.AggMean)
-	split.Agg(allsp, "OutActM", agg.AggMean)
-	split.Agg(allsp, "OutActP", agg.AggMean)
+	// split.Agg(allsp, "InAct", agg.AggMean)
+	// split.Agg(allsp, "OutActM", agg.AggMean)
+	// split.Agg(allsp, "OutActP", agg.AggMean)
 
 	ss.TstErrStats = allsp.AggsToTable(false)
 
@@ -958,7 +992,7 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Testing Epoch Plot"
+	plt.Params.Title = "Hippocampus Testing Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -982,17 +1016,17 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 		dt.SetNumRows(cyc + 1)
 	}
 
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	// hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
+	// hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
+	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
-	dt.SetCellFloat("Hid1 Ge.Avg", cyc, float64(hid1Lay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Hid2 Ge.Avg", cyc, float64(hid2Lay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Out Ge.Avg", cyc, float64(outLay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Hid1 Act.Avg", cyc, float64(hid1Lay.Pools[0].Act.Avg))
-	dt.SetCellFloat("Hid2 Act.Avg", cyc, float64(hid2Lay.Pools[0].Act.Avg))
-	dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
+	// dt.SetCellFloat("Hid1 Ge.Avg", cyc, float64(hid1Lay.Pools[0].Ge.Avg))
+	// dt.SetCellFloat("Hid2 Ge.Avg", cyc, float64(hid2Lay.Pools[0].Ge.Avg))
+	// dt.SetCellFloat("Out Ge.Avg", cyc, float64(outLay.Pools[0].Ge.Avg))
+	// dt.SetCellFloat("Hid1 Act.Avg", cyc, float64(hid1Lay.Pools[0].Act.Avg))
+	// dt.SetCellFloat("Hid2 Act.Avg", cyc, float64(hid2Lay.Pools[0].Act.Avg))
+	// dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
 
 	if cyc%10 == 0 { // too slow to do every cyc
 		// note: essential to use Go version of update when called from another goroutine
@@ -1009,27 +1043,27 @@ func (ss *Sim) ConfigTstCycLog(dt *etable.Table) {
 	np := 100 // max cycles
 	dt.SetFromSchema(etable.Schema{
 		{"Cycle", etensor.INT64, nil, nil},
-		{"Hid1 Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Out Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid1 Act.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 Act.Avg", etensor.FLOAT64, nil, nil},
-		{"Out Act.Avg", etensor.FLOAT64, nil, nil},
+		// {"Hid1 Ge.Avg", etensor.FLOAT64, nil, nil},
+		// {"Hid2 Ge.Avg", etensor.FLOAT64, nil, nil},
+		// {"Out Ge.Avg", etensor.FLOAT64, nil, nil},
+		// {"Hid1 Act.Avg", etensor.FLOAT64, nil, nil},
+		// {"Hid2 Act.Avg", etensor.FLOAT64, nil, nil},
+		// {"Out Act.Avg", etensor.FLOAT64, nil, nil},
 	}, np)
 }
 
 func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
+	plt.Params.Title = "Hippocampus Test Cycle Plot"
 	plt.Params.XAxisCol = "Cycle"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Cycle", false, true, 0, false, 0)
-	plt.SetColParams("Hid1 Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid1 Act.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 Act.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out Act.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid1 Ge.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid2 Ge.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Out Ge.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid1 Act.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Hid2 Act.Avg", true, true, 0, true, .5)
+	// plt.SetColParams("Out Act.Avg", true, true, 0, true, .5)
 	return plt
 }
 
@@ -1094,7 +1128,7 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Run Plot"
+	plt.Params.Title = "Hippocampus Run Plot"
 	plt.Params.XAxisCol = "Run"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -1116,10 +1150,10 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
-	gi.SetAppName("ra25")
-	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	gi.SetAppName("hip")
+	gi.SetAppAbout(`This demonstrates a basic Hippocampus model in Leabra. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
-	win := gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, true)
+	win := gi.NewWindow2D("hip", "Hippocampus AB-AC", width, height, true)
 	ss.Win = win
 
 	vp := win.WinViewport2D()
