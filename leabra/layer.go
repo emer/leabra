@@ -499,8 +499,30 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 	}
 }
 
+// ApplyExt1D32 applies external input in the form of a flat 1-dimensional slice of float32s.
+// If the layer is a Target or Compare layer type, then it goes in Targ
+// otherwise it goes in Ext
+func (ly *Layer) ApplyExt1D32(ext []float32) {
+	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	for i := 0; i < mx; i++ {
+		nrn := &ly.Neurons[i]
+		if nrn.IsOff() {
+			continue
+		}
+		vl := ext[i]
+		if toTarg {
+			nrn.Targ = vl
+		} else {
+			nrn.Ext = vl
+		}
+		nrn.ClearMask(clrmsk)
+		nrn.SetMask(setmsk)
+	}
+}
+
 // AlphaCycInit handles all initialization at start of new input pattern, including computing
-// netinput scaling from running average activation etc.
+// input scaling from running average activation etc.
 // should already have presented the external input to the network at this point.
 func (ly *Layer) AlphaCycInit() {
 	ly.LeabraLay.AvgLFmAvgM()
@@ -543,8 +565,9 @@ func (ly *Layer) AvgLFmAvgM() {
 
 // GScaleFmAvgAct computes the scaling factor for synaptic input conductances G,
 // based on sending layer average activation.
-// This attempts to automatically adjust for overall differences in raw activity coming into the units
-// to achieve a general target of around .5 to 1 for the integrated Ge value.
+// This attempts to automatically adjust for overall differences in raw activity
+// coming into the units to achieve a general target of around .5 to 1
+// for the integrated Ge value.
 func (ly *Layer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)

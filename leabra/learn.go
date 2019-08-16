@@ -6,7 +6,6 @@ package leabra
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/emergent/erand"
 )
 
 ///////////////////////////////////////////////////////////////////////
@@ -60,14 +59,13 @@ func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 
 // leabra.LearnSynParams manages learning-related parameters at the synapse-level.
 type LearnSynParams struct {
-	Learn    bool            `desc:"enable learning for this projection"`
-	Lrate    float32         `desc:"learning rate"`
-	WtInit   erand.RndParams `view:"inline" desc:"initial random weight distribution"`
-	XCal     XCalParams      `view:"inline" desc:"parameters for the XCal learning rule"`
-	WtSig    WtSigParams     `view:"inline" desc:"parameters for the sigmoidal contrast weight enhancement"`
-	Norm     DWtNormParams   `view:"inline" desc:"parameters for normalizing weight changes by abs max dwt"`
-	Momentum MomentumParams  `view:"inline" desc:"parameters for momentum across weight changes"`
-	WtBal    WtBalParams     `view:"inline" desc:"parameters for balancing strength of weight increases vs. decreases"`
+	Learn    bool           `desc:"enable learning for this projection"`
+	Lrate    float32        `desc:"learning rate"`
+	XCal     XCalParams     `view:"inline" desc:"parameters for the XCal learning rule"`
+	WtSig    WtSigParams    `view:"inline" desc:"parameters for the sigmoidal contrast weight enhancement"`
+	Norm     DWtNormParams  `view:"inline" desc:"parameters for normalizing weight changes by abs max dwt"`
+	Momentum MomentumParams `view:"inline" desc:"parameters for momentum across weight changes"`
+	WtBal    WtBalParams    `view:"inline" desc:"parameters for balancing strength of weight increases vs. decreases"`
 }
 
 func (ls *LearnSynParams) Update() {
@@ -81,28 +79,11 @@ func (ls *LearnSynParams) Update() {
 func (ls *LearnSynParams) Defaults() {
 	ls.Learn = true
 	ls.Lrate = 0.04
-	ls.WtInit.Mean = 0.5
-	ls.WtInit.Var = 0.25
-	ls.WtInit.Dist = erand.Uniform
 	ls.XCal.Defaults()
 	ls.WtSig.Defaults()
 	ls.Norm.Defaults()
 	ls.Momentum.Defaults()
 	ls.WtBal.Defaults()
-}
-
-// InitWts initializes weight values based on WtInit randomness parameters
-// It also updates the linear weight value based on the sigmoidal weight value
-func (ls *LearnSynParams) InitWts(syn *Synapse) {
-	if syn.Scale == 0 {
-		syn.Scale = 1
-	}
-	syn.Wt = float32(ls.WtInit.Gen(-1))
-	syn.LWt = ls.WtSig.LinFmSigWt(syn.Wt)
-	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
-	syn.DWt = 0
-	syn.Norm = 0
-	syn.Moment = 0
 }
 
 // LWtFmWt updates the linear weight value based on the current effective Wt value.

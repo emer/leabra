@@ -104,13 +104,29 @@ func (nt *Network) InitGInc() {
 }
 
 // AlphaCycInit handles all initialization at start of new input pattern, including computing
-// netinput scaling from running average activation etc.
+// input scaling from running average activation etc.
 func (nt *Network) AlphaCycInit() {
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
 			continue
 		}
 		ly.(LeabraLayer).AlphaCycInit()
+	}
+}
+
+// GScaleFmAvgAct computes the scaling factor for synaptic input conductances G,
+// based on sending layer average activation.
+// This attempts to automatically adjust for overall differences in raw activity
+// coming into the units to achieve a general target of around .5 to 1
+// for the integrated Ge value.
+// This is automatically done during AlphaCycInit, but if scaling parameters are
+// changed at any point thereafter during AlphaCyc, this must be called.
+func (nt *Network) GScaleFmAvgAct() {
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		ly.(LeabraLayer).GScaleFmAvgAct()
 	}
 }
 

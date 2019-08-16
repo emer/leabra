@@ -8,9 +8,9 @@ hippocampus model from Ketz, Morkonda, & O'Reilly (2013).
 
 timing of ThetaPhase dynamics -- based on quarter structure:
 
-Q1:    ECin -> CA1 -> ECout       : ActQ1 = minus phase for auto-encoder
-Q2, 3: CA3 -> CA1 -> ECout        : ActM = minus phase for recall
-Q4:    ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
+Q1:   ECin -> CA1 -> ECout (CA3 -> CA1 off)  : ActQ1 = minus phase for auto-encoder
+Q2,3: CA3 -> CA1 -> ECout  (ECin -> CA1 off) : ActM = minus phase for recall
+Q4:   ECin -> CA1, ECin -> ECout (CA3 -> CA1 off, ECin -> CA1 on): ActP = plus phase for everything
 
 [  q1      ][  q2  q3  ][     q4     ]
 [ ------ minus ------- ][ -- plus -- ]

@@ -72,6 +72,9 @@ func (pj *CHLPrjn) AsLeabra() *leabra.Prjn {
 func (pj *CHLPrjn) Defaults() {
 	pj.Prjn.Defaults()
 	pj.CHL.Defaults()
+	pj.Prjn.Learn.Norm.On = false     // off by default
+	pj.Prjn.Learn.Momentum.On = false // off by default
+	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
 }
 
 func (pj *CHLPrjn) UpdateParams() {

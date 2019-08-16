@@ -51,29 +51,95 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Prjn", Desc: "keeping default params for generic prjns",
 				Params: params.Params{
 					"Prjn.Learn.Norm.On":     "true",
 					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Prjn.Learn.WtBal.On":    "true",
 				}},
-			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
+			// note: Prjn type is always Prjn, even if a special type -- so use classes
+			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.8",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.WtBal.On":    "true", // todo experiment - C++ prob ignored
+					"Prjn.Learn.Lrate":       "0.04", // std lrate for encoders
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.WtBal.On":    "true", // todo experiment - C++ prob ignored
+					"Prjn.Learn.Lrate":       "0.4",  // 10x faster lrate
+					"Prjn.CHL.Hebb":          "0.05", // not actually that much hebb
 				}},
-			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
+			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.4",
+					"Prjn.WtScale.Rel": "4.0",
+				}},
+			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
+				Params: params.Params{
+					"Prjn.WtInit.Mean": "0.8",
+					"Prjn.WtInit.Var":  "0.0",
+					"Prjn.Learn.Learn": "false", // fixed
+				}},
+			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.WtInit.Mean": "0.5",
+					"Prjn.WtInit.Var":  "0.01",  // todo: not clear if 0.01 needed..
+					"Prjn.Learn.Learn": "false", // fixed
+				}},
+			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "8",
+					"Prjn.WtInit.Mean": "0.9",
+					"Prjn.WtInit.Var":  "0.01",  // todo: not clear if 0.01 needed..
+					"Prjn.Learn.Learn": "false", // fixed
+					"Prjn.CHL.SAvgCor": "1",     // if we do learn, this is best
+					"Prjn.CHL.Hebb":    "0.001", // if we do learn, this is best
+				}},
+			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "2",
+					"Prjn.CHL.SAvgCor": "1",    // todo: test more
+					"Prjn.CHL.Hebb":    "0.01", // todo: test more
+				}},
+			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
+				Params: params.Params{
+					"Prjn.Learn.Lrate": "0.1",   // slower
+					"Prjn.CHL.SAvgCor": "0.4",   // todo:  should be 1?
+					"Prjn.CHL.Hebb":    "0.005", // todo: test more
+				}},
+			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
+				Params: params.Params{
+					"Layer.Inhib.Layer.On":    "false",
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.Pool.Gi":     "2.1", // note: was 2.1
+					"Layer.Inhib.ActAvg.Init": "0.2",
+				}},
+			{Sel: "#DG", Desc: "very sparse = high inibhition",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":    "3.8",
+					"Layer.Inhib.ActAvg.Init": "0.01",
+				}},
+			{Sel: "#CA3", Desc: "sparse = high inibhition",
+				Params: params.Params{
+					"Layer.Inhib.Layer.Gi":    "3",
+					"Layer.Inhib.ActAvg.Init": "0.02",
+				}},
+			{Sel: "#CA1", Desc: "CA1 only Pools",
+				Params: params.Params{
+					"Layer.Inhib.Layer.On":    "false",
+					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.Pool.Gi":     "2.2", // todo: was 2.4 with FB 0.5
+					"Layer.Inhib.ActAvg.Init": "0.1",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
 			{Sel: "Sim", Desc: "best params always finish in this time",
 				Params: params.Params{
-					"Sim.MaxEpcs": "50",
+					"Sim.MaxEpcs": "10",
 				}},
 		},
 	}},
@@ -204,6 +270,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 5
+	ss.LogSetParams = false
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -249,10 +316,13 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "Hip")
 	in := net.AddLayer4D("Input", 6, 2, 3, 4, emer.Input)
 	ecin := net.AddLayer4D("ECin", 6, 2, 3, 4, emer.Hidden)
-	ecout := net.AddLayer4D("ECout", 6, 2, 3, 4, emer.Compare)
+	ecout := net.AddLayer4D("ECout", 6, 2, 3, 4, emer.Target) // clamped in plus phase
 	ca1 := net.AddLayer4D("CA1", 6, 2, 4, 10, emer.Hidden)
 	dg := net.AddLayer2D("DG", 25, 25, emer.Hidden)
 	ca3 := net.AddLayer2D("CA3", 30, 10, emer.Hidden)
+
+	ecin.SetClass("EC")
+	ecout.SetClass("EC")
 
 	ecin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 2})
 	ecout.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "ECin", YAlign: relpos.Front, Space: 2})
@@ -264,25 +334,33 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.ConnectLayers(ecout, ecin, prjn.NewOneToOne(), emer.Back)
 
 	// EC <-> CA1 encoder pathways
-	net.ConnectLayersPrjn(ecin, ca1, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
-	net.ConnectLayersPrjn(ca1, ecout, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
-	net.ConnectLayersPrjn(ecout, ca1, prjn.NewPoolOneToOne(), emer.Back, &hip.EcCa1Prjn{})
+	pj := net.ConnectLayersPrjn(ecin, ca1, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
+	pj.SetClass("EcCa1Prjn")
+	pj = net.ConnectLayersPrjn(ca1, ecout, prjn.NewPoolOneToOne(), emer.Forward, &hip.EcCa1Prjn{})
+	pj.SetClass("EcCa1Prjn")
+	pj = net.ConnectLayersPrjn(ecout, ca1, prjn.NewPoolOneToOne(), emer.Back, &hip.EcCa1Prjn{})
+	pj.SetClass("EcCa1Prjn")
 
 	// Perforant pathway
 	ppath := prjn.NewUnifRnd()
 	ppath.PCon = 0.25
 
-	net.ConnectLayersPrjn(ecin, dg, ppath, emer.Forward, &hip.CHLPrjn{})
-	net.ConnectLayersPrjn(ecin, ca3, ppath, emer.Forward, &hip.CHLPrjn{})
+	pj = net.ConnectLayersPrjn(ecin, dg, ppath, emer.Forward, &hip.CHLPrjn{})
+	pj.SetClass("HippoCHL")
+	pj = net.ConnectLayersPrjn(ecin, ca3, ppath, emer.Forward, &hip.CHLPrjn{})
+	pj.SetClass("HippoCHL")
 
 	// Mossy fibers
 	mossy := prjn.NewUnifRnd()
 	mossy.PCon = 0.05
-	net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
+	pj = net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
+	pj.SetClass("HippoCHL")
 
 	// Schafer collaterals
-	net.ConnectLayersPrjn(ca3, ca3, prjn.NewFull(), emer.Lateral, &hip.CHLPrjn{})
-	net.ConnectLayersPrjn(ca3, ca1, prjn.NewFull(), emer.Forward, &hip.CHLPrjn{})
+	pj = net.ConnectLayersPrjn(ca3, ca3, prjn.NewFull(), emer.Lateral, &hip.CHLPrjn{})
+	pj.SetClass("HippoCHL")
+	pj = net.ConnectLayersPrjn(ca3, ca1, prjn.NewFull(), emer.Forward, &hip.CHLPrjn{})
+	pj.SetClass("HippoCHL")
 
 	// note: can set these to do parallel threaded computation across multiple cpus
 	// not worth it for this small of a model, but definitely helps for larger ones
@@ -359,6 +437,19 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if !train {
 		viewUpdt = ss.TestUpdt
 	}
+
+	ca1 := ss.Net.LayerByName("CA1").(*leabra.Layer)
+	ecin := ss.Net.LayerByName("ECin").(*leabra.Layer)
+	ecout := ss.Net.LayerByName("ECout").(*leabra.Layer)
+	ca1FmECin := ca1.RcvPrjns.SendName("ECin").(*hip.EcCa1Prjn)
+	ca1FmCa3 := ca1.RcvPrjns.SendName("CA3").(*hip.CHLPrjn)
+
+	// First Quarter: CA1 is driven by ECin, not by CA3 recall
+	// (which is not really active yet anyway)
+	ca1FmECin.WtScale.Abs = 1
+	ca1FmCa3.WtScale.Abs = 0
+	ecout.SetType(emer.Target) // ensure
+
 	ss.Net.AlphaCycInit()
 	ss.Time.AlphaCycStart()
 	for qtr := 0; qtr < 4; qtr++ {
@@ -378,6 +469,22 @@ func (ss *Sim) AlphaCyc(train bool) {
 					}
 				}
 			}
+		}
+		switch qtr + 1 {
+		case 1: // Second, Third Quarters: CA1 is driven by CA3 recall
+			ca1FmECin.WtScale.Abs = 0
+			ca1FmCa3.WtScale.Abs = 1
+			ss.Net.GScaleFmAvgAct() // update computed scaling factors
+			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
+		case 3: // Fourth Quarter: CA1 back to ECin drive only
+			ca1FmECin.WtScale.Abs = 1
+			ca1FmCa3.WtScale.Abs = 0
+			ss.Net.GScaleFmAvgAct() // update computed scaling factors
+			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
+
+			// clamp ECout to ECin
+			ecvals := ecin.UnitVals("Act")
+			ecout.ApplyExt1D32(ecvals)
 		}
 		ss.Net.QuarterFinal(&ss.Time)
 		ss.Time.QuarterInc()

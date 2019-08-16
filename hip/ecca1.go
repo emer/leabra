@@ -28,6 +28,9 @@ func (pj *EcCa1Prjn) AsLeabra() *leabra.Prjn {
 
 func (pj *EcCa1Prjn) Defaults() {
 	pj.Prjn.Defaults()
+	pj.Prjn.Learn.Norm.On = false     // off by default
+	pj.Prjn.Learn.Momentum.On = false // off by default
+	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
 }
 
 func (pj *EcCa1Prjn) UpdateParams() {

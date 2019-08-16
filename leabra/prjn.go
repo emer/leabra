@@ -12,15 +12,17 @@ import (
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/erand"
 	"github.com/goki/ki/indent"
 )
 
 // leabra.Prjn is a basic Leabra projection with synaptic learning parameters
 type Prjn struct {
 	PrjnStru
-	WtScale WtScaleParams  `desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
-	Learn   LearnSynParams `desc:"synaptic-level learning parameters"`
-	Syns    []Synapse      `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+	WtInit  erand.RndParams `view:"inline" desc:"initial random weight distribution"`
+	WtScale WtScaleParams   `desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
+	Learn   LearnSynParams  `desc:"synaptic-level learning parameters"`
+	Syns    []Synapse       `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 
 	// misc state variables below:
 	GScale float32         `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
@@ -36,6 +38,9 @@ func (pj *Prjn) AsLeabra() *Prjn {
 }
 
 func (pj *Prjn) Defaults() {
+	pj.WtInit.Mean = 0.5
+	pj.WtInit.Var = 0.25
+	pj.WtInit.Dist = erand.Uniform
 	pj.WtScale.Defaults()
 	pj.Learn.Defaults()
 	pj.GScale = 1
@@ -250,11 +255,26 @@ func (pj *Prjn) Build() error {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
+// InitWtsSyn initializes weight values based on WtInit randomness parameters
+// for an individual synapse.
+// It also updates the linear weight value based on the sigmoidal weight value.
+func (pj *Prjn) InitWtsSyn(syn *Synapse) {
+	if syn.Scale == 0 {
+		syn.Scale = 1
+	}
+	syn.Wt = float32(pj.WtInit.Gen(-1))
+	syn.LWt = pj.Learn.WtSig.LinFmSigWt(syn.Wt)
+	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
+	syn.DWt = 0
+	syn.Norm = 0
+	syn.Moment = 0
+}
+
 // InitWts initializes weight values according to Learn.WtInit params
 func (pj *Prjn) InitWts() {
 	for si := range pj.Syns {
 		sy := &pj.Syns[si]
-		pj.Learn.InitWts(sy)
+		pj.InitWtsSyn(sy)
 	}
 	for wi := range pj.WbRecv {
 		wb := &pj.WbRecv[wi]
