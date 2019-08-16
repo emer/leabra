@@ -34,7 +34,7 @@ var ParamSets = params.Sets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
 				Params: params.Params{
-					"Prjn.Learn.WtInit.Var":  "0",
+					"Prjn.WtInit.Var":        "0",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.Momentum.On": "false",
 				}},
