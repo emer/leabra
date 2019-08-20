@@ -65,6 +65,21 @@ func (ls *LayerStru) SendPrjns() *emer.Prjns     { return &ls.SndPrjns }
 func (ls *LayerStru) NSendPrjns() int            { return len(ls.SndPrjns) }
 func (ls *LayerStru) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
 
+func (ls *LayerStru) Idx4DFrom2D(x, y int) ([]int, bool) {
+	lshp := ls.Shape()
+	nux := lshp.Dim(3)
+	nuy := lshp.Dim(2)
+	ux := x % nux
+	uy := y % nuy
+	px := x / nux
+	py := y / nuy
+	idx := []int{py, px, uy, ux}
+	if !lshp.IdxIsValid(idx) {
+		return nil, false
+	}
+	return idx, true
+}
+
 func (ls *LayerStru) SetRelPos(rel relpos.Rel) {
 	ls.Rel = rel
 	if ls.Rel.Scale == 0 {
