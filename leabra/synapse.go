@@ -18,6 +18,11 @@ type Synapse struct {
 
 var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale"}
 
+var SynapseVarProps = map[string]string{
+	"DWt":    `auto-scale:"+"`,
+	"Moment": `auto-scale:"+"`,
+}
+
 var SynapseVarsMap map[string]int
 
 func init() {

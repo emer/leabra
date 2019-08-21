@@ -64,6 +64,11 @@ func (pj *Prjn) SynVarNames() []string {
 	return SynapseVars
 }
 
+// SynVarProps returns properties for variables
+func (pj *Prjn) SynVarProps() map[string]string {
+	return SynapseVarProps
+}
+
 // SynVals returns values of given variable name on synapses
 // for each synapse in the projection using the natural ordering
 // of the synapses (sender based for Leabra)

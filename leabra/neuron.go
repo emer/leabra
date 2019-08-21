@@ -62,6 +62,12 @@ var NeuronVars = []string{"Act", "Ge", "Gi", "Inet", "Vm", "Targ", "Ext", "AvgSS
 
 var NeuronVarsMap map[string]int
 
+var NeuronVarProps = map[string]string{
+	"Vm":     `min:"0" max:"1"`,
+	"ActDel": `auto-scale:"+"`,
+	"ActDif": `auto-scale:"+"`,
+}
+
 func init() {
 	NeuronVarsMap = make(map[string]int, len(NeuronVars))
 	for i, v := range NeuronVars {

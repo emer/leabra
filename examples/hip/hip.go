@@ -438,6 +438,14 @@ func (ss *Sim) AlphaCyc(train bool) {
 		viewUpdt = ss.TestUpdt
 	}
 
+	//	update prior weight changes at start, so any DWt values remain visible at end
+	// you might want to do this less frequently to achieve a mini-batch update
+	// in which case, move it out to the TrainTrial method where the relevant
+	// counters are being dealt with.
+	if train {
+		ss.Net.WtFmDWt()
+	}
+
 	ca1 := ss.Net.LayerByName("CA1").(*leabra.Layer)
 	ecin := ss.Net.LayerByName("ECin").(*leabra.Layer)
 	ecout := ss.Net.LayerByName("ECout").(*leabra.Layer)
@@ -502,7 +510,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
-		ss.Net.WtFmDWt()
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView(train)

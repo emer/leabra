@@ -97,6 +97,11 @@ func (ly *Layer) UnitVarNames() []string {
 	return NeuronVars
 }
 
+// UnitVarProps returns properties for variables
+func (ly *Layer) UnitVarProps() map[string]string {
+	return NeuronVarProps
+}
+
 // UnitVals is emer.Layer interface method to return values of given variable
 func (ly *Layer) UnitVals(varNm string) []float32 {
 	uv, _ := ly.LeabraLay.UnitValsTry(varNm)
