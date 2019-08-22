@@ -410,16 +410,17 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
 	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.TrainEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.TrialName)
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.TestEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.TrialName)
 	}
 }
 
 func (ss *Sim) UpdateView(train bool) {
 	if ss.NetView != nil {
+		ss.NetView.Record(ss.Counters(train))
 		// note: essential to use Go version of update when called from another goroutine
-		ss.NetView.GoUpdate(ss.Counters(train)) // note: using counters is significantly slower..
+		ss.NetView.GoUpdate() // note: using counters is significantly slower..
 	}
 }
 
@@ -438,7 +439,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 		viewUpdt = ss.TestUpdt
 	}
 
-	//	update prior weight changes at start, so any DWt values remain visible at end
+	// update prior weight changes at start, so any DWt values remain visible at end
 	// you might want to do this less frequently to achieve a mini-batch update
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.

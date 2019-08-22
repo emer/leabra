@@ -423,14 +423,15 @@ class Sim(object):
         and add a few tabs at the end to allow for expansion..
         """
         if train:
-            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TrainEnv.Trial.Cur, self.TrainEnv.TrialName)
+            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TrainEnv.Trial.Cur, self.Time.Cycle, self.TrainEnv.TrialName)
         else:
-            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.TestEnv.TrialName)
+            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\t\tCycle:\t%dName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.Time.Cycle, self.TestEnv.TrialName)
 
     def UpdateView(self, train):
         if self.NetView != 0:
+            self.NetView.Record(self.Counters(train))
             # note: essential to use Go version of update when called from another goroutine
-            self.NetView.GoUpdate(self.Counters(train)) # note: using counters is significantly slower..
+            self.NetView.GoUpdate() # note: using counters is significantly slower..
 
     ######################################
     #   Running the network
@@ -448,6 +449,14 @@ class Sim(object):
         viewUpdt = self.TrainUpdt
         if not train:
             viewUpdt = self.TestUpdt
+            
+        # update prior weight changes at start, so any DWt values remain visible at end
+        # you might want to do this less frequently to achieve a mini-batch update
+        # in which case, move it out to the TrainTrial method where the relevant
+        # counters are being dealt with.
+        if train:
+            self.Net.WtFmDWt()
+            
         self.Net.AlphaCycInit()
         self.Time.AlphaCycStart()
         for qtr in range(4):
@@ -472,7 +481,6 @@ class Sim(object):
                         self.UpdateView(train)
         if train:
             self.Net.DWt()
-            self.Net.WtFmDWt()
         if self.ViewOn and viewUpdt == leabra.AlphaCycle:
               self.UpdateView(train)
         if self.TstCycPlot != 0 and not train:
