@@ -75,7 +75,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "4.0",
+					"Prjn.WtScale.Abs": "4.0",
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
@@ -115,24 +115,24 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Pool.Gi":     "2.1", // note: was 2.1
+					"Layer.Inhib.Pool.Gi":     "2.0",
 					"Layer.Inhib.ActAvg.Init": "0.2",
 				}},
 			{Sel: "#DG", Desc: "very sparse = high inibhition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "3.8",
+					"Layer.Inhib.Layer.Gi":    "3.6",
 					"Layer.Inhib.ActAvg.Init": "0.01",
 				}},
 			{Sel: "#CA3", Desc: "sparse = high inibhition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "3",
+					"Layer.Inhib.Layer.Gi":    "2.8",
 					"Layer.Inhib.ActAvg.Init": "0.02",
 				}},
 			{Sel: "#CA1", Desc: "CA1 only Pools",
 				Params: params.Params{
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Pool.Gi":     "2.2", // todo: was 2.4 with FB 0.5
+					"Layer.Inhib.Pool.Gi":     "2.2",
 					"Layer.Inhib.ActAvg.Init": "0.1",
 				}},
 		},
@@ -264,7 +264,8 @@ func (ss *Sim) New() {
 	ss.TstCycLog = &etable.Table{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
-	ss.Params = ParamSets
+	//	ss.Params = ParamSets
+	ss.Params = SavedParamsSets
 	ss.RndSeed = 1
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
@@ -1193,7 +1194,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 
 	epclog := ss.TrnEpcLog
 	// compute mean over last N epochs for run level
-	nlast := 10
+	nlast := 2
 	epcix := etable.NewIdxView(epclog)
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
 

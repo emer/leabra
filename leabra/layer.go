@@ -201,24 +201,19 @@ func (ly *Layer) BuildSubPools() {
 	sh := ly.Shp.Shapes()
 	spy := sh[0]
 	spx := sh[1]
-	lastOff := 0
-	pi := 0 // will incr to 1 by time used, for first pool
+	pi := 1
 	for py := 0; py < spy; py++ {
 		for px := 0; px < spx; px++ {
-			idx := []int{py, px, 0, 0}
-			off := ly.Shp.Offset(idx)
-			if off == 0 {
-				continue
-			}
+			soff := ly.Shp.Offset([]int{py, px, 0, 0})
+			eoff := ly.Shp.Offset([]int{py, px, sh[2] - 1, sh[3] - 1}) + 1
 			pl := &ly.Pools[pi]
-			pl.StIdx = lastOff
-			pl.EdIdx = off
+			pl.StIdx = soff
+			pl.EdIdx = eoff
 			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 				nrn := &ly.Neurons[ni]
 				nrn.SubPool = int32(pi)
 			}
 			pi++
-			lastOff = off
 		}
 	}
 }
