@@ -130,7 +130,7 @@ type Sim struct {
 	RunStats     *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
 	Params       params.Sets       `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
-	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files)"`
+	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
 	MaxRuns      int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
 	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
@@ -140,6 +140,7 @@ type Sim struct {
 	TrainUpdt    leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt     leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 	TestInterval int               `desc:"how often to run through all the test patterns, in terms of training epochs"`
+	LayStatNms   []string          `desc:"names of layers to collect more detailed stats on (avg act, etc)"`
 
 	// statistics: note use float64 as that is best for etable.Table
 	TrlSSE     float64 `inactive:"+" desc:"current trial's sum squared error"`
@@ -198,6 +199,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 5
+	ss.LayStatNms = []string{"Hidden1", "Hidden2", "Output"}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,7 +323,7 @@ func (ss *Sim) Counters(train bool) string {
 }
 
 func (ss *Sim) UpdateView(train bool) {
-	if ss.NetView != nil {
+	if ss.NetView != nil && ss.NetView.IsVisible() {
 		ss.NetView.Record(ss.Counters(train))
 		// note: essential to use Go version of update when called from another goroutine
 		ss.NetView.GoUpdate() // note: using counters is significantly slower..
@@ -741,11 +743,7 @@ func (ss *Sim) LogFileName(lognm string) string {
 // computes epoch averages prior to logging.
 func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
-	ss.TrnEpcLog.SetNumRows(row + 1)
-
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	dt.SetNumRows(row + 1)
 
 	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
 	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
@@ -770,9 +768,11 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
-	dt.SetCellFloat("Hid1 ActAvg", row, float64(hid1Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.SetCellFloat("Hid2 ActAvg", row, float64(hid2Lay.Pools[0].ActAvg.ActPAvgEff))
-	dt.SetCellFloat("Out ActAvg", row, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
+
+	for _, lnm := range ss.LayStatNms {
+		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+	}
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
@@ -790,7 +790,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	dt.SetFromSchema(etable.Schema{
+	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
@@ -798,10 +798,11 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"Hid1 ActAvg", etensor.FLOAT64, nil, nil},
-		{"Hid2 ActAvg", etensor.FLOAT64, nil, nil},
-		{"Out ActAvg", etensor.FLOAT64, nil, nil},
-	}, 0)
+	}
+	for _, lnm := range ss.LayStatNms {
+		sch = append(sch, etable.Column{lnm + " ActAvg", etensor.FLOAT64, nil, nil})
+	}
+	dt.SetFromSchema(sch, 0)
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
@@ -816,9 +817,10 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctErr", true, true, 0, true, 1) // default plot
 	plt.SetColParams("PctCor", true, true, 0, true, 1) // default plot
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
-	plt.SetColParams("Hid1 ActAvg", false, true, 0, true, .5)
-	plt.SetColParams("Hid2 ActAvg", false, true, 0, true, .5)
-	plt.SetColParams("Out ActAvg", false, true, 0, true, .5)
+
+	for _, lnm := range ss.LayStatNms {
+		plt.SetColParams(lnm+" ActAvg", false, true, 0, true, .5)
+	}
 	return plt
 }
 
@@ -828,29 +830,28 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // LogTstTrl adds data from current trial to the TstTrlLog table.
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
+	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
 	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
 	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
 
-	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-
 	trl := ss.TestEnv.Trial.Cur
+	row := trl
 
-	dt.SetCellFloat("Run", trl, float64(ss.TrainEnv.Run.Cur))
-	dt.SetCellFloat("Epoch", trl, float64(epc))
-	dt.SetCellFloat("Trial", trl, float64(trl))
-	dt.SetCellString("TrialName", trl, ss.TestEnv.TrialName)
-	dt.SetCellFloat("SSE", trl, ss.TrlSSE)
-	dt.SetCellFloat("AvgSSE", trl, ss.TrlAvgSSE)
-	dt.SetCellFloat("CosDiff", trl, ss.TrlCosDiff)
-	dt.SetCellFloat("Hid1 ActM.Avg", trl, float64(hid1Lay.Pools[0].ActM.Avg))
-	dt.SetCellFloat("Hid2 ActM.Avg", trl, float64(hid2Lay.Pools[0].ActM.Avg))
-	dt.SetCellFloat("Out ActM.Avg", trl, float64(outLay.Pools[0].ActM.Avg))
+	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("Trial", row, float64(trl))
+	dt.SetCellString("TrialName", row, ss.TestEnv.TrialName)
+	dt.SetCellFloat("SSE", row, ss.TrlSSE)
+	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
+	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
-	dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
-	dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
-	dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
+	for _, lnm := range ss.LayStatNms {
+		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
+	}
+	dt.SetCellTensor("InAct", row, inLay.UnitValsTensor("Act"))
+	dt.SetCellTensor("OutActM", row, outLay.UnitValsTensor("ActM"))
+	dt.SetCellTensor("OutActP", row, outLay.UnitValsTensor("ActP"))
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
@@ -866,7 +867,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	nt := ss.TestEnv.Table.Len() // number in view
-	dt.SetFromSchema(etable.Schema{
+	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
 		{"Trial", etensor.INT64, nil, nil},
@@ -874,13 +875,16 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"Hid1 ActM.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 ActM.Avg", etensor.FLOAT64, nil, nil},
-		{"Out ActM.Avg", etensor.FLOAT64, nil, nil},
+	}
+	for _, lnm := range ss.LayStatNms {
+		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
+	}
+	sch = append(sch, etable.Schema{
 		{"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
 		{"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
 		{"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
-	}, nt)
+	}...)
+	dt.SetFromSchema(sch, nt)
 }
 
 func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
@@ -895,9 +899,10 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("SSE", false, true, 0, false, 0)
 	plt.SetColParams("AvgSSE", true, true, 0, false, 0)
 	plt.SetColParams("CosDiff", true, true, 0, true, 1)
-	plt.SetColParams("Hid1 ActM.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 ActM.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out ActM.Avg", true, true, 0, true, .5)
+
+	for _, lnm := range ss.LayStatNms {
+		plt.SetColParams(lnm+" ActM.Avg", false, true, 0, true, .5)
+	}
 
 	plt.SetColParams("InAct", false, true, 0, true, 1)
 	plt.SetColParams("OutActM", false, true, 0, true, 1)
@@ -991,17 +996,12 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 		dt.SetNumRows(cyc + 1)
 	}
 
-	hid1Lay := ss.Net.LayerByName("Hidden1").(*leabra.Layer)
-	hid2Lay := ss.Net.LayerByName("Hidden2").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
-	dt.SetCellFloat("Hid1 Ge.Avg", cyc, float64(hid1Lay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Hid2 Ge.Avg", cyc, float64(hid2Lay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Out Ge.Avg", cyc, float64(outLay.Pools[0].Ge.Avg))
-	dt.SetCellFloat("Hid1 Act.Avg", cyc, float64(hid1Lay.Pools[0].Act.Avg))
-	dt.SetCellFloat("Hid2 Act.Avg", cyc, float64(hid2Lay.Pools[0].Act.Avg))
-	dt.SetCellFloat("Out Act.Avg", cyc, float64(outLay.Pools[0].Act.Avg))
+	for _, lnm := range ss.LayStatNms {
+		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Ge.Avg))
+		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Act.Avg))
+	}
 
 	if cyc%10 == 0 { // too slow to do every cyc
 		// note: essential to use Go version of update when called from another goroutine
@@ -1016,15 +1016,14 @@ func (ss *Sim) ConfigTstCycLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	np := 100 // max cycles
-	dt.SetFromSchema(etable.Schema{
+	sch := etable.Schema{
 		{"Cycle", etensor.INT64, nil, nil},
-		{"Hid1 Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Out Ge.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid1 Act.Avg", etensor.FLOAT64, nil, nil},
-		{"Hid2 Act.Avg", etensor.FLOAT64, nil, nil},
-		{"Out Act.Avg", etensor.FLOAT64, nil, nil},
-	}, np)
+	}
+	for _, lnm := range ss.LayStatNms {
+		sch = append(sch, etable.Column{lnm + " Ge.Avg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + " Act.Avg", etensor.FLOAT64, nil, nil})
+	}
+	dt.SetFromSchema(sch, np)
 }
 
 func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
@@ -1033,12 +1032,10 @@ func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Cycle", false, true, 0, false, 0)
-	plt.SetColParams("Hid1 Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out Ge.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid1 Act.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Hid2 Act.Avg", true, true, 0, true, .5)
-	plt.SetColParams("Out Act.Avg", true, true, 0, true, .5)
+	for _, lnm := range ss.LayStatNms {
+		plt.SetColParams(lnm+" Ge.Avg", true, true, 0, true, .5)
+		plt.SetColParams(lnm+" Act.Avg", true, true, 0, true, .5)
+	}
 	return plt
 }
 
@@ -1049,7 +1046,7 @@ func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 func (ss *Sim) LogRun(dt *etable.Table) {
 	run := ss.TrainEnv.Run.Cur // this is NOT triggered by increment yet -- use Cur
 	row := dt.Rows
-	ss.RunLog.SetNumRows(row + 1)
+	dt.SetNumRows(row + 1)
 
 	epclog := ss.TrnEpcLog
 	// compute mean over last N epochs for run level
@@ -1057,7 +1054,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	epcix := etable.NewIdxView(epclog)
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
 
-	params := ss.ParamsName()
+	params := ss.RunName() // includes tag
 
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)

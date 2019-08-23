@@ -32,7 +32,7 @@ func (ch *CHLParams) Update() {
 
 // HebbDWt computes the hebbian DWt value from sending, recv acts, savgCor, and linear Wt
 func (ch *CHLParams) HebbDWt(sact, ract, savgCor, linWt float32) float32 {
-	return ract*(sact*savgCor-linWt) - (1-sact)*linWt
+	return ract * (sact*(savgCor-linWt) - (1-sact)*linWt)
 }
 
 // ErrDWt computes the error-driven DWt value from sending, recv acts in both phases, and linear Wt

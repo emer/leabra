@@ -428,7 +428,7 @@ class Sim(object):
             return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\t\tCycle:\t%dName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.Time.Cycle, self.TestEnv.TrialName)
 
     def UpdateView(self, train):
-        if self.NetView != 0:
+        if self.NetView != 0 and self.NetView.IsVisible():
             self.NetView.Record(self.Counters(train))
             # note: essential to use Go version of update when called from another goroutine
             self.NetView.GoUpdate() # note: using counters is significantly slower..
@@ -1123,7 +1123,7 @@ class Sim(object):
         epcix.Idxs = go.Slice_int(epcix.Idxs[epcix.Len()-nlast-1:])
         # print(epcix.Idxs[epcix.Len()-nlast-1:])
         
-        params = self.ParamsName()
+        params = self.RunName() # includes tag
         
         dt.SetCellFloat("Run", row, run)
         dt.SetCellString("Params", row, params)
