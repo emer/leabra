@@ -32,6 +32,7 @@ import (
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
+	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 )
@@ -895,23 +896,6 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	return err
 }
 
-// OpenPatReshape fixes C++ emergent shape which is reversed from Go
-func (ss *Sim) OpenPatReshape(dt *etable.Table, fname, fixnm string) {
-	err := dt.OpenCSV(gi.FileName(fname), etable.Tab)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	incol := dt.ColByName("Input")
-	inshp := incol.Shapes()
-	revshp := []int{inshp[0], inshp[4], inshp[3], inshp[2], inshp[1]}
-	dnms := []string{"Row", "PoolY", "PoolX", "UnY", "UnX"}
-	incol.SetShape(revshp, nil, dnms)
-	dt.ColByName("EC_out").SetShape(revshp, nil, dnms)
-	dt.ColNames[2] = "ECout"
-	dt.SaveCSV(gi.FileName(fixnm), etable.Tab, true)
-}
-
 func (ss *Sim) OpenPat(dt *etable.Table, fname, desc string) {
 	err := dt.OpenCSV(gi.FileName(fname), etable.Tab)
 	if err != nil {
@@ -924,11 +908,11 @@ func (ss *Sim) OpenPat(dt *etable.Table, fname, desc string) {
 
 func (ss *Sim) OpenPats() {
 	// one-time conversion from C++ patterns to Go patterns
-	// ss.OpenPatReshape(ss.TrainAB, "Train_AB.dat", "TrainAB.dat")
-	// ss.OpenPatReshape(ss.TrainAC, "Train_AC.dat", "TrainAC.dat")
-	// ss.OpenPatReshape(ss.TestAB, "Test_AB.dat", "TestAB.dat")
-	// ss.OpenPatReshape(ss.TestAC, "Test_AC.dat", "TestAC.dat")
-	// ss.OpenPatReshape(ss.TestLure, "Lure.dat", "TestLure.dat")
+	// patgen.ReshapeCppFile(ss.TrainAB, "Train_AB.dat", "TrainAB.dat")
+	// patgen.ReshapeCppFile(ss.TrainAC, "Train_AC.dat", "TrainAC.dat")
+	// patgen.ReshapeCppFile(ss.TestAB, "Test_AB.dat", "TestAB.dat")
+	// patgen.ReshapeCppFile(ss.TestAC, "Test_AC.dat", "TestAC.dat")
+	// patgen.ReshapeCppFile(ss.TestLure, "Lure.dat", "TestLure.dat")
 	ss.OpenPat(ss.TrainAB, "TrainAB.dat", "AB Training Patterns")
 	ss.OpenPat(ss.TrainAC, "TrainAC.dat", "AC Training Patterns")
 	ss.OpenPat(ss.TestAB, "TestAB.dat", "AB Testing Patterns")
@@ -1532,6 +1516,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	// https://matplotlib.org/tutorials/colors/colormaps.html
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
+	nv.ViewDefaults()
+	nv.Scene().Camera.Pose.Pos.Set(0, 1.5, 2.5) // move up slightly for a more top-down view
+	nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
 
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrnTrlPlot").(*eplot.Plot2D)
 	ss.TrnTrlPlot = ss.ConfigTrnTrlPlot(plt, ss.TrnTrlLog)
