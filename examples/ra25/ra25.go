@@ -250,33 +250,33 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "RA25")
-	inLay := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1Lay := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2Lay := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
-	outLay := net.AddLayer2D("Output", 5, 5, emer.Target)
+	inp := net.AddLayer2D("Input", 5, 5, emer.Input)
+	hid1 := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
+	hid2 := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
+	out := net.AddLayer2D("Output", 5, 5, emer.Target)
 
 	// use this to position layers relative to each other
 	// default is Above, YAlign = Front, XAlign = Center
-	hid2Lay.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
+	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
-	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, outLay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(inp, hid1, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(hid1, hid2, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(hid2, out, prjn.NewFull(), emer.Forward)
 
 	// note: see emergent/prjn module for all the options on how to connect
 	// NewFull returns a new prjn.Full connectivity pattern
-	net.ConnectLayers(outLay, hid2Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(out, hid2, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(hid2, hid1, prjn.NewFull(), emer.Back)
 
 	// note: can set these to do parallel threaded computation across multiple cpus
 	// not worth it for this small of a model, but definitely helps for larger ones
 	// if Thread {
-	// 	hid2Lay.SetThread(1)
-	// 	outLay.SetThread(1)
+	// 	hid2.SetThread(1)
+	// 	out.SetThread(1)
 	// }
 
 	// note: if you wanted to change a layer type from e.g., Target to Compare, do this:
-	// outLay.SetType(emer.Compare)
+	// out.SetType(emer.Compare)
 	// that would mean that the output layer doesn't reflect target values in plus phase
 	// and thus removes error-driven learning -- but stats are still computed.
 
@@ -406,16 +406,16 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
+	out := ss.Net.LayerByName("Output").(*leabra.Layer)
 
-	inPats := en.State(inLay.Nm)
+	inPats := en.State(inp.Nm)
 	if inPats != nil {
-		inLay.ApplyExt(inPats)
+		inp.ApplyExt(inPats)
 	}
-	outPats := en.State(outLay.Nm)
+	outPats := en.State(out.Nm)
 	if outPats != nil {
-		outLay.ApplyExt(outPats)
+		out.ApplyExt(outPats)
 	}
 }
 
@@ -498,9 +498,9 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
-	ss.TrlCosDiff = float64(outLay.CosDiff.Cos)
-	ss.TrlSSE, ss.TrlAvgSSE = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	out := ss.Net.LayerByName("Output").(*leabra.Layer)
+	ss.TrlCosDiff = float64(out.CosDiff.Cos)
+	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	if accum {
 		ss.SumSSE += ss.TrlSSE
 		ss.SumAvgSSE += ss.TrlAvgSSE
@@ -831,8 +831,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
+	out := ss.Net.LayerByName("Output").(*leabra.Layer)
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl
@@ -849,17 +849,17 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
-	dt.SetCellTensor("InAct", row, inLay.UnitValsTensor("Act"))
-	dt.SetCellTensor("OutActM", row, outLay.UnitValsTensor("ActM"))
-	dt.SetCellTensor("OutActP", row, outLay.UnitValsTensor("ActP"))
+	dt.SetCellTensor("InAct", row, inp.UnitValsTensor("Act"))
+	dt.SetCellTensor("OutActM", row, out.UnitValsTensor("ActM"))
+	dt.SetCellTensor("OutActP", row, out.UnitValsTensor("ActP"))
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
+	out := ss.Net.LayerByName("Output").(*leabra.Layer)
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
@@ -880,9 +880,9 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
 	}
 	sch = append(sch, etable.Schema{
-		{"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
-		{"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
-		{"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
+		{"InAct", etensor.FLOAT64, inp.Shp.Shp, nil},
+		{"OutActM", etensor.FLOAT64, out.Shp.Shp, nil},
+		{"OutActP", etensor.FLOAT64, out.Shp.Shp, nil},
 	}...)
 	dt.SetFromSchema(sch, nt)
 }
