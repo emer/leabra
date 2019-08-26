@@ -108,9 +108,9 @@ func (ls *LayerStru) Size() mat32.Vec2 {
 func (ls *LayerStru) SetShape(shape []int) {
 	var dnms []string
 	if len(shape) == 2 {
-		dnms = []string{"Y", "X"}
+		dnms = emer.LayerDimNames2D
 	} else if len(shape) == 4 {
-		dnms = []string{"PoolY", "PoolX", "NeurY", "NeurX"}
+		dnms = emer.LayerDimNames4D
 	}
 	ls.Shp.SetShape(shape, nil, dnms) // row major default
 }

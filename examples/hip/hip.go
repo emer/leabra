@@ -214,6 +214,7 @@ type Sim struct {
 	RunPlot      *eplot.Plot2D    `view:"-" desc:"the run plot"`
 	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
 	RunFile      *os.File         `view:"-" desc:"log file"`
+	TmpVals      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
 	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
@@ -489,8 +490,8 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 
 			if train { // clamp ECout from ECin
-				ecvals := ecin.UnitVals("Act")
-				ecout.ApplyExt1D32(ecvals)
+				ecin.UnitVals(&ss.TmpVals, "Act")
+				ecout.ApplyExt1D32(ss.TmpVals)
 			}
 		}
 		ss.Net.QuarterFinal(&ss.Time)

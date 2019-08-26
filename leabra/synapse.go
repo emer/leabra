@@ -4,7 +4,10 @@
 
 package leabra
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // leabra.Synapse holds state for the synaptic connection between neurons
 type Synapse struct {
@@ -36,23 +39,43 @@ func (sy *Synapse) VarNames() []string {
 	return SynapseVars
 }
 
-func (sy *Synapse) VarByName(varNm string) (float32, bool) {
+// SynapseVarByName returns the index of the variable in the Synapse, or error
+func SynapseVarByName(varNm string) (int, error) {
 	i, ok := SynapseVarsMap[varNm]
 	if !ok {
-		return 0, false
+		return 0, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
 	}
-	// todo: would be ideal to avoid having to use reflect here..
-	v := reflect.ValueOf(sy)
-	return v.Elem().Field(i).Interface().(float32), true
+	return i, nil
 }
 
-func (sy *Synapse) SetVarByName(varNm string, val float64) bool {
-	i, ok := SynapseVarsMap[varNm]
-	if !ok {
-		return false
+// VarByIndex returns variable using index (0 = first variable in SynapseVars list)
+func (sy *Synapse) VarByIndex(idx int) float32 {
+	// todo: would be ideal to avoid having to use reflect here..
+	v := reflect.ValueOf(*sy)
+	return v.Field(idx).Interface().(float32)
+}
+
+// VarByName returns variable by name, or error
+func (sy *Synapse) VarByName(varNm string) (float32, error) {
+	i, err := SynapseVarByName(varNm)
+	if err != nil {
+		return 0, err
 	}
+	return sy.VarByIndex(i), nil
+}
+
+func (sy *Synapse) SetVarByIndex(idx int, val float32) {
 	// todo: would be ideal to avoid having to use reflect here..
 	v := reflect.ValueOf(sy)
-	v.Elem().Field(i).SetFloat(val)
-	return true
+	v.Elem().Field(idx).SetFloat(float64(val))
+}
+
+// SetVarByName sets synapse variable to given value
+func (sy *Synapse) SetVarByName(varNm string, val float32) error {
+	i, err := SynapseVarByName(varNm)
+	if err != nil {
+		return err
+	}
+	sy.SetVarByIndex(i, val)
+	return nil
 }

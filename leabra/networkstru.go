@@ -5,11 +5,13 @@
 package leabra
 
 import (
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 
@@ -326,7 +328,7 @@ func (nt *NetworkStru) Build() error {
 //  Weights File
 
 // SaveWtsJSON saves network weights (and any other state that adapts with learning)
-// to a JSON-formatted file
+// to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
 func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
@@ -334,12 +336,19 @@ func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
 		log.Println(err)
 		return err
 	}
-	nt.WriteWtsJSON(fp)
+	ext := filepath.Ext(string(filename))
+	if ext == ".gz" {
+		gzr := gzip.NewWriter(fp)
+		defer gzr.Close()
+		nt.WriteWtsJSON(gzr)
+	} else {
+		nt.WriteWtsJSON(fp)
+	}
 	return nil
 }
 
 // OpenWtsJSON opens network weights (and any other state that adapts with learning)
-// from a JSON-formatted file
+// from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
 func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
@@ -347,7 +356,18 @@ func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
 		log.Println(err)
 		return err
 	}
-	return nt.ReadWtsJSON(fp)
+	ext := filepath.Ext(string(filename))
+	if ext == ".gz" {
+		gzr, err := gzip.NewReader(fp)
+		defer gzr.Close()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return nt.ReadWtsJSON(gzr)
+	} else {
+		return nt.ReadWtsJSON(fp)
+	}
 }
 
 // WriteWtsJSON writes the weights from this layer from the receiver-side perspective

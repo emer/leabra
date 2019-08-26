@@ -104,41 +104,45 @@ func (ly *Layer) UnitVarProps() map[string]string {
 	return NeuronVarProps
 }
 
-// UnitVals is emer.Layer interface method to return values of given variable
-func (ly *Layer) UnitVals(varNm string) []float32 {
-	uv, _ := ly.LeabraLay.UnitValsTry(varNm)
-	return uv
-}
-
-// UnitValsTry is emer.Layer interface method to return values of given variable
-func (ly *Layer) UnitValsTry(varNm string) ([]float32, error) {
+// UnitVals fills in values of given variable name on unit,
+// for each unit in the layer, into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 	vidx, err := NeuronVarByName(varNm)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	vs := make([]float32, len(ly.Neurons))
+	nn := len(ly.Neurons)
+	if *vals == nil || cap(*vals) < nn {
+		*vals = make([]float32, nn)
+	} else if len(*vals) < nn {
+		*vals = (*vals)[0:nn]
+	}
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
-		vs[i] = nrn.VarByIndex(vidx)
+		(*vals)[i] = nrn.VarByIndex(vidx)
 	}
-	return vs, nil
+	return nil
 }
 
 // UnitValsTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(varNm string) etensor.Tensor {
-	uv, _ := ly.LeabraLay.UnitValsTensorTry(varNm)
-	return uv
-}
-
-// UnitValsTensorTry returns values of given variable name on unit
-// for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensorTry(varNm string) (etensor.Tensor, error) {
-	vls, err := ly.UnitValsTry(varNm)
+func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+	vidx, err := NeuronVarByName(varNm)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return etensor.NewFloat32Shape(&ly.Shp, vls), nil
+	nn := len(ly.Neurons)
+	if tsr == nil {
+		tsr = etensor.NewFloat32Shape(&ly.Shp, nil)
+	} else if tsr.Len() < nn {
+		tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
+	}
+	for i := range ly.Neurons {
+		nrn := &ly.Neurons[i]
+		tsr.SetFloat1D(i, float64(nrn.VarByIndex(vidx)))
+	}
+	return nil
 }
 
 // UnitVal returns value of given variable name on given unit,
@@ -176,6 +180,86 @@ func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	}
 	nrn := &ly.Neurons[idx]
 	return nrn.VarByName(varNm)
+}
+
+// RecvPrjnVals fills in values of given synapse variable name,
+// for projection into given sending layer and neuron 1D index,
+// for all receiving neurons in this layer,
+// into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+// If the receiving neuron is not connected to the given sending layer or neuron
+// then the value is set to math32.NaN().
+// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
+func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int) error {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return err
+	}
+	nn := len(ly.Neurons)
+	if *vals == nil || cap(*vals) < nn {
+		*vals = make([]float32, nn)
+	} else if len(*vals) < nn {
+		*vals = (*vals)[0:nn]
+	}
+	nan := math32.NaN()
+	for i := 0; i < nn; i++ {
+		(*vals)[i] = nan
+	}
+	if sendLay == nil {
+		return fmt.Errorf("sending layer is nil")
+	}
+	pj, err := sendLay.SendPrjns().RecvNameTry(ly.Nm)
+	if pj == nil {
+		return err
+	}
+	lpj := pj.(LeabraPrjn).AsLeabra()
+	for ri := range ly.Neurons {
+		sy := lpj.Syn(sendIdx1D, ri)
+		if sy != nil {
+			(*vals)[ri] = sy.VarByIndex(vidx)
+		}
+	}
+	return nil
+}
+
+// SendPrjnVals fills in values of given synapse variable name,
+// for projection into given receiving layer and neuron 1D index,
+// for all sending neurons in this layer,
+// into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+// If the sending neuron is not connected to the given receiving layer or neuron
+// then the value is set to math32.NaN().
+// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
+func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int) error {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return err
+	}
+	nn := len(ly.Neurons)
+	if *vals == nil || cap(*vals) < nn {
+		*vals = make([]float32, nn)
+	} else if len(*vals) < nn {
+		*vals = (*vals)[0:nn]
+	}
+	nan := math32.NaN()
+	for i := 0; i < nn; i++ {
+		(*vals)[i] = nan
+	}
+	if recvLay == nil {
+		return fmt.Errorf("receiving layer is nil")
+	}
+	pj, err := recvLay.RecvPrjns().SendNameTry(ly.Nm)
+	if pj == nil {
+		return err
+	}
+	lpj := pj.(LeabraPrjn).AsLeabra()
+	for si := range ly.Neurons {
+		sy := lpj.Syn(si, recvIdx1D)
+		if sy != nil {
+			(*vals)[si] = sy.VarByIndex(vidx)
+		}
+	}
+	return nil
 }
 
 // Pool returns pool at given index
@@ -325,7 +409,11 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 // and is not used for the network-level ReadWtsJSON, which reads into a separate
 // structure -- see SetWtsJSON method.
 func (ly *Layer) ReadWtsJSON(r io.Reader) error {
-	return nil
+	lw, err := weights.LayReadJSON(r)
+	if err != nil {
+		return err // note: already logged
+	}
+	return ly.SetWtsJSON(lw)
 }
 
 // SetWtsJSON sets the weights for this layer from weights.Layer struct that was

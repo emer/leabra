@@ -71,64 +71,57 @@ func (pj *Prjn) SynVarProps() map[string]string {
 	return SynapseVarProps
 }
 
-// SynVals returns values of given variable name on synapses
-// for each synapse in the projection using the natural ordering
-// of the synapses (sender based for Leabra)
-func (pj *Prjn) SynVals(varnm string) []float32 {
-	vl := make([]float32, len(pj.Syns))
-	for si := range pj.Syns {
-		sy := &pj.Syns[si]
-		sv, ok := sy.VarByName(varnm)
-		if ok {
-			vl[si] = sv
+// SynVals sets values of given variable name for each synapse, using the natural ordering
+// of the synapses (sender based for Leabra),
+// into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+func (pj *Prjn) SynVals(vals *[]float32, varNm string) error {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return err
+	}
+	ns := len(pj.Syns)
+	if *vals == nil || cap(*vals) < ns {
+		*vals = make([]float32, ns)
+	} else if len(*vals) < ns {
+		*vals = (*vals)[0:ns]
+	}
+	for i := range pj.Syns {
+		sy := &pj.Syns[i]
+		(*vals)[i] = sy.VarByIndex(vidx)
+	}
+	return nil
+}
+
+// Syn returns the synapse between given send, recv unit indexes (1D, flat indexes).
+// Returns nil for access errors (see SynTry for version that returns errors).
+func (pj *Prjn) Syn(sidx, ridx int) *Synapse {
+	nc := int(pj.RConN[ridx])
+	st := int(pj.RConIdxSt[ridx])
+	for ci := 0; ci < nc; ci++ {
+		si := int(pj.RConIdx[st+ci])
+		if si != sidx {
+			continue
 		}
+		rsi := pj.RSynIdx[st+ci]
+		sy := &pj.Syns[rsi]
+		return sy
 	}
-	return vl
+	return nil
 }
 
-// SynValsTry returns values of given variable name on synapses
-// for each synapse in the projection using the natural ordering
-// of the synapses (sender based for Leabra)
-func (pj *Prjn) SynValsTry(varnm string) ([]float32, error) {
-	vl := make([]float32, len(pj.Syns))
-	notOk := false
-	for si := range pj.Syns {
-		sy := &pj.Syns[si]
-		sv, ok := sy.VarByName(varnm)
-		if ok {
-			vl[si] = sv
-		} else {
-			notOk = true
-			break
-		}
-	}
-	if notOk {
-		return vl, fmt.Errorf("leabra.Prjn SynValsTry: variable named: %v not valid", varnm)
-	}
-	return vl, nil
-}
-
-// SynVal returns value of given variable name on the synapse
-// between given send, recv unit indexes (1D, flat indexes)
-// returns nil for access errors.
-func (pj *Prjn) SynVal(varnm string, sidx, ridx int) float32 {
-	sv, _ := pj.SynValTry(varnm, sidx, ridx)
-	return sv
-}
-
-// SynValTry returns value of given variable name on the synapse
-// between given send, recv unit indexes (1D, flat indexes)
-// returns error for access errors.
-func (pj *Prjn) SynValTry(varnm string, sidx, ridx int) (float32, error) {
+// SynTry returns the synapse between given send, recv unit indexes (1D, flat indexes).
+// Returns error for access errors.
+func (pj *Prjn) SynTry(sidx, ridx int) (*Synapse, error) {
 	slay := pj.Send.(LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
 	nr := len(rlay.Neurons)
 	ns := len(slay.Neurons)
 	if ridx >= nr {
-		return 0, fmt.Errorf("Prjn.SynVal: recv unit index %v is > size of recv layer: %v", ridx, nr)
+		return nil, fmt.Errorf("Prjn.SynVal: recv unit index %v is > size of recv layer: %v", ridx, nr)
 	}
 	if sidx >= ns {
-		return 0, fmt.Errorf("Prjn.SynVal: send unit index %v is > size of send layer: %v", sidx, ns)
+		return nil, fmt.Errorf("Prjn.SynVal: send unit index %v is > size of send layer: %v", sidx, ns)
 	}
 	nc := int(pj.RConN[ridx])
 	st := int(pj.RConIdxSt[ridx])
@@ -139,46 +132,58 @@ func (pj *Prjn) SynValTry(varnm string, sidx, ridx int) (float32, error) {
 		}
 		rsi := pj.RSynIdx[st+ci]
 		sy := &pj.Syns[rsi]
-		sv, ok := sy.VarByName(varnm)
-		if ok {
-			return sv, nil
-		}
+		return sy, nil
 	}
-	return 0, fmt.Errorf("Prjn.SynVal: recv unit index %v does not recv from send unit index %v, or variable name: %v not found in synapse", ridx, sidx, varnm)
+	return nil, fmt.Errorf("Prjn.SynTry: recv unit index %v does not recv from send unit index %v", ridx, sidx)
+}
+
+// SynVal returns value of given variable name on the synapse
+// between given send, recv unit indexes (1D, flat indexes).
+// Returns math32.NaN() for access errors (see SynValTry for error message)
+func (pj *Prjn) SynVal(varNm string, sidx, ridx int) float32 {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return math32.NaN()
+	}
+	sy := pj.Syn(sidx, ridx)
+	if sy == nil {
+		return math32.NaN()
+	}
+	return sy.VarByIndex(vidx)
+}
+
+// SynValTry returns value of given variable name on the synapse
+// between given send, recv unit indexes (1D, flat indexes).
+// Returns error for access errors.
+func (pj *Prjn) SynValTry(varNm string, sidx, ridx int) (float32, error) {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return 0, err
+	}
+	sy, err := pj.SynTry(sidx, ridx)
+	if err != nil {
+		return 0, err
+	}
+	return sy.VarByIndex(vidx), nil
 }
 
 // SetSynVal sets value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes)
 // returns error for access errors.
-func (pj *Prjn) SetSynVal(varnm string, sidx, ridx int, val float32) error {
-	slay := pj.Send.(LeabraLayer).AsLeabra()
-	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	nr := len(rlay.Neurons)
-	ns := len(slay.Neurons)
-	if ridx >= nr {
-		return fmt.Errorf("Prjn.SetSynVal: recv unit index %v is > size of recv layer: %v", ridx, nr)
+func (pj *Prjn) SetSynVal(varNm string, sidx, ridx int, val float32) error {
+	vidx, err := SynapseVarByName(varNm)
+	if err != nil {
+		return err
 	}
-	if sidx >= ns {
-		return fmt.Errorf("Prjn.SetSynVal: send unit index %v is > size of send layer: %v", sidx, ns)
+	sy, err := pj.SynTry(sidx, ridx)
+	if err != nil {
+		return err
 	}
-	nc := int(pj.RConN[ridx])
-	st := int(pj.RConIdxSt[ridx])
-	for ci := 0; ci < nc; ci++ {
-		si := int(pj.RConIdx[st+ci])
-		if si != sidx {
-			continue
-		}
-		rsi := pj.RSynIdx[st+ci]
-		sy := &pj.Syns[rsi]
-		ok := sy.SetVarByName(varnm, float64(val))
-		if ok {
-			if varnm == "Wt" {
-				pj.Learn.LWtFmWt(sy)
-			}
-			return nil
-		}
+	sy.SetVarByIndex(vidx, val)
+	if varNm == "Wt" {
+		pj.Learn.LWtFmWt(sy)
 	}
-	return fmt.Errorf("Prjn.SetSynVal: recv unit index %v does not recv from send unit index %v, or variable name: %v not found in synapse", ridx, sidx, varnm)
+	return nil
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -263,7 +268,11 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 // and is not used for the network-level ReadWtsJSON, which reads into a separate
 // structure -- see SetWtsJSON method.
 func (pj *Prjn) ReadWtsJSON(r io.Reader) error {
-	return nil
+	pw, err := weights.PrjnReadJSON(r)
+	if err != nil {
+		return err // note: already logged
+	}
+	return pj.SetWtsJSON(pw)
 }
 
 // SetWtsJSON sets the weights for this projection from weights.Prjn struct that was
@@ -279,7 +288,7 @@ func (pj *Prjn) SetWtsJSON(pw *weights.Prjn) error {
 	for i := range pw.Rs {
 		pr := &pw.Rs[i]
 		for si := range pr.Si {
-			er := pj.SetSynVal("Wt", pr.Si[si], pr.Ri, pr.Wt[si])
+			er := pj.SetSynVal("Wt", pr.Si[si], pr.Ri, pr.Wt[si]) // updates lin wt
 			if er != nil {
 				err = er
 			}
