@@ -407,18 +407,17 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 // ReadWtsJSON reads the weights from this layer from the receiver-side perspective
 // in a JSON text format.  This is for a set of weights that were saved *for one layer only*
 // and is not used for the network-level ReadWtsJSON, which reads into a separate
-// structure -- see SetWtsJSON method.
+// structure -- see SetWts method.
 func (ly *Layer) ReadWtsJSON(r io.Reader) error {
 	lw, err := weights.LayReadJSON(r)
 	if err != nil {
 		return err // note: already logged
 	}
-	return ly.SetWtsJSON(lw)
+	return ly.SetWts(lw)
 }
 
-// SetWtsJSON sets the weights for this layer from weights.Layer struct that was
-// loaded by network-level ReadWtsJSON.
-func (ly *Layer) SetWtsJSON(lw *weights.Layer) error {
+// SetWts sets the weights for this layer from weights.Layer decoded values
+func (ly *Layer) SetWts(lw *weights.Layer) error {
 	if lw.MetaData != nil {
 		if am, ok := lw.MetaData["ActMAvg"]; ok {
 			pv, _ := strconv.ParseFloat(am, 32)
@@ -434,7 +433,7 @@ func (ly *Layer) SetWtsJSON(lw *weights.Layer) error {
 		pw := &lw.Prjns[pi]
 		pj := ly.RecvPrjns().SendName(pw.From)
 		if pj != nil {
-			er := pj.SetWtsJSON(pw)
+			er := pj.SetWts(pw)
 			if er != nil {
 				err = er
 			}

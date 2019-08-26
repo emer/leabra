@@ -266,18 +266,17 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 // ReadWtsJSON reads the weights from this projection from the receiver-side perspective
 // in a JSON text format.  This is for a set of weights that were saved *for one prjn only*
 // and is not used for the network-level ReadWtsJSON, which reads into a separate
-// structure -- see SetWtsJSON method.
+// structure -- see SetWts method.
 func (pj *Prjn) ReadWtsJSON(r io.Reader) error {
 	pw, err := weights.PrjnReadJSON(r)
 	if err != nil {
 		return err // note: already logged
 	}
-	return pj.SetWtsJSON(pw)
+	return pj.SetWts(pw)
 }
 
-// SetWtsJSON sets the weights for this projection from weights.Prjn struct that was
-// loaded by network-level ReadWtsJSON.
-func (pj *Prjn) SetWtsJSON(pw *weights.Prjn) error {
+// SetWts sets the weights for this projection from weights.Prjn decoded values
+func (pj *Prjn) SetWts(pw *weights.Prjn) error {
 	if pw.MetaData != nil {
 		if gs, ok := pw.MetaData["GScale"]; ok {
 			pv, _ := strconv.ParseFloat(gs, 32)

@@ -410,15 +410,27 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) {
 	w.Write([]byte("}\n"))
 }
 
-// ReadWtsJSON reads the weights from this layer from the receiver-side perspective
-// in a JSON text format.  Reads entire file into a temporary weights.NetWts
-// structure that is then passed to Layers etc using SetWtsJSON methods.
+// ReadWtsJSON reads network weights from the receiver-side perspective
+// in a JSON text format.  Reads entire file into a temporary weights.Weights
+// structure that is then passed to Layers etc using SetWts method.
 func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
 	nw, err := weights.NetReadJSON(r)
 	if err != nil {
 		return err // note: already logged
 	}
-	nt.Nm = nw.Network
+	err = nt.SetWts(nw)
+	if err != nil {
+		log.Println(err)
+	}
+	return err
+}
+
+// SetWts sets the weights for this network from weights.Network decoded values
+func (nt *NetworkStru) SetWts(nw *weights.Network) error {
+	var err error
+	if nw.Network != "" {
+		nt.Nm = nw.Network
+	}
 	if nw.MetaData != nil {
 		if nt.MetaData == nil {
 			nt.MetaData = nw.MetaData
@@ -430,11 +442,50 @@ func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
 	}
 	for li := range nw.Layers {
 		lw := &nw.Layers[li]
-		ly, err := nt.LayerByNameTry(lw.Layer)
-		if err != nil {
+		ly, er := nt.LayerByNameTry(lw.Layer)
+		if er != nil {
+			err = er
 			continue
 		}
-		ly.SetWtsJSON(lw)
+		ly.SetWts(lw)
+	}
+	return err
+}
+
+// OpenWtsCpp opens network weights (and any other state that adapts with learning)
+// from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
+func (nt *NetworkStru) OpenWtsCpp(filename gi.FileName) error {
+	fp, err := os.Open(string(filename))
+	defer fp.Close()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	ext := filepath.Ext(string(filename))
+	if ext == ".gz" {
+		gzr, err := gzip.NewReader(fp)
+		defer gzr.Close()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return nt.ReadWtsCpp(gzr)
+	} else {
+		return nt.ReadWtsCpp(fp)
+	}
+}
+
+// ReadWtsCpp reads the weights from old C++ emergent format.
+// Reads entire file into a temporary weights.Weights
+// structure that is then passed to Layers etc using SetWts method.
+func (nt *NetworkStru) ReadWtsCpp(r io.Reader) error {
+	nw, err := weights.NetReadCpp(r)
+	if err != nil {
+		return err // note: already logged
+	}
+	err = nt.SetWts(nw)
+	if err != nil {
+		log.Println(err)
 	}
 	return err
 }
