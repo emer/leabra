@@ -11,11 +11,13 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/emergent/weights"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/indent"
@@ -277,27 +279,80 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", ly.Nm)))
-	// todo: save average activity state
-	depth++
-	for _, pj := range ly.RcvPrjns {
-		if pj.IsOff() {
-			continue
-		}
-		pj.WriteWtsJSON(w, depth)
-	}
-	depth--
+	w.Write([]byte(fmt.Sprintf("\"Layer\": %q,\n", ly.Nm)))
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("],\n"))
+	w.Write([]byte(fmt.Sprintf("\"MetaData\": {\n")))
+	depth++
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte(fmt.Sprintf("\"ActMAvg\": \"%g\",\n", ly.Pools[0].ActAvg.ActMAvg)))
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte(fmt.Sprintf("\"ActPAvg\": \"%g\"\n", ly.Pools[0].ActAvg.ActPAvg)))
 	depth--
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("},\n"))
+	w.Write(indent.TabBytes(depth))
+	onps := make(emer.Prjns, 0, len(ly.RcvPrjns))
+	for _, pj := range ly.RcvPrjns {
+		if !pj.IsOff() {
+			onps = append(onps, pj)
+		}
+	}
+	np := len(onps)
+	if np == 0 {
+		w.Write([]byte(fmt.Sprintf("\"Prjns\": null\n")))
+	} else {
+		w.Write([]byte(fmt.Sprintf("\"Prjns\": [\n")))
+		depth++
+		for pi, pj := range onps {
+			pj.WriteWtsJSON(w, depth) // this leaves prjn unterminated
+			if pi == np-1 {
+				w.Write([]byte("\n"))
+			} else {
+				w.Write([]byte(",\n"))
+			}
+		}
+		depth--
+		w.Write(indent.TabBytes(depth))
+		w.Write([]byte("]\n"))
+	}
+	depth--
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte("}")) // note: leave unterminated as outer loop needs to add , or just \n depending
 }
 
 // ReadWtsJSON reads the weights from this layer from the receiver-side perspective
-// in a JSON text format.
+// in a JSON text format.  This is for a set of weights that were saved *for one layer only*
+// and is not used for the network-level ReadWtsJSON, which reads into a separate
+// structure -- see SetWtsJSON method.
 func (ly *Layer) ReadWtsJSON(r io.Reader) error {
 	return nil
+}
+
+// SetWtsJSON sets the weights for this layer from weights.Layer struct that was
+// loaded by network-level ReadWtsJSON.
+func (ly *Layer) SetWtsJSON(lw *weights.Layer) error {
+	if lw.MetaData != nil {
+		if am, ok := lw.MetaData["ActMAvg"]; ok {
+			pv, _ := strconv.ParseFloat(am, 32)
+			ly.Pools[0].ActAvg.ActMAvg = float32(pv)
+		}
+		if ap, ok := lw.MetaData["ActPAvg"]; ok {
+			pv, _ := strconv.ParseFloat(ap, 32)
+			ly.Pools[0].ActAvg.ActPAvg = float32(pv)
+		}
+	}
+	var err error
+	for pi := range lw.Prjns {
+		pw := &lw.Prjns[pi]
+		pj := ly.RecvPrjns().SendName(pw.From)
+		if pj != nil {
+			er := pj.SetWtsJSON(pw)
+			if er != nil {
+				err = er
+			}
+		}
+	}
+	return err
 }
 
 // VarRange returns the min / max values for given variable

@@ -8,11 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
+	"github.com/emer/emergent/weights"
 	"github.com/goki/ki/indent"
 )
 
@@ -193,31 +195,51 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"GScale\": %v\n", pj.GScale)))
+	w.Write([]byte(fmt.Sprintf("\"From\": %q,\n", slay.Name())))
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", slay.Nm)))
+	w.Write([]byte(fmt.Sprintf("\"MetaData\": {\n")))
+	depth++
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte(fmt.Sprintf("\"GScale\": \"%g\"\n", pj.GScale)))
+	depth--
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte("},\n"))
+	w.Write(indent.TabBytes(depth))
+	w.Write([]byte(fmt.Sprintf("\"Rs\": [\n")))
 	depth++
 	for ri := 0; ri < nr; ri++ {
 		nc := int(pj.RConN[ri])
 		st := int(pj.RConIdxSt[ri])
 		w.Write(indent.TabBytes(depth))
-		w.Write([]byte(fmt.Sprintf("\"%v\": {\n", ri)))
+		w.Write([]byte("{\n"))
 		depth++
 		w.Write(indent.TabBytes(depth))
-		w.Write([]byte(fmt.Sprintf("\"n\": %v,\n", nc)))
+		w.Write([]byte(fmt.Sprintf("\"Ri\": %v,\n", ri)))
 		w.Write(indent.TabBytes(depth))
-		w.Write([]byte("\"Si\": ["))
+		w.Write([]byte(fmt.Sprintf("\"N\": %v,\n", nc)))
+		w.Write(indent.TabBytes(depth))
+		w.Write([]byte("\"Si\": [ "))
 		for ci := 0; ci < nc; ci++ {
 			si := pj.RConIdx[st+ci]
-			w.Write([]byte(fmt.Sprintf("%v ", si)))
+			w.Write([]byte(fmt.Sprintf("%v", si)))
+			if ci == nc-1 {
+				w.Write([]byte(" "))
+			} else {
+				w.Write([]byte(", "))
+			}
 		}
-		w.Write([]byte("]\n"))
+		w.Write([]byte("],\n"))
 		w.Write(indent.TabBytes(depth))
-		w.Write([]byte("\"Wt\": ["))
+		w.Write([]byte("\"Wt\": [ "))
 		for ci := 0; ci < nc; ci++ {
 			rsi := pj.RSynIdx[st+ci]
 			sy := &pj.Syns[rsi]
-			w.Write([]byte(fmt.Sprintf("%v ", sy.Wt)))
+			w.Write([]byte(strconv.FormatFloat(float64(sy.Wt), 'g', weights.Prec, 32)))
+			if ci == nc-1 {
+				w.Write([]byte(" "))
+			} else {
+				w.Write([]byte(", "))
+			}
 		}
 		w.Write([]byte("]\n"))
 		depth--
@@ -233,13 +255,37 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("]\n"))
 	depth--
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("}\n"))
+	w.Write([]byte("}")) // note: leave unterminated as outer loop needs to add , or just \n depending
 }
 
-// ReadWtsJSON reads the weights for this projection from the receiver-side perspective
-// in a JSON text format.
+// ReadWtsJSON reads the weights from this projection from the receiver-side perspective
+// in a JSON text format.  This is for a set of weights that were saved *for one prjn only*
+// and is not used for the network-level ReadWtsJSON, which reads into a separate
+// structure -- see SetWtsJSON method.
 func (pj *Prjn) ReadWtsJSON(r io.Reader) error {
 	return nil
+}
+
+// SetWtsJSON sets the weights for this projection from weights.Prjn struct that was
+// loaded by network-level ReadWtsJSON.
+func (pj *Prjn) SetWtsJSON(pw *weights.Prjn) error {
+	if pw.MetaData != nil {
+		if gs, ok := pw.MetaData["GScale"]; ok {
+			pv, _ := strconv.ParseFloat(gs, 32)
+			pj.GScale = float32(pv)
+		}
+	}
+	var err error
+	for i := range pw.Rs {
+		pr := &pw.Rs[i]
+		for si := range pr.Si {
+			er := pj.SetSynVal("Wt", pr.Si[si], pr.Ri, pr.Wt[si])
+			if er != nil {
+				err = er
+			}
+		}
+	}
+	return err
 }
 
 // Build constructs the full connectivity among the layers as specified in this projection.

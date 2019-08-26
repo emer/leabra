@@ -18,6 +18,7 @@ import (
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
+	"github.com/emer/emergent/weights"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/indent"
@@ -29,13 +30,14 @@ type LayFunChan chan func(ly LeabraLayer)
 
 // leabra.NetworkStru holds the basic structural components of a network (layers)
 type NetworkStru struct {
-	EmerNet emer.Network          `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Nm      string                `desc:"overall name of network -- helps discriminate if there are multiple"`
-	Layers  emer.Layers           `desc:"list of layers"`
-	WtsFile string                `desc:"filename of last weights file loaded or saved"`
-	LayMap  map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
-	MinPos  mat32.Vec3            `view:"-" desc:"minimum display position in network"`
-	MaxPos  mat32.Vec3            `view:"-" desc:"maximum display position in network"`
+	EmerNet  emer.Network          `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	Nm       string                `desc:"overall name of network -- helps discriminate if there are multiple"`
+	Layers   emer.Layers           `desc:"list of layers"`
+	WtsFile  string                `desc:"filename of last weights file loaded or saved"`
+	LayMap   map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
+	MinPos   mat32.Vec3            `view:"-" desc:"minimum display position in network"`
+	MaxPos   mat32.Vec3            `view:"-" desc:"maximum display position in network"`
+	MetaData map[string]string     `desc:"optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save"`
 
 	NThreads int                    `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
 	ThrLay   [][]emer.Layer         `view:"-" inactive:"+" desc:"layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build"`
@@ -357,26 +359,64 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"%v\": [\n", nt.Nm)))
-	depth++
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
-			continue
-		}
-		ly.WriteWtsJSON(w, depth)
-	}
-	depth--
+	w.Write([]byte(fmt.Sprintf("\"Network\": %q,\n", nt.Nm))) // note: can't use \n in `` so need "
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("]\n"))
+	onls := make([]emer.Layer, 0, len(nt.Layers))
+	for _, ly := range nt.Layers {
+		if !ly.IsOff() {
+			onls = append(onls, ly)
+		}
+	}
+	nl := len(onls)
+	if nl == 0 {
+		w.Write([]byte("\"Layers\": null\n"))
+	} else {
+		w.Write([]byte("\"Layers\": [\n"))
+		depth++
+		for li, ly := range onls {
+			ly.WriteWtsJSON(w, depth)
+			if li == nl-1 {
+				w.Write([]byte("\n"))
+			} else {
+				w.Write([]byte(",\n"))
+			}
+		}
+		depth--
+		w.Write(indent.TabBytes(depth))
+		w.Write([]byte("]\n"))
+	}
 	depth--
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("}\n"))
 }
 
 // ReadWtsJSON reads the weights from this layer from the receiver-side perspective
-// in a JSON text format.
+// in a JSON text format.  Reads entire file into a temporary weights.NetWts
+// structure that is then passed to Layers etc using SetWtsJSON methods.
 func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
-	return nil
+	nw, err := weights.NetReadJSON(r)
+	if err != nil {
+		return err // note: already logged
+	}
+	nt.Nm = nw.Network
+	if nw.MetaData != nil {
+		if nt.MetaData == nil {
+			nt.MetaData = nw.MetaData
+		} else {
+			for mk, mv := range nw.MetaData {
+				nt.MetaData[mk] = mv
+			}
+		}
+	}
+	for li := range nw.Layers {
+		lw := &nw.Layers[li]
+		ly, err := nt.LayerByNameTry(lw.Layer)
+		if err != nil {
+			continue
+		}
+		ly.SetWtsJSON(lw)
+	}
+	return err
 }
 
 // VarRange returns the min / max values for given variable
