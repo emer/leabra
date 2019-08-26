@@ -143,6 +143,14 @@ func TestNetAct(t *testing.T) {
 	qtr3OutGes := []float32{0.47114015, 0, 0, 0}
 	qtr3OutGis := []float32{0.45951304, 0.45951304, 0.45951304, 0.45951304}
 
+	inActs := []float32{}
+	hidActs := []float32{}
+	hidGes := []float32{}
+	hidGis := []float32{}
+	outActs := []float32{}
+	outGes := []float32{}
+	outGis := []float32{}
+
 	for pi := 0; pi < 4; pi++ {
 		inpat, err := InPats.SubSpaceTry(2, []int{pi})
 		if err != nil {
@@ -159,13 +167,13 @@ func TestNetAct(t *testing.T) {
 				ltime.CycleInc()
 
 				if printCycs {
-					inActs := inLay.UnitVals("Act")
-					hidActs := hidLay.UnitVals("Act")
-					hidGes := hidLay.UnitVals("GeInc")
-					hidGis := hidLay.UnitVals("Gi")
-					outActs := outLay.UnitVals("Act")
-					outGes := outLay.UnitVals("Ge")
-					outGis := outLay.UnitVals("Gi")
+					inLay.UnitVals(&inActs, "Act")
+					hidLay.UnitVals(&hidActs, "Act")
+					hidLay.UnitVals(&hidGes, "Ge")
+					hidLay.UnitVals(&hidGis, "Gi")
+					outLay.UnitVals(&outActs, "Act")
+					outLay.UnitVals(&outGes, "Ge")
+					outLay.UnitVals(&outGis, "Gi")
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 				}
 			}
@@ -176,13 +184,13 @@ func TestNetAct(t *testing.T) {
 				fmt.Printf("=============================\n")
 			}
 
-			inActs := inLay.UnitVals("Act")
-			hidActs := hidLay.UnitVals("Act")
-			hidGes := hidLay.UnitVals("Ge")
-			hidGis := hidLay.UnitVals("Gi")
-			outActs := outLay.UnitVals("Act")
-			outGes := outLay.UnitVals("Ge")
-			outGis := outLay.UnitVals("Gi")
+			inLay.UnitVals(&inActs, "Act")
+			hidLay.UnitVals(&hidActs, "Act")
+			hidLay.UnitVals(&hidGes, "Ge")
+			hidLay.UnitVals(&hidGis, "Gi")
+			outLay.UnitVals(&outActs, "Act")
+			outLay.UnitVals(&outGes, "Ge")
+			outLay.UnitVals(&outGis, "Gi")
 
 			if printQtrs {
 				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ltime.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
@@ -280,6 +288,19 @@ func TestNetLearn(t *testing.T) {
 	hidmoment := make([]float32, 4*NLrnPars)
 	outmoment := make([]float32, 4*NLrnPars)
 
+	hidAct := []float32{}
+	hidGes := []float32{}
+	hidGis := []float32{}
+	hidAvgSS := []float32{}
+	hidAvgS := []float32{}
+	hidAvgM := []float32{}
+	outAvgS := []float32{}
+	outAvgM := []float32{}
+	hidAvgL := []float32{}
+	hidAvgLLrn := []float32{}
+	outAvgL := []float32{}
+	outAvgLLrn := []float32{}
+
 	for ti := 0; ti < NLrnPars; ti++ {
 		TestNet.Defaults()
 		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
@@ -304,15 +325,15 @@ func TestNetLearn(t *testing.T) {
 					TestNet.Cycle(ltime)
 					ltime.CycleInc()
 
-					hidAct := hidLay.UnitVals("Act")
-					hidGes := hidLay.UnitVals("Ge")
-					hidGis := hidLay.UnitVals("Gi")
-					hidAvgSS := hidLay.UnitVals("AvgSS")
-					hidAvgS := hidLay.UnitVals("AvgS")
-					hidAvgM := hidLay.UnitVals("AvgM")
+					hidLay.UnitVals(&hidAct, "Act")
+					hidLay.UnitVals(&hidGes, "Ge")
+					hidLay.UnitVals(&hidGis, "Gi")
+					hidLay.UnitVals(&hidAvgSS, "AvgSS")
+					hidLay.UnitVals(&hidAvgS, "AvgS")
+					hidLay.UnitVals(&hidAvgM, "AvgM")
 
-					outAvgS := outLay.UnitVals("AvgS")
-					outAvgM := outLay.UnitVals("AvgM")
+					outLay.UnitVals(&outAvgS, "AvgS")
+					outLay.UnitVals(&outAvgM, "AvgM")
 
 					if printCycs {
 						fmt.Printf("pat: %v qtr: %v cyc: %v\nhid act: %v ges: %v gis: %v\nhid avgss: %v avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAct, hidGes, hidGis, hidAvgSS, hidAvgS, hidAvgM, outAvgS, outAvgM)
@@ -322,11 +343,11 @@ func TestNetLearn(t *testing.T) {
 				TestNet.QuarterFinal(ltime)
 				ltime.QuarterInc()
 
-				hidAvgS := hidLay.UnitVals("AvgS")
-				hidAvgM := hidLay.UnitVals("AvgM")
+				hidLay.UnitVals(&hidAvgS, "AvgS")
+				hidLay.UnitVals(&hidAvgM, "AvgM")
 
-				outAvgS := outLay.UnitVals("AvgS")
-				outAvgM := outLay.UnitVals("AvgM")
+				outLay.UnitVals(&outAvgS, "AvgS")
+				outLay.UnitVals(&outAvgM, "AvgM")
 
 				if printQtrs {
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nhid avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAvgS, hidAvgM, outAvgS, outAvgM)
@@ -350,10 +371,10 @@ func TestNetLearn(t *testing.T) {
 				fmt.Printf("=============================\n")
 			}
 
-			hidAvgL := hidLay.UnitVals("AvgL")
-			hidAvgLLrn := hidLay.UnitVals("AvgLLrn")
-			outAvgL := outLay.UnitVals("AvgL")
-			outAvgLLrn := outLay.UnitVals("AvgLLrn")
+			hidLay.UnitVals(&hidAvgL, "AvgL")
+			hidLay.UnitVals(&hidAvgLLrn, "AvgLLrn")
+			outLay.UnitVals(&outAvgL, "AvgL")
+			outLay.UnitVals(&outAvgLLrn, "AvgLLrn")
 			_ = outAvgL
 			_ = outAvgLLrn
 

@@ -61,22 +61,29 @@ func (ly *Layer) UnitVarNames() []string {
 	return AllNeuronVars
 }
 
-// UnitValsTry is emer.Layer interface method to return values of given variable
-func (ly *Layer) UnitValsTry(varNm string) ([]float32, error) {
+// UnitVals fills in values of given variable name on unit,
+// for each unit in the layer, into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 	vidx, err := leabra.NeuronVarByName(varNm)
 	if err == nil {
-		return ly.Layer.UnitValsTry(varNm)
+		return ly.Layer.UnitVals(vals, varNm)
 	}
 	vidx, err = NeuronVarByName(varNm)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	vs := make([]float32, len(ly.DeepNeurs))
+	nn := len(ly.Neurons)
+	if *vals == nil || cap(*vals) < nn {
+		*vals = make([]float32, nn)
+	} else if len(*vals) < nn {
+		*vals = (*vals)[0:nn]
+	}
 	for i := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[i]
-		vs[i] = dnr.VarByIndex(vidx)
+		(*vals)[i] = dnr.VarByIndex(vidx)
 	}
-	return vs, nil
+	return nil
 }
 
 // UnitValTry returns value of given variable name on given unit,
