@@ -1747,7 +1747,7 @@ var SimProps = ki.Props{
 			"icon": "file-save",
 			"Args": ki.PropSlice{
 				{"File Name", ki.Props{
-					"ext": ".wts",
+					"ext": ".wts,.wts.gz",
 				}},
 			},
 		}},

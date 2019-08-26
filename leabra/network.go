@@ -217,7 +217,7 @@ var NetworkProps = ki.Props{
 			"Args": ki.PropSlice{
 				{"Weights File Name", ki.Props{
 					"default-field": "WtsFile",
-					"ext":           ".wts",
+					"ext":           ".wts,.wts.gz",
 				}},
 			},
 		}},
@@ -228,7 +228,7 @@ var NetworkProps = ki.Props{
 			"Args": ki.PropSlice{
 				{"Weights File Name", ki.Props{
 					"default-field": "WtsFile",
-					"ext":           ".wts",
+					"ext":           ".wts,.wts.gz",
 				}},
 			},
 		}},
