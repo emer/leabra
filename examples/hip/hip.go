@@ -1751,15 +1751,6 @@ var SimProps = ki.Props{
 				}},
 			},
 		}},
-		{"SaveParams", ki.Props{
-			"desc": "save parameters to file",
-			"icon": "file-save",
-			"Args": ki.PropSlice{
-				{"File Name", ki.Props{
-					"ext": ".params",
-				}},
-			},
-		}},
 		{"SetEnv", ki.Props{
 			"desc": "select which set of patterns to train on: AB or AC",
 			"icon": "gear",

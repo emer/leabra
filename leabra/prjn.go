@@ -57,8 +57,12 @@ func (pj *Prjn) UpdateParams() {
 // AllParams returns a listing of all parameters in the Layer
 func (pj *Prjn) AllParams() string {
 	str := "///////////////////////////////////////////////////\nPrjn: " + pj.Name() + "\n"
-	b, _ := json.MarshalIndent(&pj.Learn, "", " ")
-	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " WtInit: {", "\n  WtInit: {", -1)
+	b, _ := json.MarshalIndent(&pj.WtInit, "", " ")
+	str += "WtInit: {\n " + JsonToParams(b)
+	b, _ = json.MarshalIndent(&pj.WtScale, "", " ")
+	str += "WtScale: {\n " + JsonToParams(b)
+	b, _ = json.MarshalIndent(&pj.Learn, "", " ")
+	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " XCal: {", "\n  XCal: {", -1)
 	return str
 }
 
