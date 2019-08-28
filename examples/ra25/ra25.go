@@ -409,16 +409,13 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
-	out := ss.Net.LayerByName("Output").(*leabra.Layer)
-
-	inPats := en.State(inp.Nm)
-	if inPats != nil {
-		inp.ApplyExt(inPats)
-	}
-	outPats := en.State(out.Nm)
-	if outPats != nil {
-		out.ApplyExt(outPats)
+	lays := []string{"Input", "Output"}
+	for _, lnm := range lays {
+		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		pats := en.State(ly.Nm)
+		if pats != nil {
+			ly.ApplyExt(pats)
+		}
 	}
 }
 
