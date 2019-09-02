@@ -82,6 +82,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 		nrn.Ge -= decay * (nrn.Ge - ac.Init.Ge)
 		nrn.Gi -= decay * nrn.Gi
 		nrn.GiSelf -= decay * nrn.GiSelf
+		nrn.Gk -= decay * nrn.Gk
 		nrn.Vm -= decay * (nrn.Vm - ac.Init.Vm)
 	}
 	nrn.ActDel = 0
@@ -95,6 +96,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Act = ac.Init.Act
 	nrn.Ge = ac.Init.Ge
 	nrn.Gi = 0
+	nrn.Gk = 0
 	nrn.GiSelf = 0
 	nrn.Inet = 0
 	nrn.Vm = ac.Init.Vm
@@ -162,13 +164,14 @@ func (ac *ActParams) InetFmG(vm, ge, gi, gk float32) float32 {
 	return ge*(ac.Erev.E-vm) + ac.Gbar.L*(ac.Erev.L-vm) + gi*(ac.Erev.I-vm) + gk*(ac.Erev.K-vm)
 }
 
-// VmFmG computes membrane potential Vm from conductances Ge and Gi.
+// VmFmG computes membrane potential Vm from conductances Ge, Gi, and Gk.
 // The Vm value is only used in pure rate-code computation within the sub-threshold regime
 // because firing rate is a direct function of excitatory conductance Ge.
 func (ac *ActParams) VmFmG(nrn *Neuron) {
 	ge := nrn.Ge * ac.Gbar.E
 	gi := nrn.Gi * ac.Gbar.I
-	nrn.Inet = ac.InetFmG(nrn.Vm, ge, gi, 0)
+	gk := nrn.Gk * ac.Gbar.K
+	nrn.Inet = ac.InetFmG(nrn.Vm, ge, gi, gk)
 	nwVm := nrn.Vm + ac.Dt.VmDt*nrn.Inet
 
 	if ac.Noise.Type == VmNoise {
@@ -179,7 +182,7 @@ func (ac *ActParams) VmFmG(nrn *Neuron) {
 
 // GeThrFmG computes the threshold for Ge based on other conductances
 func (ac *ActParams) GeThrFmG(nrn *Neuron) float32 {
-	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L) / ac.ThrSubErev.E)
+	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L + ac.Gbar.K*nrn.Gk*ac.ErevSubThr.K) / ac.ThrSubErev.E)
 }
 
 // ActFmG computes rate-coded activation Act from conductances Ge and Gi

@@ -25,6 +25,7 @@ type Neuron struct {
 	Act     float32   `desc:"overall rate coded activation value -- what is sent to other neurons -- typically in range 0-1"`
 	Ge      float32   `desc:"total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E"`
 	Gi      float32   `desc:"total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I"`
+	Gk      float32   `desc:"total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K"`
 	Inet    float32   `desc:"net current produced by all channels -- drives update of Vm"`
 	Vm      float32   `desc:"membrane potential -- integrates Inet current over time"`
 
@@ -58,7 +59,7 @@ type Neuron struct {
 	GiInc   float32 `desc:"delta increment in GiRaw sent using SendGeDelta"`
 }
 
-var NeuronVars = []string{"Act", "Ge", "Gi", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActQ0", "ActQ1", "ActQ2", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GeInc", "GiRaw", "GiInc"}
+var NeuronVars = []string{"Act", "Ge", "Gi", "Gk", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActQ0", "ActQ1", "ActQ2", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GeInc", "GiRaw", "GiInc"}
 
 var NeuronVarsMap map[string]int
 
