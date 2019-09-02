@@ -42,10 +42,10 @@ func (ln *LearnNeurParams) InitActAvg(nrn *Neuron) {
 	nrn.ActAvg = ln.ActAvg.Init
 }
 
-// AvgsFmAct updates the running averages based on current activation.
+// AvgsFmAct updates the running averages based on current learning activation.
 // Computed after new activation for current cycle is updated.
 func (ln *LearnNeurParams) AvgsFmAct(nrn *Neuron) {
-	ln.ActAvg.AvgsFmAct(nrn.Act, &nrn.AvgSS, &nrn.AvgS, &nrn.AvgM, &nrn.AvgSLrn)
+	ln.ActAvg.AvgsFmAct(nrn.ActLrn, &nrn.AvgSS, &nrn.AvgS, &nrn.AvgM, &nrn.AvgSLrn)
 }
 
 // AvgLFmAct computes long-term average activation value, and learning factor, from current AvgM.

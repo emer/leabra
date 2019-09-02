@@ -767,11 +767,7 @@ func (ly *Layer) DecayState(decay float32) {
 	}
 	for pi := range ly.Pools { // decaying average act is essential for inhib
 		pl := &ly.Pools[pi]
-		pl.Act.Max -= decay * pl.Act.Max
-		pl.Act.Avg -= decay * pl.Act.Avg
-		pl.Inhib.FFi -= decay * pl.Inhib.FFi
-		pl.Inhib.FBi -= decay * pl.Inhib.FBi
-		pl.Inhib.Gi -= decay * pl.Inhib.Gi
+		pl.Inhib.Decay(decay)
 	}
 }
 
@@ -863,24 +859,24 @@ func (ly *Layer) GFmInc(ltime *Time) {
 func (ly *Layer) AvgMaxGe(ltime *Time) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
-		pl.Ge.Init()
+		pl.Inhib.Ge.Init()
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
-			pl.Ge.UpdateVal(nrn.Ge, ni)
+			pl.Inhib.Ge.UpdateVal(nrn.Ge, ni)
 		}
-		pl.Ge.CalcAvg()
+		pl.Inhib.Ge.CalcAvg()
 	}
 }
 
 // InhibiFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 func (ly *Layer) InhibFmGeAct(ltime *Time) {
 	lpl := &ly.Pools[0]
-	ly.Inhib.Layer.Inhib(lpl.Ge.Avg, lpl.Ge.Max, lpl.Act.Avg, &lpl.Inhib)
+	ly.Inhib.Layer.Inhib(&lpl.Inhib)
 	np := len(ly.Pools)
 	if np > 1 {
 		for pi := 1; pi < np; pi++ {
 			pl := &ly.Pools[pi]
-			ly.Inhib.Pool.Inhib(pl.Ge.Avg, pl.Ge.Max, pl.Act.Avg, &pl.Inhib)
+			ly.Inhib.Pool.Inhib(&pl.Inhib)
 			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
 			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 				nrn := &ly.Neurons[ni]
@@ -921,15 +917,15 @@ func (ly *Layer) ActFmG(ltime *Time) {
 func (ly *Layer) AvgMaxAct(ltime *Time) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
-		pl.Act.Init()
+		pl.Inhib.Act.Init()
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Act.UpdateVal(nrn.Act, ni)
+			pl.Inhib.Act.UpdateVal(nrn.Act, ni)
 		}
-		pl.Act.CalcAvg()
+		pl.Inhib.Act.CalcAvg()
 	}
 }
 
@@ -942,9 +938,9 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 		pl := &ly.Pools[pi]
 		switch ltime.Quarter {
 		case 2:
-			pl.ActM = pl.Act
+			pl.ActM = pl.Inhib.Act
 		case 3:
-			pl.ActP = pl.Act
+			pl.ActP = pl.Inhib.Act
 		}
 	}
 	for ni := range ly.Neurons {
