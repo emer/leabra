@@ -69,14 +69,14 @@ func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
 // M-type (fast), Slick (medium), and Slack (slow)
 type Params struct {
 	On   bool    `desc:"if On, apply K-Na adaptation"`
-	Rate float32 `viewif:"On" def:"0.5" desc:"extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking"`
+	Rate float32 `viewif:"On" def:"0.8" desc:"extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking"`
 	Fast Chan    `view:"inline" desc:"fast time-scale adaptation"`
 	Med  Chan    `view:"inline" desc:"medium time-scale adaptation"`
 	Slow Chan    `view:"inline" desc:"slow time-scale adaptation"`
 }
 
 func (ka *Params) Defaults() {
-	ka.Rate = 0.5
+	ka.Rate = 0.8
 	ka.Fast.Defaults()
 	ka.Med.Defaults()
 	ka.Slow.Defaults()

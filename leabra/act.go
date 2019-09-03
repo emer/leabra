@@ -42,7 +42,7 @@ func (ac *ActParams) Defaults() {
 	ac.Init.Defaults()
 	ac.Dt.Defaults()
 	ac.Gbar.SetAll(1.0, 0.2, 1.0, 1.0)
-	ac.Erev.SetAll(1.0, 0.3, 0.25, 0.1)
+	ac.Erev.SetAll(1.0, 0.3, 0.25, 0.25)
 	ac.Clamp.Defaults()
 	ac.VmRange.Max = 2.0
 	ac.KNa.Defaults()
