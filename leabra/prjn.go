@@ -13,7 +13,6 @@ import (
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/weights"
 	"github.com/goki/ki/indent"
 )
@@ -21,10 +20,10 @@ import (
 // leabra.Prjn is a basic Leabra projection with synaptic learning parameters
 type Prjn struct {
 	PrjnStru
-	WtInit  erand.RndParams `view:"inline" desc:"initial random weight distribution"`
-	WtScale WtScaleParams   `desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
-	Learn   LearnSynParams  `desc:"synaptic-level learning parameters"`
-	Syns    []Synapse       `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+	WtInit  WtInitParams   `view:"inline" desc:"initial random weight distribution"`
+	WtScale WtScaleParams  `desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
+	Learn   LearnSynParams `desc:"synaptic-level learning parameters"`
+	Syns    []Synapse      `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 
 	// misc state variables below:
 	GScale float32         `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
@@ -40,9 +39,7 @@ func (pj *Prjn) AsLeabra() *Prjn {
 }
 
 func (pj *Prjn) Defaults() {
-	pj.WtInit.Mean = 0.5
-	pj.WtInit.Var = 0.25
-	pj.WtInit.Dist = erand.Uniform
+	pj.WtInit.Defaults()
 	pj.WtScale.Defaults()
 	pj.Learn.Defaults()
 	pj.GScale = 1

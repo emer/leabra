@@ -514,7 +514,7 @@ func (ly *Layer) InitActs() {
 // InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 func (ly *Layer) InitWtSym() {
 	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+		if p.IsOff() || !(p.(*Prjn).WtInit.Sym) {
 			continue
 		}
 		// key ordering constraint on which way weights are copied
@@ -522,7 +522,7 @@ func (ly *Layer) InitWtSym() {
 			continue
 		}
 		rpj, has := ly.RecipToSendPrjn(p)
-		if !has {
+		if !has || !(rpj.(*Prjn).WtInit.Sym) {
 			continue
 		}
 		p.(LeabraPrjn).InitWtSym(rpj.(LeabraPrjn))

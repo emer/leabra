@@ -382,6 +382,51 @@ func (an *ActNoiseParams) Defaults() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  ClampParams
+
+// ClampParams are for specifying how external inputs are clamped onto network activation values
+type ClampParams struct {
+	Hard    bool       `def:"true" desc:"whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)"`
+	Range   minmax.F32 `viewif:"Hard" desc:"range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function"`
+	Gain    float32    `viewif:"!Hard" def:"0.02:0.5" desc:"soft clamp gain factor (Ge += Gain * Ext)"`
+	Avg     bool       `viewif:"!Hard" desc:"compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs"`
+	AvgGain float32    `viewif:"!Hard && Avg" def:"0.2" desc:"gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)"`
+}
+
+func (cp *ClampParams) Update() {
+}
+
+func (cp *ClampParams) Defaults() {
+	cp.Hard = true
+	cp.Range.Max = 0.95
+	cp.Gain = 0.2
+	cp.Avg = false
+	cp.AvgGain = 0.2
+}
+
+// AvgGe computes Avg-based Ge clamping value if using that option
+func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
+	return cp.AvgGain*cp.Gain*ext + (1-cp.AvgGain)*ge
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  WtInitParams
+
+// WtInitParams are weight initialization parameters -- basically the
+// random distribution parameters but also Symmetry flag
+type WtInitParams struct {
+	erand.RndParams
+	Sym bool `desc:"symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections"`
+}
+
+func (wp *WtInitParams) Defaults() {
+	wp.Mean = 0.5
+	wp.Var = 0.25
+	wp.Dist = erand.Uniform
+	wp.Sym = true
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  WtScaleParams
 
 /// WtScaleParams are weight scaling parameters: modulates overall strength of projection,
@@ -426,32 +471,4 @@ func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
 // FullScale returns full scaling factor, which is product of Abs * Rel * SLayActScale
 func (ws *WtScaleParams) FullScale(savg, snu, ncon float32) float32 {
 	return ws.Abs * ws.Rel * ws.SLayActScale(savg, snu, ncon)
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  ClampParams
-
-// ClampParams are for specifying how external inputs are clamped onto network activation values
-type ClampParams struct {
-	Hard    bool       `def:"true" desc:"whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)"`
-	Range   minmax.F32 `viewif:"Hard" desc:"range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function"`
-	Gain    float32    `viewif:"!Hard" def:"0.02:0.5" desc:"soft clamp gain factor (Ge += Gain * Ext)"`
-	Avg     bool       `viewif:"!Hard" desc:"compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs"`
-	AvgGain float32    `viewif:"!Hard && Avg" def:"0.2" desc:"gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)"`
-}
-
-func (cp *ClampParams) Update() {
-}
-
-func (cp *ClampParams) Defaults() {
-	cp.Hard = true
-	cp.Range.Max = 0.95
-	cp.Gain = 0.2
-	cp.Avg = false
-	cp.AvgGain = 0.2
-}
-
-// AvgGe computes Avg-based Ge clamping value if using that option
-func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
-	return cp.AvgGain*cp.Gain*ext + (1-cp.AvgGain)*ge
 }
