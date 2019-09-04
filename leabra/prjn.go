@@ -323,6 +323,14 @@ func (pj *Prjn) InitWtsSyn(syn *Synapse) {
 		syn.Scale = 1
 	}
 	syn.Wt = float32(pj.WtInit.Gen(-1))
+	// enforce normalized weight range -- required for most uses and if not
+	// then a new type of prjn should be used:
+	if syn.Wt < 0 {
+		syn.Wt = 0
+	}
+	if syn.Wt > 1 {
+		syn.Wt = 1
+	}
 	syn.LWt = pj.Learn.WtSig.LinFmSigWt(syn.Wt)
 	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
 	syn.DWt = 0
