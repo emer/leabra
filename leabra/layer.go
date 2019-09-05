@@ -1069,7 +1069,12 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 		if nrn.IsOff() {
 			continue
 		}
-		d := nrn.ActP - nrn.ActM
+		var d float32
+		if ly.Typ == emer.Compare {
+			d = nrn.Targ - nrn.ActM
+		} else {
+			d = nrn.ActP - nrn.ActM
+		}
 		if math32.Abs(d) < tol {
 			continue
 		}

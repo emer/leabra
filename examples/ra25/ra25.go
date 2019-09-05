@@ -119,7 +119,7 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net          *leabra.Network   `view:"no-inline"`
+	Net          *leabra.Network   `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
 	Pats         *etable.Table     `view:"no-inline" desc:"the training patterns to use"`
 	TrnEpcLog    *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog    *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
@@ -176,6 +176,7 @@ type Sim struct {
 	LogSetParams  bool             `view:"-" desc:"if true, print message for all params that are set"`
 	IsRunning     bool             `view:"-" desc:"true if sim is running"`
 	StopNow       bool             `view:"-" desc:"flag to stop running"`
+	NeedsNewRun   bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
 	RndSeed       int64            `view:"-" desc:"the current random seed"`
 }
 
@@ -421,6 +422,10 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 // TrainTrial runs one trial of training using TrainEnv
 func (ss *Sim) TrainTrial() {
+	if ss.NeedsNewRun {
+		ss.NewRun()
+	}
+
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
 
 	// Key to query counters FIRST because current state is in NEXT epoch
@@ -440,7 +445,7 @@ func (ss *Sim) TrainTrial() {
 				ss.StopNow = true
 				return
 			} else {
-				ss.NewRun()
+				ss.NeedsNewRun = true
 				return
 			}
 		}
@@ -472,6 +477,7 @@ func (ss *Sim) NewRun() {
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
+	ss.NeedsNewRun = false
 }
 
 // InitStats initializes all the statistics, especially important for the
@@ -579,7 +585,7 @@ func (ss *Sim) SaveWeights(filename gi.FileName) {
 // Testing
 
 // TestTrial runs one trial of testing -- always sequentially presented inputs
-func (ss *Sim) TestTrial() {
+func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.TestEnv.Step()
 
 	// Query counters FIRST
@@ -589,7 +595,9 @@ func (ss *Sim) TestTrial() {
 			ss.UpdateView(false)
 		}
 		ss.LogTstEpc(ss.TstEpcLog)
-		return
+		if returnOnChg {
+			return
+		}
 	}
 
 	ss.ApplyInputs(&ss.TestEnv)
@@ -613,7 +621,7 @@ func (ss *Sim) TestItem(idx int) {
 func (ss *Sim) TestAll() {
 	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
 	for {
-		ss.TestTrial()
+		ss.TestTrial(true) // return on change -- don't wrap
 		_, _, chg := ss.TestEnv.Counter(env.Epoch)
 		if chg || ss.StopNow {
 			break
@@ -1245,7 +1253,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		if !ss.IsRunning {
 			ss.IsRunning = true
-			ss.TestTrial()
+			ss.TestTrial(false) // don't return on change -- wrap
 			ss.IsRunning = false
 			vp.SetNeedsFullRender()
 		}
