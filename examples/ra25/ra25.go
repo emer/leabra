@@ -134,6 +134,7 @@ type Sim struct {
 	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
 	MaxRuns      int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
+	NZeroStop    int               `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
 	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
 	TestEnv      env.FixedTable    `desc:"Testing environment -- manages iterating over testing"`
 	Time         leabra.Time       `desc:"leabra timing parameters and state"`
@@ -153,6 +154,7 @@ type Sim struct {
 	EpcPctCor  float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE == 0 (subject to .5 unit-wise tolerance)"`
 	EpcCosDiff float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
 	FirstZero  int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
+	NZero      int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
 
 	// internal state - view:"-"
 	SumSSE        float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -228,6 +230,7 @@ func (ss *Sim) ConfigEnv() {
 	}
 	if ss.MaxEpcs == 0 { // allow user override
 		ss.MaxEpcs = 50
+		ss.NZeroStop = 5
 	}
 
 	ss.TrainEnv.Nm = "TrainEnv"
@@ -439,7 +442,8 @@ func (ss *Sim) TrainTrial() {
 		if epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
 			ss.TestAll()
 		}
-		if epc >= ss.MaxEpcs { // done with training..
+		if epc >= ss.MaxEpcs || (ss.NZeroStop > 0 && ss.NZero >= ss.NZeroStop) {
+			// done with training..
 			ss.RunEnd()
 			if ss.TrainEnv.Run.Incr() { // we are done!
 				ss.StopNow = true
@@ -489,6 +493,7 @@ func (ss *Sim) InitStats() {
 	ss.SumCosDiff = 0
 	ss.CntErr = 0
 	ss.FirstZero = -1
+	ss.NZero = 0
 	// clear rest just to make Sim look initialized
 	ss.TrlSSE = 0
 	ss.TrlAvgSSE = 0
@@ -767,6 +772,11 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	ss.SumCosDiff = 0
 	if ss.FirstZero < 0 && ss.EpcPctErr == 0 {
 		ss.FirstZero = epc
+	}
+	if ss.EpcPctErr == 0 {
+		ss.NZero++
+	} else {
+		ss.NZero = 0
 	}
 
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
@@ -1064,9 +1074,12 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	dt.SetNumRows(row + 1)
 
 	epclog := ss.TrnEpcLog
+	epcix := etable.NewIdxView(epclog)
 	// compute mean over last N epochs for run level
 	nlast := 10
-	epcix := etable.NewIdxView(epclog)
+	if nlast > epcix.Len()-1 {
+		nlast = epcix.Len() - 1
+	}
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast-1:]
 
 	params := ss.RunName() // includes tag
