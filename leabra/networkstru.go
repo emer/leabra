@@ -275,7 +275,7 @@ func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, ty
 	if err != nil {
 		return
 	}
-	pj = nt.ConnectLayers(rlay, slay, pat, typ)
+	pj = nt.ConnectLayers(slay, rlay, pat, typ)
 	return
 }
 
@@ -298,6 +298,36 @@ func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern
 	recv.RecvPrjns().Add(pj)
 	send.SendPrjns().Add(pj)
 	return pj
+}
+
+// BidirConnectLayerNames establishes bidirectional projections between two layers,
+// referenced by name, with low = the lower layer that sends a Forward projection
+// to the high layer, and receives a Back projection in the opposite direction.
+// Returns error if not successful.
+// Does not yet actually connect the units within the layers -- that requires Build.
+func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat prjn.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Prjn, err error) {
+	lowlay, err = nt.LayerByNameTry(low)
+	if err != nil {
+		return
+	}
+	highlay, err = nt.LayerByNameTry(high)
+	if err != nil {
+		return
+	}
+	fwdpj = nt.ConnectLayers(lowlay, highlay, pat, emer.Forward)
+	backpj = nt.ConnectLayers(highlay, lowlay, pat, emer.Back)
+	return
+}
+
+// BidirConnectLayers establishes bidirectional projections between two layers,
+// with low = lower layer that sends a Forward projection to the high layer,
+// and receives a Back projection in the opposite direction.
+// Does not yet actually connect the units within the layers -- that
+// requires Build.
+func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern) (fwdpj, backpj emer.Prjn) {
+	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
+	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
+	return
 }
 
 // Build constructs the layer and projection state based on the layer shapes
