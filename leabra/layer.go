@@ -572,7 +572,9 @@ func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 	if ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4) {
-		ly.LeabraLay.ApplyExt1D(ext.Floats())
+		flt := []float64{}
+		ext.Floats(&flt)
+		ly.LeabraLay.ApplyExt1D(flt)
 		return
 	}
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
