@@ -250,9 +250,14 @@ func (ac *ActParams) HasHardClamp(nrn *Neuron) bool {
 }
 
 // HardClamp clamps activation from external input -- just does it -- use HasHardClamp to check
+// if it should do it.  Also adds any Noise *if* noise is set to ActNoise.
 func (ac *ActParams) HardClamp(nrn *Neuron) {
-	clmp := ac.Clamp.Range.ClipVal(nrn.Ext)
-	nrn.Act = clmp
+	ext := nrn.Ext
+	if ac.Noise.Type == ActNoise {
+		ext += nrn.Noise
+	}
+	clmp := ac.Clamp.Range.ClipVal(ext)
+	nrn.Act = clmp + nrn.Noise
 	nrn.ActLrn = clmp
 	nrn.Vm = ac.XX1.Thr + nrn.Act/ac.XX1.Gain
 	nrn.ActDel = 0
