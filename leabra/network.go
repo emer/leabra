@@ -89,6 +89,18 @@ func (nt *Network) InitExt() {
 	}
 }
 
+// UpdateExtFlags updates the neuron flags for external input based on current
+// layer Type field -- call this if the Type has changed since the last
+// ApplyExt* method call.
+func (nt *Network) UpdateExtFlags() {
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		ly.(LeabraLayer).UpdateExtFlags()
+	}
+}
+
 // InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
 // including ActSent and G*Raw values.
 // called at start of trial always (at layer level), and can be called optionally

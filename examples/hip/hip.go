@@ -452,6 +452,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	} else {
 		ecout.SetType(emer.Compare) // don't clamp
 	}
+	ecout.UpdateExtFlags() // call this after updating type
 
 	// First Quarter: CA1 is driven by ECin, not by CA3 recall
 	// (which is not really active yet anyway)

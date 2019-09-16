@@ -673,6 +673,21 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 	}
 }
 
+// UpdateExtFlags updates the neuron flags for external input based on current
+// layer Type field -- call this if the Type has changed since the last
+// ApplyExt* method call.
+func (ly *Layer) UpdateExtFlags() {
+	clrmsk, setmsk, _ := ly.ApplyExtFlags()
+	for i := range ly.Neurons {
+		nrn := &ly.Neurons[i]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.ClearMask(clrmsk)
+		nrn.SetMask(setmsk)
+	}
+}
+
 // AlphaCycInit handles all initialization at start of new input pattern, including computing
 // input scaling from running average activation etc.
 // should already have presented the external input to the network at this point.

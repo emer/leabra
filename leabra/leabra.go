@@ -50,6 +50,11 @@ type LeabraLayer interface {
 	// otherwise it goes in Ext
 	ApplyExt1D(ext []float64)
 
+	// UpdateExtFlags updates the neuron flags for external input based on current
+	// layer Type field -- call this if the Type has changed since the last
+	// ApplyExt* method call.
+	UpdateExtFlags()
+
 	// AlphaCycInit handles all initialization at start of new input pattern, including computing
 	// netinput scaling from running average activation etc.
 	// should already have presented the external input to the network at this point.
