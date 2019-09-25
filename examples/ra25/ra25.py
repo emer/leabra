@@ -205,6 +205,8 @@ class Sim(object):
         self.RunPlot    = 0
         self.TrnEpcFile = 0
         self.RunFile    = 0
+        self.InputValsTsr = 0
+        self.OutputValsTsr = 0
         self.SaveWts    = False
         self.NoGui        = False
         self.LogSetParams = False # True
@@ -238,6 +240,8 @@ class Sim(object):
             'RunPlot': 'view:"-"',
             'TrnEpcFile': 'view:"-"',
             'RunFile': 'view:"-"',
+            'InputValsTsr': 'view:"-"',
+            'OutputValsTsr': 'view:"-"',
             'SaveWts': 'view:"-"',
             'NoGui': 'view:"-"',
             'LogSetParams': 'view:"-"',
@@ -327,7 +331,8 @@ class Sim(object):
     def Config(self):
         """Config configures all the elements using the standard functions"""
         self.InitParams()
-        self.OpenPats()
+        # self.OpenPats()
+        self.ConfigPats()
         self.ConfigEnv()
         self.ConfigNet(self.Net)
         self.ConfigTrnEpcLog(self.TrnEpcLog)
@@ -756,7 +761,7 @@ class Sim(object):
             
         patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
         patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-        dt.SaveCSV("random_5x5_25_gen.dat", ',', True)
+        dt.SaveCSV("random_5x5_25_gen.dat", etable.Tab, True)
 
     def OpenPats(self):
         dt = self.Pats
@@ -920,9 +925,15 @@ class Sim(object):
         dt.SetCellFloat("Hid2 ActM.Avg", trl, hid2Lay.Pool(0).ActM.Avg)
         dt.SetCellFloat("Out ActM.Avg", trl, outLay.Pool(0).ActM.Avg)
         
-        dt.SetCellTensor("InAct", trl, inLay.UnitValsTensor("Act"))
-        dt.SetCellTensor("OutActM", trl, outLay.UnitValsTensor("ActM"))
-        dt.SetCellTensor("OutActP", trl, outLay.UnitValsTensor("ActP"))
+        if self.InputValsTsr == 0: # re-use same tensors so not always reallocating mem
+            self.InputValsTsr = etensor.Float32()
+            self.OutputValsTsr = etensor.Float32()
+        inLay.UnitValsTensor(self.InputValsTsr, "Act")
+        dt.SetCellTensor("InAct", trl, self.InputValsTsr)
+        outLay.UnitValsTensor(self.OutputValsTsr, "ActM")
+        dt.SetCellTensor("OutActM", trl, self.OutputValsTsr)
+        outLay.UnitValsTensor(self.OutputValsTsr, "ActP")
+        dt.SetCellTensor("OutActP", trl, self.OutputValsTsr)
         
         # note: essential to use Go version of update when called from another goroutine
         if self.TstTrlPlot != 0:
@@ -1066,12 +1077,12 @@ class Sim(object):
         outLay = leabra.Layer(self.Net.LayerByName("Output"))
         
         dt.SetCellFloat("Cycle", cyc, cyc)
-        dt.SetCellFloat("Hid1 Ge.Avg", cyc, hid1Lay.Pool(0).Ge.Avg)
-        dt.SetCellFloat("Hid2 Ge.Avg", cyc, hid2Lay.Pool(0).Ge.Avg)
-        dt.SetCellFloat("Out Ge.Avg", cyc, outLay.Pool(0).Ge.Avg)
-        dt.SetCellFloat("Hid1 Act.Avg", cyc, hid1Lay.Pool(0).Act.Avg)
-        dt.SetCellFloat("Hid2 Act.Avg", cyc, hid2Lay.Pool(0).Act.Avg)
-        dt.SetCellFloat("Out Act.Avg", cyc, outLay.Pool(0).Act.Avg)
+        dt.SetCellFloat("Hid1 Ge.Avg", cyc, hid1Lay.Pool(0).Inhib.Ge.Avg)
+        dt.SetCellFloat("Hid2 Ge.Avg", cyc, hid2Lay.Pool(0).Inhib.Ge.Avg)
+        dt.SetCellFloat("Out Ge.Avg", cyc, outLay.Pool(0).Inhib.Ge.Avg)
+        dt.SetCellFloat("Hid1 Act.Avg", cyc, hid1Lay.Pool(0).Inhib.Act.Avg)
+        dt.SetCellFloat("Hid2 Act.Avg", cyc, hid2Lay.Pool(0).Inhib.Act.Avg)
+        dt.SetCellFloat("Out Act.Avg", cyc, outLay.Pool(0).Inhib.Act.Avg)
         
         if self.TstCycPlot != 0 and cyc % 10 == 0: # too slow to do every cyc
             # note: essential to use Go version of update when called from another goroutine

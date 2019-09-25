@@ -10,8 +10,9 @@ all: gen
 install: install-pkg install-exe
 
 # note: it is important that leabra come before deep otherwise deep captures all the common types
+# unfortunately this means that all sub-packages need to be explicitly listed.
 gen:
-	gopy exe -vm=python3 -exclude=driver,oswin -main="runtime.LockOSThread(); gimain.Main(func() {  GoPyMainRun() })" github.com/emer/leabra/leabra github.com/emer/leabra/deep github.com/emer/emergent github.com/emer/etable math/rand github.com/goki/gi github.com/goki/ki/ki
+	gopy exe -name=leabra -vm=python3 -exclude=driver,oswin -main="runtime.LockOSThread(); gimain.Main(func() {  GoPyMainRun() })" math/rand github.com/goki/ki/ki github.com/goki/gi github.com/emer/etable github.com/emer/emergent github.com/emer/leabra/chans github.com/emer/leabra/fffb github.com/emer/leabra/knadapt github.com/emer/leabra/nxx1 github.com/emer/leabra/leabra github.com/emer/leabra/spike github.com/emer/leabra/deep github.com/emer/leabra/hip 
 
 build:
 	$(MAKE) -C leabra build
