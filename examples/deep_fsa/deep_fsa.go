@@ -58,7 +58,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "true",
 					"Prjn.Learn.WtBal.On":    "false",
 				}},
-			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
+			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
 				}},
