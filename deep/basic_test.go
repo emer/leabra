@@ -32,6 +32,10 @@ const NLrnPars = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "base testing", Sheets: params.Sheets{
 		"Network": &params.Sheet{
+			{Sel: "Layer", Desc: "turn decay back on",
+				Params: params.Params{
+					"Layer.Act.Init.Decay": "1",
+				}},
 			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
 				Params: params.Params{
 					"Prjn.WtInit.Var":        "0",
