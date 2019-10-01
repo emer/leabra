@@ -40,6 +40,7 @@ func (ly *Layer) AsDeep() *Layer {
 
 func (ly *Layer) Defaults() {
 	ly.Layer.Defaults()
+	ly.Act.Init.Decay = 0 // deep doesn't decay!
 	ly.DeepBurst.Defaults()
 	ly.DeepCtxt.Defaults()
 	ly.DeepTRC.Defaults()
@@ -590,21 +591,18 @@ func (ly *Layer) DeepBurstPrv(ltime *leabra.Time) {
 
 // DeepLeabra extensions to the emer.LayerType types
 
+// todo: this does not work to generate strings for add-on types..
+// need to modify stringer
 //go:generate stringer -type=LayerType
 
 var KiT_LayerType = kit.Enums.AddEnum(LayerTypeN, false, nil)
 
 // The DeepLeabra layer types
 const (
-	// Super are superficial-layer neurons, which also compute DeepBurst activation as a
-	// thresholded version of superficial activation, and send that to both TRC (for plus
-	// phase outcome) and Deep layers (for DeepCtxt temporal context).
-	Super emer.LayerType = emer.LayerTypeN + iota
-
 	// Deep are deep-layer neurons, reflecting activation of layer 6 regular spiking
 	// CT corticothalamic neurons, which drive both attention in Super (via DeepAttn
 	// projections) and  predictions in TRC (Pulvinar) via standard projections.
-	Deep
+	Deep emer.LayerType = emer.LayerTypeN + iota
 
 	// TRC are thalamic relay cell neurons, typically in the Pulvinar, which alternately reflect
 	// predictions driven by Deep layer projections, and actual outcomes driven by BurstTRC

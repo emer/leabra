@@ -2,10 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// ra25 runs a simple random-associator four-layer leabra network
-// that uses the standard supervised learning paradigm to learn
-// mappings between 25 random input / output patterns
-// defined over 5x5 input / output layers (i.e., 25 units)
+// deep_fsa runs a DeepLeabra network on the classic Reber grammar
+// finite state automaton problem.
 package main
 
 import (
@@ -21,7 +19,6 @@ import (
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/agg"
@@ -30,6 +27,7 @@ import (
 	"github.com/emer/etable/etensor"
 	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/split"
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
@@ -68,9 +66,9 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
-			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
+			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.4",
+					"Layer.Inhib.Layer.Gi": "2.2",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
@@ -113,14 +111,19 @@ var ParamSets = params.Sets{
 	}},
 }
 
+// InputNames are names of input letters
+var InputNames = []string{"B", "T", "S", "X", "V", "P", "E"}
+
+// InputNameMap has indexes of InputNames
+var InputNameMap map[string]int
+
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
 // state information organized and available without having to pass everything around
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net          *leabra.Network   `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	Pats         *etable.Table     `view:"no-inline" desc:"the training patterns to use"`
+	Net          *deep.Network     `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
 	TrnEpcLog    *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog    *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
 	TstTrlLog    *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
@@ -135,8 +138,8 @@ type Sim struct {
 	MaxRuns      int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
 	NZeroStop    int               `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
-	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
-	TestEnv      env.FixedTable    `desc:"Testing environment -- manages iterating over testing"`
+	TrainEnv     FSAEnv            `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
+	TestEnv      FSAEnv            `desc:"Testing environment -- manages iterating over testing"`
 	Time         leabra.Time       `desc:"leabra timing parameters and state"`
 	ViewOn       bool              `desc:"whether to update the network view while running"`
 	TrainUpdt    leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
@@ -191,8 +194,7 @@ var TheSim Sim
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
-	ss.Net = &leabra.Network{}
-	ss.Pats = &etable.Table{}
+	ss.Net = &deep.Network{}
 	ss.TrnEpcLog = &etable.Table{}
 	ss.TstEpcLog = &etable.Table{}
 	ss.TstTrlLog = &etable.Table{}
@@ -205,7 +207,13 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 5
-	ss.LayStatNms = []string{"Hidden1", "Hidden2", "Output"}
+	ss.LayStatNms = []string{"InputP", "Hidden"}
+	if InputNameMap == nil {
+		InputNameMap = make(map[string]int, len(InputNames))
+		for i, nm := range InputNames {
+			InputNameMap[nm] = i
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,8 +221,6 @@ func (ss *Sim) New() {
 
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
-	//ss.ConfigPats()
-	ss.OpenPats()
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigTrnEpcLog(ss.TrnEpcLog)
@@ -235,54 +241,35 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
-	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TrainEnv.TMatReber()
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
-	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
-	ss.TestEnv.Sequential = true
+	ss.TestEnv.TMatReber() // todo: random
 	ss.TestEnv.Validate()
-
-	// note: to create a train / test split of pats, do this:
-	// all := etable.NewIdxView(ss.Pats)
-	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
-	// ss.TrainEnv.Table = splits.Splits[0]
-	// ss.TestEnv.Table = splits.Splits[1]
 
 	ss.TrainEnv.Init(0)
 	ss.TestEnv.Init(0)
 }
 
-func (ss *Sim) ConfigNet(net *leabra.Network) {
-	net.InitName(net, "RA25")
-	inp := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1 := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2 := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
-	out := net.AddLayer2D("Output", 5, 5, emer.Target)
+func (ss *Sim) ConfigNet(net *deep.Network) {
+	net.InitName(net, "DeepFSA")
+	in, inp := net.AddInputPulv2D("Input", 1, 7)
+	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, false, false) // no pulv, attn
 
-	// use this to position layers relative to each other
-	// default is Above, YAlign = Front, XAlign = Center
-	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
+	trg := net.AddLayer2D("Targets", 1, 7, emer.Input) // just for visualization
+	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "InputP", XAlign: relpos.Left, Space: 2})
 
-	net.ConnectLayers(inp, hid1, prjn.NewFull(), emer.Forward)
-	net.BidirConnectLayers(hid1, hid2, prjn.NewFull())
-	net.BidirConnectLayers(hid2, out, prjn.NewFull())
-	// note: see emergent/prjn module for all the options on how to connect
-	// NewFull returns a new prjn.Full connectivity pattern
+	in.SetClass("Input")
+	inp.SetClass("Input")
+	trg.SetClass("Input")
 
-	// note: can set these to do parallel threaded computation across multiple cpus
-	// not worth it for this small of a model, but definitely helps for larger ones
-	// if Thread {
-	// 	hid2.SetThread(1)
-	// 	out.SetThread(1)
-	// }
-
-	// note: if you wanted to change a layer type from e.g., Target to Compare, do this:
-	// out.SetType(emer.Compare)
-	// that would mean that the output layer doesn't reflect target values in plus phase
-	// and thus removes error-driven learning -- but stats are still computed.
+	net.ConnectLayers(in, hid, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(hidd, inp, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(inp, hidd, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(inp, hid, prjn.NewFull(), emer.Back)
 
 	net.Defaults()
 	ss.SetParams("Network", ss.LogSetParams) // only set Network params
@@ -320,9 +307,9 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
 	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String())
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String())
 	}
 }
 
@@ -410,13 +397,29 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	lays := []string{"Input", "Output"}
-	for _, lnm := range lays {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
-		pats := en.State(ly.Nm)
-		if pats != nil {
-			ly.ApplyExt(pats)
+	// just using direct access to state here
+	in := ss.Net.LayerByName("Input").(*deep.Layer)
+	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
+	clrmsk, setmsk, _ := in.ApplyExtFlags()
+	fsenv := en.(*FSAEnv)
+	ns := fsenv.NNext.Values[0]
+	for i := 0; i < ns; i++ {
+		lbl := fsenv.NextLabels.Values[i]
+		li, ok := InputNameMap[lbl]
+		if !ok {
+			log.Printf("Input label: %v not found in InputNames list of labels\n", lbl)
+			continue
 		}
+		if i == 0 {
+			inr := &in.Neurons[li]
+			inr.Ext = 1
+			inr.ClearMask(clrmsk)
+			inr.SetMask(setmsk)
+		}
+		inr := &trg.Neurons[li]
+		inr.Ext = 1
+		inr.ClearMask(clrmsk)
+		inr.SetMask(setmsk)
 	}
 }
 
@@ -506,9 +509,9 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
-	out := ss.Net.LayerByName("Output").(*leabra.Layer)
-	ss.TrlCosDiff = float64(out.CosDiff.Cos)
-	ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
+	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
+	ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	if accum {
 		ss.SumSSE += ss.TrlSSE
 		ss.SumAvgSSE += ss.TrlAvgSSE
@@ -608,17 +611,6 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.LogTstTrl(ss.TstTrlLog)
 }
 
-// TestItem tests given item which is at given index in test item list
-func (ss *Sim) TestItem(idx int) {
-	cur := ss.TestEnv.Trial.Cur
-	ss.TestEnv.Trial.Cur = idx
-	ss.TestEnv.SetTrialName()
-	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false)   // !train
-	ss.TrialStats(false) // !accumulate
-	ss.TestEnv.Trial.Cur = cur
-}
-
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
 	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
@@ -692,31 +684,6 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	return err
 }
 
-func (ss *Sim) ConfigPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
-	dt.SetMetaData("desc", "Training patterns")
-	dt.SetFromSchema(etable.Schema{
-		{"Name", etensor.STRING, nil, nil},
-		{"Input", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
-		{"Output", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
-	}, 25)
-
-	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
-	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.dat", ',', true)
-}
-
-func (ss *Sim) OpenPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
-	dt.SetMetaData("desc", "Training patterns")
-	err := dt.OpenCSV("random_5x5_25.dat", etable.Tab)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
@@ -755,8 +722,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
 	dt.SetNumRows(row + 1)
 
-	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
-	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
+	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
+	nt := float64(ss.TrainEnv.Trial.Prv)
 
 	ss.EpcSSE = ss.SumSSE / nt
 	ss.SumSSE = 0
@@ -785,7 +752,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
 		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
@@ -821,7 +788,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Epoch Plot"
+	plt.Params.Title = "DeepFSA Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -846,8 +813,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
-	out := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
+	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl
@@ -859,40 +826,40 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("Trial", row, float64(trl))
-	dt.SetCellString("TrialName", row, ss.TestEnv.TrialName)
+	dt.SetCellString("TrialName", row, ss.TestEnv.String())
 	dt.SetCellFloat("SSE", row, ss.TrlSSE)
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 	if ss.InputValsTsr == nil { // re-use same tensors so not always reallocating mem
 		ss.InputValsTsr = &etensor.Float32{}
 		ss.OutputValsTsr = &etensor.Float32{}
 	}
-	inp.UnitValsTensor(ss.InputValsTsr, "Act")
-	dt.SetCellTensor("InAct", row, ss.InputValsTsr)
-	out.UnitValsTensor(ss.OutputValsTsr, "ActM")
-	dt.SetCellTensor("OutActM", row, ss.OutputValsTsr)
-	out.UnitValsTensor(ss.OutputValsTsr, "ActP")
-	dt.SetCellTensor("OutActP", row, ss.OutputValsTsr)
+	inp.UnitValsTensor(ss.InputValsTsr, "ActM")
+	dt.SetCellTensor("InActM", row, ss.InputValsTsr)
+	inp.UnitValsTensor(ss.InputValsTsr, "ActP")
+	dt.SetCellTensor("InActP", row, ss.OutputValsTsr)
+	trg.UnitValsTensor(ss.OutputValsTsr, "ActP")
+	dt.SetCellTensor("Targs", row, ss.OutputValsTsr)
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inp := ss.Net.LayerByName("Input").(*leabra.Layer)
-	out := ss.Net.LayerByName("Output").(*leabra.Layer)
+	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
+	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	nt := ss.TestEnv.Table.Len() // number in view
+	nt := ss.TestEnv.Trial.Prv
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
@@ -906,15 +873,15 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
 	}
 	sch = append(sch, etable.Schema{
-		{"InAct", etensor.FLOAT64, inp.Shp.Shp, nil},
-		{"OutActM", etensor.FLOAT64, out.Shp.Shp, nil},
-		{"OutActP", etensor.FLOAT64, out.Shp.Shp, nil},
+		{"InActM", etensor.FLOAT64, inp.Shp.Shp, nil},
+		{"InActP", etensor.FLOAT64, inp.Shp.Shp, nil},
+		{"Targs", etensor.FLOAT64, trg.Shp.Shp, nil},
 	}...)
 	dt.SetFromSchema(sch, nt)
 }
 
 func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
+	plt.Params.Title = "DeepFSA Test Trial Plot"
 	plt.Params.XAxisCol = "Trial"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -930,9 +897,9 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+" ActM.Avg", false, true, 0, true, .5)
 	}
 
-	plt.SetColParams("InAct", false, true, 0, true, 1)
-	plt.SetColParams("OutActM", false, true, 0, true, 1)
-	plt.SetColParams("OutActP", false, true, 0, true, 1)
+	plt.SetColParams("InActP", false, true, 0, true, 1)
+	plt.SetColParams("InActM", false, true, 0, true, 1)
+	plt.SetColParams("Targs", false, true, 0, true, 1)
 	return plt
 }
 
@@ -998,7 +965,7 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Testing Epoch Plot"
+	plt.Params.Title = "DeepFSA Testing Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -1024,7 +991,7 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
 		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
 		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
@@ -1053,7 +1020,7 @@ func (ss *Sim) ConfigTstCycLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstCycPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
+	plt.Params.Title = "DeepFSA Test Cycle Plot"
 	plt.Params.XAxisCol = "Cycle"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -1129,7 +1096,7 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Leabra Random Associator 25 Run Plot"
+	plt.Params.Title = "DeepFSA Run Plot"
 	plt.Params.XAxisCol = "Run"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -1146,15 +1113,32 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
+func (ss *Sim) ConfigNetView(nv *netview.NetView) {
+	// nv.Scene().Camera.Pose.Pos.Set(0, 1.5, 3.0) // more "head on" than default which is more "top down"
+	// nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
+
+	nv.ConfigLabels(InputNames)
+
+	ly := nv.LayerByName("Targets")
+	for li, lnm := range InputNames {
+		lbl := nv.LabelByName(lnm)
+		lbl.Pose = ly.Pose
+		lbl.Pose.Pos.Y += .2
+		lbl.Pose.Pos.Z += .02
+		lbl.Pose.Pos.X += 0.05 + float32(li)*.15
+		lbl.Pose.Scale.SetMul(mat32.Vec3{0.4, 0.4, 0.5})
+	}
+}
+
 // ConfigGui configures the GoGi gui interface for this simulation,
 func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
-	gi.SetAppName("ra25")
-	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	gi.SetAppName("DeepFSA")
+	gi.SetAppAbout(`This demonstrates a basic DeepLeabra model on the Finite State Automaton problem (e.g., the Reber grammar). See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
-	win := gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, true)
+	win := gi.NewWindow2D("DeepFSA", "DeepLeabra Finite State Automaton", width, height, true)
 	ss.Win = win
 
 	vp := win.WinViewport2D()
@@ -1183,9 +1167,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	// https://matplotlib.org/tutorials/colors/colormaps.html
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
-
-	nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
-	nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
+	ss.ConfigNetView(nv)
 
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrnEpcPlot").(*eplot.Plot2D)
 	ss.TrnEpcPlot = ss.ConfigTrnEpcPlot(plt, ss.TrnEpcLog)
@@ -1273,31 +1255,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Test Item", Icon: "step-fwd", Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(!ss.IsRunning)
-	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		gi.StringPromptDialog(vp, "", "Test Item",
-			gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
-			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				dlg := send.(*gi.Dialog)
-				if sig == int64(gi.DialogAccepted) {
-					val := gi.StringPromptDialogValue(dlg)
-					idxs := ss.TestEnv.Table.RowsByString("Name", val, true, true) // contains, ignoreCase
-					if len(idxs) == 0 {
-						gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, true, false, nil, nil)
-					} else {
-						if !ss.IsRunning {
-							ss.IsRunning = true
-							fmt.Printf("testing index: %v\n", idxs[0])
-							ss.TestItem(idxs[0])
-							ss.IsRunning = false
-							vp.SetNeedsFullRender()
-						}
-					}
-				}
-			})
-	})
-
 	tbar.AddAction(gi.ActOpts{Label: "Test All", Icon: "fast-fwd", Tooltip: "Tests all of the testing trials.", UpdateFunc: func(act *gi.Action) {
 		act.SetActiveStateUpdt(!ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
@@ -1325,7 +1282,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
-			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/deep_fsa/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)

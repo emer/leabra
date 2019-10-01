@@ -10,9 +10,18 @@ of the thalamus (in posterior sensory cortex), which are driven phasically every
 (essentially 1-to-1) connections onto the Pulvinar Thalamic Relay Cell (TRC)
 neurons.
 
-This package allows you to specify layer types as Super, Deep, and TRC
+This package allows you to specify layer types as Deep or TRC (e.g., Pulvinar)
 which in turn drives specific forms of computation associated with each
-of those layer types.
+of those layer types.  Standard leabra layer types are all effectively Super.
+
+Wiring diagram:
+
+  Super Layer --BurstTRC--> Pulv
+   |       ^                 ^
+BurstCtxt  |        - Back -/
+   |    [DeepAttn] /
+   v      |       /
+ Deep Layer -----   (typically only for higher->lower)
 
 DeepLeabra captures both the predictive learning and attentional modulation
 functions of the deep layer and thalamocortical circuitry.
