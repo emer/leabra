@@ -57,6 +57,16 @@ func (ly *Layer) UpdateParams() {
 	ly.DeepAttn.Update()
 }
 
+func (ly *Layer) Class() string {
+	switch ly.Typ {
+	case Deep:
+		return "Deep " + ly.Cls
+	case TRC:
+		return "TRC " + ly.Cls
+	}
+	return ly.Typ.String() + " " + ly.Cls
+}
+
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (ly *Layer) UnitVarNames() []string {
 	return AllNeuronVars
@@ -214,16 +224,30 @@ func (ly *Layer) DecayState(decay float32) {
 	ly.Layer.DecayState(decay)
 	for ni := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[ni]
-		// if dnr.IsOff() { // not worth checking..
-		// 	continue
-		// }
 		dnr.ActNoAttn -= decay * (dnr.ActNoAttn - ly.Act.Init.Act)
 		dnr.DeepBurstSent = 0
+		dnr.TRCBurstGe = 0
+		dnr.AttnGe = 0
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
+
+// InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
+// including ActSent and G*Raw values.
+// called at start of trial always, and can be called optionally
+// when delta-based Ge computation needs to be updated (e.g., weights
+// might have changed strength)
+func (ly *Layer) InitGInc() {
+	ly.Layer.InitGInc()
+	for ni := range ly.DeepNeurs {
+		dnr := &ly.DeepNeurs[ni]
+		dnr.DeepBurstSent = 0
+		dnr.TRCBurstGe = 0
+		dnr.AttnGe = 0
+	}
+}
 
 // SendGDelta sends change in activation since last sent, if above thresholds.
 // Deep version sends either to standard Ge or AttnGe for DeepAttn projections.
@@ -291,12 +315,27 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 					continue
 				}
 				dnr := &ly.DeepNeurs[ni]
-				ly.Act.GRawFmInc(nrn) // key to integrate and reset Inc's
-				geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe)
-				ly.Act.Dt.GFmRaw(geRaw, &nrn.Ge) // Ge driven exclusively from Burst
+				ly.Act.GRawFmInc(nrn)
+				geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe) // only use trcburst
+				ly.Act.GeFmRaw(nrn, geRaw)
+				ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 			}
 			return
 		}
+	}
+	if ly.Typ == Deep {
+		for ni := range ly.Neurons {
+			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
+			dnr := &ly.DeepNeurs[ni]
+			ly.Act.GRawFmInc(nrn)
+			geRaw := nrn.GeRaw + dnr.DeepCtxt
+			ly.Act.GeFmRaw(nrn, geRaw)
+			ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		}
+		return
 	}
 	ly.Layer.GFmInc(ltime) // regular
 	if ly.DeepAttn.On {

@@ -34,6 +34,18 @@ func (pj *Prjn) UpdateParams() {
 	pj.Prjn.UpdateParams()
 }
 
+func (pj *Prjn) Class() string {
+	switch pj.Typ {
+	case BurstCtxt:
+		return "BurstCtxt " + pj.Cls
+	case BurstTRC:
+		return "BurstTRC " + pj.Cls
+	case DeepAttn:
+		return "DeepAttn " + pj.Cls
+	}
+	return pj.Typ.String() + " " + pj.Cls
+}
+
 func (pj *Prjn) Build() error {
 	err := pj.Prjn.Build()
 	if err != nil {

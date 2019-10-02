@@ -52,23 +52,35 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Prjn", Desc: "norm and momentum on is critical, wt bal not as much but fine",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "true",
+					"Prjn.Learn.Momentum.On": "true",
 					"Prjn.Learn.WtBal.On":    "false",
 				}},
-			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network",
+			{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.8",
+					"Layer.Inhib.Layer.Gi":  "1.8",
+					"Layer.Learn.AvgL.Gain": "1.5", // key to lower relative to 2.5
+					"Layer.Act.Gbar.L":      "0.1", // lower leak = better
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
+			{Sel: ".BurstTRC", Desc: "standard weight is .3 here for larger distributed reps. no learn",
+				Params: params.Params{
+					"Prjn.WtInit.Mean": "0.8", // using .8 for localist layer
+					"Prjn.WtInit.Var":  "0",
+					"Prjn.Learn.Learn": "false",
+				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "2.2",
+					"Layer.Inhib.Layer.Gi": "2.0",
+				}},
+			{Sel: "#InputPToHiddenD", Desc: "critical to make this small so deep context dominates",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.05",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
@@ -206,7 +218,7 @@ func (ss *Sim) New() {
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
-	ss.TestInterval = 5
+	ss.TestInterval = 500
 	ss.LayStatNms = []string{"InputP", "Hidden"}
 	if InputNameMap == nil {
 		InputNameMap = make(map[string]int, len(InputNames))
@@ -241,12 +253,14 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
+	ss.TrainEnv.Seq.Max = 25 // 25 sequences per epoch training
 	ss.TrainEnv.TMatReber()
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
+	ss.TestEnv.Seq.Max = 10
 	ss.TestEnv.TMatReber() // todo: random
 	ss.TestEnv.Validate()
 
@@ -259,6 +273,8 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	in, inp := net.AddInputPulv2D("Input", 1, 7)
 	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, false, false) // no pulv, attn
 
+	hidd.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
+
 	trg := net.AddLayer2D("Targets", 1, 7, emer.Input) // just for visualization
 	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "InputP", XAlign: relpos.Left, Space: 2})
 
@@ -270,6 +286,13 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.ConnectLayers(hidd, inp, prjn.NewFull(), emer.Forward)
 	net.ConnectLayers(inp, hidd, prjn.NewFull(), emer.Back)
 	net.ConnectLayers(inp, hid, prjn.NewFull(), emer.Back)
+
+	// for this small localist model with longer-term dependencies,
+	// these additional context projections turn out to be essential!
+	// larger models in general do not require them, though it might be
+	// good to check
+	net.ConnectLayers(hidd, hidd, prjn.NewFull(), deep.BurstCtxt)
+	net.ConnectLayers(in, hidd, prjn.NewFull(), deep.BurstCtxt)
 
 	net.Defaults()
 	ss.SetParams("Network", ss.LogSetParams) // only set Network params
@@ -508,10 +531,35 @@ func (ss *Sim) InitStats() {
 // core algorithm side remains as simple as possible, and doesn't need to worry about
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
-func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
+func (ss *Sim) TrialStats(accum bool) {
 	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
+	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
 	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
-	ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	// ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	// compute SSE against target as activation of inp outside of trg > .5
+	sse := 0.0
+	gotOne := false
+	for ni := range inp.Neurons {
+		inn := &inp.Neurons[ni]
+		if inn.IsOff() {
+			continue
+		}
+		tgn := &trg.Neurons[ni]
+		if tgn.Act > 0.5 {
+			if inn.ActM > 0.4 {
+				gotOne = true
+			}
+		} else {
+			if inn.ActM > 0.5 {
+				sse += float64(inn.ActM)
+			}
+		}
+	}
+	if !gotOne {
+		sse += 1
+	}
+	ss.TrlSSE = sse
+	ss.TrlAvgSSE = sse // not really meaningful
 	if accum {
 		ss.SumSSE += ss.TrlSSE
 		ss.SumAvgSSE += ss.TrlAvgSSE
@@ -937,9 +985,9 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	allsp := split.All(trlix)
 	split.Agg(allsp, "SSE", agg.AggSum)
 	split.Agg(allsp, "AvgSSE", agg.AggMean)
-	split.Agg(allsp, "InAct", agg.AggMean)
-	split.Agg(allsp, "OutActM", agg.AggMean)
-	split.Agg(allsp, "OutActP", agg.AggMean)
+	split.Agg(allsp, "InActM", agg.AggMean)
+	split.Agg(allsp, "InActP", agg.AggMean)
+	split.Agg(allsp, "Targs", agg.AggMean)
 
 	ss.TstErrStats = allsp.AggsToTable(false)
 
@@ -1125,8 +1173,8 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 		lbl.Pose = ly.Pose
 		lbl.Pose.Pos.Y += .2
 		lbl.Pose.Pos.Z += .02
-		lbl.Pose.Pos.X += 0.05 + float32(li)*.15
-		lbl.Pose.Scale.SetMul(mat32.Vec3{0.4, 0.4, 0.5})
+		lbl.Pose.Pos.X += 0.05 + float32(li)*.06
+		lbl.Pose.Scale.SetMul(mat32.Vec3{0.6, 0.4, 0.5})
 	}
 }
 

@@ -6,15 +6,16 @@ package leabra
 
 import (
 	"fmt"
-	"reflect"
+	"unsafe"
 
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/kit"
 )
 
-// NeuronVarStart is the index of fields in the Neuron structure where the float32 named variables start.
+// NeuronVarStart is the byte offset of fields in the Neuron structure
+// where the float32 named variables start.
 // Note: all non-float32 infrastructure variables must be at the start!
-const NeuronVarStart = 2
+const NeuronVarStart = 8
 
 // leabra.Neuron holds all of the neuron (unit) level variables -- this is the most basic version with
 // rate-code only and no optional features at all.
@@ -99,9 +100,8 @@ func NeuronVarByName(varNm string) (int, error) {
 
 // VarByIndex returns variable using index (0 = first variable in NeuronVars list)
 func (nrn *Neuron) VarByIndex(idx int) float32 {
-	// todo: would be ideal to avoid having to use reflect here..
-	v := reflect.ValueOf(*nrn)
-	return v.Field(idx + NeuronVarStart).Interface().(float32)
+	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(nrn)) + uintptr(NeuronVarStart+4*idx)))
+	return *fv
 }
 
 // VarByName returns variable by name, or error

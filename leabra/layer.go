@@ -876,7 +876,10 @@ func (ly *Layer) GFmInc(ltime *Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.GeGiFmInc(nrn)
+		// note: each step broken out here so other variants can add extra terms to Raw
+		ly.Act.GRawFmInc(nrn)
+		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
+		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 	}
 }
 

@@ -6,7 +6,7 @@ package deep
 
 import (
 	"fmt"
-	"reflect"
+	"unsafe"
 
 	"github.com/emer/leabra/leabra"
 )
@@ -28,7 +28,7 @@ type Neuron struct {
 	DeepLrn       float32 `desc:"DeepLrn = AttnGe / MAX(AttnGe) across layer.  This version of DeepAttn  modulates learning rates instead of activations -- learning is assumed to be more strongly affected than activation, so it lacks the positive offset that DeepAttn has."`
 }
 
-var NeuronVars = []string{"ActNoAttn", "DeepBurst", "DeepBurstPrv", "DeepCtxt", "TRCBurstGe", "DeepBurstSent", "AttnGet", "DeepAttn", "DeepLrn"}
+var NeuronVars = []string{"ActNoAttn", "DeepBurst", "DeepBurstPrv", "DeepCtxtGe", "DeepCtxt", "TRCBurstGe", "DeepBurstSent", "AttnGe", "DeepAttn", "DeepLrn"}
 
 var NeuronVarsMap map[string]int
 
@@ -60,9 +60,8 @@ func NeuronVarByName(varNm string) (int, error) {
 
 // VarByIndex returns variable using index (0 = first variable in NeuronVars list)
 func (nrn *Neuron) VarByIndex(idx int) float32 {
-	// todo: would be ideal to avoid having to use reflect here..
-	v := reflect.ValueOf(*nrn)
-	return v.Field(idx + 0).Interface().(float32)
+	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(nrn)) + uintptr(4*idx)))
+	return *fv
 }
 
 // VarByName returns variable by name, or error

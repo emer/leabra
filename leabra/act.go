@@ -146,12 +146,9 @@ func (ac *ActParams) GRawFmInc(nrn *Neuron) {
 	nrn.GiInc = 0
 }
 
-// GeGiFmInc integrates Ge excitatory conductance from GeInc delta-increment sent
-// and also GiRaw and GiSyn from GiInc.
-func (ac *ActParams) GeGiFmInc(nrn *Neuron) {
-	ac.GRawFmInc(nrn)
-
-	geRaw := nrn.GeRaw
+// GeFmRaw integrates Ge excitatory conductance from GeRaw value
+// (can add other terms to geRaw prior to calling this)
+func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 	if !ac.Clamp.Hard && nrn.HasFlag(NeurHasExt) {
 		if ac.Clamp.Avg {
 			geRaw = ac.Clamp.AvgGe(nrn.Ext, geRaw)
@@ -161,9 +158,6 @@ func (ac *ActParams) GeGiFmInc(nrn *Neuron) {
 	}
 
 	ac.Dt.GFmRaw(geRaw, &nrn.Ge)
-	ac.Dt.GFmRaw(nrn.GiRaw, &nrn.GiSyn)
-	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
-
 	// first place noise is required -- generate here!
 	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != erand.Mean {
 		nrn.Noise = float32(ac.Noise.Gen(-1))
@@ -171,6 +165,14 @@ func (ac *ActParams) GeGiFmInc(nrn *Neuron) {
 	if ac.Noise.Type == GeNoise {
 		nrn.Ge += nrn.Noise
 	}
+}
+
+// GiFmRaw integrates GiSyn inhibitory synaptic conductance from GiRaw value
+// (can add other terms to geRaw prior to calling this)
+func (ac *ActParams) GiFmRaw(nrn *Neuron, giRaw float32) {
+	ac.Dt.GFmRaw(giRaw, &nrn.GiSyn)
+	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
+
 }
 
 // InetFmG computes net current from conductances and Vm
