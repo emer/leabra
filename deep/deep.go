@@ -27,11 +27,11 @@ type DeepLayer interface {
 	// AvgMaxActNoAttn computes the average and max ActNoAttn stats
 	AvgMaxActNoAttn(ltime *leabra.Time)
 
-	// DeepBurstFmAct updates DeepBurst layer 5 IB bursting value from current Act (superficial activation)
+	// BurstFmAct updates Burst layer 5 IB bursting value from current Act (superficial activation)
 	// Subject to thresholding.
-	DeepBurstFmAct(ltime *leabra.Time)
+	BurstFmAct(ltime *leabra.Time)
 
-	// SendTRCBurstGeDelta sends change in DeepBurst activation since last sent, over BurstTRC
+	// SendTRCBurstGeDelta sends change in Burst activation since last sent, over BurstTRC
 	// projections.
 	SendTRCBurstGeDelta(ltime *leabra.Time)
 
@@ -41,29 +41,29 @@ type DeepLayer interface {
 	// AvgMaxTRCBurstGe computes the average and max TRCBurstGe stats
 	AvgMaxTRCBurstGe(ltime *leabra.Time)
 
-	// SendDeepCtxtGe sends full DeepBurst activation over BurstCtxt projections to integrate
-	// DeepCtxtGe excitatory conductance on deep layers.
-	// This must be called at the end of the DeepBurst quarter for this layer.
-	SendDeepCtxtGe(ltime *leabra.Time)
+	// SendCtxtGe sends full Burst activation over BurstCtxt projections to integrate
+	// CtxtGe excitatory conductance on deep layers.
+	// This must be called at the end of the Burst quarter for this layer.
+	SendCtxtGe(ltime *leabra.Time)
 
-	// DeepCtxtFmGe integrates new DeepCtxtGe excitatory conductance from projections, and computes
-	// overall DeepCtxt value.  This must be called at the end of the DeepBurst quarter for this layer,
-	// after SendDeepCtxtGe.
-	DeepCtxtFmGe(ltime *leabra.Time)
+	// CtxtFmGe integrates new CtxtGe excitatory conductance from projections, and computes
+	// overall Ctxt value.  This must be called at the end of the Burst quarter for this layer,
+	// after SendCtxtGe.
+	CtxtFmGe(ltime *leabra.Time)
 
-	// DeepBurstPrv saves DeepBurst as DeepBurstPrv
-	DeepBurstPrv(ltime *leabra.Time)
+	// BurstPrv saves Burst as BurstPrv
+	BurstPrv(ltime *leabra.Time)
 }
 
 // DeepPrjn defines the essential algorithmic API for DeepLeabra at the projection level.
 type DeepPrjn interface {
 	leabra.LeabraPrjn
 
-	// SendDeepCtxtGe sends the full DeepBurst activation from sending neuron index si,
-	// to integrate DeepCtxtGe excitatory conductance on receivers
-	SendDeepCtxtGe(si int, dburst float32)
+	// SendCtxtGe sends the full Burst activation from sending neuron index si,
+	// to integrate CtxtGe excitatory conductance on receivers
+	SendCtxtGe(si int, dburst float32)
 
-	// SendTRCBurstGeDelta sends the delta-DeepBurst activation from sending neuron index si,
+	// SendTRCBurstGeDelta sends the delta-Burst activation from sending neuron index si,
 	// to integrate TRCBurstGe excitatory conductance on receivers
 	SendTRCBurstGeDelta(si int, delta float32)
 
@@ -71,8 +71,8 @@ type DeepPrjn interface {
 	// to integrate into AttnGeInc excitatory conductance on receivers
 	SendAttnGeDelta(si int, delta float32)
 
-	// RecvDeepCtxtGeInc increments the receiver's DeepCtxtGe from that of all the projections
-	RecvDeepCtxtGeInc()
+	// RecvCtxtGeInc increments the receiver's CtxtGe from that of all the projections
+	RecvCtxtGeInc()
 
 	// RecvTRCBurstGeInc increments the receiver's TRCBurstGe from that of all the projections
 	RecvTRCBurstGeInc()

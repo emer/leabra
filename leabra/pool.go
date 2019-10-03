@@ -28,6 +28,6 @@ func (pl *Pool) Init() {
 // ActAvg are running-average activation levels used for netinput scaling and adaptive inhibition
 type ActAvg struct {
 	ActMAvg    float32 `desc:"running-average minus-phase activity -- used for adapting inhibition -- see ActAvgParams.Tau for time constant etc"`
-	ActPAvg    float32 `desc:"running-average plus-phase activity -- used for netinput scaling -- see ActAvgParams.Tau for time constant etc"`
-	ActPAvgEff float32 `desc:"ActPAvg * ActAvgParams.Adjust -- adjusted effective layer activity directly used in netinput scaling"`
+	ActPAvg    float32 `desc:"running-average plus-phase activity -- used for synaptic input scaling -- see ActAvgParams.Tau for time constant etc"`
+	ActPAvgEff float32 `desc:"ActPAvg * ActAvgParams.Adjust -- adjusted effective layer activity directly used in synaptic input scaling"`
 }

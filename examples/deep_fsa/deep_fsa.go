@@ -56,7 +56,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Norm.On":     "true",
 					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Prjn.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
 				Params: params.Params{
@@ -74,9 +74,13 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0",
 					"Prjn.Learn.Learn": "false",
 				}},
+			{Sel: ".BurstCtxt", Desc: "no weight balance on deep context prjns -- makes a diff!",
+				Params: params.Params{
+					"Prjn.Learn.WtBal.On": "false",
+				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "2.0",
+					"Layer.Inhib.Layer.Gi": "2.2",
 				}},
 			{Sel: "#InputPToHiddenD", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
@@ -270,12 +274,12 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
-	in, inp := net.AddInputPulv2D("Input", 1, 7)
+	in, inp := net.AddInputPulv2D("Input", 1, 15)
 	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, false, false) // no pulv, attn
 
 	hidd.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
 
-	trg := net.AddLayer2D("Targets", 1, 7, emer.Input) // just for visualization
+	trg := net.AddLayer2D("Targets", 1, 15, emer.Input) // just for visualization
 	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "InputP", XAlign: relpos.Left, Space: 2})
 
 	in.SetClass("Input")
@@ -459,6 +463,7 @@ func (ss *Sim) TrainTrial() {
 	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
 	if chg {
 		ss.LogTrnEpc(ss.TrnEpcLog)
+		ss.TrainEnv.Trial.Cur = 0
 		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
 			ss.UpdateView(true)
 		}
@@ -842,10 +847,10 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", false, true, 0, false, 0)
 	plt.SetColParams("Epoch", false, true, 0, false, 0)
-	plt.SetColParams("SSE", false, true, 0, false, 0)
+	plt.SetColParams("SSE", true, true, 0, false, 0)
 	plt.SetColParams("AvgSSE", false, true, 0, false, 0)
-	plt.SetColParams("PctErr", true, true, 0, true, 1) // default plot
-	plt.SetColParams("PctCor", true, true, 0, true, 1) // default plot
+	plt.SetColParams("PctErr", true, true, 0, true, 1)  // default plot
+	plt.SetColParams("PctCor", false, true, 0, true, 1) // default plot
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
 
 	for _, lnm := range ss.LayStatNms {

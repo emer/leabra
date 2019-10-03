@@ -119,9 +119,9 @@ func (nt *Network) Cycle(ltime *leabra.Time) {
 	nt.DeepBurst(ltime)
 }
 
-// DeepBurst is called at end of Cycle, computes DeepBurst and sends it to other layers
+// DeepBurst is called at end of Cycle, computes Burst and sends it to other layers
 func (nt *Network) DeepBurst(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).DeepBurstFmAct(ltime) }, "DeepBurstFmAct")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).BurstFmAct(ltime) }, "BurstFmAct")
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).SendTRCBurstGeDelta(ltime) }, "SendTRCBurstGeDelta")
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).TRCBurstGeFmInc(ltime) }, "TRCBurstGeFmInc")
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).AvgMaxTRCBurstGe(ltime) }, "AvgMaxTRCBurstGe")
@@ -135,6 +135,6 @@ func (nt *Network) QuarterFinal(ltime *leabra.Time) {
 
 // DeepCtxt sends DeepBurst to Deep layers and integrates DeepCtxt on Deep layers
 func (nt *Network) DeepCtxt(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).SendDeepCtxtGe(ltime) }, "SendDeepCtxtGe")
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).DeepCtxtFmGe(ltime) }, "DeepCtxtFmGe")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).SendCtxtGe(ltime) }, "SendCtxtGe")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).CtxtFmGe(ltime) }, "CtxtFmGe")
 }

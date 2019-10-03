@@ -27,30 +27,30 @@ DeepLeabra captures both the predictive learning and attentional modulation
 functions of the deep layer and thalamocortical circuitry.
 
 * Super layer neurons reflect the superficial layers of the neocortex, but they
-also are the basis for directly computing the DeepBurst activation signal that
+also are the basis for directly computing the Burst activation signal that
 reflects the deep layer 5 IB bursting activation, via thresholding of the superficial
 layer activations (Bursting is thought to have a higher threshold).
 
-* The alpha-cycle quarter(s) when DeepBurst is updated and broadcast is set in
-DeepBurstParams.BurstQtr (defaults to Q4, can also be e.g., Q2 and Q4 for beta
-frequency updating).  During this quarter(s), the DeepBurst from Super layers is
+* The alpha-cycle quarter(s) when Burst is updated and broadcast is set in
+BurstParams.BurstQtr (defaults to Q4, can also be e.g., Q2 and Q4 for beta
+frequency updating).  During this quarter(s), the Burst from Super layers is
 continuously sent via BurstTRC projections to TRC layers (using efficient
 delta-based computation) to drive plus-phase outcome states in those layers.
-At the end of the burst quarter(s), BurstCtxt projections convey the DeepBurst
-signal to Deep layer neurons, where it is integrated into the DeepCtxt value
+At the end of the burst quarter(s), BurstCtxt projections convey the Burst
+signal to Deep layer neurons, where it is integrated into the Ctxt value
 representing the temporally-delayed context information.  Note: Deep layers also
-compute a DeepBurst value themselves, which can be sent via self projections to
+compute a Burst value themselves, which can be sent via self projections to
 relfect the extensive deep-to-deep lateral connectivity that provides more extensive
 temporal context information.
 
 * Deep layer neurons reflect the layer 6 regular spiking CT corticothalamic neurons
 that project into the thalamus, and back up to all the other lamina within a
 microcolumn, where they drive a multiplicative attentional modulation signal.
-These neurons receive the DeepBurst activation via a BurstCtxt projection type,
-typically once every 100 msec, and integrate that in the DeepCtxt value,
+These neurons receive the Burst activation via a BurstCtxt projection type,
+typically once every 100 msec, and integrate that in the Ctxt value,
 which is added to other excitatory conductance inputs to drive the overall
 activation (Act) of these neurons.  Due to the bursting nature
-of the DeepBurst inputs, this causes these Deep layer neurons to reflect what
+of the Burst inputs, this causes these Deep layer neurons to reflect what
 the superficial layers encoded on the *previous* timestep -- thus they represent
 a temporally-delayed context state.
 
@@ -62,7 +62,7 @@ drive attentional modulation of activity there.
 
 * TRC layer neurons receive a BurstTRC projection from the Super layer (typically
 a one-to-one projection), which drives the plus-phase "outcome" activation state
-of these Pulvinar layers (Super actually computes the 5IB DeepBurst activation).
+of these Pulvinar layers (Super actually computes the 5IB Burst activation).
 These layers also receive regular connections from Deep layers, which drive the
 prediction of this plus-phase outcome state, based on the temporally-delayed deep
 layer context information.
@@ -77,15 +77,15 @@ superficial neurons.
 All of the relevant parameters are in the params.go file, in the Deep*Params classes,
 which are then fields in the deep.Layer.
 
-* DeepBurstParams (layer DeepBurst) has the BurstQtr when DeepBurst is updated,
+* BurstParams (layer DeepBurst) has the BurstQtr when Burst is updated,
 and the thresholding parameters.
 
-* DeepCtxtParams (layer DeepCtxt) has parameters for integrating DeepCtxt input
+* CtxtParams (layer DeepCtxt) has parameters for integrating DeepCtxt input
 
-* DeepTRCParams (layer DeepTRC) has parameters for how to compute TRC plus phase
+* TRCParams (layer DeepTRC) has parameters for how to compute TRC plus phase
 activation states based on the TRCBurstGe excitatory input from the BurstTRC projections.
 
-* DeepAttnParams (layer DeepAttn) has the parameters for computing DeepAttn and
+* AttnParams (layer DeepAttn) has the parameters for computing DeepAttn and
 DeepLrn from AttnGe
 
 */

@@ -14,7 +14,7 @@ import (
 // deep.Prjn is the DeepLeabra projection, based on basic rate-coded leabra.Prjn
 type Prjn struct {
 	leabra.Prjn             // access as .Prjn
-	DeepCtxtGeInc []float32 `desc:"local accumulator for DeepCtxt excitatory conductance from sending units -- not a delta -- the full value"`
+	CtxtGeInc     []float32 `desc:"local accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
 	TRCBurstGeInc []float32 `desc:"local increment accumulator for TRCBurstGe excitatory conductance from sending units -- this will be thread-safe"`
 	AttnGeInc     []float32 `desc:"local increment accumulator for AttnGe excitatory conductance from sending units -- this will be thread-safe"`
 }
@@ -53,7 +53,7 @@ func (pj *Prjn) Build() error {
 	}
 	rsh := pj.Recv.Shape()
 	rlen := rsh.Len()
-	pj.DeepCtxtGeInc = make([]float32, rlen)
+	pj.CtxtGeInc = make([]float32, rlen)
 	pj.TRCBurstGeInc = make([]float32, rlen)
 	pj.AttnGeInc = make([]float32, rlen)
 	return nil
@@ -64,8 +64,8 @@ func (pj *Prjn) Build() error {
 
 func (pj *Prjn) InitGInc() {
 	pj.Prjn.InitGInc()
-	for ri := range pj.DeepCtxtGeInc {
-		pj.DeepCtxtGeInc[ri] = 0
+	for ri := range pj.CtxtGeInc {
+		pj.CtxtGeInc[ri] = 0
 		pj.TRCBurstGeInc[ri] = 0
 		pj.AttnGeInc[ri] = 0
 	}
@@ -74,9 +74,9 @@ func (pj *Prjn) InitGInc() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Act methods
 
-// SendDeepCtxtGe sends the full DeepBurst activation from sending neuron index si,
-// to integrate DeepCtxtGe excitatory conductance on receivers
-func (pj *Prjn) SendDeepCtxtGe(si int, dburst float32) {
+// SendCtxtGe sends the full Burst activation from sending neuron index si,
+// to integrate CtxtGe excitatory conductance on receivers
+func (pj *Prjn) SendCtxtGe(si int, dburst float32) {
 	scdb := dburst * pj.GScale
 	nc := pj.SConN[si]
 	st := pj.SConIdxSt[si]
@@ -84,11 +84,11 @@ func (pj *Prjn) SendDeepCtxtGe(si int, dburst float32) {
 	scons := pj.SConIdx[st : st+nc]
 	for ci := range syns {
 		ri := scons[ci]
-		pj.DeepCtxtGeInc[ri] += scdb * syns[ci].Wt
+		pj.CtxtGeInc[ri] += scdb * syns[ci].Wt
 	}
 }
 
-// SendTRCBurstGeDelta sends the delta-DeepBurst activation from sending neuron index si,
+// SendTRCBurstGeDelta sends the delta-Burst activation from sending neuron index si,
 // to integrate TRCBurstGe excitatory conductance on receivers
 func (pj *Prjn) SendTRCBurstGeDelta(si int, delta float32) {
 	scdel := delta * pj.GScale
@@ -116,13 +116,13 @@ func (pj *Prjn) SendAttnGeDelta(si int, delta float32) {
 	}
 }
 
-// RecvDeepCtxtGeInc increments the receiver's DeepCtxtGe from that of all the projections
-func (pj *Prjn) RecvDeepCtxtGeInc() {
+// RecvCtxtGeInc increments the receiver's CtxtGe from that of all the projections
+func (pj *Prjn) RecvCtxtGeInc() {
 	rlay := pj.Recv.(*Layer)
 	for ri := range rlay.DeepNeurs {
 		rn := &rlay.DeepNeurs[ri]
-		rn.DeepCtxtGe += pj.DeepCtxtGeInc[ri]
-		pj.DeepCtxtGeInc[ri] = 0
+		rn.CtxtGe += pj.CtxtGeInc[ri]
+		pj.CtxtGeInc[ri] = 0
 	}
 }
 
@@ -176,7 +176,9 @@ func (pj *Prjn) DWtDeepCtxt() {
 			sy := &syns[ci]
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
-			err, bcm := pj.Learn.CHLdWt(dsn.DeepBurstPrv, dsn.DeepBurstPrv, rn.AvgSLrn, rn.AvgM, rn.AvgL)
+			// following line should be ONLY diff: BurstPrv for *both* short and medium *sender*
+			// activations, which are first two args:
+			err, bcm := pj.Learn.CHLdWt(dsn.BurstPrv, dsn.BurstPrv, rn.AvgSLrn, rn.AvgM, rn.AvgL)
 
 			bcm *= pj.Learn.XCal.LongLrate(rn.AvgLLrn)
 			err *= pj.Learn.XCal.MLrn
@@ -221,13 +223,13 @@ var KiT_PrjnType = kit.Enums.AddEnum(PrjnTypeN, false, nil)
 // The DeepLeabra prjn types
 const (
 	// BurstCtxt are projections from Superficial layers to Deep layers that
-	// send DeepBurst activations drive updating of DeepCtxt excitatory conductance,
+	// send Burst activations drive updating of DeepCtxt excitatory conductance,
 	// at end of a DeepBurst quarter.  These projections also use a special learning
 	// rule that takes into account the temporal delays in the activation states.
 	BurstCtxt emer.PrjnType = emer.PrjnTypeN + iota
 
 	// BurstTRC are projections from Superficial layers to TRC (thalamic relay cell)
-	// neurons (e.g., in the Pulvinar) that send DeepBurst activation continuously
+	// neurons (e.g., in the Pulvinar) that send Burst activation continuously
 	// during the DeepBurst quarter(s), driving the TRCBurstGe value, which then drives
 	// the 	plus-phase activation state of the TRC representing the "outcome" against
 	// which prior predictions are (implicitly) compared via the temporal difference
