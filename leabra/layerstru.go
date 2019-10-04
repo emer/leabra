@@ -122,8 +122,7 @@ func (ls *LayerStru) NPools() int {
 	if ls.Shp.NumDims() != 4 {
 		return 0
 	}
-	sh := ls.Shp.Shapes()
-	return int(sh[0] * sh[1])
+	return ls.Shp.Dim(0) * ls.Shp.Dim(1)
 }
 
 // RecipToSendPrjn finds the reciprocal projection relative to the given sending projection

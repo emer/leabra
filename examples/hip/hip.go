@@ -67,7 +67,7 @@ var ParamSets = params.Sets{
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
 					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.4",
+					"Prjn.Learn.Lrate":       "0.2",
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",

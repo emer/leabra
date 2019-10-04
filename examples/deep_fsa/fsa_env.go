@@ -70,9 +70,6 @@ func (fe *FSAEnv) TMatReber() {
 }
 
 func (fe *FSAEnv) Validate() error {
-	fe.Run.Scale = env.Run
-	fe.Epoch.Scale = env.Epoch
-	fe.Trial.Scale = env.Trial
 	if fe.TMat.Len() == 0 {
 		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", fe.Nm)
 	}
@@ -120,6 +117,9 @@ func (fe *FSAEnv) String() string {
 }
 
 func (fe *FSAEnv) Init(run int) {
+	fe.Run.Scale = env.Run
+	fe.Epoch.Scale = env.Epoch
+	fe.Trial.Scale = env.Trial
 	fe.Run.Init()
 	fe.Epoch.Init()
 	fe.Seq.Init()

@@ -306,10 +306,7 @@ func (ly *Layer) BuildSubPools() {
 
 // BuildPools builds the inhibitory pools structures -- nu = number of units in layer
 func (ly *Layer) BuildPools(nu int) error {
-	np := 1
-	if ly.Inhib.Pool.On {
-		np += ly.NPools()
-	}
+	np := 1 + ly.NPools()
 	ly.Pools = make([]Pool, np)
 	lpl := &ly.Pools[0]
 	lpl.StIdx = 0
