@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/weights"
+	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/indent"
 )
 
@@ -314,6 +316,44 @@ func (pj *Prjn) Build() error {
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
+
+// SetScalesRPool initializes synaptic Scale parameters using given tensor
+// of values which has unique values for each recv neuron within a given pool
+// i.e., recv layer must have 4D pool structure.
+func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
+	rNuY := scales.Dim(0)
+	rNuX := scales.Dim(1)
+	rNu := rNuY * rNuX
+	rfsz := scales.Len() / rNu
+
+	rsh := pj.Recv.Shape()
+	if rsh.NumDims() != 4 {
+		log.Printf("leabra.Prjn.SetScalesRPool: recv layer must have 4D shape")
+		return
+	}
+	rNpY := rsh.Dim(0)
+	rNpX := rsh.Dim(1)
+
+	for rpy := 0; rpy < rNpY; rpy++ {
+		for rpx := 0; rpx < rNpX; rpx++ {
+			for ruy := 0; ruy < rNuY; ruy++ {
+				for rux := 0; rux < rNuX; rux++ {
+					ri := rsh.Offset([]int{rpy, rpx, ruy, rux})
+					scst := (ruy*rNuX + rux) * rfsz
+					nc := int(pj.RConN[ri])
+					st := int(pj.RConIdxSt[ri])
+					for ci := 0; ci < nc; ci++ {
+						// si := int(pj.RConIdx[st+ci]) // could verify coords etc
+						rsi := pj.RSynIdx[st+ci]
+						sy := &pj.Syns[rsi]
+						sc := scales.FloatVal1D(scst + ci)
+						sy.Scale = float32(sc)
+					}
+				}
+			}
+		}
+	}
+}
 
 // InitWtsSyn initializes weight values based on WtInit randomness parameters
 // for an individual synapse.
