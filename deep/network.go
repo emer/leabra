@@ -94,7 +94,7 @@ func (nt *Network) AddSuperDeep4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 	super = nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Hidden)
 	deep = nt.AddLayer4D(name+"D", nPoolsY, nPoolsX, nNeurY, nNeurX, TRC)
 	deep.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	nt.ConnectLayers(deep, super, prjn.NewFull(), BurstCtxt)
+	nt.ConnectLayers(super, deep, prjn.NewFull(), BurstCtxt)
 	if attn {
 		nt.ConnectLayers(deep, super, prjn.NewOneToOne(), DeepAttn)
 	}
