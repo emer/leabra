@@ -92,7 +92,7 @@ func (nt *Network) AddSuperDeep2D(name string, shapeY, shapeX int, pulvLay, attn
 // Deep is placed Behind Super, and Pulvinar behind Deep if created.
 func (nt *Network) AddSuperDeep4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay, attn bool) (super, deep, pulv emer.Layer) {
 	super = nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Hidden)
-	deep = nt.AddLayer4D(name+"D", nPoolsY, nPoolsX, nNeurY, nNeurX, TRC)
+	deep = nt.AddLayer4D(name+"D", nPoolsY, nPoolsX, nNeurY, nNeurX, Deep)
 	deep.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(super, deep, prjn.NewFull(), BurstCtxt)
 	if attn {
