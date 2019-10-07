@@ -128,16 +128,16 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 // UnitValsTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
 func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+	if tsr == nil {
+		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
+		log.Println(err)
+		return err
+	}
 	vidx, err := NeuronVarByName(varNm)
 	if err != nil {
 		return err
 	}
-	nn := len(ly.Neurons)
-	if tsr == nil {
-		tsr = etensor.NewFloat32Shape(&ly.Shp, nil)
-	} else if tsr.Len() < nn {
-		tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
-	}
+	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
 		tsr.SetFloat1D(i, float64(nrn.VarByIndex(vidx)))

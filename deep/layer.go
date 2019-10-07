@@ -6,9 +6,11 @@ package deep
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
+	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -90,6 +92,30 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 	for i := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[i]
 		(*vals)[i] = dnr.VarByIndex(vidx)
+	}
+	return nil
+}
+
+// UnitValsTensor returns values of given variable name on unit
+// for each unit in the layer, as a float32 tensor in same shape as layer units.
+func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+	if tsr == nil {
+		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
+		log.Println(err)
+		return err
+	}
+	vidx, err := leabra.NeuronVarByName(varNm)
+	if err == nil {
+		return ly.Layer.UnitValsTensor(tsr, varNm)
+	}
+	vidx, err = NeuronVarByName(varNm)
+	if err != nil {
+		return err
+	}
+	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
+	for i := range ly.DeepNeurs {
+		dnr := &ly.DeepNeurs[i]
+		tsr.SetFloat1D(i, float64(dnr.VarByIndex(vidx)))
 	}
 	return nil
 }
