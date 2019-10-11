@@ -565,39 +565,48 @@ func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 // ApplyExt applies external input in the form of an etensor.Float32.  If
 // dimensionality of tensor matches that of layer, and is 2D or 4D, then each dimension
 // is iterated separately, so any mismatch preserves dimensional structure.
+// Otherwise, the flat 1D view of the tensor is used.
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt(ext etensor.Tensor) {
-	if ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4) {
-		flt := []float64{}
-		ext.Floats(&flt)
-		ly.LeabraLay.ApplyExt1D(flt)
-		return
+	switch {
+	case ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4):
+		ly.ApplyExt1DTsr(ext)
+	case ext.NumDims() == 2:
+		ly.ApplyExt2D(ext)
+	case ext.NumDims() == 4:
+		ly.ApplyExt4D(ext)
 	}
+}
+
+// ApplyExt2D applies 2D tensor external input
+func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	if ext.NumDims() == 2 {
-		ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-		xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
-		for y := 0; y < ymx; y++ {
-			for x := 0; x < xmx; x++ {
-				idx := []int{y, x}
-				vl := float32(ext.FloatVal(idx))
-				i := ly.Shp.Offset(idx)
-				nrn := &ly.Neurons[i]
-				if nrn.IsOff() {
-					continue
-				}
-				if toTarg {
-					nrn.Targ = vl
-				} else {
-					nrn.Ext = vl
-				}
-				nrn.ClearMask(clrmsk)
-				nrn.SetMask(setmsk)
+	ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
+	xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
+	for y := 0; y < ymx; y++ {
+		for x := 0; x < xmx; x++ {
+			idx := []int{y, x}
+			vl := float32(ext.FloatVal(idx))
+			i := ly.Shp.Offset(idx)
+			nrn := &ly.Neurons[i]
+			if nrn.IsOff() {
+				continue
 			}
+			if toTarg {
+				nrn.Targ = vl
+			} else {
+				nrn.Ext = vl
+			}
+			nrn.ClearMask(clrmsk)
+			nrn.SetMask(setmsk)
 		}
-		return
 	}
+}
+
+// ApplyExt4D applies 4D tensor external input
+func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
+	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
 	ypmx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
 	xpmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
 	ynmx := ints.MinInt(ext.Dim(2), ly.Shp.Dim(2))
@@ -623,6 +632,28 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 				}
 			}
 		}
+	}
+}
+
+// ApplyExt1DTsr applies external input using 1D flat interface into tensor.
+// If the layer is a Target or Compare layer type, then it goes in Targ
+// otherwise it goes in Ext
+func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
+	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	mx := ints.MinInt(ext.Len(), len(ly.Neurons))
+	for i := 0; i < mx; i++ {
+		nrn := &ly.Neurons[i]
+		if nrn.IsOff() {
+			continue
+		}
+		vl := float32(ext.FloatVal1D(i))
+		if toTarg {
+			nrn.Targ = vl
+		} else {
+			nrn.Ext = vl
+		}
+		nrn.ClearMask(clrmsk)
+		nrn.SetMask(setmsk)
 	}
 }
 
