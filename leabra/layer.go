@@ -1097,6 +1097,17 @@ func (ly *Layer) WtBalFmWt() {
 	}
 }
 
+// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// Useful for implementing learning rate schedules.
+func (ly *Layer) LrateMult(mult float32) {
+	for _, p := range ly.RcvPrjns {
+		// if p.IsOff() { // keep all sync'd
+		// 	continue
+		// }
+		p.(LeabraPrjn).LrateMult(mult)
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Stats
 

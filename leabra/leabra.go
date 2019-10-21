@@ -123,6 +123,10 @@ type LeabraLayer interface {
 
 	// WtBalFmWt computes the Weight Balance factors based on average recv weights
 	WtBalFmWt()
+
+	// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+	// Useful for implementing learning rate schedules.
+	LrateMult(mult float32)
 }
 
 // LeabraPrjn defines the essential algorithmic API for Leabra, at the projection level.
@@ -166,4 +170,8 @@ type LeabraPrjn interface {
 
 	// WtBalFmWt computes the Weight Balance factors based on average recv weights
 	WtBalFmWt()
+
+	// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+	// Useful for implementing learning rate schedules.
+	LrateMult(mult float32)
 }

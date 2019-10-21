@@ -51,6 +51,7 @@ func (pj *Prjn) Defaults() {
 func (pj *Prjn) UpdateParams() {
 	pj.WtScale.Update()
 	pj.Learn.Update()
+	pj.Learn.LrateInit = pj.Learn.Lrate
 }
 
 // AllParams returns a listing of all parameters in the Layer
@@ -581,6 +582,12 @@ func (pj *Prjn) WtBalFmWt() {
 		wb.Avg = sumWt
 		wb.Fact, wb.Inc, wb.Dec = pj.Learn.WtBal.WtBal(sumWt)
 	}
+}
+
+// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// Useful for implementing learning rate schedules.
+func (pj *Prjn) LrateMult(mult float32) {
+	pj.Learn.Lrate = pj.Learn.LrateInit * mult
 }
 
 ///////////////////////////////////////////////////////////////////////

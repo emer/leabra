@@ -217,6 +217,17 @@ func (nt *Network) WtBalFmWt() {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
 }
 
+// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// Useful for implementing learning rate schedules.
+func (nt *Network) LrateMult(mult float32) {
+	for _, ly := range nt.Layers {
+		// if ly.IsOff() { // keep all sync'd
+		// 	continue
+		// }
+		ly.(LeabraLayer).LrateMult(mult)
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Network props for gui
 

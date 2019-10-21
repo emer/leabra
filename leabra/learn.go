@@ -59,13 +59,14 @@ func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 
 // leabra.LearnSynParams manages learning-related parameters at the synapse-level.
 type LearnSynParams struct {
-	Learn    bool           `desc:"enable learning for this projection"`
-	Lrate    float32        `desc:"learning rate"`
-	XCal     XCalParams     `view:"inline" desc:"parameters for the XCal learning rule"`
-	WtSig    WtSigParams    `view:"inline" desc:"parameters for the sigmoidal contrast weight enhancement"`
-	Norm     DWtNormParams  `view:"inline" desc:"parameters for normalizing weight changes by abs max dwt"`
-	Momentum MomentumParams `view:"inline" desc:"parameters for momentum across weight changes"`
-	WtBal    WtBalParams    `view:"inline" desc:"parameters for balancing strength of weight increases vs. decreases"`
+	Learn     bool           `desc:"enable learning for this projection"`
+	Lrate     float32        `desc:"current effective learning rate (multiplies DWt values, determining rate of change of weights)"`
+	LrateInit float32        `desc:"initial learning rate -- this is set from Lrate in UpdateParams, which is called when Params are updated, and used in LrateMult to compute a new learning rate for learning rate schedules."`
+	XCal      XCalParams     `view:"inline" desc:"parameters for the XCal learning rule"`
+	WtSig     WtSigParams    `view:"inline" desc:"parameters for the sigmoidal contrast weight enhancement"`
+	Norm      DWtNormParams  `view:"inline" desc:"parameters for normalizing weight changes by abs max dwt"`
+	Momentum  MomentumParams `view:"inline" desc:"parameters for momentum across weight changes"`
+	WtBal     WtBalParams    `view:"inline" desc:"parameters for balancing strength of weight increases vs. decreases"`
 }
 
 func (ls *LearnSynParams) Update() {
@@ -79,6 +80,7 @@ func (ls *LearnSynParams) Update() {
 func (ls *LearnSynParams) Defaults() {
 	ls.Learn = true
 	ls.Lrate = 0.04
+	ls.LrateInit = ls.Lrate
 	ls.XCal.Defaults()
 	ls.WtSig.Defaults()
 	ls.Norm.Defaults()
