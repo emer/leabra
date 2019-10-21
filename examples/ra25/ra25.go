@@ -63,6 +63,7 @@ var ParamSets = params.Sets{
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
+					"Layer.Act.Gbar.L":     "0.1", // set explictly, new default
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{

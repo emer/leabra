@@ -35,6 +35,7 @@ var ParamSets = params.Sets{
 			{Sel: "Layer", Desc: "turn decay back on",
 				Params: params.Params{
 					"Layer.Act.Init.Decay": "1",
+					"Layer.Act.Gbar.L":     "0.2", // was default when test created, now is 0.1
 				}},
 			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
 				Params: params.Params{

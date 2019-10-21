@@ -28,6 +28,7 @@ func TestActUpdt(t *testing.T) {
 
 	ac := ActParams{}
 	ac.Defaults()
+	ac.Gbar.L = 0.2 // was default when test was created
 
 	nrn := &Neuron{}
 	ac.InitActs(nrn)
