@@ -157,29 +157,28 @@ type Sim struct {
 	NZero      int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
 
 	// internal state - view:"-"
-	SumSSE        float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAvgSSE     float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumCosDiff    float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	CntErr        int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
-	Win           *gi.Window       `view:"-" desc:"main GUI window"`
-	NetView       *netview.NetView `view:"-" desc:"the network viewer"`
-	ToolBar       *gi.ToolBar      `view:"-" desc:"the master toolbar"`
-	TrnEpcPlot    *eplot.Plot2D    `view:"-" desc:"the training epoch plot"`
-	TstEpcPlot    *eplot.Plot2D    `view:"-" desc:"the testing epoch plot"`
-	TstTrlPlot    *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
-	TstCycPlot    *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
-	RunPlot       *eplot.Plot2D    `view:"-" desc:"the run plot"`
-	TrnEpcFile    *os.File         `view:"-" desc:"log file"`
-	RunFile       *os.File         `view:"-" desc:"log file"`
-	InputValsTsr  *etensor.Float32 `view:"-" desc:"for holding layer values"`
-	OutputValsTsr *etensor.Float32 `view:"-" desc:"for holding layer values"`
-	SaveWts       bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
-	NoGui         bool             `view:"-" desc:"if true, runing in no GUI mode"`
-	LogSetParams  bool             `view:"-" desc:"if true, print message for all params that are set"`
-	IsRunning     bool             `view:"-" desc:"true if sim is running"`
-	StopNow       bool             `view:"-" desc:"flag to stop running"`
-	NeedsNewRun   bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
-	RndSeed       int64            `view:"-" desc:"the current random seed"`
+	SumSSE       float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAvgSSE    float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumCosDiff   float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	CntErr       int                         `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
+	Win          *gi.Window                  `view:"-" desc:"main GUI window"`
+	NetView      *netview.NetView            `view:"-" desc:"the network viewer"`
+	ToolBar      *gi.ToolBar                 `view:"-" desc:"the master toolbar"`
+	TrnEpcPlot   *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
+	TstEpcPlot   *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
+	TstTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
+	TstCycPlot   *eplot.Plot2D               `view:"-" desc:"the test-cycle plot"`
+	RunPlot      *eplot.Plot2D               `view:"-" desc:"the run plot"`
+	TrnEpcFile   *os.File                    `view:"-" desc:"log file"`
+	RunFile      *os.File                    `view:"-" desc:"log file"`
+	ValsTsrs     map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
+	SaveWts      bool                        `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+	NoGui        bool                        `view:"-" desc:"if true, runing in no GUI mode"`
+	LogSetParams bool                        `view:"-" desc:"if true, print message for all params that are set"`
+	IsRunning    bool                        `view:"-" desc:"true if sim is running"`
+	StopNow      bool                        `view:"-" desc:"flag to stop running"`
+	NeedsNewRun  bool                        `view:"-" desc:"flag to initialize NewRun if last one finished"`
+	RndSeed      int64                       `view:"-" desc:"the current random seed"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -720,6 +719,19 @@ func (ss *Sim) OpenPats() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
+// ValsTsr gets value tensor of given name, creating if not yet made
+func (ss *Sim) ValsTsr(name string) *etensor.Float32 {
+	if ss.ValsTsrs == nil {
+		ss.ValsTsrs = make(map[string]*etensor.Float32)
+	}
+	tsr, ok := ss.ValsTsrs[name]
+	if !ok {
+		tsr = &etensor.Float32{}
+		ss.ValsTsrs[name] = tsr
+	}
+	return tsr
+}
+
 // RunName returns a name for this run that combines Tag and Params -- add this to
 // any file names that are saved.
 func (ss *Sim) RunName() string {
@@ -868,16 +880,14 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
-	if ss.InputValsTsr == nil { // re-use same tensors so not always reallocating mem
-		ss.InputValsTsr = &etensor.Float32{}
-		ss.OutputValsTsr = &etensor.Float32{}
-	}
-	inp.UnitValsTensor(ss.InputValsTsr, "Act")
-	dt.SetCellTensor("InAct", row, ss.InputValsTsr)
-	out.UnitValsTensor(ss.OutputValsTsr, "ActM")
-	dt.SetCellTensor("OutActM", row, ss.OutputValsTsr)
-	out.UnitValsTensor(ss.OutputValsTsr, "ActP")
-	dt.SetCellTensor("OutActP", row, ss.OutputValsTsr)
+	ivt := ss.ValsTsr("Input")
+	ovt := ss.ValsTsr("Output")
+	inp.UnitValsTensor(ivt, "Act")
+	dt.SetCellTensor("InAct", row, ivt)
+	out.UnitValsTensor(ovt, "ActM")
+	dt.SetCellTensor("OutActM", row, ovt)
+	out.UnitValsTensor(ovt, "ActP")
+	dt.SetCellTensor("OutActP", row, ovt)
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
