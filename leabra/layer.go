@@ -422,7 +422,9 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 		}
 		if ap, ok := lw.MetaData["ActPAvg"]; ok {
 			pv, _ := strconv.ParseFloat(ap, 32)
-			ly.Pools[0].ActAvg.ActPAvg = float32(pv)
+			pl := ly.Pools[0]
+			pl.ActAvg.ActPAvg = float32(pv)
+			ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 		}
 	}
 	var err error

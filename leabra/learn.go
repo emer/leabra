@@ -91,7 +91,7 @@ func (ls *LearnSynParams) Defaults() {
 // LWtFmWt updates the linear weight value based on the current effective Wt value.
 // effective weight is sigmoidally contrast-enhanced relative to the linear weight.
 func (ls *LearnSynParams) LWtFmWt(syn *Synapse) {
-	syn.LWt = ls.WtSig.LinFmSigWt(syn.Wt)
+	syn.LWt = ls.WtSig.LinFmSigWt(syn.Wt / syn.Scale) // must factor out scale too!
 }
 
 // WtFmLWt updates the effective weight value based on the current linear Wt value.
