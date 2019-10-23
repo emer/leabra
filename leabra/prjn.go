@@ -318,7 +318,7 @@ func (pj *Prjn) Build() error {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// SetScalesRPool initializes synaptic Scale parameters using given tensor
+// SetScalesRPool initializes synaptic Scale values using given tensor
 // of values which has unique values for each recv neuron within a given pool
 // i.e., recv layer must have 4D pool structure.
 func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
@@ -352,6 +352,47 @@ func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
 					}
 				}
 			}
+		}
+	}
+}
+
+// SetWtsFunc initializes synaptic Wt value using given function
+// based on receiving and sending unit indexes.
+func (pj *Prjn) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) float32) {
+	rsh := pj.Recv.Shape()
+	rn := rsh.Len()
+	ssh := pj.Send.Shape()
+
+	for ri := 0; ri < rn; ri++ {
+		nc := int(pj.RConN[ri])
+		st := int(pj.RConIdxSt[ri])
+		for ci := 0; ci < nc; ci++ {
+			si := int(pj.RConIdx[st+ci])
+			wt := wtFun(si, ri, ssh, rsh)
+			rsi := pj.RSynIdx[st+ci]
+			sy := &pj.Syns[rsi]
+			sy.Wt = wt
+			pj.Learn.LWtFmWt(sy)
+		}
+	}
+}
+
+// SetScalesFunc initializes synaptic Scale values using given function
+// based on receiving and sending unit indexes.
+func (pj *Prjn) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shape) float32) {
+	rsh := pj.Recv.Shape()
+	rn := rsh.Len()
+	ssh := pj.Send.Shape()
+
+	for ri := 0; ri < rn; ri++ {
+		nc := int(pj.RConN[ri])
+		st := int(pj.RConIdxSt[ri])
+		for ci := 0; ci < nc; ci++ {
+			si := int(pj.RConIdx[st+ci])
+			sc := scaleFun(si, ri, ssh, rsh)
+			rsi := pj.RSynIdx[st+ci]
+			sy := &pj.Syns[rsi]
+			sy.Scale = sc
 		}
 	}
 }
