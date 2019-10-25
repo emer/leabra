@@ -289,7 +289,7 @@ func (ot *OptThreshParams) Defaults() {
 // ActInitParams are initial values for key network state variables.
 // Initialized at start of trial with Init_Acts or DecayState.
 type ActInitParams struct {
-	Decay float32 `def:"1" max:"1" min:"0" desc:"proportion to decay activation state toward initial values at start of every trial"`
+	Decay float32 `def:"0,1" max:"1" min:"0" desc:"proportion to decay activation state toward initial values at start of every trial"`
 	Vm    float32 `def:"0.4" desc:"initial membrane potential -- see e_rev.l for the resting potential (typically .3) -- often works better to have a somewhat elevated initial membrane potential relative to that"`
 	Act   float32 `def:"0" desc:"initial activation value -- typically 0"`
 	Ge    float32 `def:"0" desc:"baseline level of excitatory conductance (net input) -- Ge is initialized to this value, and it is added in as a constant background level of excitatory input -- captures all the other inputs not represented in the model, and intrinsic excitability, etc"`
