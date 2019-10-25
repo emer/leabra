@@ -572,6 +572,8 @@ func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 	switch {
+	case ext.NumDims() == 2 && ly.Shp.NumDims() == 4: // special case
+		ly.ApplyExt2Dto4D(ext)
 	case ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4):
 		ly.ApplyExt1DTsr(ext)
 	case ext.NumDims() == 2:
@@ -592,6 +594,33 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 			vl := float32(ext.FloatVal(idx))
 			i := ly.Shp.Offset(idx)
 			nrn := &ly.Neurons[i]
+			if nrn.IsOff() {
+				continue
+			}
+			if toTarg {
+				nrn.Targ = vl
+			} else {
+				nrn.Ext = vl
+			}
+			nrn.ClearMask(clrmsk)
+			nrn.SetMask(setmsk)
+		}
+	}
+}
+
+// ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
+func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
+	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
+
+	ymx := ints.MinInt(ext.Dim(0), lNy)
+	xmx := ints.MinInt(ext.Dim(1), lNx)
+	for y := 0; y < ymx; y++ {
+		for x := 0; x < xmx; x++ {
+			idx := []int{y, x}
+			vl := float32(ext.FloatVal(idx))
+			ui := etensor.Prjn2DIdx(&ly.Shp, false, y, x)
+			nrn := &ly.Neurons[ui]
 			if nrn.IsOff() {
 				continue
 			}
