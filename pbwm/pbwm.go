@@ -19,7 +19,7 @@ type PBWMLayer interface {
 	// UnitValByIdx returns value of given variable by variable index
 	// and flat neuron index (from layer or neuron-specific one).
 	// First indexes are ModNeuronVars
-	UnitValByIdx(vidx int, idx int) float32
+	UnitValByIdx(vidx NeuronVars, idx int) float32
 }
 
 // PBWMPrjn defines the essential algorithmic API for PBWM at the projection level.

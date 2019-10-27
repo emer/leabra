@@ -58,10 +58,11 @@ a temporally-delayed context state.
 projections that integrate into standard Ge excitatory input in TRC neurons,
 to drive the prediction aspect of predictive learning.
 They also can project back to the Super layer neurons via a DeepAttn projection to
-drive attentional modulation of activity there.
+drive attentional modulation of activity there (in `AttnGe`, `DeepAttn`, and
+`DeepLrn` Neuron vars).
 
 * TRC layer neurons receive a BurstTRC projection from the Super layer (typically
-a one-to-one projection), which drives the plus-phase "outcome" activation state
+a `prjn.OneToOne` projection), which drives the plus-phase "outcome" activation state
 of these Pulvinar layers (Super actually computes the 5IB Burst activation).
 These layers also receive regular connections from Deep layers, which drive the
 prediction of this plus-phase outcome state, based on the temporally-delayed deep

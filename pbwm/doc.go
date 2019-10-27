@@ -36,7 +36,17 @@ Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with somet
 
 * PatchLayer for matrisomes within dorsal striatum modulating dopamine
 
-* PFCLayer
+* PFCLayer for active maintenance -- uses DeepLeabra framework, with update timing according to
+	deep.Layer DeepBurst.BurstQtr.  Gating is computed in quarter *before* updating in BurstQtr.
+	At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
+	There are different behaviors / defaults for Maint and OutGate.
+	+ Maint:
+		+ Super: Burst value is multiplied by Thal gating signal, sends to Deep; receives
+		    AttnGe from Deep, adds to Ge to reflect maint (but still remain sensitive to input).
+		+ Deep: Receives CtxtGe from Super Burst * Thal -- only when gated.  Optionally has
+		    fixed shaped activation dynamics.
+	+ Out:
+		+ Super:
 
 */
 package pbwm

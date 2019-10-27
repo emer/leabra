@@ -33,33 +33,33 @@ type MatrixNeuron struct {
 // (Maint on the left up to MaintN, Out on the right after)
 type MatrixLayer struct {
 	ModLayer
-	MaintN      int            `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
-	DaR         DaReceptors    `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix      MatrixParams   `desc:"matrix parameters"`
-	ThalGate    []ThalGate     `desc:"slice of thalamic gating state values for this layer -- in one-to-one correspondence with Pools (0 = layer, 1 = first Pool, etc)"`
-	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	MaintN      int             `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
+	DaR         DaReceptors     `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+	Matrix      MatrixParams    `desc:"matrix parameters"`
+	ThalGate    []ThalGateState `desc:"slice of thalamic gating state values for this layer -- in one-to-one correspondence with Pools (0 = layer, 1 = first Pool, etc)"`
+	MatrixNeurs []MatrixNeuron  `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
 // UnitValByIdx returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // First indexes are ModNeuronVars
-func (ly *MatrixLayer) UnitValByIdx(vidx int, idx int) float32 {
+func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	mnrn := &ly.MatrixNeurs[idx]
 	nrn := &ly.Neurons[idx]
 	switch vidx {
-	case 0:
+	case DA:
 		return mnrn.DA
-	case 1:
+	case ACh:
 		return mnrn.ACh
-	case 2:
+	case SE:
 		return ly.SE
-	case 3: // ThalAct
+	case ThalAct:
 		return ly.ThalGate[nrn.SubPool].Act
-	case 4: // ThalGate
+	case ThalGate:
 		return ly.ThalGate[nrn.SubPool].Gate
-	case 5: // ThalCnt
+	case ThalCnt:
 		return float32(ly.ThalGate[nrn.SubPool].Cnt)
-	case 6: // shows up as Cust1 in GUI
+	case Cust1:
 		return mnrn.Shunt
 	}
 	return 0
@@ -73,7 +73,7 @@ func (ly *MatrixLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.ThalGate = make([]ThalGate, len(ly.Pools))
+	ly.ThalGate = make([]ThalGateState, len(ly.Pools))
 	ly.MatrixNeurs = make([]MatrixNeuron, len(ly.Neurons))
 	return nil
 }
@@ -88,6 +88,10 @@ func (ly *MatrixLayer) InitActs() {
 		mnr.DA = 0
 		mnr.ACh = 0
 		mnr.Shunt = 0
+	}
+	for ti := range ly.ThalGate {
+		tg := &ly.ThalGate[ti]
+		tg.Init()
 	}
 }
 

@@ -45,6 +45,20 @@ func (ly *ModLayer) UnitVarNames() []string {
 	return ModNeuronVarsAll
 }
 
+// NeuronVars are indexes into extra PBWM neuron-level variables
+type NeuronVars int
+
+const (
+	DA NeuronVars = iota
+	ACh
+	SE
+	ThalAct
+	ThalGate
+	ThalCnt
+	Cust1
+	NeuronVarsN
+)
+
 var (
 	// ModNeuronVars are the modulator neurons plus some custom variables that sub-types use for their
 	// algo-specific cases -- need a consistent set of overall network-level vars for display / generic
@@ -68,13 +82,13 @@ func init() {
 // UnitValByIdx returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // First indexes are ModNeuronVars
-func (ly *ModLayer) UnitValByIdx(vidx int, idx int) float32 {
+func (ly *ModLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	switch vidx {
-	case 0:
+	case DA:
 		return ly.DA
-	case 1:
+	case ACh:
 		return ly.ACh
-	case 2:
+	case SE:
 		return ly.SE
 	}
 	return 0
@@ -88,7 +102,7 @@ func (ly *ModLayer) UnitValTry(varNm string, idx []int) (float32, error) {
 		return ly.Layer.UnitValTry(varNm, idx)
 	}
 	fidx := ly.Shp.Offset(idx)
-	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(vidx, fidx), nil
+	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeuronVars(vidx), fidx), nil
 }
 
 // UnitVal1DTry returns value of given variable name on given unit,
@@ -101,7 +115,7 @@ func (ly *ModLayer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	if !ok {
 		return ly.Layer.UnitVal1DTry(varNm, idx)
 	}
-	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(vidx, idx), nil
+	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeuronVars(vidx), idx), nil
 }
 
 // UnitVals fills in values of given variable name on unit,
@@ -119,7 +133,7 @@ func (ly *ModLayer) UnitVals(vals *[]float32, varNm string) error {
 		*vals = (*vals)[0:nn]
 	}
 	for i := 0; i < nn; i++ {
-		(*vals)[i] = ly.LeabraLay.(PBWMLayer).UnitValByIdx(vidx, i)
+		(*vals)[i] = ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeuronVars(vidx), i)
 	}
 	return nil
 }
@@ -138,7 +152,7 @@ func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 	}
 	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.DeepNeurs {
-		vl := ly.LeabraLay.(PBWMLayer).UnitValByIdx(vidx, i)
+		vl := ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeuronVars(vidx), i)
 		tsr.SetFloat1D(i, float64(vl))
 	}
 	return nil
