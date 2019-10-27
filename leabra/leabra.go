@@ -19,9 +19,8 @@ import (
 type LeabraLayer interface {
 	emer.Layer
 
-	// AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
-	// this to return the base Layer type, so that the LeabraLayer interface does not
-	// need to include accessors to all the basic stuff
+	// AsLeabra returns this layer as a leabra.Layer -- so that the LeabraLayer
+	// interface does not need to include accessors to all the basic stuff
 	AsLeabra() *Layer
 
 	// InitWts initializes the weight values in the network, i.e., resetting learning
@@ -139,9 +138,8 @@ type LeabraLayer interface {
 type LeabraPrjn interface {
 	emer.Prjn
 
-	// AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
-	// this to return the base Prjn type, so that the LeabraPrjn interface does not
-	// need to include accessors to all the basic stuff.
+	// AsLeabra returns this prjn as a leabra.Prjn -- so that the LeabraPrjn
+	// interface does not need to include accessors to all the basic stuff.
 	AsLeabra() *Prjn
 
 	// InitWts initializes weight values according to Learn.WtInit params

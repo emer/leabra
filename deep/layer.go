@@ -25,16 +25,7 @@ type Layer struct {
 	DeepPools    []Pool      `desc:"extra layer and sub-pool (unit group) statistics used in DeepLeabra -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
 }
 
-// AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
-// this to return the base Layer type, so that the LeabraLayer interface does not
-// need to include accessors to all the basic stuff
-func (ly *Layer) AsLeabra() *leabra.Layer {
-	return &ly.Layer
-}
-
-// AsDeep returns this layer as a deep.Layer -- all derived layers must redefine
-// this to return the deep Layer type, so that the DeepLayer interface does not
-// need to include accessors to all the fields.
+// AsDeep returns this layer as a deep.Layer
 func (ly *Layer) AsDeep() *Layer {
 	return ly
 }
@@ -68,7 +59,7 @@ func (ly *Layer) Class() string {
 
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (ly *Layer) UnitVarNames() []string {
-	return AllNeuronVars
+	return NeuronVarsAll
 }
 
 // UnitVals fills in values of given variable name on unit,

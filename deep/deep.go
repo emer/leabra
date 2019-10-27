@@ -12,9 +12,7 @@ import (
 type DeepLayer interface {
 	leabra.LeabraLayer
 
-	// AsDeep returns this layer as a deep.Layer -- all derived layers must redefine
-	// this to return the deep Layer type, so that the DeepLayer interface does not
-	// need to include accessors to all the fields.
+	// AsDeep returns this layer as a deep.Layer -- provides direct access to variables
 	AsDeep() *Layer
 
 	// AvgMaxAttnGe computes the average and max AttnGe stats

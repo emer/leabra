@@ -27,11 +27,11 @@ type Neuron struct {
 	DeepLrn    float32 `desc:"DeepLrn = AttnGe / MAX(AttnGe) across layer.  This version of DeepAttn  modulates learning rates instead of activations -- learning is assumed to be more strongly affected than activation, so it lacks the positive offset that DeepAttn has."`
 }
 
-var NeuronVars = []string{"ActNoAttn", "Burst", "BurstPrv", "CtxtGe", "TRCBurstGe", "BurstSent", "AttnGe", "DeepAttn", "DeepLrn"}
-
-var NeuronVarsMap map[string]int
-
-var AllNeuronVars []string
+var (
+	NeuronVars    = []string{"ActNoAttn", "Burst", "BurstPrv", "CtxtGe", "TRCBurstGe", "BurstSent", "AttnGe", "DeepAttn", "DeepLrn"}
+	NeuronVarsMap map[string]int
+	NeuronVarsAll []string
+)
 
 func init() {
 	NeuronVarsMap = make(map[string]int, len(NeuronVars))
@@ -39,9 +39,9 @@ func init() {
 		NeuronVarsMap[v] = i
 	}
 	ln := len(leabra.NeuronVars)
-	AllNeuronVars = make([]string, len(NeuronVars)+ln)
-	copy(AllNeuronVars, leabra.NeuronVars)
-	copy(AllNeuronVars[ln:], NeuronVars)
+	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
+	copy(NeuronVarsAll, leabra.NeuronVars)
+	copy(NeuronVarsAll[ln:], NeuronVars)
 }
 
 func (nrn *Neuron) VarNames() []string {
