@@ -52,9 +52,10 @@ const (
 	DA NeuronVars = iota
 	ACh
 	SE
-	ThalAct
-	ThalGate
-	ThalCnt
+	GateAct
+	GateNow
+	GateCnt
+	ActG
 	Cust1
 	NeuronVarsN
 )
@@ -63,7 +64,7 @@ var (
 	// ModNeuronVars are the modulator neurons plus some custom variables that sub-types use for their
 	// algo-specific cases -- need a consistent set of overall network-level vars for display / generic
 	// interface.
-	ModNeuronVars    = []string{"DA", "ACh", "SE", "ThalAct", "ThalGate", "ThalCnt", "Cust1"}
+	ModNeuronVars    = []string{"DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt", "ActG", "Cust1"}
 	ModNeuronVarsMap map[string]int
 	ModNeuronVarsAll []string
 )

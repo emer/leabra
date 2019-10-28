@@ -33,8 +33,7 @@ func (db *BurstParams) Defaults() {
 	db.ThrAbs = 0.1
 }
 
-// IsBurstQtr returns true if the given quarter (0-3) is set as a Bursting quarter according to
-// BurstQtr settings
+// IsBurstQtr returns true if the given quarter (0-3) is set as a Bursting quarter.
 func (db *BurstParams) IsBurstQtr(qtr int) bool {
 	qmsk := leabra.Quarters(1 << uint(qtr))
 	if db.BurstQtr&qmsk != 0 {

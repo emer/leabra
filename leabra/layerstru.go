@@ -17,6 +17,7 @@ import (
 // to any Layer type
 type LayerStru struct {
 	LeabraLay LeabraLayer    `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	Network   emer.Network   `copy:"-" json:"-" xml:"-" view:"-" desc:"our parent network, in case we need to use it to find other layers etc -- set when added by network"`
 	Nm        string         `desc:"Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name"`
 	Cls       string         `desc:"Class is for applying parameter styles, can be space separated multple tags"`
 	Off       bool           `desc:"inactivate this layer -- allows for easy experimentation"`
@@ -33,10 +34,12 @@ type LayerStru struct {
 // emer.Layer interface methods
 
 // InitName MUST be called to initialize the layer's pointer to itself as an emer.Layer
-// which enables the proper interface methods to be called.  Also sets the name.
-func (ls *LayerStru) InitName(lay emer.Layer, name string) {
+// which enables the proper interface methods to be called.  Also sets the name, and
+// the parent network that this layer belongs to (which layers may want to retain).
+func (ls *LayerStru) InitName(lay emer.Layer, name string, net emer.Network) {
 	ls.LeabraLay = lay.(LeabraLayer)
 	ls.Nm = name
+	ls.Network = net
 }
 
 func (ls *LayerStru) Name() string               { return ls.Nm }

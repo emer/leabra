@@ -336,8 +336,6 @@ func (ly *Layer) BuildPrjns() error {
 }
 
 // Build constructs the layer state, including calling Build on the projections
-// you MUST have properly configured the Inhib.Pool.On setting by this point
-// to properly allocate Pools for the unit groups if necessary.
 func (ly *Layer) Build() error {
 	nu := ly.Shp.Len()
 	if nu == 0 {

@@ -66,6 +66,12 @@ func (tm *Time) QuarterInc() {
 	}
 }
 
+// QuarterCycle returns the number of cycles into current quarter
+func (tm *Time) QuarterCycle() int {
+	qmin := tm.Quarter * tm.CycPerQtr
+	return tm.Cycle - qmin
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarters
 

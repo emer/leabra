@@ -64,46 +64,38 @@ func (pd *PFCDyn) Set(init, rise, decay float32, desc string) {
 ///////////////////////////////////////////////////////////////////
 // PFCLayer
 
+// PFCNeuron contains extra variables for PFCLayer neurons -- stored separately
+type PFCNeuron struct {
+	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+}
+
 // PFCLayer is a Prefrontal Cortex BG-gated working memory layer
 type PFCLayer struct {
-	ModLayer
-	Gate     PFCGateParams   `desc:"PFC Gating parameters"`
-	Maint    PFCMaintParams  `desc:"PFC Maintenance parameters"`
-	ThalGate []ThalGateState `desc:"slice of thalamic gating state values for this layer -- in one-to-one correspondence with Pools (0 = layer, 1 = first Pool, etc)"`
-	Dyns     []*PFCDyn       `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
+	GateLayer
+	Gate     PFCGateParams  `desc:"PFC Gating parameters"`
+	Maint    PFCMaintParams `desc:"PFC Maintenance parameters"`
+	Dyns     []*PFCDyn      `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
+	PFCNeurs []PFCNeuron    `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
 // UnitValByIdx returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // First indexes are ModNeuronVars
 func (ly *PFCLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
-	nrn := &ly.Neurons[idx]
-	switch vidx {
-	case DA:
-		return ly.DA
-	case ACh:
-		return ly.ACh
-	case SE:
-		return ly.SE
-	case ThalAct:
-		return ly.ThalGate[nrn.SubPool].Act
-	case ThalGate:
-		return ly.ThalGate[nrn.SubPool].Gate
-	case ThalCnt:
-		return float32(ly.ThalGate[nrn.SubPool].Cnt)
+	if vidx != ActG {
+		return ly.GateLayer.UnitValByIdx(vidx, idx)
 	}
-	return 0
+	pnrn := &ly.PFCNeurs[idx]
+	return pnrn.ActG
 }
 
-// Build constructs the layer state, including calling Build on the projections
-// you MUST have properly configured the Inhib.Pool.On setting by this point
-// to properly allocate Pools for the unit groups if necessary.
+// Build constructs the layer state, including calling Build on the projections.
 func (ly *PFCLayer) Build() error {
-	err := ly.Layer.Build()
+	err := ly.GateLayer.Build()
 	if err != nil {
 		return err
 	}
-	ly.ThalGate = make([]ThalGateState, len(ly.Pools))
+	ly.PFCNeurs = make([]PFCNeuron, len(ly.Neurons))
 	return nil
 }
 
@@ -111,13 +103,10 @@ func (ly *PFCLayer) Build() error {
 //  Init methods
 
 func (ly *PFCLayer) InitActs() {
-	ly.Layer.InitActs()
-	ly.DA = 0
-	ly.ACh = 0
-	ly.SE = 0
-	for ti := range ly.ThalGate {
-		tg := &ly.ThalGate[ti]
-		tg.Init()
+	ly.GateLayer.InitActs()
+	for ni := range ly.PFCNeurs {
+		pnr := &ly.PFCNeurs[ni]
+		pnr.ActG = 0
 	}
 }
 
@@ -159,13 +148,13 @@ func (ly *PFCLayer) FullDyn(tau float32) {
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
-	if ly.Typ != deep.TRC && ly.Typ != deep.Deep {
+	if ly.Typ != deep.TRC && ly.Typ != deep.Deep { // Super -- note PFC should not be TRC anyway
 		for ni := range ly.Neurons {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			tg := &ly.ThalGate[nrn.SubPool]
+			tg := &ly.GateStates[nrn.SubPool]
 			if tg.Cnt < 0 {
 				continue
 			} else if tg.Cnt == 0 { // just gated
@@ -181,5 +170,11 @@ func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 				// ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 			}
 		}
+	} else {
+		ly.GateLayer.GFmInc(ltime) // use deep version
 	}
+}
+
+// Gating computes PFC Gating state
+func (ly *PFCLayer) Gating(ltime *leabra.Time) {
 }

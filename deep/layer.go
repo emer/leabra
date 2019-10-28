@@ -142,9 +142,7 @@ func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 	return dnr.VarByName(varNm)
 }
 
-// Build constructs the layer state, including calling Build on the projections
-// you MUST have properly configured the Inhib.Pool.On setting by this point
-// to properly allocate Pools for the unit groups if necessary.
+// Build constructs the layer state, including calling Build on the projections.
 func (ly *Layer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {

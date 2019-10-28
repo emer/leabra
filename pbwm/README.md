@@ -3,16 +3,16 @@
 [![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm)
 
 
-# ThalGateState
+# Timing
 
-ThalGate.Cnt semantics:
+## Quarter and longer
 
+`ThalGateState.Cnt` provides key tracker of gating state:
 * -1 = initialized to this value, not maintaining
 * 0 = just gated – any time the thal activity exceeds the gating threshold we reset counter (re-gate)
 * >= 1: maintaining – first gating goes to 1 in Quarter_Init just following the gating quarter, counts up thereafter.
 * <= -1: not maintaining – when cleared, reset to -1 in Quarter_Init just following clearing quarter, counts down thereafter.
 
-### Timing
 
 | Trial.Qtr | Phase | BG                       | PFCmnt                                          | PFCmntD                                                    | PFCout                                                 | PFCoutD                                                    | Notes                                           |
 |-----------|-------|--------------------------|-------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------|--------------------------------------------------------------|-------------------------------------------------|
@@ -29,4 +29,19 @@ ThalGate.Cnt semantics:
 | 2.3       | --    |                          | input -&gt; act                                 | Ctxt = 0, no act                                       | DeepLrn + input -&gt; act                            | Ctxt -&gt; act -&gt; s DeepLrn; output; trc          | out gating takes effect, driving actual output  |
 | 2.4       | +     | Other Go                 | "                                               | "                                                            | "                                                      | "                                                            | continued output driving                        |
 | 3.0       | init  |                          | ThalCnt &lt; 0: ThalCnt--                   | ThalCnt &lt; 0: ThalCnt--                                | ThalCnt &gt; out_mnt: ThalCnt = -1, Burst = 0 | Ctxt = 0: ThalCnt = -1                               | out gating cleared automatically after 1 trial  |
+
+
+## Cycle
+
+### C++ version
+
+* Gating Cyc:
+    + ComputeAct:
+        + GpiInvUnitSpec: detects gating, sends Thal signals to all who respond *next cycle*
+
+* Cyc+1: 
+    + ComputeAct:
+        + Matrix: PatchShunt, SaveGatingThal, OutAChInhib in ApplyInhib
+        + PFC:    PFCGating
+
 

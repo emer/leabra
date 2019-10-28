@@ -14,16 +14,9 @@ import (
 // deep.Prjn is the DeepLeabra projection, based on basic rate-coded leabra.Prjn
 type Prjn struct {
 	leabra.Prjn             // access as .Prjn
-	CtxtGeInc     []float32 `desc:"local accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
-	TRCBurstGeInc []float32 `desc:"local increment accumulator for TRCBurstGe excitatory conductance from sending units -- this will be thread-safe"`
-	AttnGeInc     []float32 `desc:"local increment accumulator for AttnGe excitatory conductance from sending units -- this will be thread-safe"`
-}
-
-// AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
-// this to return the base Prjn type, so that the LeabraPrjn interface does not
-// need to include accessors to all the basic stuff.
-func (pj *Prjn) AsLeabra() *leabra.Prjn {
-	return &pj.Prjn
+	CtxtGeInc     []float32 `desc:"local per-recv unitaccumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
+	TRCBurstGeInc []float32 `desc:"local per-recv unitincrement accumulator for TRCBurstGe excitatory conductance from sending units -- this will be thread-safe"`
+	AttnGeInc     []float32 `desc:"local per-recv unit increment accumulator for AttnGe excitatory conductance from sending units -- this will be thread-safe"`
 }
 
 func (pj *Prjn) Defaults() {

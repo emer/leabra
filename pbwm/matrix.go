@@ -24,20 +24,20 @@ func (mp *MatrixParams) Defaults() {
 type MatrixNeuron struct {
 	DA    float32 `desc:"per-neuron modulated dopamine level, derived from layer DA and Shunt"`
 	ACh   float32 `desc:"per-neuron modulated ACh level, derived from layer ACh and Shunt"`
-	Shunt float32 `desc:"Shunting input received from Patch neurons (in reality flows through SNc DA pathways)"`
+	Shunt float32 `desc:"shunting input received from Patch neurons (in reality flows through SNc DA pathways)"`
+	ActG  float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
 }
 
-// MatrixParams has parameters for Dorsal Striatum Matrix computation
-// These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
+// MatrixLayer represents the dorsal matrisome MSN's that are the main
+// Go / NoGo gating units in BG driving updating of PFC WM in PBWM.
 // D1R = Go, D2R = NoGo, and outer 4D Pool X dimension determines GateTypes per MaintN
 // (Maint on the left up to MaintN, Out on the right after)
 type MatrixLayer struct {
-	ModLayer
-	MaintN      int             `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
-	DaR         DaReceptors     `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix      MatrixParams    `desc:"matrix parameters"`
-	ThalGate    []ThalGateState `desc:"slice of thalamic gating state values for this layer -- in one-to-one correspondence with Pools (0 = layer, 1 = first Pool, etc)"`
-	MatrixNeurs []MatrixNeuron  `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	GateLayer
+	MaintN      int            `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
+	DaR         DaReceptors    `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+	Matrix      MatrixParams   `desc:"matrix parameters"`
+	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
 // UnitValByIdx returns value of given variable by variable index
@@ -53,12 +53,17 @@ func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 		return mnrn.ACh
 	case SE:
 		return ly.SE
-	case ThalAct:
-		return ly.ThalGate[nrn.SubPool].Act
-	case ThalGate:
-		return ly.ThalGate[nrn.SubPool].Gate
-	case ThalCnt:
-		return float32(ly.ThalGate[nrn.SubPool].Cnt)
+	case GateAct:
+		return ly.GateStates[nrn.SubPool].Act
+	case GateNow:
+		if ly.GateStates[nrn.SubPool].Now {
+			return 1
+		}
+		return 0
+	case GateCnt:
+		return float32(ly.GateStates[nrn.SubPool].Cnt)
+	case ActG:
+		return mnrn.ActG
 	case Cust1:
 		return mnrn.Shunt
 	}
@@ -69,11 +74,10 @@ func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.
 func (ly *MatrixLayer) Build() error {
-	err := ly.Layer.Build()
+	err := ly.GateLayer.Build()
 	if err != nil {
 		return err
 	}
-	ly.ThalGate = make([]ThalGateState, len(ly.Pools))
 	ly.MatrixNeurs = make([]MatrixNeuron, len(ly.Neurons))
 	return nil
 }
@@ -82,16 +86,13 @@ func (ly *MatrixLayer) Build() error {
 //  Init methods
 
 func (ly *MatrixLayer) InitActs() {
-	ly.Layer.InitActs()
+	ly.GateLayer.InitActs()
 	for ni := range ly.MatrixNeurs {
 		mnr := &ly.MatrixNeurs[ni]
 		mnr.DA = 0
 		mnr.ACh = 0
 		mnr.Shunt = 0
-	}
-	for ti := range ly.ThalGate {
-		tg := &ly.ThalGate[ti]
-		tg.Init()
+		mnr.ActG = 0
 	}
 }
 
@@ -147,4 +148,4 @@ func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 	}
 }
 
-// Todo: Save ThalGate state?  what else?  when are above called?
+// Todo: Save GateState state?  what else?  when are above called?

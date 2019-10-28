@@ -240,7 +240,7 @@ func (nt *NetworkStru) AddLayer(name string, shape []int, typ emer.LayerType) em
 		return nil
 	}
 	ly := nt.EmerNet.NewLayer() // essential to use EmerNet interface here!
-	ly.InitName(ly, name)
+	ly.InitName(ly, name, nt.EmerNet)
 	ly.Config(shape, typ)
 	nt.Layers = append(nt.Layers, ly)
 	nt.MakeLayMap()

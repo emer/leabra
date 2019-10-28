@@ -19,22 +19,40 @@ type DaSrcLayer struct {
 	SendTo []string `desc:"list of layers to send dopamine to"`
 }
 
-// SendDA sends dopamine to SendTo list of layers
-func (dl *DaSrcLayer) SendDA(net *Network, da float32) {
-	for _, lnm := range dl.SendTo {
-		ly, err := net.LayerByNameTry(lnm)
+// SendToCheck is called during Build to ensure that SendTo layers are valid
+func (ly *DaSrcLayer) SendToCheck() error {
+	var lasterr error
+	for _, lnm := range ly.SendTo {
+		ly, err := ly.Network.LayerByNameTry(lnm)
 		if err != nil {
-			log.Println(err)
-			continue
+			log.Printf("DaSrcLayer %s SendToCheck: %v\n", ly.Name(), err)
+			lasterr = err
 		}
-		ml := ly.(*ModLayer)
+	}
+	return lasterr
+}
+
+// Build constructs the layer state, including calling Build on the projections.
+func (ly *DaSrcLayer) Build() error {
+	err := ly.ModLayer.Build()
+	if err != nil {
+		return err
+	}
+	err = ly.SendToCheck()
+	return err
+}
+
+// SendDA sends dopamine to SendTo list of layers
+func (ly *DaSrcLayer) SendDA(da float32) {
+	for _, lnm := range ly.SendTo {
+		ml := ly.Network.LayerByName(lnm).(*ModLayer)
 		ml.DA = da
 	}
 }
 
 // AddSendTo adds given layer name to list of those to send DA to
-func (dl *DaSrcLayer) AddSendTo(laynm string) {
-	dl.SendTo = append(dl.SendTo, laynm)
+func (ly *DaSrcLayer) AddSendTo(laynm string) {
+	ly.SendTo = append(ly.SendTo, laynm)
 }
 
 // Params for effects of dopamine (Da) based modulation, typically adding
