@@ -7,7 +7,6 @@ package pbwm
 import (
 	"github.com/chewxy/math32"
 	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 )
 
@@ -16,13 +15,11 @@ type PFCGateParams struct {
 	OutGate   bool    `desc:"if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating"`
 	OutQ1Only bool    `viewif:"OutGate" def:"true" desc:"for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and BurstQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial"`
 	MntThal   float32 `def:"1" desc:"effective Thal activation to use in computing the Burst activation sent from Super to Deep layers, for continued maintenance beyond the initial Thal signal provided by the BG -- also sets an effective minimum Thal value regardless of the actual gating thal value"`
-	GateThr   float32 `def:0.2" desc:"threshold on thalamic gating signal to drive gating -- when using GpiInvUnitSpec gpi, this parameter ususally doesn't matter!  set the gpi.gate_thr value instead -- the only constraint is that this value be <= gpi.min_thal as that determines the minimum thalamic value for gated stripes"`
 }
 
 func (gp *PFCGateParams) Defaults() {
 	gp.OutQ1Only = true
 	gp.MntThal = 1
-	gp.GateThr = 0.2
 }
 
 // PFCMaintParams for PFC maintenance functions
@@ -143,38 +140,241 @@ func (ly *PFCLayer) FullDyn(tau float32) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// todo: compute GeRaw min / max
-//
+// AvgMaxGe computes the average and max Ge stats, used in inhibition
+func (ly *PFCLayer) AvgMaxGe(ltime *leabra.Time) {
+	ly.GateLayer.AvgMaxGe(ltime)
+	ly.AvgMaxGeRaw(ltime) // defined in GateLayer
+}
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
-	if ly.Typ != deep.TRC && ly.Typ != deep.Deep { // Super -- note PFC should not be TRC anyway
-		for ni := range ly.Neurons {
+	if !ly.IsSuper() {
+		ly.GateLayer.GFmInc(ltime) // use deep version
+		return
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		gs := &ly.GateStates[int(nrn.SubPool)-1]
+		if gs.Cnt < 0 {
+			continue
+		} else if gs.Cnt == 0 { // just gated
+			dnr := &ly.DeepNeurs[ni]
+			geMax := math32.Min(gs.GeRaw.Max, ly.Maint.MntGeMax)
+			geFact := 1 - (geMax / ly.Maint.MntGeMax)
+			geMnt := ly.Maint.SMnt.ProjVal(geFact)
+			geRaw := geMnt * dnr.DeepLrn
+			_ = geRaw
+			ly.Act.GRawFmInc(nrn)
+			// geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe) // only use trcburst
+			// ly.Act.GeFmRaw(nrn, geRaw)
+			// ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		}
+	}
+}
+
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// and updates learning running-average activations from that Act
+// PFC extends to call Gating
+func (ly *PFCLayer) ActFmG(ltime *leabra.Time) {
+	ly.GateLayer.ActFmG(ltime)
+	ly.Gating(ltime)
+}
+
+// GateSend computes PFC Gating state
+func (ly *PFCLayer) Gating(ltime *leabra.Time) {
+	if !ly.IsSuper() {
+		return // only SUPER
+	}
+	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
+		if ltime.Quarter > 1 {
+			return
+		}
+	}
+
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		if !gs.Now { // not gating now
+			continue
+		}
+		if gs.Act > 0 { // use GPiThal threshold, so anything > 0
+			if gs.Cnt >= 1 { // already maintaining
+				if ly.Maint.Clear > 0 {
+					// todo: add for just one pool
+					//   	      DecayState(u, net, thr_no, maint.clear)
+				}
+			}
+			gs.Cnt = 0           // this is the "just gated" signal
+			if ly.Gate.OutGate { // time to clear out maint
+				// ly.ClearOtherMaint(u, net, thr_no) // todo
+			}
+		} else { // not gating now
+			// test for over-duration maintenance -- allow for active gating to override
+			if gs.Cnt >= ly.Maint.MaxMaint {
+				gs.Cnt = -1
+			} else { // note: C++ does this in Send_DeepCtxtNetin
+				if gs.Cnt > 0 {
+					gs.Cnt++
+				} else {
+					gs.Cnt--
+				}
+			}
+		}
+	}
+}
+
+// BurstFmAct updates Burst layer 5 IB bursting value from current Act (superficial activation)
+// Subject to thresholding.
+func (ly *PFCLayer) BurstFmAct(ltime *leabra.Time) {
+	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+		return
+	}
+	if !ly.IsSuper() { // special for super
+		ly.GateLayer.BurstFmAct(ltime)
+		return
+	}
+	lpl := &ly.DeepPools[0]
+	actMax := lpl.ActNoAttn.Max
+	actAvg := lpl.ActNoAttn.Avg
+	thr := actAvg + ly.DeepBurst.ThrRel*(actMax-actAvg)
+	thr = math32.Max(thr, ly.DeepBurst.ThrAbs)
+
+	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		dnr := &ly.DeepNeurs[ni]
+		var burst float32
+		if dnr.ActNoAttn > thr {
+			burst = dnr.ActNoAttn
+			// only PFC-specific gated part here:
+			gs := ly.GateStates[int(nrn.SubPool)-1]
+			if gs.Cnt < 0 { // not gated or maintaining
+				burst = 0
+			} else {
+				burst *= math32.Max(ly.Gate.MntThal, gs.Act)
+			}
+		}
+		dnr.Burst = burst
+	}
+}
+
+// RecGateAct records the gating activation from current activation, when gating occcurs
+// based on GateState.Now
+func (ly *PFCLayer) RecGateAct(ltime *leabra.Time) {
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		if !gs.Now { // not gating now
+			continue
+		}
+		pl := ly.Pools[1+gi]
+		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			tg := &ly.GateStates[nrn.SubPool]
-			if tg.Cnt < 0 {
-				continue
-			} else if tg.Cnt == 0 { // just gated
-				dnr := &ly.DeepNeurs[ni]
-				geMax := math32.Min(tg.GeRaw.Max, ly.Maint.MntGeMax)
-				geFact := 1 - (geMax / ly.Maint.MntGeMax)
-				geMnt := ly.Maint.SMnt.ProjVal(geFact)
-				geRaw := geMnt * dnr.DeepLrn
-				_ = geRaw
-				ly.Act.GRawFmInc(nrn)
-				// geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe) // only use trcburst
-				// ly.Act.GeFmRaw(nrn, geRaw)
-				// ly.Act.GiFmRaw(nrn, nrn.GiRaw)
-			}
+			pnr := &ly.PFCNeurs[ni]
+			pnr.ActG = nrn.Act
 		}
-	} else {
-		ly.GateLayer.GFmInc(ltime) // use deep version
 	}
 }
 
-// Gating computes PFC Gating state
-func (ly *PFCLayer) Gating(ltime *leabra.Time) {
-}
+// todo: deep needs to get gate.Cnt -- maybe have it compute separately?
+
+// void STATE_CLASS(PFCUnitSpec)::GetThalCntFromSuper
+//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
+//
+//   // look for layer we recv a deep context con from, that is also a PFCUnitSpec SUPER
+//   const int nrg = u->NRecvConGps(net);
+//   for(int g=0; g<nrg; g++) {
+//     LEABRA_CON_STATE* recv_gp = u->RecvConState(net, g);
+//     if(recv_gp->NotActive()) continue;
+//     LEABRA_CON_SPEC_CPP* cs = recv_gp->GetConSpec(net);
+//     if(!cs->IsDeepCtxtCon()) continue;
+//     LEABRA_LAYER_STATE* fmlay = recv_gp->GetSendLayer(net);
+//     LEABRA_UNIT_SPEC_CPP* fmus = fmlay->GetUnitSpec(net);
+//     if(fmus->GetStateSpecType() != LEABRA_NETWORK_STATE::T_PFCUnitSpec) continue;
+//     if(!fmus->deep.IsSuper() || recv_gp->size == 0) continue;
+//     LEABRA_UNIT_STATE* suv = recv_gp->UnState(0,net); // get first connection
+//     u->thal_cnt = suv->thal_cnt; // all super guys in same stripe should have same thal_cnt
+//   }
+// }
+
+// todo: Send_DeepCtxtNetin was used for incrementing ctrs in C++ -- not sure if needed?
+
+// void STATE_CLASS(PFCUnitSpec)::Send_DeepCtxtNetin
+//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
+//
+//   if(!deep.on || !Quarter_DeepRawPrevQtr(net->quarter)) return;
+//
+//   if(u->thal_cnt < 0.0f) {      // not maintaining or just gated -- zero!
+//     u->deep_raw = 0.0f;
+//     u->deep_ctxt = 0.0f;
+//     u->thal_cnt -= 1.0f;        // decrement count -- optional
+//   }
+//   else {
+//     u->thal_cnt += 1.0f;          // we are maintaining, update count for all
+//   }
+//
+//   if(deep.IsSuper()) {
+//     if(u->thal_cnt < 0.0f) return; // optimization: don't send if not maintaining!
+//   }
+//
+//   inherited::Send_DeepCtxtNetin(u, net, thr_no);
+// }
+
+// todo: Quarter_Init_Deep called "Compute_DeepStateUpdt":
+
+// void STATE_CLASS(PFCUnitSpec)::Compute_DeepStateUpdt
+//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
+//
+//   if(!deep.on || !Quarter_DeepRawPrevQtr(net->quarter)) return;
+//
+//   if(maint.use_dyn && deep.IsDeep() && u->thal_cnt >= 0) { // update dynamics!
+//     LEABRA_LAYER_STATE* lay = u->GetOwnLayer(net);
+//     int unidx = u->ungp_un_idx;
+//     int dyn_row = unidx % n_dyns;
+//     if(u->thal_cnt <= 1.0f) { // first gating -- should only ever be 1.0 here..
+//       u->misc_1 = u->deep_ctxt; // record gating ctxt
+//       u->deep_ctxt *= InitDynVal(dyn_row);
+//     }
+//     else {
+//       u->deep_ctxt = u->misc_1 * UpdtDynVal(dyn_row, (u->thal_cnt-1.0f));
+//     }
+//   }
+//
+//   inherited::Compute_DeepStateUpdt(u, net, thr_no);
+// }
+
+// todo: ClearOtherMaint should be based on something like SendTo list?  was a marker con from out
+// pfc to maint pfc -- pretty hacky.
+
+// void STATE_CLASS(PFCUnitSpec)::ClearOtherMaint
+//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
+//
+//   LEABRA_LAYER_STATE* lay = u->GetOwnLayer(net);
+//   LEABRA_UNGP_STATE* ugd = u->GetOwnUnGp(net);
+//   if(ugd->acts_eq.max < 0.1f)   // we can't clear anyone if nobody in our group is active!
+//     return;
+//
+//   const int nsg = u->NSendConGps(net);
+//   for(int g=0; g<nsg; g++) {
+//     LEABRA_CON_STATE* send_gp = u->SendConState(net, g);
+//     if(send_gp->NotActive()) continue;
+//     LEABRA_CON_SPEC_CPP* cs = send_gp->GetConSpec(net);
+//     if(!cs->IsMarkerCon()) continue;
+//     for(int j=0;j<send_gp->size; j++) {
+//       LEABRA_UNIT_STATE* su = send_gp->UnState(j,net);
+//       if(su->thal_cnt >= 1.0f) { // important!  only for established maint, not just gated!
+//         STATE_CLASS(PFCUnitSpec)* mus = (STATE_CLASS(PFCUnitSpec)*)su->GetUnitSpec(net);
+//         su->thal_cnt = -1.0f; // terminate!
+//         if(mus->maint.clear > 0.0f) {
+//           DecayState(su, net, thr_no, mus->maint.clear); // note: thr_no is WRONG here! but shouldn't matter..
+//         }
+//       }
+//     }
+//   }
+// }

@@ -78,5 +78,8 @@ const (
 	// Out is output gating -- drives deep layer activation
 	Out
 
+	// MaintOut for maint and output gating
+	MaintOut
+
 	GateTypesN
 )

@@ -10,6 +10,7 @@ import (
 
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/deep"
+	"github.com/emer/leabra/leabra"
 )
 
 // ModLayer is the base layer type for PBWM framework -- has variables for the
@@ -24,6 +25,21 @@ type ModLayer struct {
 // AsMod returns this layer as a pbwm.ModLayer
 func (ly *ModLayer) AsMod() *ModLayer {
 	return ly
+}
+
+// AsGate returns this layer as a pbwm.GateLayer -- nil for ModLayer
+func (ly *ModLayer) AsGate() *GateLayer {
+	return nil
+}
+
+// GateSend updates gating state and sends it along to other layers.
+// most layers don't implement -- only gating layers
+func (ly *ModLayer) GateSend(ltime *leabra.Time) {
+}
+
+// RecGateAct records the gating activation from current activation, when gating occcurs
+// based on GateState.Now -- only for gating layers
+func (ly *ModLayer) RecGateAct(ltime *leabra.Time) {
 }
 
 func (ly *ModLayer) Defaults() {

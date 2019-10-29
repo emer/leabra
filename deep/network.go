@@ -85,7 +85,7 @@ func (nt *Network) AddSuperDeep2D(name string, shapeY, shapeX int, pulvLay, attn
 	return
 }
 
-// AddSuperDeep2D adds a superficial (hidden) and corresponding Deep (D suffix) layer
+// AddSuperDeep4D adds a superficial (hidden) and corresponding Deep (D suffix) layer
 // with BurstCtxt Full projection from Hidden to Deep.  Optionally
 // creates a Pulvinar for Hidden with One-to-One BurstTRC to Pulvinar, and
 // optionally a DeepAttn projection back from Deep to Super (OneToOne)

@@ -7,14 +7,14 @@
 
 ## Quarter and longer
 
-`ThalGateState.Cnt` provides key tracker of gating state:
+`GateState.Cnt` provides key tracker of gating state:
 * -1 = initialized to this value, not maintaining
 * 0 = just gated – any time the thal activity exceeds the gating threshold we reset counter (re-gate)
 * >= 1: maintaining – first gating goes to 1 in Quarter_Init just following the gating quarter, counts up thereafter.
 * <= -1: not maintaining – when cleared, reset to -1 in Quarter_Init just following clearing quarter, counts down thereafter.
 
 
-| Trial.Qtr | Phase | BG                       | PFCmnt                                          | PFCmntD                                                    | PFCout                                                 | PFCoutD                                                    | Notes                                           |
+| Trial.Qtr | Phase | BG                       | PFCmnt                                          | PFCmntD                                                    | PFCout                                                 | PFCoutD                                                    | Notes                       a                    |
 |-----------|-------|--------------------------|-------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------|--------------------------------------------------------------|-------------------------------------------------|
 | 1.1       | init  |                          |                                                 |                                                              |                                                        |                                                              |                                                 |
 | 1.1       | --    | GPi Go -&gt; PFCmnt.thal | input -&gt; act                                 | Ctxt = 0, no act                                       | input -&gt; act                                        | Ctxt = 0, no act                                       | cortico-cortical super only, gate mid-quarter   |
@@ -36,8 +36,8 @@
 ### C++ version
 
 * Gating Cyc:
-    + ComputeAct:
-        + GpiInvUnitSpec: detects gating, sends Thal signals to all who respond *next cycle*
+    + Cycle() -- usual
+    + GateSend(): GPiThalLayer: detects gating, sends GateState signals to all who respond *next cycle*
 
 * Cyc+1: 
     + ComputeAct:

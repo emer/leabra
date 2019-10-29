@@ -227,6 +227,19 @@ func (nt *NetworkStru) AllParams() string {
 	return nds
 }
 
+// AddLayerInit is implementation routine that takes a given layer and
+// adds it to the network, and initializes and configures it properly.
+func (nt *NetworkStru) AddLayerInit(ly emer.Layer, name string, shape []int, typ emer.LayerType) {
+	if nt.EmerNet == nil {
+		log.Printf("Network EmerNet is nil -- you MUST call InitName on network, passing a pointer to the network to initialize properly!")
+		return
+	}
+	ly.InitName(ly, name, nt.EmerNet)
+	ly.Config(shape, typ)
+	nt.Layers = append(nt.Layers, ly)
+	nt.MakeLayMap()
+}
+
 // AddLayer adds a new layer with given name and shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential -- see
 // AddLayer2D and 4D for convenience methods for those.  4D layers enable
@@ -235,15 +248,8 @@ func (nt *NetworkStru) AllParams() string {
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each unit
 // group having 4 rows (Y) of 5 (X) units.
 func (nt *NetworkStru) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
-	if nt.EmerNet == nil {
-		log.Printf("Network EmerNet is nil -- you MUST call InitName on network, passing a pointer to the network to initialize properly!")
-		return nil
-	}
 	ly := nt.EmerNet.NewLayer() // essential to use EmerNet interface here!
-	ly.InitName(ly, name, nt.EmerNet)
-	ly.Config(shape, typ)
-	nt.Layers = append(nt.Layers, ly)
-	nt.MakeLayMap()
+	nt.AddLayerInit(ly, name, shape, typ)
 	return ly
 }
 

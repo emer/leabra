@@ -57,6 +57,14 @@ func (ly *Layer) Class() string {
 	return ly.Typ.String() + " " + ly.Cls
 }
 
+// IsSuper returns true if layer is not a TRC or Deep type -- all others are Super
+func (ly *Layer) IsSuper() bool {
+	if ly.Typ == TRC || ly.Typ == Deep {
+		return false
+	}
+	return true // everything else is super
+}
+
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (ly *Layer) UnitVarNames() []string {
 	return NeuronVarsAll

@@ -115,11 +115,14 @@ type GPiNeuron struct {
 // Use 4D structure for this so it matches 4D structure in Matrix layers
 type GPiThalLayer struct {
 	GateLayer
-	MaintN   int             `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
 	Timing   GPiTimingParams `desc:"timing parameters determining when gating happens"`
 	Gate     GPiGateParams   `desc:"gating parameters determining threshold for gating etc"`
 	SendTo   []string        `desc:"list of layers to send GateState to"`
 	GPiNeurs []GPiNeuron     `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+}
+
+func (ly *GPiThalLayer) GateType() GateTypes {
+	return MaintOut // always both
 }
 
 // UnitValByIdx returns value of given variable by variable index
@@ -131,6 +134,43 @@ func (ly *GPiThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	}
 	gnrn := &ly.GPiNeurs[idx]
 	return gnrn.ActG
+}
+
+// SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmnt, PFCout
+// with optional prefix
+func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
+	std := []string{"MatrixGo", "MatrixNoGo", "PFCmnt", "PFCout"}
+	ly.SendTo = make([]string, len(std))
+	if prefix == "" {
+		copy(ly.SendTo, std)
+	} else {
+		for i, s := range std {
+			ly.SendTo[i] = prefix + s
+		}
+	}
+}
+
+// SendGateShape send GateShape info to all SendTo layers -- convenient config-time
+// way to ensure all are consistent -- also checks validity of SendTo's
+func (ly *GPiThalLayer) SendGateShape() error {
+	var lasterr error
+	for _, lnm := range ly.SendTo {
+		tly, err := ly.Network.LayerByNameTry(lnm)
+		if err != nil {
+			log.Printf("GPiThalLayer %s SendGateShape: %v\n", ly.Name(), err)
+			lasterr = err
+		}
+		gl, ok := tly.(GateLayerer)
+		if !ok {
+			err = fmt.Errorf("GPiThalLayer %s SendGateShape: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name())
+			log.Println(err)
+			lasterr = err
+			continue
+		}
+		gll := gl.AsGate()
+		gll.GateShp = ly.GateShp
+	}
+	return lasterr
 }
 
 // MatrixPrjns returns the recv prjns from Go and NoGo MatrixLayer pathways -- error if not
@@ -167,12 +207,12 @@ func (ly *GPiThalLayer) MatrixPrjns() (goPrjn, nogoPrjn *GPiThalPrjn, err error)
 func (ly *GPiThalLayer) SendToCheck() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
-		ly, err := ly.Network.LayerByNameTry(lnm)
+		tly, err := ly.Network.LayerByNameTry(lnm)
 		if err != nil {
 			log.Printf("GPiThalLayer %s SendToCheck: %v\n", ly.Name(), err)
 			lasterr = err
 		}
-		_, ok := ly.(GateLayerer)
+		_, ok := tly.(GateLayerer)
 		if !ok {
 			err = fmt.Errorf("GPiThalLayer %s SendToCheck: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name())
 			log.Println(err)
@@ -195,6 +235,10 @@ func (ly *GPiThalLayer) Build() error {
 	}
 	ly.GPiNeurs = make([]GPiNeuron, len(ly.Neurons))
 	_, _, err = ly.MatrixPrjns()
+	if err != nil {
+		log.Println(err)
+	}
+	err = ly.SendToCheck()
 	if err != nil {
 		log.Println(err)
 	}
@@ -232,62 +276,72 @@ func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 	}
 }
 
-// SendThal updates ThalGate State of which this is the source, and sends it to listed layers.
-func (ly *GPiThalLayer) SendThal(ltime *leabra.Time) {
-	// gateNow := ly.Timing.IsGateQtr(ltime.Quarter)
-	// qtrCyc := ltime.QuarterCycle()
+// GateSend updates gating state and sends it along to other layers
+func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
+	ly.GateFmAct(ltime)
+	ly.SendGateStates()
+}
 
-	//   float snd_val = 0.0f;
-	//   float gate_val = 0.0f;
-	//   if(net->quarter == 0 && qtr_cyc <= 1) { // reset
-	//     u->thal_cnt = 0.0f;
-	//   }
-	//
-	//   if(gate_now && qtr_cyc == gate.gate_cyc) {
-	//     gate_val = 1.0f;            // gated!
-	//     if(gate.updt_net) {
-	//       if(u->lay_un_idx == 0) { // choose only first unit to do this -- not based on threads b/c we don't know for sure that thread 0 will be represented here!
-	//         net->ThalGatedNow();   // record
-	//       }
-	//     }
-	//     if(gpi.thr_act) {
-	//       if(u->act_eq <= gpi.gate_thr) u->act_eq = 0.0f;
-	//       snd_val = u->act_eq;
-	//     }
-	//     else {
-	//       snd_val = (u->act_eq > gpi.gate_thr ? u->act_eq : 0.0f);
-	//     }
-	//
-	//     if(snd_val > 0.0f && gpi.min_thal > gpi.gate_thr) {
-	//       if(gpi.min_thal == 1.0f) {
-	//         snd_val = 1.0f;
-	//       }
-	//       else {
-	//         snd_val = gpi.min_thal + (snd_val - gpi.gate_thr) * gpi.thal_rescale;
-	//       }
-	//     }
-	//     u->thal_cnt = snd_val;      // save gating value!
-	//   }
-	//   else {
-	//     snd_val = u->thal_cnt;
-	//   }
-	//
-	//   u->thal = snd_val;            // record what we send, always
-	//   const int nsg = u->NSendConGps(net);
-	//   for(int g=0; g<nsg; g++) {
-	//     LEABRA_CON_STATE* send_gp = u->SendConState(net, g);
-	//     if(send_gp->NotActive()) continue;
-	//     LEABRA_CON_SPEC_CPP* cs = send_gp->GetConSpec(net);
-	//     if(!cs->IsMarkerCon()) continue;
-	//     for(int j=0;j<send_gp->size; j++) {
-	//       send_gp->UnState(j,net)->thal = snd_val;
-	//       send_gp->UnState(j,net)->thal_gate = gate_val;
-	//     }
-	//   }
+// GateFmAct updates GateState from current activations, at time of gating
+func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
+	gateQtr := ly.Timing.IsGateQtr(ltime.Quarter)
+	qtrCyc := ltime.QuarterCycle()
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		gs := ly.GateState(int(nrn.SubPool) - 1)
+		if ltime.Quarter == 0 && qtrCyc == 0 {
+			gs.Act = 0 // reset at start
+		}
+		if gateQtr && qtrCyc == ly.Timing.Cycle { // gating
+			gs.Now = true
+			if nrn.Act < ly.Gate.Thr { // didn't gate
+				gs.Act = 0 // not over thr
+				if ly.Gate.ThrAct {
+					gs.Act = 0
+				}
+				if gs.Cnt >= 0 {
+					gs.Cnt++
+				} else if gs.Cnt < 0 {
+					gs.Cnt--
+				}
+			} else { // did gate
+				gs.Cnt = 0
+				gs.Act = nrn.Act
+			}
+		} else {
+			gs.Now = false
+		}
+	}
+}
 
-	// npool := len(ly.GateStates)
-	// for _, lnm := range ly.SendTo {
-	// 	gl := ly.Network.LayerByName(lnm).(GateLayerer)
-	//
-	// }
+// SendGateStates sends GateStates to other layers
+func (ly *GPiThalLayer) SendGateStates() {
+	myt := ly.GateType()
+	for _, lnm := range ly.SendTo {
+		gl := ly.Network.LayerByName(lnm).(GateLayerer)
+		gl.SetGateStates(ly.GateStates, myt)
+	}
+}
+
+// RecGateAct records the gating activation from current activation, when gating occcurs
+// based on GateState.Now
+func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		if !gs.Now { // not gating now
+			continue
+		}
+		pl := ly.Pools[1+gi]
+		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
+			gnr := &ly.GPiNeurs[ni]
+			gnr.ActG = nrn.Act
+		}
+	}
 }

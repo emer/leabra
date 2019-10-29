@@ -46,6 +46,7 @@ type MatrixLayer struct {
 func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	mnrn := &ly.MatrixNeurs[idx]
 	nrn := &ly.Neurons[idx]
+	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based
 	switch vidx {
 	case DA:
 		return mnrn.DA
@@ -54,14 +55,14 @@ func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	case SE:
 		return ly.SE
 	case GateAct:
-		return ly.GateStates[nrn.SubPool].Act
+		return gs.Act
 	case GateNow:
-		if ly.GateStates[nrn.SubPool].Now {
+		if gs.Now {
 			return 1
 		}
 		return 0
 	case GateCnt:
-		return float32(ly.GateStates[nrn.SubPool].Cnt)
+		return float32(gs.Cnt)
 	case ActG:
 		return mnrn.ActG
 	case Cust1:
@@ -129,6 +130,8 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 	}
 }
 
+// Todo: when is this called:
+
 // DaAChFmLay computes Da and ACh from layer and Shunt received from PatchLayer units
 func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
@@ -148,4 +151,22 @@ func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 	}
 }
 
-// Todo: Save GateState state?  what else?  when are above called?
+// RecGateAct records the gating activation from current activation, when gating occcurs
+// based on GateState.Now
+func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		if !gs.Now { // not gating now
+			continue
+		}
+		pl := ly.Pools[1+gi]
+		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
+			mnr := &ly.MatrixNeurs[ni]
+			mnr.ActG = nrn.Act
+		}
+	}
+}
