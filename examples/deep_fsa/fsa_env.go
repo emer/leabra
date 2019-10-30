@@ -20,8 +20,7 @@ type FSAEnv struct {
 	Dsc        string          `desc:"description of this environment"`
 	TMat       etensor.Float64 `view:"no-inline" desc:"transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state"`
 	Labels     etensor.String  `desc:"transition labels, one for each transition cell in TMat matrix"`
-	CurState   int             `desc:"current state within FSA that we're in"`
-	PrvState   int             `desc:"previous state within FSA"`
+	AState     env.CurPrvInt   `desc:"automaton state within FSA that we're in"`
 	NNext      etensor.Int     `desc:"number of next states in current state output (scalar)"`
 	NextStates etensor.Int     `desc:"next states that have non-zero probability, with actual randomly chosen next state at start"`
 	NextLabels etensor.String  `desc:"transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start"`
@@ -113,7 +112,7 @@ func (fe *FSAEnv) Actions() env.Elements {
 func (fe *FSAEnv) String() string {
 	nn := fe.NNext.Values[0]
 	lbls := fe.NextLabels.Values[0:nn]
-	return fmt.Sprintf("S_%d_%v", fe.CurState, lbls)
+	return fmt.Sprintf("S_%d_%v", fe.AState.Cur, lbls)
 }
 
 func (fe *FSAEnv) Init(run int) {
@@ -127,17 +126,17 @@ func (fe *FSAEnv) Init(run int) {
 	fe.Run.Cur = run
 	fe.Trial.Max = 0
 	fe.Trial.Cur = -1 // init state -- key so that first Step() = 0
-	fe.CurState = 0
-	fe.PrvState = -1
+	fe.AState.Cur = 0
+	fe.AState.Prv = -1
 }
 
 // NextState sets NextStates including randomly chosen one at start
 func (fe *FSAEnv) NextState() {
 	nst := fe.TMat.Dim(0)
-	if fe.CurState < 0 || fe.CurState >= nst-1 {
-		fe.CurState = 0
+	if fe.AState.Cur < 0 || fe.AState.Cur >= nst-1 {
+		fe.AState.Cur = 0
 	}
-	ri := fe.CurState * nst
+	ri := fe.AState.Cur * nst
 	ps := fe.TMat.Values[ri : ri+nst]
 	ls := fe.Labels.Values[ri : ri+nst]
 	nxt := erand.PChoose64(ps) // next state chosen at random
@@ -152,15 +151,14 @@ func (fe *FSAEnv) NextState() {
 		}
 	}
 	fe.NNext.Set1D(0, idx)
-	fe.PrvState = fe.CurState
-	fe.CurState = nxt
+	fe.AState.Set(nxt)
 }
 
 func (fe *FSAEnv) Step() bool {
 	fe.Epoch.Same() // good idea to just reset all non-inner-most counters at start
 	fe.NextState()
 	fe.Trial.Incr()
-	if fe.PrvState == 0 {
+	if fe.AState.Prv == 0 {
 		if fe.Seq.Incr() {
 			fe.Epoch.Incr()
 		}

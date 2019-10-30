@@ -67,11 +67,11 @@ func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *ModLayer {
 
 // AddGPiThalLayer adds a GPiThalLayer of given size, with given name.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
-// and each pool has nNeurY, nNeurX neurons.
-func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int) *GPiThalLayer {
+// and each pool has 1x1 neurons.
+func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLayer {
 	tX := nMaint + nOut
 	gpi := &GPiThalLayer{}
-	nt.AddLayerInit(gpi, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, emer.Hidden)
 	gpi.GateShp.Set(nY, nMaint, nOut)
 	return gpi
 }
@@ -85,17 +85,17 @@ func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX i
 	mtxGo = nt.AddMatrixLayer(prefix+"MatrixGo", nY, nMaint, nOut, nNeurY, nNeurX, D1R)
 	mtxNoGo = nt.AddMatrixLayer(prefix+"MatrixNoGo", nY, nMaint, nOut, nNeurY, nNeurX, D2R)
 	gpe = nt.AddGPeLayer(prefix+"GPeNoGo", nY, nMaint, nOut)
-	gpi = nt.AddGPiThalLayer(prefix+"GPiThal", nY, nMaint, nOut, nNeurY, nNeurX)
+	gpi = nt.AddGPiThalLayer(prefix+"GPiThal", nY, nMaint, nOut)
 
 	mtxNoGo.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: mtxGo.Name(), XAlign: relpos.Left, Space: 2})
 	gpe.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNoGo.Name(), YAlign: relpos.Front, Space: 2})
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
 
-	pj := nt.ConnectLayers(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward)
+	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
 	pj.SetClass("BGFixed")
 	pj = nt.ConnectLayers(mtxNoGo, gpe, prjn.NewPoolOneToOne(), emer.Forward)
 	pj.SetClass("BGFixed")
-	pj = nt.ConnectLayers(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward)
+	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
 	pj.SetClass("BGFixed")
 	return
 }
@@ -128,11 +128,17 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
 // are made within super / deep (see AddPFCLayer) and between PFCmntD -> PFCout.
 func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD emer.Layer) {
-	pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"PFCmnt", nY, nMaint, nNeurY, nNeurX, false)
-	pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"PFCmnt", nY, nOut, nNeurY, nNeurX, true)
-	pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-	pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
-	pj.SetClass("PFCMntDToOut")
+	if nMaint > 0 {
+		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"PFCmnt", nY, nMaint, nNeurY, nNeurX, false)
+	}
+	if nOut > 0 {
+		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"PFCout", nY, nOut, nNeurY, nNeurX, true)
+	}
+	if pfcOut != nil && pfcMnt != nil {
+		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
+		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
+		pj.SetClass("PFCMntDToOut")
+	}
 	return
 }
 
@@ -140,7 +146,9 @@ func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (
 func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD emer.Layer) {
 	mtxGo, mtxNoGo, gpe, gpi = nt.AddDorsalBG(prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
 	pfcMnt, pfcMntD, pfcOut, pfcOutD = nt.AddPFC(prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX)
-	pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
+	if pfcMnt != nil {
+		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
+	}
 	gpi.(*GPiThalLayer).SendToMatrixPFC(prefix) // sends gating to all these layers
 	return
 }

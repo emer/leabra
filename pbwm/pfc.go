@@ -75,6 +75,20 @@ type PFCLayer struct {
 	PFCNeurs []PFCNeuron    `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
+func (ly *PFCLayer) Defaults() {
+	ly.GateLayer.Defaults()
+	ly.Gate.Defaults()
+	ly.Maint.Defaults()
+}
+
+func (ly *PFCLayer) GateType() GateTypes {
+	if ly.Gate.OutGate {
+		return Out
+	} else {
+		return Maint
+	}
+}
+
 // UnitValByIdx returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // First indexes are ModNeuronVars

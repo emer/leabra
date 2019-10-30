@@ -139,7 +139,7 @@ func (nt *NetworkStru) StdVertLayout() {
 
 // Layout computes the 3D layout of layers based on their relative position settings
 func (nt *NetworkStru) Layout() {
-	for itr := 0; itr < 2; itr++ {
+	for itr := 0; itr < 5; itr++ {
 		var lstly emer.Layer
 		for _, ly := range nt.Layers {
 			rp := ly.RelPos()

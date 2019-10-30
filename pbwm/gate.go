@@ -10,8 +10,6 @@ import (
 	"github.com/goki/ki/ints"
 )
 
-// todo: everything needs to work if MaintX or OutX == 0!
-
 // GateShape defines the shape of the outer pool dimensions of gating layers,
 // organized into Maint and Out subsets which are arrayed along the X axis
 // with Maint first (to the left) then Out.  Individual layers may only
@@ -48,8 +46,14 @@ func (gs *GateShape) TotX() int {
 func (gs *GateShape) Index(pY, pX int, typ GateTypes) int {
 	switch typ {
 	case Maint:
+		if gs.MaintX == 0 {
+			return 0
+		}
 		return pY*gs.MaintX + pX
 	case Out:
+		if gs.OutX == 0 {
+			return 0
+		}
 		return pY*gs.OutX + pX
 	case MaintOut:
 		if pX < gs.MaintX {
@@ -83,10 +87,12 @@ func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
 	case Maint:
 		return idx
 	case Out:
-		ox := gs.OutX
+		if gs.OutX == 0 {
+			return 0
+		}
 		// convert to 2D and use that
-		pY := idx / ox
-		pX := idx%ox + ox
+		pY := idx / gs.OutX
+		pX := idx%gs.OutX + gs.MaintX
 		return gs.Index(pY, pX, MaintOut)
 	case MaintOut:
 		return gs.Index1D(idx, MaintOut)
@@ -133,6 +139,10 @@ type GateLayer struct {
 
 func (ly *GateLayer) AsGate() *GateLayer {
 	return ly
+}
+
+func (ly *GateLayer) GateShape() *GateShape {
+	return &ly.GateShp
 }
 
 // note: each layer must define its own GateType() method!

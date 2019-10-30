@@ -121,6 +121,12 @@ type GPiThalLayer struct {
 	GPiNeurs []GPiNeuron     `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
+func (ly *GPiThalLayer) Defaults() {
+	ly.GateLayer.Defaults()
+	ly.Timing.Defaults()
+	ly.Gate.Defaults()
+}
+
 func (ly *GPiThalLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
@@ -137,15 +143,23 @@ func (ly *GPiThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 }
 
 // SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmnt, PFCout
-// with optional prefix
+// with optional prefix -- excludes mnt, out cases if corresp shape = 0
 func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 	std := []string{"MatrixGo", "MatrixNoGo", "PFCmnt", "PFCout"}
-	ly.SendTo = make([]string, len(std))
-	if prefix == "" {
-		copy(ly.SendTo, std)
-	} else {
-		for i, s := range std {
-			ly.SendTo[i] = prefix + s
+	ly.SendTo = make([]string, 2)
+	for i, s := range std {
+		nm := prefix + s
+		switch {
+		case i < 2:
+			ly.SendTo[i] = nm
+		case i == 2:
+			if ly.GateShp.MaintX > 0 {
+				ly.SendTo = append(ly.SendTo, nm)
+			}
+		case i == 3:
+			if ly.GateShp.OutX > 0 {
+				ly.SendTo = append(ly.SendTo, nm)
+			}
 		}
 	}
 }

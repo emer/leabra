@@ -40,6 +40,10 @@ type MatrixLayer struct {
 	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
+func (ly *MatrixLayer) GateType() GateTypes {
+	return MaintOut // always both
+}
+
 // UnitValByIdx returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // First indexes are ModNeuronVars
