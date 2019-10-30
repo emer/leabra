@@ -111,7 +111,7 @@ func (pj *Prjn) SendAttnGeDelta(si int, delta float32) {
 
 // RecvCtxtGeInc increments the receiver's CtxtGe from that of all the projections
 func (pj *Prjn) RecvCtxtGeInc() {
-	rlay := pj.Recv.(*Layer)
+	rlay := pj.Recv.(DeepLayer).AsDeep()
 	for ri := range rlay.DeepNeurs {
 		rn := &rlay.DeepNeurs[ri]
 		rn.CtxtGe += pj.CtxtGeInc[ri]
@@ -121,7 +121,7 @@ func (pj *Prjn) RecvCtxtGeInc() {
 
 // RecvTRCBurstGeInc increments the receiver's TRCBurstGe from that of all the projections
 func (pj *Prjn) RecvTRCBurstGeInc() {
-	rlay := pj.Recv.(*Layer)
+	rlay := pj.Recv.(DeepLayer).AsDeep()
 	for ri := range rlay.DeepNeurs {
 		rn := &rlay.DeepNeurs[ri]
 		rn.TRCBurstGe += pj.TRCBurstGeInc[ri]
@@ -131,7 +131,7 @@ func (pj *Prjn) RecvTRCBurstGeInc() {
 
 // RecvAttnGeInc increments the receiver's AttnGe from that of all the projections
 func (pj *Prjn) RecvAttnGeInc() {
-	rlay := pj.Recv.(*Layer)
+	rlay := pj.Recv.(DeepLayer).AsDeep()
 	for ri := range rlay.DeepNeurs {
 		rn := &rlay.DeepNeurs[ri]
 		rn.AttnGe += pj.AttnGeInc[ri]

@@ -43,6 +43,11 @@ func (ly *ModLayer) GateSend(ltime *leabra.Time) {
 func (ly *ModLayer) RecGateAct(ltime *leabra.Time) {
 }
 
+// SendMods is called at end of Cycle to send modulator signals (DA, etc)
+// which will then be active for the next cycle of processing
+func (ly *ModLayer) SendMods(ltime *leabra.Time) {
+}
+
 func (ly *ModLayer) Defaults() {
 	ly.Layer.Defaults()
 }

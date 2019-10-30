@@ -41,7 +41,7 @@ func (ly *SeSrcLayer) Build() error {
 // SendSe sends serotonin to SendTo list of layers
 func (ly *SeSrcLayer) SendSe(se float32) {
 	for _, lnm := range ly.SendTo {
-		ml := ly.Network.LayerByName(lnm).(*ModLayer)
+		ml := ly.Network.LayerByName(lnm).(PBWMLayer).AsMod()
 		ml.SE = se
 	}
 }

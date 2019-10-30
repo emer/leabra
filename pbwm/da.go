@@ -7,6 +7,7 @@ package pbwm
 import (
 	"log"
 
+	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
@@ -45,7 +46,7 @@ func (ly *DaSrcLayer) Build() error {
 // SendDA sends dopamine to SendTo list of layers
 func (ly *DaSrcLayer) SendDA(da float32) {
 	for _, lnm := range ly.SendTo {
-		ml := ly.Network.LayerByName(lnm).(*ModLayer)
+		ml := ly.Network.LayerByName(lnm).(PBWMLayer).AsMod()
 		ml.DA = da
 	}
 }
@@ -54,6 +55,46 @@ func (ly *DaSrcLayer) SendDA(da float32) {
 func (ly *DaSrcLayer) AddSendTo(laynm string) {
 	ly.SendTo = append(ly.SendTo, laynm)
 }
+
+// SendToAllBut adds all layers in network except those in list to the SendTo
+// list of layers to send to -- this layer is automatically excluded as well.
+func (ly *DaSrcLayer) SendToAllBut(excl []string) {
+	exmap := make(map[string]struct{})
+	exmap[ly.Nm] = struct{}{}
+	for _, ex := range excl {
+		exmap[ex] = struct{}{}
+	}
+	ly.SendTo = nil
+	nl := ly.Network.NLayers()
+	for li := 0; li < nl; li++ {
+		aly := ly.Network.Layer(li)
+		nm := aly.Name()
+		if _, on := exmap[nm]; on {
+			continue
+		}
+		ly.SendTo = append(ly.SendTo, nm)
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  ClampDaLayer
+
+// ClampDaLayer is an Input layer that just sends its activity as the dopamine signal
+type ClampDaLayer struct {
+	DaSrcLayer
+	SendTo []string `desc:"list of layers to send dopamine to"`
+}
+
+// SendMods is called at end of Cycle to send modulator signals (DA, etc)
+// which will then be active for the next cycle of processing
+func (ly *ClampDaLayer) SendMods(ltime *leabra.Time) {
+	act := ly.Neurons[0].Act
+	ly.DA = act
+	ly.SendDA(act)
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  DaMod
 
 // Params for effects of dopamine (Da) based modulation, typically adding
 // a Da-based term to the Ge excitatory synaptic input.

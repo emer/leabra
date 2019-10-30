@@ -41,7 +41,7 @@ func (ly *AChSrcLayer) Build() error {
 // SendACh sends ACh to SendTo list of layers
 func (ly *AChSrcLayer) SendACh(ach float32) {
 	for _, lnm := range ly.SendTo {
-		ml := ly.Network.LayerByName(lnm).(*ModLayer)
+		ml := ly.Network.LayerByName(lnm).(PBWMLayer).AsMod()
 		ml.ACh = ach
 	}
 }

@@ -33,6 +33,10 @@ type PBWMLayer interface {
 	// RecGateAct records the gating activation from current activation, when gating occcurs
 	// based on GateState.Now
 	RecGateAct(ltime *leabra.Time)
+
+	// SendMods is called at end of Cycle to send modulator signals (DA, etc)
+	// which will then be active for the next cycle of processing
+	SendMods(ltime *leabra.Time)
 }
 
 // PBWMPrjn defines the essential algorithmic API for PBWM at the projection level.

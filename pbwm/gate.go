@@ -214,7 +214,7 @@ func (ly *GateLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.GateStates = make([]GateState, len(ly.Pools))
+	ly.GateStates = make([]GateState, len(ly.Pools)-1)
 	return err
 }
 

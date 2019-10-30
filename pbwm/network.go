@@ -153,6 +153,13 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 	return
 }
 
+// AddClampDaLayer adds a ClampDaLayer of given name
+func (nt *Network) AddClampDaLayer(name string) *ClampDaLayer {
+	da := &ClampDaLayer{}
+	nt.AddLayerInit(da, name, []int{1, 1}, emer.Input)
+	return da
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
@@ -167,6 +174,7 @@ func (nt *Network) Cycle(ltime *leabra.Time) {
 	nt.GateSend(ltime)
 	nt.RecGateAct(ltime)
 	nt.DeepBurst(ltime)
+	nt.SendMods(ltime) // send modulators
 	// note C++ version had Act, ActPost, CycleStats, then DeepRaw
 }
 
@@ -178,4 +186,10 @@ func (nt *Network) GateSend(ltime *leabra.Time) {
 // RecGateAct is called after GateSend, to record gating activations at time of gating
 func (nt *Network) RecGateAct(ltime *leabra.Time) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).RecGateAct(ltime) }, "RecGateAct")
+}
+
+// SendMods is called at end of Cycle to send modulator signals (DA, etc)
+// which will then be active for the next cycle of processing
+func (nt *Network) SendMods(ltime *leabra.Time) {
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).SendMods(ltime) }, "SendMods")
 }
