@@ -22,9 +22,9 @@ var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
 var NetworkProps = deep.NetworkProps
 
-// NewLayer returns new layer of default ModLayer type
+// NewLayer returns new layer of default pbwm.Layer type
 func (nt *Network) NewLayer() emer.Layer {
-	return &ModLayer{}
+	return &Layer{}
 }
 
 // NewPrjn returns new prjn of default type

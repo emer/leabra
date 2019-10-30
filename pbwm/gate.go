@@ -10,6 +10,8 @@ import (
 	"github.com/goki/ki/ints"
 )
 
+// todo: everything needs to work if MaintX or OutX == 0!
+
 // GateShape defines the shape of the outer pool dimensions of gating layers,
 // organized into Maint and Out subsets which are arrayed along the X axis
 // with Maint first (to the left) then Out.  Individual layers may only

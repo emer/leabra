@@ -922,12 +922,25 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *Layer) GFmInc(ltime *Time) {
+	ly.RecvGInc(ltime)
+	ly.GFmIncNeur(ltime)
+}
+
+// RecvGInc calls RecvGInc on receiving projections to collect Neuron-level G*Inc values.
+// This is called by GFmInc overall method, but separated out for cases that need to
+// do something different.
+func (ly *Layer) RecvGInc(ltime *Time) {
 	for _, p := range ly.RcvPrjns {
 		if p.IsOff() {
 			continue
 		}
 		p.(LeabraPrjn).RecvGInc()
 	}
+}
+
+// GFmIncNeur is the neuron-level code for GFmInc that integrates G*Inc into G*Raw
+// and finally overall Ge, Gi values
+func (ly *Layer) GFmIncNeur(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

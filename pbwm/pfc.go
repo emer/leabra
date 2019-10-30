@@ -152,6 +152,7 @@ func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 		ly.GateLayer.GFmInc(ltime) // use deep version
 		return
 	}
+	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

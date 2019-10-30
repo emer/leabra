@@ -325,6 +325,7 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *Layer) GFmInc(ltime *leabra.Time) {
+	ly.RecvGInc(ltime)
 	if ly.Typ == TRC && ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
 		// note: TRCBurstGe is sent at *end* of previous cycle, after Burst act is computed
 		lpl := &ly.DeepPools[0]
@@ -357,7 +358,7 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 		}
 		return
 	}
-	ly.Layer.GFmInc(ltime) // regular
+	ly.GFmIncNeur(ltime) // regular
 	if ly.DeepAttn.On {
 		for _, p := range ly.RcvPrjns {
 			if p.IsOff() {
