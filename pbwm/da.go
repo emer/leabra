@@ -82,7 +82,6 @@ func (ly *DaSrcLayer) SendToAllBut(excl []string) {
 // ClampDaLayer is an Input layer that just sends its activity as the dopamine signal
 type ClampDaLayer struct {
 	DaSrcLayer
-	SendTo []string `desc:"list of layers to send dopamine to"`
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)

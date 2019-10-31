@@ -27,10 +27,15 @@ func (db *BurstParams) Update() {
 
 func (db *BurstParams) Defaults() {
 	db.On = true
-	bitflag.Set32((*int32)(&db.BurstQtr), int(leabra.Q4))
+	db.SetBurstQtr(leabra.Q4)
 	db.FmActNoAttn = true
 	db.ThrRel = 0.1
 	db.ThrAbs = 0.1
+}
+
+// SetBurstQtr sets given burst quarter (adds to any existing) -- Q4 by default
+func (db *BurstParams) SetBurstQtr(qtr leabra.Quarters) {
+	bitflag.Set32((*int32)(&db.BurstQtr), int(qtr))
 }
 
 // IsBurstQtr returns true if the given quarter (0-3) is set as a Bursting quarter.

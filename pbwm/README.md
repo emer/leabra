@@ -44,4 +44,14 @@
         + Matrix: PatchShunt, SaveGatingThal, OutAChInhib in ApplyInhib
         + PFC:    PFCGating
 
+        
+# TODO
+
+- [ ] Params in bg not setting GPiThalLayer.Gate.Thr and NoGo
+
+- [ ] PFCDeep is missing dyns and ctr etc -- not really functioning
+
+- [ ] LearnQtr in Prjns -- deep doesn't have this either now right?
+
+- [ ] Trace matrix learning and other prjns
 

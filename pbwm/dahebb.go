@@ -2,45 +2,37 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package hip
+package pbwm
 
 import (
 	"github.com/chewxy/math32"
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 )
 
-// hip.EcCa1Prjn is for EC <-> CA1 projections, to perform error-driven
-// learning of this encoder pathway according to the ThetaPhase algorithm
-// uses Contrastive Hebbian Learning (CHL) on ActP - ActQ1
-// Q1: ECin -> CA1 -> ECout       : ActQ1 = minus phase for auto-encoder
-// Q2, 3: CA3 -> CA1 -> ECout     : ActM = minus phase for recall
-// Q4: ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
-type EcCa1Prjn struct {
-	leabra.Prjn // access as .Prjn
+// DaHebbPrjn does dopamine-modulated Hebbian learning -- i.e., the 3-factor
+// learning rule: Da * Recv.Act * Send.Act
+type DaHebbPrjn struct {
+	deep.Prjn
 }
 
-func (pj *EcCa1Prjn) Defaults() {
+func (pj *DaHebbPrjn) Defaults() {
 	pj.Prjn.Defaults()
-	pj.Prjn.Learn.Norm.On = false     // off by default
-	pj.Prjn.Learn.Momentum.On = false // off by default
-	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
+	// no additional factors
+	pj.Learn.WtSig.Gain = 1
+	pj.Learn.Norm.On = false
+	pj.Learn.Momentum.On = false
+	pj.Learn.WtBal.On = false
 }
 
-func (pj *EcCa1Prjn) UpdateParams() {
-	pj.Prjn.UpdateParams()
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Learn methods
-
-// DWt computes the weight change (learning) -- on sending projections
-// Delta version
-func (pj *EcCa1Prjn) DWt() {
+// DWt computes the weight change (learning) -- on sending projections.
+func (pj *DaHebbPrjn) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
-	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
+	rlayi := pj.Recv.(PBWMLayer)
+	rlay := rlayi.AsLeabra()
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
@@ -53,7 +45,9 @@ func (pj *EcCa1Prjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			dwt := (sn.ActP * rn.ActP) - (sn.ActQ1 * rn.ActQ1)
+			da := rlayi.UnitValByIdx(DALrn, int(ri))
+
+			dwt := da * rn.Act * sn.Act
 			norm := float32(1)
 			if pj.Learn.Norm.On {
 				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))

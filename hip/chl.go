@@ -62,13 +62,6 @@ type CHLPrjn struct {
 	CHL         CHLParams `desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
 }
 
-// AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
-// this to return the base Prjn type, so that the LeabraPrjn interface does not
-// need to include accessors to all the basic stuff.
-func (pj *CHLPrjn) AsLeabra() *leabra.Prjn {
-	return &pj.Prjn
-}
-
 func (pj *CHLPrjn) Defaults() {
 	pj.Prjn.Defaults()
 	pj.CHL.Defaults()

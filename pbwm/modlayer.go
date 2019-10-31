@@ -72,6 +72,7 @@ type NeuronVars int
 
 const (
 	DA NeuronVars = iota
+	DALrn
 	ACh
 	SE
 	GateAct
@@ -86,7 +87,7 @@ var (
 	// ModNeuronVars are the modulator neurons plus some custom variables that sub-types use for their
 	// algo-specific cases -- need a consistent set of overall network-level vars for display / generic
 	// interface.
-	ModNeuronVars    = []string{"DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt", "ActG", "Cust1"}
+	ModNeuronVars    = []string{"DA", "DALrn", "ACh", "SE", "GateAct", "GateNow", "GateCnt", "ActG", "Cust1"}
 	ModNeuronVarsMap map[string]int
 	ModNeuronVarsAll []string
 )
@@ -102,12 +103,13 @@ func init() {
 	copy(ModNeuronVarsAll[ln:], ModNeuronVars)
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-// First indexes are ModNeuronVars
 func (ly *ModLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	switch vidx {
 	case DA:
+		return ly.DA
+	case DALrn:
 		return ly.DA
 	case ACh:
 		return ly.ACh

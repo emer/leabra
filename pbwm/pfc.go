@@ -79,6 +79,14 @@ func (ly *PFCLayer) Defaults() {
 	ly.GateLayer.Defaults()
 	ly.Gate.Defaults()
 	ly.Maint.Defaults()
+	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
+		ly.DeepBurst.BurstQtr = 0
+		ly.DeepBurst.SetBurstQtr(leabra.Q1)
+	} else {
+		ly.DeepBurst.BurstQtr = 0
+		ly.DeepBurst.SetBurstQtr(leabra.Q2)
+		ly.DeepBurst.SetBurstQtr(leabra.Q4)
+	}
 }
 
 func (ly *PFCLayer) GateType() GateTypes {
@@ -89,9 +97,8 @@ func (ly *PFCLayer) GateType() GateTypes {
 	}
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-// First indexes are ModNeuronVars
 func (ly *PFCLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	if vidx != ActG {
 		return ly.GateLayer.UnitValByIdx(vidx, idx)
@@ -172,27 +179,28 @@ func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
+		dnr := &ly.DeepNeurs[ni]
 		gs := &ly.GateStates[int(nrn.SubPool)-1]
-		if gs.Cnt < 0 {
-			continue
-		} else if gs.Cnt == 0 { // just gated
-			dnr := &ly.DeepNeurs[ni]
+		ly.Act.GRawFmInc(nrn)
+		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		geRaw := nrn.GeRaw
+		if gs.Cnt == 0 { // just gated -- only maint if nothing else going on
+			if gs.GeRaw.Max < 0.05 {
+				geRaw += ly.Maint.SMnt.Max * dnr.DeepLrn
+			}
+		} else if gs.Cnt > 0 { // maintaining
 			geMax := math32.Min(gs.GeRaw.Max, ly.Maint.MntGeMax)
 			geFact := 1 - (geMax / ly.Maint.MntGeMax)
 			geMnt := ly.Maint.SMnt.ProjVal(geFact)
-			geRaw := geMnt * dnr.DeepLrn
-			_ = geRaw
-			ly.Act.GRawFmInc(nrn)
-			// geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe) // only use trcburst
-			// ly.Act.GeFmRaw(nrn, geRaw)
-			// ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+			geRaw += geMnt * dnr.DeepLrn
 		}
+		ly.Act.GeFmRaw(nrn, geRaw)
 	}
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
-// and updates learning running-average activations from that Act
-// PFC extends to call Gating
+// and updates learning running-average activations from that Act.
+// PFC extends to call Gating.
 func (ly *PFCLayer) ActFmG(ltime *leabra.Time) {
 	ly.GateLayer.ActFmG(ltime)
 	ly.Gating(ltime)

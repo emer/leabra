@@ -71,8 +71,14 @@ type GPiTimingParams struct {
 }
 
 func (gt *GPiTimingParams) Defaults() {
-	bitflag.Set32((*int32)(&gt.GateQtr), int(leabra.Q4))
+	gt.SetGateQtr(leabra.Q1)
+	gt.SetGateQtr(leabra.Q3)
 	gt.Cycle = 18
+}
+
+// SetGateQtr sets given gating quarter (adds to any existing) -- Q1, 3 by default
+func (gt *GPiTimingParams) SetGateQtr(qtr leabra.Quarters) {
+	bitflag.Set32((*int32)(&gt.GateQtr), int(qtr))
 }
 
 // IsGateQtr returns true if the given quarter (0-3) is set as a Gating quarter
@@ -121,19 +127,32 @@ type GPiThalLayer struct {
 	GPiNeurs []GPiNeuron     `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
+// Sel: "GPiThalLayer", Desc: "defaults ",
+// 	Params: params.Params{
+// 		"Layer.Inhib.Layer.Gi":     "1.8",
+// 		"Layer.Inhib.Layer.FB":     "0.2",
+// 		"Layer.Inhib.Pool.On":      "false",
+// 		"Layer.Inhib.ActAvg.Init":  "1",
+// 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 	}}
+
 func (ly *GPiThalLayer) Defaults() {
 	ly.GateLayer.Defaults()
 	ly.Timing.Defaults()
 	ly.Gate.Defaults()
+	ly.Inhib.Layer.Gi = 1.8
+	ly.Inhib.Layer.FB = 0.2
+	ly.Inhib.Pool.On = false
+	ly.Inhib.ActAvg.Fixed = true
+	ly.Inhib.ActAvg.Init = 1
 }
 
 func (ly *GPiThalLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-// First indexes are ModNeuronVars
 func (ly *GPiThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	if vidx != ActG {
 		return ly.GateLayer.UnitValByIdx(vidx, idx)
@@ -155,10 +174,12 @@ func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 		case i == 2:
 			if ly.GateShp.MaintX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
+				ly.SendTo = append(ly.SendTo, nm+"D")
 			}
 		case i == 3:
 			if ly.GateShp.OutX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
+				ly.SendTo = append(ly.SendTo, nm+"D")
 			}
 		}
 	}
@@ -270,11 +291,21 @@ func (ly *GPiThalLayer) InitActs() {
 	}
 }
 
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// input scaling from running average activation etc.
+// should already have presented the external input to the network at this point.
+// need to clear incrementing GeRaw from prjns
+func (ly *GPiThalLayer) AlphaCycInit() {
+	ly.GateLayer.AlphaCycInit()
+	ly.LeabraLay.InitGInc()
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
+	ly.RecvGInc(ltime)
 	goPrjn, nogoPrjn, _ := ly.MatrixPrjns()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]

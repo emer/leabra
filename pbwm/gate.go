@@ -172,7 +172,7 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 		for i := 0; i < mx; i++ {
 			ly.SetGateState(i, &states[i])
 		}
-	case myt == Maint: // typ must == MaintOut at this point
+	default: // typ == MaintOut, myt = Maint or Out
 		mx := len(ly.GateStates)
 		for i := 0; i < mx; i++ {
 			gs := &ly.GateStates[i]
@@ -182,9 +182,8 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 	}
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-// First indexes are ModNeuronVars
 func (ly *GateLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	nrn := &ly.Neurons[idx]
 	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based

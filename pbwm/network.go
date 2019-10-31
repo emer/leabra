@@ -79,7 +79,7 @@ func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLa
 // AddDorsalBG adds MatrixGo, NoGo, GPe, and GPiThal layers, with given optional prefix.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
-// are made to drive GPiThal, with BGFixed class name set so
+// are made to drive GPiThal, with BgFixed class name set so
 // they can be styled appropriately (no learning, WtRnd.Mean=0.8, Var=0)
 func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi emer.Layer) {
 	mtxGo = nt.AddMatrixLayer(prefix+"MatrixGo", nY, nMaint, nOut, nNeurY, nNeurX, D1R)
@@ -92,11 +92,11 @@ func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX i
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
 
 	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
-	pj.SetClass("BGFixed")
+	pj.SetClass("BgFixed")
 	pj = nt.ConnectLayers(mtxNoGo, gpe, prjn.NewPoolOneToOne(), emer.Forward)
-	pj.SetClass("BGFixed")
+	pj.SetClass("BgFixed")
 	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
-	pj.SetClass("BGFixed")
+	pj.SetClass("BgFixed")
 	return
 }
 

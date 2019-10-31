@@ -4,25 +4,32 @@
 
 package pbwm
 
-import "github.com/emer/leabra/leabra"
+import (
+	"github.com/emer/leabra/leabra"
+)
 
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
 	PatchShunt  float32 `def:"0.2,0.5" min:"0" max:"1" desc:"how much the patch shunt activation multiplies the dopamine values -- 0 = complete shunting, 1 = no shunting -- should be a factor < 1.0"`
 	ShuntACh    bool    `def:"true" desc:"also shunt the ACh value driven from TAN units -- this prevents clearing of MSNConSpec traces -- more plausibly the patch units directly interfere with the effects of TAN's rather than through ach, but it is easier to implement with ach shunting here."`
-	OutAChInhib float32 `def:"0:0.3" desc:"how much does the LACK of ACh from the TAN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly"`
+	OutAChInhib float32 `def:"0,0.3" desc:"how much does the LACK of ACh from the TAN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly"`
+	BurstGain   float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+	DipGain     float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 }
 
 func (mp *MatrixParams) Defaults() {
 	mp.PatchShunt = 0.2
 	mp.ShuntACh = true
 	mp.OutAChInhib = 0.3
+	mp.BurstGain = 1
+	mp.DipGain = 1
 }
 
 // MatrixNeuron contains extra variables for MatrixLayer neurons -- stored separately
 type MatrixNeuron struct {
 	DA    float32 `desc:"per-neuron modulated dopamine level, derived from layer DA and Shunt"`
+	DALrn float32 `desc:"per-neuron effective learning dopamine value -- gain modulated and sign reversed for D2R"`
 	ACh   float32 `desc:"per-neuron modulated ACh level, derived from layer ACh and Shunt"`
 	Shunt float32 `desc:"shunting input received from Patch neurons (in reality flows through SNc DA pathways)"`
 	ActG  float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
@@ -40,13 +47,55 @@ type MatrixLayer struct {
 	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
+// Defaults in param.Sheet format
+// Sel: "MatrixLayer", Desc: "defaults",
+// 	Params: params.Params{
+// 		"Layer.Inhib.Layer.Gi":     "1.9",
+// 		"Layer.Inhib.Layer.FB":     "0.5",
+// 		"Layer.Inhib.Pool.On":      "true",
+// 		"Layer.Inhib.Pool.Gi":      "1.9",
+// 		"Layer.Inhib.Pool.FB":      "0",
+// 		"Layer.Inhib.Self.On":      "true",
+// 		"Layer.Inhib.Self.Gi":      "1.3",
+// 		"Layer.Inhib.ActAvg.Init":  "0.2",
+// 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 	}}
+
+func (ly *MatrixLayer) Defaults() {
+	ly.GateLayer.Defaults()
+	ly.Matrix.Defaults()
+	// special inhib params
+	ly.Inhib.Layer.Gi = 1.9
+	ly.Inhib.Layer.FB = 0.5
+	ly.Inhib.Pool.On = true
+	ly.Inhib.Pool.Gi = 1.9
+	ly.Inhib.Pool.FB = 0
+	ly.Inhib.Self.On = true
+	ly.Inhib.Self.Gi = 0.3
+	ly.Inhib.ActAvg.Fixed = true
+	ly.Inhib.ActAvg.Init = 0.2
+}
+
 func (ly *MatrixLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// DALrnFmDA returns effective learning dopamine value from given raw DA value
+// applying Burst and Dip Gain factors, and then reversing sign for D2R.
+func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
+	if da > 0 {
+		da *= ly.Matrix.BurstGain
+	} else {
+		da *= ly.Matrix.DipGain
+	}
+	if ly.DaR == D2R {
+		da *= -1
+	}
+	return da
+}
+
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-// First indexes are ModNeuronVars
 func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	mnrn := &ly.MatrixNeurs[idx]
 	nrn := &ly.Neurons[idx]
@@ -54,6 +103,8 @@ func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	switch vidx {
 	case DA:
 		return mnrn.DA
+	case DALrn:
+		return mnrn.DALrn
 	case ACh:
 		return mnrn.ACh
 	case SE:
@@ -95,6 +146,7 @@ func (ly *MatrixLayer) InitActs() {
 	for ni := range ly.MatrixNeurs {
 		mnr := &ly.MatrixNeurs[ni]
 		mnr.DA = 0
+		mnr.DALrn = 0
 		mnr.ACh = 0
 		mnr.Shunt = 0
 		mnr.ActG = 0
@@ -112,7 +164,6 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 	if ly.Matrix.OutAChInhib == 0 {
 		return
 	}
-	achI := ly.Matrix.OutAChInhib * (1 - ly.ACh) // ACh comes from TAN neurons, represents ??
 
 	ypN := ly.Shp.Dim(0)
 	xpN := ly.Shp.Dim(1)
@@ -122,11 +173,13 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 		for xp := ly.MaintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
 				for xn := 0; xn < xnN; xn++ {
-					i := ly.Shp.Offset([]int{yp, xp, yn, xn})
-					nrn := &ly.Neurons[i]
+					ni := ly.Shp.Offset([]int{yp, xp, yn, xn})
+					nrn := &ly.Neurons[ni]
 					if nrn.IsOff() {
 						continue
 					}
+					mnr := &ly.MatrixNeurs[ni]
+					achI := ly.Matrix.OutAChInhib * (1 - mnr.ACh) // ACh comes from TAN neurons, represents ??
 					nrn.Gi += achI
 				}
 			}
@@ -134,7 +187,13 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 	}
 }
 
-// Todo: when is this called:
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// and updates learning running-average activations from that Act.
+// Matrix extends to call DaAChFmLay
+func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
+	ly.DaAChFmLay(ltime)
+	ly.GateLayer.ActFmG(ltime)
+}
 
 // DaAChFmLay computes Da and ACh from layer and Shunt received from PatchLayer units
 func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
@@ -152,6 +211,7 @@ func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 				mnr.ACh *= ly.Matrix.PatchShunt
 			}
 		}
+		mnr.DALrn = ly.DALrnFmDA(mnr.DA)
 	}
 }
 
