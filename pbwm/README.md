@@ -47,7 +47,7 @@
         
 # TODO
 
-- [ ] Params in bg not setting GPiThalLayer.Gate.Thr and NoGo
+- [ ] Matrix uses net_gain = 0.5 -- why?? 
 
 - [ ] PFCDeep is missing dyns and ctr etc -- not really functioning
 

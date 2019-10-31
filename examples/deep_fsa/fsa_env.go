@@ -124,7 +124,6 @@ func (fe *FSAEnv) Init(run int) {
 	fe.Seq.Init()
 	fe.Trial.Init()
 	fe.Run.Cur = run
-	fe.Trial.Max = 0
 	fe.Trial.Cur = -1 // init state -- key so that first Step() = 0
 	fe.AState.Cur = 0
 	fe.AState.Prv = -1
