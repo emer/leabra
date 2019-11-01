@@ -30,57 +30,57 @@ type FSAEnv struct {
 	Trial      env.Ctr         `view:"inline" desc:"trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence"`
 }
 
-func (fe *FSAEnv) Name() string { return fe.Nm }
-func (fe *FSAEnv) Desc() string { return fe.Dsc }
+func (ev *FSAEnv) Name() string { return ev.Nm }
+func (ev *FSAEnv) Desc() string { return ev.Dsc }
 
 // InitTMat initializes matrix and labels to given size
-func (fe *FSAEnv) InitTMat(nst int) {
-	fe.TMat.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
-	fe.Labels.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
-	fe.TMat.SetZeros()
-	fe.Labels.SetZeros()
-	fe.NNext.SetShape([]int{1}, nil, nil)
-	fe.NextStates.SetShape([]int{nst}, nil, nil)
-	fe.NextLabels.SetShape([]int{nst}, nil, nil)
+func (ev *FSAEnv) InitTMat(nst int) {
+	ev.TMat.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
+	ev.Labels.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
+	ev.TMat.SetZeros()
+	ev.Labels.SetZeros()
+	ev.NNext.SetShape([]int{1}, nil, nil)
+	ev.NextStates.SetShape([]int{nst}, nil, nil)
+	ev.NextLabels.SetShape([]int{nst}, nil, nil)
 }
 
 // SetTMat sets given transition matrix probability and label
-func (fe *FSAEnv) SetTMat(fm, to int, p float64, lbl string) {
-	fe.TMat.Set([]int{fm, to}, p)
-	fe.Labels.Set([]int{fm, to}, lbl)
+func (ev *FSAEnv) SetTMat(fm, to int, p float64, lbl string) {
+	ev.TMat.Set([]int{fm, to}, p)
+	ev.Labels.Set([]int{fm, to}, lbl)
 }
 
 // TMatReber sets the transition matrix to the standard Reber grammar FSA
-func (fe *FSAEnv) TMatReber() {
-	fe.InitTMat(8)
-	fe.SetTMat(0, 1, 1, "B")   // 0 = start
-	fe.SetTMat(1, 2, 0.5, "T") // 1 = state 0 in usu diagram (+1 for all states)
-	fe.SetTMat(1, 3, 0.5, "P")
-	fe.SetTMat(2, 2, 0.5, "S")
-	fe.SetTMat(2, 4, 0.5, "X")
-	fe.SetTMat(3, 3, 0.5, "T")
-	fe.SetTMat(3, 5, 0.5, "V")
-	fe.SetTMat(4, 6, 0.5, "S")
-	fe.SetTMat(4, 3, 0.5, "X")
-	fe.SetTMat(5, 6, 0.5, "V")
-	fe.SetTMat(5, 4, 0.5, "P")
-	fe.SetTMat(6, 7, 1, "E") // 7 = end
-	fe.Init(0)
+func (ev *FSAEnv) TMatReber() {
+	ev.InitTMat(8)
+	ev.SetTMat(0, 1, 1, "B")   // 0 = start
+	ev.SetTMat(1, 2, 0.5, "T") // 1 = state 0 in usu diagram (+1 for all states)
+	ev.SetTMat(1, 3, 0.5, "P")
+	ev.SetTMat(2, 2, 0.5, "S")
+	ev.SetTMat(2, 4, 0.5, "X")
+	ev.SetTMat(3, 3, 0.5, "T")
+	ev.SetTMat(3, 5, 0.5, "V")
+	ev.SetTMat(4, 6, 0.5, "S")
+	ev.SetTMat(4, 3, 0.5, "X")
+	ev.SetTMat(5, 6, 0.5, "V")
+	ev.SetTMat(5, 4, 0.5, "P")
+	ev.SetTMat(6, 7, 1, "E") // 7 = end
+	ev.Init(0)
 }
 
-func (fe *FSAEnv) Validate() error {
-	if fe.TMat.Len() == 0 {
-		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", fe.Nm)
+func (ev *FSAEnv) Validate() error {
+	if ev.TMat.Len() == 0 {
+		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", ev.Nm)
 	}
 	return nil
 }
 
-func (fe *FSAEnv) Counters() []env.TimeScales {
+func (ev *FSAEnv) Counters() []env.TimeScales {
 	return []env.TimeScales{env.Run, env.Epoch, env.Sequence, env.Trial}
 }
 
-func (fe *FSAEnv) States() env.Elements {
-	nst := fe.TMat.Dim(0)
+func (ev *FSAEnv) States() env.Elements {
+	nst := ev.TMat.Dim(0)
 	if nst < 2 {
 		nst = 2 // at least usu
 	}
@@ -92,93 +92,93 @@ func (fe *FSAEnv) States() env.Elements {
 	return els
 }
 
-func (fe *FSAEnv) State(element string) etensor.Tensor {
+func (ev *FSAEnv) State(element string) etensor.Tensor {
 	switch element {
 	case "NNext":
-		return &fe.NNext
+		return &ev.NNext
 	case "NextStates":
-		return &fe.NextStates
+		return &ev.NextStates
 	case "NextLabels":
-		return &fe.NextLabels
+		return &ev.NextLabels
 	}
 	return nil
 }
 
-func (fe *FSAEnv) Actions() env.Elements {
+func (ev *FSAEnv) Actions() env.Elements {
 	return nil
 }
 
 // String returns the current state as a string
-func (fe *FSAEnv) String() string {
-	nn := fe.NNext.Values[0]
-	lbls := fe.NextLabels.Values[0:nn]
-	return fmt.Sprintf("S_%d_%v", fe.AState.Cur, lbls)
+func (ev *FSAEnv) String() string {
+	nn := ev.NNext.Values[0]
+	lbls := ev.NextLabels.Values[0:nn]
+	return fmt.Sprintf("S_%d_%v", ev.AState.Cur, lbls)
 }
 
-func (fe *FSAEnv) Init(run int) {
-	fe.Run.Scale = env.Run
-	fe.Epoch.Scale = env.Epoch
-	fe.Trial.Scale = env.Trial
-	fe.Run.Init()
-	fe.Epoch.Init()
-	fe.Seq.Init()
-	fe.Trial.Init()
-	fe.Run.Cur = run
-	fe.Trial.Cur = -1 // init state -- key so that first Step() = 0
-	fe.AState.Cur = 0
-	fe.AState.Prv = -1
+func (ev *FSAEnv) Init(run int) {
+	ev.Run.Scale = env.Run
+	ev.Epoch.Scale = env.Epoch
+	ev.Trial.Scale = env.Trial
+	ev.Run.Init()
+	ev.Epoch.Init()
+	ev.Seq.Init()
+	ev.Trial.Init()
+	ev.Run.Cur = run
+	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
+	ev.AState.Cur = 0
+	ev.AState.Prv = -1
 }
 
 // NextState sets NextStates including randomly chosen one at start
-func (fe *FSAEnv) NextState() {
-	nst := fe.TMat.Dim(0)
-	if fe.AState.Cur < 0 || fe.AState.Cur >= nst-1 {
-		fe.AState.Cur = 0
+func (ev *FSAEnv) NextState() {
+	nst := ev.TMat.Dim(0)
+	if ev.AState.Cur < 0 || ev.AState.Cur >= nst-1 {
+		ev.AState.Cur = 0
 	}
-	ri := fe.AState.Cur * nst
-	ps := fe.TMat.Values[ri : ri+nst]
-	ls := fe.Labels.Values[ri : ri+nst]
+	ri := ev.AState.Cur * nst
+	ps := ev.TMat.Values[ri : ri+nst]
+	ls := ev.Labels.Values[ri : ri+nst]
 	nxt := erand.PChoose64(ps) // next state chosen at random
-	fe.NextStates.Set1D(0, nxt)
-	fe.NextLabels.Set1D(0, ls[nxt])
+	ev.NextStates.Set1D(0, nxt)
+	ev.NextLabels.Set1D(0, ls[nxt])
 	idx := 1
 	for i, p := range ps {
 		if i != nxt && p > 0 {
-			fe.NextStates.Set1D(idx, i)
-			fe.NextLabels.Set1D(idx, ls[i])
+			ev.NextStates.Set1D(idx, i)
+			ev.NextLabels.Set1D(idx, ls[i])
 			idx++
 		}
 	}
-	fe.NNext.Set1D(0, idx)
-	fe.AState.Set(nxt)
+	ev.NNext.Set1D(0, idx)
+	ev.AState.Set(nxt)
 }
 
-func (fe *FSAEnv) Step() bool {
-	fe.Epoch.Same() // good idea to just reset all non-inner-most counters at start
-	fe.NextState()
-	fe.Trial.Incr()
-	if fe.AState.Prv == 0 {
-		if fe.Seq.Incr() {
-			fe.Epoch.Incr()
+func (ev *FSAEnv) Step() bool {
+	ev.Epoch.Same() // good idea to just reset all non-inner-most counters at start
+	ev.NextState()
+	ev.Trial.Incr()
+	if ev.AState.Prv == 0 {
+		if ev.Seq.Incr() {
+			ev.Epoch.Incr()
 		}
 	}
 	return true
 }
 
-func (fe *FSAEnv) Action(element string, input etensor.Tensor) {
+func (ev *FSAEnv) Action(element string, input etensor.Tensor) {
 	// nop
 }
 
-func (fe *FSAEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
+func (ev *FSAEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
 	switch scale {
 	case env.Run:
-		return fe.Run.Query()
+		return ev.Run.Query()
 	case env.Epoch:
-		return fe.Epoch.Query()
+		return ev.Epoch.Query()
 	case env.Sequence:
-		return fe.Seq.Query()
+		return ev.Seq.Query()
 	case env.Trial:
-		return fe.Trial.Query()
+		return ev.Trial.Query()
 	}
 	return -1, -1, false
 }

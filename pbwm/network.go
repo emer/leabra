@@ -160,6 +160,29 @@ func (nt *Network) AddClampDaLayer(name string) *ClampDaLayer {
 	return da
 }
 
+// AddTDLayers adds the standard TD temporal differences layers
+// projection from Rew to RewInteg is given class TDRewToInteg -- should
+// have no learning and 1 weight.
+func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td emer.Layer) {
+	rew = &Layer{}
+	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
+	rp = &TDRewPredLayer{}
+	nt.AddLayerInit(rp, prefix+"RewPred", []int{1, 1}, emer.Hidden)
+	ri = &TDRewIntegLayer{}
+	nt.AddLayerInit(ri, prefix+"RewInteg", []int{1, 1}, emer.Hidden)
+	td = &TDDaLayer{}
+	nt.AddLayerInit(td, prefix+"TD", []int{1, 1}, emer.Hidden)
+	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name()
+	td.(*TDDaLayer).RewInteg = ri.Name()
+	rp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: rew.Name(), YAlign: relpos.Front, Space: space})
+	ri.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: rp.Name(), YAlign: relpos.Front, Space: space})
+	td.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: ri.Name(), YAlign: relpos.Front, Space: space})
+
+	pj := nt.ConnectLayers(rew, ri, prjn.NewFull(), emer.Forward)
+	pj.SetClass("TDRewToInteg")
+	return
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
