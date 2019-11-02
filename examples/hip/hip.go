@@ -166,6 +166,7 @@ type Sim struct {
 	TstCycLog    *etable.Table     `view:"no-inline" desc:"testing cycle-level log data"`
 	RunLog       *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	RunStats     *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
+	TstStats     *etable.Table     `view:"no-inline" desc:"testing stats"`
 	Params       params.Sets       `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
 	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params)"`
@@ -178,7 +179,6 @@ type Sim struct {
 	TrainUpdt    leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
 	TestUpdt     leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
 	TestInterval int               `desc:"how often to run through all the test patterns, in terms of training epochs"`
-	LayStatNms   []string          `desc:"names of layers to collect more detailed stats on (avg act, etc)"`
 	MemThr       float64           `desc:"threshold to use for memory test -- if error proportion is below this number, it is scored as a correct trial"`
 
 	// statistics: note use float64 as that is best for etable.Table
@@ -215,6 +215,9 @@ type Sim struct {
 	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
 	RunFile      *os.File         `view:"-" desc:"log file"`
 	TmpVals      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
+	LayStatNms   []string         `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
+	TstNms       []string         `view:"-" desc:"names of test tables"`
+	TstStatNms   []string         `view:"-" desc:"names of test stats"`
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
 	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
@@ -256,6 +259,8 @@ func (ss *Sim) New() {
 	ss.LogSetParams = false
 	ss.MemThr = 0.34
 	ss.LayStatNms = []string{"ECin", "DG", "CA3", "CA1"}
+	ss.TstNms = []string{"AB", "AC", "Lure"}
+	ss.TstStatNms = []string{"Mem", "TrgOnWasOff", "TrgOffWasOn"}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1067,7 +1072,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 
-	dt.SetCellFloat("MemPct", row, agg.Mean(tix, "Mem")[0])
+	dt.SetCellFloat("Mem", row, agg.Mean(tix, "Mem")[0])
 	dt.SetCellFloat("TrgOnWasOff", row, agg.Mean(tix, "TrgOnWasOff")[0])
 	dt.SetCellFloat("TrgOffWasOn", row, agg.Mean(tix, "TrgOffWasOn")[0])
 
@@ -1100,7 +1105,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"MemPct", etensor.FLOAT64, nil, nil},
+		{"Mem", etensor.FLOAT64, nil, nil},
 		{"TrgOnWasOff", etensor.FLOAT64, nil, nil},
 		{"TrgOffWasOn", etensor.FLOAT64, nil, nil},
 	}
@@ -1123,7 +1128,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctCor", false, true, 0, true, 1)
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
 
-	plt.SetColParams("MemPct", true, true, 0, true, 1)      // default plot
+	plt.SetColParams("Mem", true, true, 0, true, 1)         // default plot
 	plt.SetColParams("TrgOnWasOff", true, true, 0, true, 1) // default plot
 	plt.SetColParams("TrgOffWasOn", true, true, 0, true, 1) // default plot
 
@@ -1257,30 +1262,19 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	})[0])
 	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
 
-	trlab := etable.NewIdxView(trl)
-	trlab.Filter(func(et *etable.Table, row int) bool {
-		return et.CellString("TestNm", row) == "AB"
-	})
-	trlac := etable.NewIdxView(trl)
-	trlac.Filter(func(et *etable.Table, row int) bool {
-		return et.CellString("TestNm", row) == "AC"
-	})
-	trllure := etable.NewIdxView(trl)
-	trllure.Filter(func(et *etable.Table, row int) bool {
-		return et.CellString("TestNm", row) == "Lure"
-	})
+	trix := etable.NewIdxView(trl)
+	spl := split.GroupBy(trix, []string{"TestNm"})
+	for _, ts := range ss.TstStatNms {
+		split.Agg(spl, ts, agg.AggMean)
+	}
+	ss.TstStats = spl.AggsToTable(true) // no stat name
 
-	dt.SetCellFloat("AB MemPct", row, agg.Mean(trlab, "Mem")[0])
-	dt.SetCellFloat("AB TrgOnWasOff", row, agg.Mean(trlab, "TrgOnWasOff")[0])
-	dt.SetCellFloat("AB TrgOffWasOn", row, agg.Mean(trlab, "TrgOffWasOn")[0])
-
-	dt.SetCellFloat("AC MemPct", row, agg.Mean(trlac, "Mem")[0])
-	dt.SetCellFloat("AC TrgOnWasOff", row, agg.Mean(trlac, "TrgOnWasOff")[0])
-	dt.SetCellFloat("AC TrgOffWasOn", row, agg.Mean(trlac, "TrgOffWasOn")[0])
-
-	dt.SetCellFloat("Lure MemPct", row, agg.Mean(trllure, "Mem")[0])
-	dt.SetCellFloat("Lure TrgOnWasOff", row, agg.Mean(trllure, "TrgOnWasOff")[0])
-	dt.SetCellFloat("Lure TrgOffWasOn", row, agg.Mean(trllure, "TrgOffWasOn")[0])
+	for ri := 0; ri < ss.TstStats.Rows; ri++ {
+		tst := ss.TstStats.CellString("TestNm", ri)
+		for _, ts := range ss.TstStatNms {
+			dt.SetCellFloat(tst+" "+ts, row, ss.TstStats.CellFloat(ts, ri))
+		}
+	}
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstEpcPlot.GoUpdate()
@@ -1300,15 +1294,11 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"AB MemPct", etensor.FLOAT64, nil, nil},
-		{"AB TrgOnWasOff", etensor.FLOAT64, nil, nil},
-		{"AB TrgOffWasOn", etensor.FLOAT64, nil, nil},
-		{"AC MemPct", etensor.FLOAT64, nil, nil},
-		{"AC TrgOnWasOff", etensor.FLOAT64, nil, nil},
-		{"AC TrgOffWasOn", etensor.FLOAT64, nil, nil},
-		{"Lure MemPct", etensor.FLOAT64, nil, nil},
-		{"Lure TrgOnWasOff", etensor.FLOAT64, nil, nil},
-		{"Lure TrgOffWasOn", etensor.FLOAT64, nil, nil},
+	}
+	for _, tn := range ss.TstNms {
+		for _, ts := range ss.TstStatNms {
+			sch = append(sch, etable.Column{tn + " " + ts, etensor.FLOAT64, nil, nil})
+		}
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -1326,18 +1316,15 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctCor", false, true, 0, true, 1)
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
 
-	plt.SetColParams("AB MemPct", true, true, 0, true, 1) // default plot
-	plt.SetColParams("AB TrgOnWasOff", false, true, 0, true, 1)
-	plt.SetColParams("AB TrgOffWasOn", false, true, 0, true, 1)
-
-	plt.SetColParams("AC MemPct", true, true, 0, true, 1) // default plot
-	plt.SetColParams("AC TrgOnWasOff", false, true, 0, true, 1)
-	plt.SetColParams("AC TrgOffWasOn", false, true, 0, true, 1)
-
-	plt.SetColParams("Lure MemPct", true, true, 0, true, 1)
-	plt.SetColParams("Lure TrgOnWasOff", false, true, 0, true, 1)
-	plt.SetColParams("Lure TrgOffWasOn", false, true, 0, true, 1)
-
+	for _, tn := range ss.TstNms {
+		for _, ts := range ss.TstStatNms {
+			if ts == "Mem" {
+				plt.SetColParams(tn+" "+ts, true, true, 0, true, 1) // default plot
+			} else {
+				plt.SetColParams(tn+" "+ts, false, true, 0, true, 1) // default plot
+			}
+		}
+	}
 	return plt
 }
 
@@ -1423,13 +1410,13 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
 	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
 
-	dt.SetCellFloat("AB MemPct", row, agg.Mean(epcix, "AB MemPct")[0])
+	dt.SetCellFloat("AB Mem", row, agg.Mean(epcix, "AB Mem")[0])
 	dt.SetCellFloat("AB TrgOnWasOff", row, agg.Mean(epcix, "AB TrgOnWasOff")[0])
 	dt.SetCellFloat("AB TrgOffWasOn", row, agg.Mean(epcix, "AB TrgOffWasOn")[0])
 
 	runix := etable.NewIdxView(dt)
 	spl := split.GroupBy(runix, []string{"Params"})
-	split.Desc(spl, "AB MemPct")
+	split.Desc(spl, "AB Mem")
 	split.Desc(spl, "AB TrgOnWasOff")
 	split.Desc(spl, "AB TrgOffWasOn")
 	ss.RunStats = spl.AggsToTable(false)
@@ -1459,7 +1446,7 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"AB MemPct", etensor.FLOAT64, nil, nil},
+		{"AB Mem", etensor.FLOAT64, nil, nil},
 		{"AB TrgOnWasOff", etensor.FLOAT64, nil, nil},
 		{"AB TrgOffWasOn", etensor.FLOAT64, nil, nil},
 	}
@@ -1479,7 +1466,7 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 	plt.SetColParams("PctCor", false, true, 0, true, 1)
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
 
-	plt.SetColParams("AB MemPct", true, true, 0, true, 1)      // default plot
+	plt.SetColParams("AB Mem", true, true, 0, true, 1)         // default plot
 	plt.SetColParams("AB TrgOnWasOff", true, true, 0, true, 1) // default plot
 	plt.SetColParams("AB TrgOffWasOn", true, true, 0, true, 1) // default plot
 	return plt
