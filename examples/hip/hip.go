@@ -441,9 +441,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 		ss.Net.WtFmDWt()
 	}
 
-	ca1 := ss.Net.LayerByName("CA1").(*leabra.Layer)
-	ecin := ss.Net.LayerByName("ECin").(*leabra.Layer)
-	ecout := ss.Net.LayerByName("ECout").(*leabra.Layer)
+	ca1 := ss.Net.LayerByName("CA1").(leabra.LeabraLayer).AsLeabra()
+	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
+	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
 	ca1FmECin := ca1.RcvPrjns.SendName("ECin").(*hip.EcCa1Prjn)
 	ca1FmCa3 := ca1.RcvPrjns.SendName("CA3").(*hip.CHLPrjn)
 
@@ -534,7 +534,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 	lays := []string{"Input", "ECout"}
 	for _, lnm := range lays {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		pats := en.State(ly.Nm)
 		if pats != nil {
 			ly.ApplyExt(pats)
@@ -631,8 +631,8 @@ func (ss *Sim) InitStats() {
 // for the entire full pattern as opposed to the plus-phase target
 // values clamped from ECin activations
 func (ss *Sim) MemStats(train bool) {
-	ecout := ss.Net.LayerByName("ECout").(*leabra.Layer)
-	ecin := ss.Net.LayerByName("ECin").(*leabra.Layer)
+	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
+	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
 	nn := ecout.Shape().Len()
 	trgOnWasOffAll := 0.0 // all units
 	trgOnWasOffCmp := 0.0 // only those that required completion, missing in ECin
@@ -693,7 +693,7 @@ func (ss *Sim) MemStats(train bool) {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) (sse, avgsse, cosdiff float64) {
-	outLay := ss.Net.LayerByName("ECout").(*leabra.Layer)
+	outLay := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
 	ss.TrlCosDiff = float64(outLay.CosDiff.Cos)
 	ss.TrlSSE, ss.TrlAvgSSE = outLay.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	if accum {
@@ -987,8 +987,8 @@ func (ss *Sim) LogTrnTrl(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTrnTrlLog(dt *etable.Table) {
-	// inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	// inLay := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	// outLay := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
 	dt.SetMetaData("name", "TrnTrlLog")
 	dt.SetMetaData("desc", "Record of training per input pattern")
@@ -1072,7 +1072,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("TrgOffWasOn", row, agg.Mean(tix, "TrgOffWasOn")[0])
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
@@ -1162,7 +1162,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("TrgOffWasOn", row, ss.TrgOffWasOn)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 
@@ -1171,8 +1171,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	// inLay := ss.Net.LayerByName("Input").(*leabra.Layer)
-	// outLay := ss.Net.LayerByName("Output").(*leabra.Layer)
+	// inLay := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	// outLay := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
@@ -1353,7 +1353,7 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*leabra.Layer)
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
 		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}

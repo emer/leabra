@@ -425,8 +425,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	// going to the same layers, but good practice and cheap anyway
 
 	// just using direct access to state here
-	in := ss.Net.LayerByName("Input").(*deep.Layer)
-	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
+	in := ss.Net.LayerByName("Input").(deep.DeepLayer).AsDeep()
+	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
 	clrmsk, setmsk, _ := in.ApplyExtFlags()
 	fsenv := en.(*FSAEnv)
 	ns := fsenv.NNext.Values[0]
@@ -537,8 +537,8 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) {
-	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
-	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
+	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
+	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
 	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
 	// ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	// compute SSE against target as activation of inp outside of trg > .5
@@ -805,7 +805,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
+		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
 		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
@@ -866,8 +866,8 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
-	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
+	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
+	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
 
 	trl := ss.TestEnv.Trial.Cur
 	row := trl
@@ -885,7 +885,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
+		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 	if ss.InputValsTsr == nil { // re-use same tensors so not always reallocating mem
@@ -904,8 +904,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inp := ss.Net.LayerByName("InputP").(*deep.Layer)
-	trg := ss.Net.LayerByName("Targets").(*deep.Layer)
+	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
+	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
@@ -1044,7 +1044,7 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(*deep.Layer)
+		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
 		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
 		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
