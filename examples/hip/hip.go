@@ -160,8 +160,6 @@ type Sim struct {
 	TrnEpcLog    *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	TstEpcLog    *etable.Table     `view:"no-inline" desc:"testing epoch-level log data"`
 	TstTrlLog    *etable.Table     `view:"no-inline" desc:"testing trial-level log data"`
-	TstErrLog    *etable.Table     `view:"no-inline" desc:"log of all test trials where errors were made"`
-	TstErrStats  *etable.Table     `view:"no-inline" desc:"stats on test trials where errors were made"`
 	TstCycLog    *etable.Table     `view:"no-inline" desc:"testing cycle-level log data"`
 	RunLog       *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	RunStats     *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
@@ -821,24 +819,28 @@ func (ss *Sim) TestAll() {
 			break
 		}
 	}
-	ss.TestNm = "AC"
-	ss.TestEnv.Table = etable.NewIdxView(ss.TestAC)
-	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
-	for {
-		ss.TestTrial(true)
-		_, _, chg := ss.TestEnv.Counter(env.Epoch)
-		if chg || ss.StopNow {
-			break
+	if !ss.StopNow {
+		ss.TestNm = "AC"
+		ss.TestEnv.Table = etable.NewIdxView(ss.TestAC)
+		ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
+		for {
+			ss.TestTrial(true)
+			_, _, chg := ss.TestEnv.Counter(env.Epoch)
+			if chg || ss.StopNow {
+				break
+			}
 		}
-	}
-	ss.TestNm = "Lure"
-	ss.TestEnv.Table = etable.NewIdxView(ss.TestLure)
-	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
-	for {
-		ss.TestTrial(true)
-		_, _, chg := ss.TestEnv.Counter(env.Epoch)
-		if chg || ss.StopNow {
-			break
+		if !ss.StopNow {
+			ss.TestNm = "Lure"
+			ss.TestEnv.Table = etable.NewIdxView(ss.TestLure)
+			ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
+			for {
+				ss.TestTrial(true)
+				_, _, chg := ss.TestEnv.Counter(env.Epoch)
+				if chg || ss.StopNow {
+					break
+				}
+			}
 		}
 	}
 	// log only at very end
