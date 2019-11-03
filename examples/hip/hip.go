@@ -12,7 +12,6 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/emer/emergent/emer"
@@ -907,13 +906,13 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 	return err
 }
 
-func (ss *Sim) OpenPat(dt *etable.Table, fname, desc string) {
+func (ss *Sim) OpenPat(dt *etable.Table, fname, name, desc string) {
 	err := dt.OpenCSV(gi.FileName(fname), etable.Tab)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	dt.SetMetaData("name", strings.TrimSuffix(fname, ".dat"))
+	dt.SetMetaData("name", name)
 	dt.SetMetaData("desc", desc)
 }
 
@@ -924,11 +923,11 @@ func (ss *Sim) OpenPats() {
 	// patgen.ReshapeCppFile(ss.TestAB, "Test_AB.dat", "TestAB.dat")
 	// patgen.ReshapeCppFile(ss.TestAC, "Test_AC.dat", "TestAC.dat")
 	// patgen.ReshapeCppFile(ss.TestLure, "Lure.dat", "TestLure.dat")
-	ss.OpenPat(ss.TrainAB, "TrainAB.dat", "AB Training Patterns")
-	ss.OpenPat(ss.TrainAC, "TrainAC.dat", "AC Training Patterns")
-	ss.OpenPat(ss.TestAB, "TestAB.dat", "AB Testing Patterns")
-	ss.OpenPat(ss.TestAC, "TestAC.dat", "AC Testing Patterns")
-	ss.OpenPat(ss.TestLure, "TestLure.dat", "Lure Testing Patterns")
+	ss.OpenPat(ss.TrainAB, "train_ab.tsv", "TrainAB", "AB Training Patterns")
+	ss.OpenPat(ss.TrainAC, "train_ac.tsv", "TrainAC", "AC Training Patterns")
+	ss.OpenPat(ss.TestAB, "test_ab.tsv", "TestAB", "AB Testing Patterns")
+	ss.OpenPat(ss.TestAC, "test_ac.tsv", "TestAC", "AC Testing Patterns")
+	ss.OpenPat(ss.TestLure, "test_lure.tsv", "TestLure", "Lure Testing Patterns")
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
