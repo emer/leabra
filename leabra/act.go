@@ -11,6 +11,7 @@ import (
 	"github.com/emer/leabra/chans"
 	"github.com/emer/leabra/knadapt"
 	"github.com/emer/leabra/nxx1"
+	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
 )
@@ -458,15 +459,16 @@ func (ws *WtScaleParams) Update() {
 // for purposes of computing scaling factors with partial connectivity
 // For 25% layer activity, binomial SEM = sqrt(p(1-p)) = .43, so 3x = 1.3 so 2 is a reasonable default.
 func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
+	ncon = math32.Max(ncon, 1) // prjn Avg can be < 1 in some cases
 	semExtra := 2
-	slayActN := int(savg*snu + .5) // sending layer actual # active
+	slayActN := int(mat32.Round(savg * snu)) // sending layer actual # active
 	slayActN = ints.MaxInt(slayActN, 1)
 	var sc float32
 	if ncon == snu {
 		sc = 1 / float32(slayActN)
 	} else {
 		rMaxActN := int(math32.Min(ncon, float32(slayActN))) // max number we could get
-		rAvgActN := int(savg*ncon + .5)                      // recv average actual # active if uniform
+		rAvgActN := int(mat32.Round(savg * ncon))            // recv average actual # active if uniform
 		rAvgActN = ints.MaxInt(rAvgActN, 1)
 		rExpActN := rAvgActN + semExtra // expected
 		rExpActN = ints.MinInt(rExpActN, rMaxActN)
