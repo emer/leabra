@@ -43,10 +43,11 @@ func (ls *LayerStru) InitName(lay emer.Layer, name string, net emer.Network) {
 }
 
 func (ls *LayerStru) Name() string               { return ls.Nm }
+func (ls *LayerStru) SetName(nm string)          { ls.Nm = nm }
 func (ls *LayerStru) Label() string              { return ls.Nm }
 func (ls *LayerStru) Class() string              { return ls.Typ.String() + " " + ls.Cls }
 func (ls *LayerStru) SetClass(cls string)        { ls.Cls = cls }
-func (ls *LayerStru) TypeName() string           { return "Layer" } // always, for params..
+func (ls *LayerStru) TypeName() string           { return "Layer" } // type category, for params..
 func (ls *LayerStru) Type() emer.LayerType       { return ls.Typ }
 func (ls *LayerStru) SetType(typ emer.LayerType) { ls.Typ = typ }
 func (ls *LayerStru) IsOff() bool                { return ls.Off }

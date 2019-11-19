@@ -160,10 +160,10 @@ func (nt *Network) AddClampDaLayer(name string) *ClampDaLayer {
 	return da
 }
 
-// AddTDLayers adds the standard TD temporal differences layers
-// projection from Rew to RewInteg is given class TDRewToInteg -- should
+// AddTDLayers adds the standard TD temporal differences layers, generating a DA signal.
+// Projection from Rew to RewInteg is given class TDRewToInteg -- should
 // have no learning and 1 weight.
-func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td emer.Layer) {
+func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, ri, td emer.Layer) {
 	rew = &Layer{}
 	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
 	rp = &TDRewPredLayer{}
@@ -174,12 +174,55 @@ func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td em
 	nt.AddLayerInit(td, prefix+"TD", []int{1, 1}, emer.Hidden)
 	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name()
 	td.(*TDDaLayer).RewInteg = ri.Name()
-	rp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: rew.Name(), YAlign: relpos.Front, Space: space})
-	ri.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: rp.Name(), YAlign: relpos.Front, Space: space})
-	td.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: ri.Name(), YAlign: relpos.Front, Space: space})
+	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
+	ri.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
+	td.SetRelPos(relpos.Rel{Rel: rel, Other: ri.Name(), YAlign: relpos.Front, Space: space})
 
-	pj := nt.ConnectLayers(rew, ri, prjn.NewFull(), emer.Forward)
+	pj := nt.ConnectLayers(rew, ri, prjn.NewFull(), emer.Forward).(leabra.LeabraPrjn).AsLeabra()
 	pj.SetClass("TDRewToInteg")
+	pj.Learn.Learn = false
+	pj.WtInit.Mean = 1
+	pj.WtInit.Var = 0
+	pj.WtInit.Sym = false
+	// {Sel: ".TDRewToInteg", Desc: "rew to integ",
+	// 	Params: params.Params{
+	// 		"Prjn.Learn.Learn": "false",
+	// 		"Prjn.WtInit.Mean": "1",
+	// 		"Prjn.WtInit.Var":  "0",
+	// 		"Prjn.WtInit.Sym":  "false",
+	// 	}},
+	return
+}
+
+// AddRWLayers adds simple Rescorla-Wagner (PV only) dopamine system, with a primary
+// Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
+// Only generates DA when Rew layer has external input -- otherwise zero.
+// Projection from RWPred to DA is given class RWPredToDA -- should
+// have no learning and 1 weight.
+func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, da emer.Layer) {
+	rew = &Layer{}
+	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
+	rp = &RWPredLayer{}
+	nt.AddLayerInit(rp, prefix+"RWPred", []int{1, 1}, emer.Hidden)
+	da = &RWDaLayer{}
+	nt.AddLayerInit(da, prefix+"DA", []int{1, 1}, emer.Hidden)
+	da.(*RWDaLayer).RewLay = rew.Name()
+	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
+	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
+
+	pj := nt.ConnectLayers(rp, da, prjn.NewFull(), emer.Forward).(leabra.LeabraPrjn).AsLeabra()
+	pj.SetClass("RWPredToDA")
+	pj.Learn.Learn = false
+	pj.WtInit.Mean = 1
+	pj.WtInit.Var = 0
+	pj.WtInit.Sym = false
+	// {Sel: ".RWPredToDA", Desc: "rew to da",
+	// 	Params: params.Params{
+	// 		"Prjn.Learn.Learn": "false",
+	// 		"Prjn.WtInit.Mean": "1",
+	// 		"Prjn.WtInit.Var":  "0",
+	// 		"Prjn.WtInit.Sym":  "false",
+	// 	}},
 	return
 }
 

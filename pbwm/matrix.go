@@ -74,7 +74,6 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Inhib.Self.Gi = 0.3
 	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.ActAvg.Init = 0.2
-	ly.SetClass("MatrixLayer")
 }
 
 func (ly *MatrixLayer) GateType() GateTypes {

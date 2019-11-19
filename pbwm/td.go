@@ -15,6 +15,7 @@ import (
 // TDRewPredLayer is the temporal differences reward prediction layer.
 // It represents estimated value V(t) in the minus phase, and computes
 // estimated V(t+1) based on its learned weights in plus phase.
+// Use TDRewPredPrjn for DA modulated learning.
 type TDRewPredLayer struct {
 	ModLayer
 }
@@ -168,8 +169,10 @@ func (ly *TDDaLayer) SendMods(ltime *leabra.Time) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  TDRewPredPrjn
 
-// TDRewPredPrjn does dopamine-modulated Hebbian learning -- i.e., the 3-factor
-// learning rule: Da * Recv.Act * Send.Act
+// TDRewPredPrjn does dopamine-modulated learning for reward prediction:
+// DWt = Da * Send.ActQ0 (activity on *previous* timestep)
+// Use in TDRewPredLayer typically to generate reward predictions.
+// Has no weight bounds or limits on sign etc.
 type TDRewPredPrjn struct {
 	deep.Prjn
 }
@@ -203,7 +206,7 @@ func (pj *TDRewPredPrjn) DWt() {
 
 			da := rlayi.UnitValByIdx(DALrn, int(ri))
 
-			dwt := da * sn.ActQ0 // no recv unit activation
+			dwt := da * sn.ActQ0 // no recv unit activation, prior trial act
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
