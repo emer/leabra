@@ -12,6 +12,7 @@ import (
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/bitflag"
+	"github.com/goki/ki/kit"
 )
 
 ////////////////////////////////////////////////////////////////////
@@ -23,6 +24,8 @@ type GPiThalPrjn struct {
 	deep.Prjn           // access as .Prjn
 	GeRaw     []float32 `desc:"per-recv, per-prjn raw excitatory input"`
 }
+
+var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, deep.PrjnProps)
 
 func (pj *GPiThalPrjn) Build() error {
 	err := pj.Prjn.Build()
@@ -126,6 +129,8 @@ type GPiThalLayer struct {
 	SendTo   []string        `desc:"list of layers to send GateState to"`
 	GPiNeurs []GPiNeuron     `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
+
+var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, deep.LayerProps)
 
 // Sel: "GPiThalLayer", Desc: "defaults ",
 // 	Params: params.Params{

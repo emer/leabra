@@ -7,6 +7,7 @@ package pbwm
 import (
 	"log"
 
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -19,6 +20,8 @@ type DaSrcLayer struct {
 	ModLayer
 	SendTo []string `desc:"list of layers to send dopamine to"`
 }
+
+var KiT_DaSrcLayer = kit.Types.AddType(&DaSrcLayer{}, deep.LayerProps)
 
 // SendToCheck is called during Build to ensure that SendTo layers are valid
 func (ly *DaSrcLayer) SendToCheck() error {
@@ -83,6 +86,8 @@ func (ly *DaSrcLayer) SendToAllBut(excl []string) {
 type ClampDaLayer struct {
 	DaSrcLayer
 }
+
+var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, deep.LayerProps)
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing

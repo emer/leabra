@@ -4,7 +4,12 @@
 
 package pbwm
 
-import "log"
+import (
+	"log"
+
+	"github.com/emer/leabra/deep"
+	"github.com/goki/ki/kit"
+)
 
 // SeSrcLayer is the basic type of layer that sends Se to other layers.
 // Uses a list of layer names to send to -- not use Prjn infrastructure
@@ -14,6 +19,8 @@ type SeSrcLayer struct {
 	ModLayer
 	SendTo []string `desc:"list of layers to send Se to"`
 }
+
+var KiT_SeSrcLayer = kit.Types.AddType(&SeSrcLayer{}, deep.LayerProps)
 
 // SendToCheck is called during Build to ensure that SendTo layers are valid
 func (ly *SeSrcLayer) SendToCheck() error {

@@ -11,6 +11,7 @@ import (
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // ModLayer is the base layer type for PBWM framework -- has variables for the
@@ -22,6 +23,8 @@ type ModLayer struct {
 	ACh float32 `desc:"current acetylcholine level for this layer"`
 	SE  float32 `desc:"current serotonin level for this layer"`
 }
+
+var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, deep.LayerProps)
 
 // AsMod returns this layer as a pbwm.ModLayer
 func (ly *ModLayer) AsMod() *ModLayer {

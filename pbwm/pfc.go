@@ -7,7 +7,9 @@ package pbwm
 import (
 	"github.com/chewxy/math32"
 	"github.com/emer/etable/minmax"
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // PFCGateParams has parameters for PFC gating
@@ -74,6 +76,8 @@ type PFCLayer struct {
 	Dyns     []*PFCDyn      `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
 	PFCNeurs []PFCNeuron    `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
+
+var KiT_PFCLayer = kit.Types.AddType(&PFCLayer{}, deep.LayerProps)
 
 func (ly *PFCLayer) Defaults() {
 	ly.GateLayer.Defaults()

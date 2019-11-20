@@ -6,8 +6,10 @@ package pbwm
 
 import (
 	"github.com/emer/etable/minmax"
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/ints"
+	"github.com/goki/ki/kit"
 )
 
 // GateShape defines the shape of the outer pool dimensions of gating layers,
@@ -137,6 +139,8 @@ type GateLayer struct {
 	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
 }
 
+var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, deep.LayerProps)
+
 func (ly *GateLayer) AsGate() *GateLayer {
 	return ly
 }
@@ -262,3 +266,26 @@ type GateLayerer interface {
 	// SetGateStates sets the GateStates from given source states, of given gating type
 	SetGateStates(states []GateState, typ GateTypes)
 }
+
+// GateTypes for region of striatum
+type GateTypes int
+
+//go:generate stringer -type=GateTypes
+
+var KiT_GateTypes = kit.Enums.AddEnum(GateTypesN, false, nil)
+
+func (ev GateTypes) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
+func (ev *GateTypes) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+
+const (
+	// Maint is maintenance gating -- toggles active maintenance in PFC
+	Maint GateTypes = iota
+
+	// Out is output gating -- drives deep layer activation
+	Out
+
+	// MaintOut for maint and output gating
+	MaintOut
+
+	GateTypesN
+)

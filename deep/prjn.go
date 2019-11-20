@@ -8,6 +8,7 @@ import (
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 )
 
@@ -18,6 +19,8 @@ type Prjn struct {
 	TRCBurstGeInc []float32 `desc:"local per-recv unit increment accumulator for TRCBurstGe excitatory conductance from sending units -- this will be thread-safe"`
 	AttnGeInc     []float32 `desc:"local per-recv unit increment accumulator for AttnGe excitatory conductance from sending units -- this will be thread-safe"`
 }
+
+var KiT_Prjn = kit.Types.AddType(&Prjn{}, PrjnProps)
 
 func (pj *Prjn) Defaults() {
 	pj.Prjn.Defaults()
@@ -207,11 +210,12 @@ func (pj *Prjn) DWtDeepCtxt() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  PrjnType
 
-// DeepLeabra extensions to the emer.PrjnType types
+// PrjnType has the DeepLeabra extensions to the emer.PrjnType types, for gui
+type PrjnType emer.PrjnType
 
 //go:generate stringer -type=PrjnType
 
-var KiT_PrjnType = kit.Enums.AddEnum(PrjnTypeN, false, nil)
+var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, false, nil)
 
 // The DeepLeabra prjn types
 const (
@@ -235,6 +239,16 @@ const (
 	// This is sent continuously all the time from deep layers using the standard delta-based
 	// Ge computation, and aggregated into the AttnGe variable on Super neurons.
 	DeepAttn
+)
 
+// gui versions
+const (
+	BurstCtxt_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
+	BurstTRC_
+	DeepAttn_
 	PrjnTypeN
 )
+
+var PrjnProps = ki.Props{
+	"EnumType:Typ": KiT_PrjnType,
+}

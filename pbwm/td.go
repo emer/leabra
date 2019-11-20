@@ -10,6 +10,7 @@ import (
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // TDRewPredLayer is the temporal differences reward prediction layer.
@@ -19,6 +20,8 @@ import (
 type TDRewPredLayer struct {
 	ModLayer
 }
+
+var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, deep.LayerProps)
 
 // ActFmG computes linear activation for TDRewPred
 func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
@@ -58,6 +61,8 @@ type TDRewIntegLayer struct {
 	ModLayer
 	RewInteg TDRewIntegParams `desc:"parameters for reward integration"`
 }
+
+var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, deep.LayerProps)
 
 func (ly *TDRewIntegLayer) Defaults() {
 	ly.ModLayer.Defaults()
@@ -112,6 +117,8 @@ type TDDaLayer struct {
 	DaSrcLayer
 	RewInteg string `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
 }
+
+var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, deep.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.DaSrcLayer.Defaults()
@@ -176,6 +183,8 @@ func (ly *TDDaLayer) SendMods(ltime *leabra.Time) {
 type TDRewPredPrjn struct {
 	deep.Prjn
 }
+
+var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, deep.PrjnProps)
 
 func (pj *TDRewPredPrjn) Defaults() {
 	pj.Prjn.Defaults()

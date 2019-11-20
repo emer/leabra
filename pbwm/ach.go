@@ -4,7 +4,12 @@
 
 package pbwm
 
-import "log"
+import (
+	"log"
+
+	"github.com/emer/leabra/deep"
+	"github.com/goki/ki/kit"
+)
 
 // AChSrcLayer is the basic type of layer that sends ACh to other layers.
 // Uses a list of layer names to send to -- not use Prjn infrastructure
@@ -14,6 +19,8 @@ type AChSrcLayer struct {
 	ModLayer
 	SendTo []string `desc:"list of layers to send ACh to"`
 }
+
+var KiT_AChSrcLayer = kit.Types.AddType(&AChSrcLayer{}, deep.LayerProps)
 
 // SendToCheck is called during Build to ensure that SendTo layers are valid
 func (ly *AChSrcLayer) SendToCheck() error {

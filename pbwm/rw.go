@@ -10,6 +10,7 @@ import (
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // RWPredLayer computes reward prediction for a simple Rescorla-Wagner
@@ -20,6 +21,8 @@ import (
 type RWPredLayer struct {
 	ModLayer
 }
+
+var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, deep.LayerProps)
 
 // ActFmG computes linear activation for RWPred
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
@@ -45,6 +48,8 @@ type RWDaLayer struct {
 	DaSrcLayer
 	RewLay string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
 }
+
+var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
 
 func (ly *RWDaLayer) Defaults() {
 	ly.DaSrcLayer.Defaults()
@@ -111,6 +116,8 @@ func (ly *RWDaLayer) SendMods(ltime *leabra.Time) {
 type RWPrjn struct {
 	deep.Prjn
 }
+
+var KiT_RWPrjn = kit.Types.AddType(&RWPrjn{}, deep.PrjnProps)
 
 func (pj *RWPrjn) Defaults() {
 	pj.Prjn.Defaults()

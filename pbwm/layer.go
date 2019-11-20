@@ -5,7 +5,9 @@
 package pbwm
 
 import (
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // pbwm.Layer is the default layer type for PBWM framework, based on the ModLayer
@@ -14,6 +16,8 @@ type Layer struct {
 	ModLayer
 	DaMod DaModParams `desc:"dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning."`
 }
+
+var KiT_Layer = kit.Types.AddType(&Layer{}, deep.LayerProps)
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *Layer) GFmInc(ltime *leabra.Time) {

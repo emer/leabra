@@ -5,7 +5,9 @@
 package pbwm
 
 import (
+	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/ki/kit"
 )
 
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
@@ -46,6 +48,8 @@ type MatrixLayer struct {
 	Matrix      MatrixParams   `desc:"matrix parameters"`
 	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
+
+var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, deep.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",
