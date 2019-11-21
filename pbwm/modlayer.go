@@ -195,3 +195,29 @@ func (ly *ModLayer) InitActs() {
 	ly.ACh = 0
 	ly.SE = 0
 }
+
+// DoQuarter2DWt indicates whether to do optional Q2 DWt
+func (ly *ModLayer) DoQuarter2DWt() bool {
+	return false
+}
+
+// QuarterFinal does updating after end of a quarter
+func (ly *ModLayer) QuarterFinal(ltime *leabra.Time) {
+	ly.Layer.QuarterFinal(ltime)
+	if ltime.Quarter == 1 {
+		ly.LeabraLay.(PBWMLayer).Quarter2DWt()
+	}
+}
+
+// Quarter2DWt is optional Q2 DWt -- define where relevant
+func (ly *ModLayer) Quarter2DWt() {
+	for _, p := range ly.SndPrjns {
+		if p.IsOff() {
+			continue
+		}
+		rly := p.RecvLay().(PBWMLayer)
+		if rly.DoQuarter2DWt() {
+			p.(leabra.LeabraPrjn).DWt()
+		}
+	}
+}

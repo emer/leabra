@@ -121,6 +121,29 @@ func (ly *PFCLayer) Build() error {
 	return nil
 }
 
+// MaintPFC returns corresponding PFC maintenance layer with same name but out -> mnt
+// could be nil
+func (ly *PFCLayer) MaintPFC() *PFCLayer {
+	sz := len(ly.Nm)
+	mnm := ly.Nm[:sz-3] + "mnt"
+	li := ly.Network.LayerByName(mnm)
+	if li == nil {
+		return nil
+	}
+	return li.(*PFCLayer)
+}
+
+// DeepPFC returns corresponding PFC deep layer with same name + D
+// could be nil
+func (ly *PFCLayer) DeepPFC() *PFCLayer {
+	dnm := ly.Nm + "D"
+	li := ly.Network.LayerByName(dnm)
+	if li == nil {
+		return nil
+	}
+	return li.(*PFCLayer)
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
@@ -131,6 +154,48 @@ func (ly *PFCLayer) InitActs() {
 		pnr.ActG = 0
 	}
 }
+
+// DecayStatePool decays activation state by given proportion in given pool index (0 based)
+func (ly *PFCLayer) DecayStatePool(pool int, decay float32) {
+	pi := int32(pool + 1) // 1 based
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() || nrn.SubPool != pi {
+			continue
+		}
+		ly.Act.DecayState(nrn, decay)
+	}
+	pl := &ly.Pools[pi]
+	pl.Inhib.Decay(decay)
+}
+
+// ClearCtxtPool clears CtxtGe in given pool index (0 based)
+func (ly *PFCLayer) ClearCtxtPool(pool int) {
+	pi := int32(pool + 1) // 1 based
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() || nrn.SubPool != pi {
+			continue
+		}
+		dnr := &ly.DeepNeurs[ni]
+		dnr.Burst = 0
+		dnr.CtxtGe = 0
+	}
+}
+
+// ClearMaint resets maintenance in corresponding pool (0 based) in maintenance layer
+func (ly *PFCLayer) ClearMaint(pool int) {
+	pfcm := ly.MaintPFC()
+	if pfcm == nil {
+		return
+	}
+	pfcm.DecayStatePool(pool, pfcm.Maint.Clear)
+	gs := &ly.GateStates[pool] // 0 based
+	gs.Cnt = -1                // reset
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Dyns
 
 // SetDyn sets given dynamic maint element to given parameters (must exist)
 func (ly *PFCLayer) SetDyn(dyn int, init, rise, decay float32, desc string) *PFCDyn {
@@ -229,27 +294,62 @@ func (ly *PFCLayer) Gating(ltime *leabra.Time) {
 		if gs.Act > 0 { // use GPiThal threshold, so anything > 0
 			if gs.Cnt >= 1 { // already maintaining
 				if ly.Maint.Clear > 0 {
-					// todo: add for just one pool
-					//   	      DecayState(u, net, thr_no, maint.clear)
+					ly.DecayStatePool(gi, ly.Maint.Clear)
 				}
 			}
 			gs.Cnt = 0           // this is the "just gated" signal
 			if ly.Gate.OutGate { // time to clear out maint
-				// ly.ClearOtherMaint(u, net, thr_no) // todo
-			}
-		} else { // not gating now
-			// test for over-duration maintenance -- allow for active gating to override
-			if gs.Cnt >= ly.Maint.MaxMaint {
-				gs.Cnt = -1
-			} else { // note: C++ does this in Send_DeepCtxtNetin
-				if gs.Cnt > 0 {
-					gs.Cnt++
-				} else {
-					gs.Cnt--
-				}
+				ly.ClearMaint(gi)
 			}
 		}
+		// test for over-duration maintenance -- allow for active gating to override
+		if gs.Cnt >= ly.Maint.MaxMaint {
+			gs.Cnt = -1
+		}
 	}
+}
+
+// QuarterFinal does updating after end of a quarter
+func (ly *PFCLayer) QuarterFinal(ltime *leabra.Time) {
+	ly.GateLayer.QuarterFinal(ltime)
+	if ly.IsSuper() {
+		ly.GateStateToDeep()
+	}
+}
+
+// GateStateToDeep copies superficial gate state to corresponding deep layer
+func (ly *PFCLayer) GateStateToDeep() {
+	pfcd := ly.DeepPFC()
+	if pfcd == nil {
+		return
+	}
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		dgs := &pfcd.GateStates[gi]
+		dgs.Cnt = gs.Cnt // just the count
+	}
+}
+
+// SendCtxtGe sends full Burst activation over BurstCtxt projections to integrate
+// CtxtGe excitatory conductance on deep layers.
+// This must be called at the end of the DeepBurst quarter for this layer.
+func (ly *PFCLayer) SendCtxtGe(ltime *leabra.Time) {
+	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+		return
+	}
+	for gi := range ly.GateStates {
+		gs := &ly.GateStates[gi]
+		if gs.Cnt < 0 {
+			ly.ClearCtxtPool(gi)
+			gs.Cnt--
+		} else {
+			gs.Cnt++
+		}
+	}
+
+	// todo: could optimize to not send if not maint
+
+	ly.GateLayer.SendCtxtGe(ltime)
 }
 
 // BurstFmAct updates Burst layer 5 IB bursting value from current Act (superficial activation)
@@ -258,7 +358,7 @@ func (ly *PFCLayer) BurstFmAct(ltime *leabra.Time) {
 	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
 		return
 	}
-	if !ly.IsSuper() { // special for super
+	if !ly.IsSuper() { // rest is special for super
 		ly.GateLayer.BurstFmAct(ltime)
 		return
 	}
@@ -309,49 +409,13 @@ func (ly *PFCLayer) RecGateAct(ltime *leabra.Time) {
 	}
 }
 
-// todo: deep needs to get gate.Cnt -- maybe have it compute separately?
-
-// void STATE_CLASS(PFCUnitSpec)::GetThalCntFromSuper
-//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
-//
-//   // look for layer we recv a deep context con from, that is also a PFCUnitSpec SUPER
-//   const int nrg = u->NRecvConGps(net);
-//   for(int g=0; g<nrg; g++) {
-//     LEABRA_CON_STATE* recv_gp = u->RecvConState(net, g);
-//     if(recv_gp->NotActive()) continue;
-//     LEABRA_CON_SPEC_CPP* cs = recv_gp->GetConSpec(net);
-//     if(!cs->IsDeepCtxtCon()) continue;
-//     LEABRA_LAYER_STATE* fmlay = recv_gp->GetSendLayer(net);
-//     LEABRA_UNIT_SPEC_CPP* fmus = fmlay->GetUnitSpec(net);
-//     if(fmus->GetStateSpecType() != LEABRA_NETWORK_STATE::T_PFCUnitSpec) continue;
-//     if(!fmus->deep.IsSuper() || recv_gp->size == 0) continue;
-//     LEABRA_UNIT_STATE* suv = recv_gp->UnState(0,net); // get first connection
-//     u->thal_cnt = suv->thal_cnt; // all super guys in same stripe should have same thal_cnt
-//   }
-// }
-
-// todo: Send_DeepCtxtNetin was used for incrementing ctrs in C++ -- not sure if needed?
-
-// void STATE_CLASS(PFCUnitSpec)::Send_DeepCtxtNetin
-//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
-//
-//   if(!deep.on || !Quarter_DeepRawPrevQtr(net->quarter)) return;
-//
-//   if(u->thal_cnt < 0.0f) {      // not maintaining or just gated -- zero!
-//     u->deep_raw = 0.0f;
-//     u->deep_ctxt = 0.0f;
-//     u->thal_cnt -= 1.0f;        // decrement count -- optional
-//   }
-//   else {
-//     u->thal_cnt += 1.0f;          // we are maintaining, update count for all
-//   }
-//
-//   if(deep.IsSuper()) {
-//     if(u->thal_cnt < 0.0f) return; // optimization: don't send if not maintaining!
-//   }
-//
-//   inherited::Send_DeepCtxtNetin(u, net, thr_no);
-// }
+// DoQuarter2DWt indicates whether to do optional Q2 DWt
+func (ly *PFCLayer) DoQuarter2DWt() bool {
+	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(1) {
+		return false
+	}
+	return true
+}
 
 // todo: Quarter_Init_Deep called "Compute_DeepStateUpdt":
 
@@ -374,34 +438,4 @@ func (ly *PFCLayer) RecGateAct(ltime *leabra.Time) {
 //   }
 //
 //   inherited::Compute_DeepStateUpdt(u, net, thr_no);
-// }
-
-// todo: ClearOtherMaint should be based on something like SendTo list?  was a marker con from out
-// pfc to maint pfc -- pretty hacky.
-
-// void STATE_CLASS(PFCUnitSpec)::ClearOtherMaint
-//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
-//
-//   LEABRA_LAYER_STATE* lay = u->GetOwnLayer(net);
-//   LEABRA_UNGP_STATE* ugd = u->GetOwnUnGp(net);
-//   if(ugd->acts_eq.max < 0.1f)   // we can't clear anyone if nobody in our group is active!
-//     return;
-//
-//   const int nsg = u->NSendConGps(net);
-//   for(int g=0; g<nsg; g++) {
-//     LEABRA_CON_STATE* send_gp = u->SendConState(net, g);
-//     if(send_gp->NotActive()) continue;
-//     LEABRA_CON_SPEC_CPP* cs = send_gp->GetConSpec(net);
-//     if(!cs->IsMarkerCon()) continue;
-//     for(int j=0;j<send_gp->size; j++) {
-//       LEABRA_UNIT_STATE* su = send_gp->UnState(j,net);
-//       if(su->thal_cnt >= 1.0f) { // important!  only for established maint, not just gated!
-//         STATE_CLASS(PFCUnitSpec)* mus = (STATE_CLASS(PFCUnitSpec)*)su->GetUnitSpec(net);
-//         su->thal_cnt = -1.0f; // terminate!
-//         if(mus->maint.clear > 0.0f) {
-//           DecayState(su, net, thr_no, mus->maint.clear); // note: thr_no is WRONG here! but shouldn't matter..
-//         }
-//       }
-//     }
-//   }
 // }

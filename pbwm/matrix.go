@@ -238,3 +238,11 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 		}
 	}
 }
+
+// DoQuarter2DWt indicates whether to do optional Q2 DWt
+func (ly *MatrixLayer) DoQuarter2DWt() bool {
+	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(1) {
+		return false
+	}
+	return true
+}

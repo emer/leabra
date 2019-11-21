@@ -149,7 +149,9 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 	if pfcMnt != nil {
 		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	}
-	gpi.(*GPiThalLayer).SendToMatrixPFC(prefix) // sends gating to all these layers
+	gpl := gpi.(*GPiThalLayer)
+	gpl.SendToMatrixPFC(prefix) // sends gating to all these layers
+	gpl.SendGateShape()
 	return
 }
 
@@ -259,3 +261,6 @@ func (nt *Network) RecGateAct(ltime *leabra.Time) {
 func (nt *Network) SendMods(ltime *leabra.Time) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).SendMods(ltime) }, "SendMods")
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Learn methods

@@ -117,7 +117,7 @@ func (pj *MatrixTracePrjn) DWt() {
 			daLrn := rlayi.UnitValByIdx(DALrn, int(ri))
 			ach := rlayi.UnitValByIdx(ACh, int(ri))
 			tr := trsy.Tr
-			gateCnt := rlayi.UnitValByIdx(GateCnt, int(ri))
+			gateAct := rlayi.UnitValByIdx(GateAct, int(ri))
 
 			dwt := float32(0)
 			posDA := (da > 0)
@@ -131,7 +131,7 @@ func (pj *MatrixTracePrjn) DWt() {
 
 			newNTr := pj.Trace.LrnFactor(rn.Act) * sn.Act
 			ntr := float32(0)
-			if gateCnt > 0 { // gated
+			if gateAct > 0 { // gated
 				ntr = newNTr
 			} else { // not-gated
 				ntr = -newNTr // opposite sign for non-gated
@@ -148,6 +148,9 @@ func (pj *MatrixTracePrjn) DWt() {
 			norm := float32(1)
 			if pj.Learn.Norm.On {
 				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+			} else {
+				sy.Norm = trsy.NTr // store in norm, moment!
+				sy.Moment = trsy.Tr
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

@@ -44,14 +44,23 @@
         + Matrix: PatchShunt, SaveGatingThal, OutAChInhib in ApplyInhib
         + PFC:    PFCGating
 
+# Details
+
+* Currently only supporting 1-to-1 Maint and Out prjns -- Out gating automatically clears same pool in maint
         
 # TODO
-
-- [ ] Matrix uses net_gain = 0.5 -- why?? 
 
 - [ ] PFCDeep is missing dyns and ctr etc -- not really functioning
 
 - [ ] LearnQtr in Prjns -- deep doesn't have this either now right?
 
-- [ ] Trace matrix learning and other prjns
+- [ ] Matrix uses net_gain = 0.5 -- why??  important for SIR2?, but not SIR1
+
+- [ ] patch -- not *essential* for SIR1, test in SIR2
+
+- [ ] TAN -- not *essential* for SIR1, test for SIR2
+
+- [ ] del_inhib -- delta inhibition -- SIR1 MUCH faster learning without!  test for SIR2
+
+- [ ] slow_wts -- not important for SIR1, test for SIR2
 

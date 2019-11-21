@@ -36,6 +36,12 @@ type PBWMLayer interface {
 	// SendMods is called at end of Cycle to send modulator signals (DA, etc)
 	// which will then be active for the next cycle of processing
 	SendMods(ltime *leabra.Time)
+
+	// Quarter2DWt is optional Q2 DWt -- PFC and matrix layers can do this as appropriate
+	Quarter2DWt()
+
+	// DoQuarter2DWt returns true if this recv layer should have its weights updated
+	DoQuarter2DWt() bool
 }
 
 // PBWMPrjn defines the essential algorithmic API for PBWM at the projection level.
