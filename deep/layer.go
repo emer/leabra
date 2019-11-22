@@ -248,9 +248,6 @@ func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.DeepNeurs {
 		dnr := &ly.DeepNeurs[ni]
 		dnr.ActNoAttn -= decay * (dnr.ActNoAttn - ly.Act.Init.Act)
-		dnr.BurstSent = 0
-		dnr.TRCBurstGe = 0
-		dnr.AttnGe = 0
 	}
 }
 
@@ -293,9 +290,7 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 						continue
 					}
 					if ptyp == DeepAttn {
-						if ly.DeepAttn.On {
-							pj.SendAttnGeDelta(ni, delta)
-						}
+						pj.SendAttnGeDelta(ni, delta)
 					} else {
 						pj.SendGDelta(ni, delta)
 					}
@@ -362,18 +357,22 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 		return
 	}
 	ly.GFmIncNeur(ltime) // regular
-	if ly.DeepAttn.On {
-		for _, p := range ly.RcvPrjns {
-			if p.IsOff() {
-				continue
-			}
-			pj := p.(DeepPrjn)
-			ptyp := pj.Type()
-			if ptyp != DeepAttn {
-				continue
-			}
-			pj.RecvAttnGeInc()
+	ly.LeabraLay.(DeepLayer).AttnGeInc(ltime)
+}
+
+// AttnGeInc integrates new AttnGe from increments sent during last SendGDelta.
+// Very low overhead if no DeepAttn prjns.
+func (ly *Layer) AttnGeInc(ltime *leabra.Time) {
+	for _, p := range ly.RcvPrjns {
+		if p.IsOff() {
+			continue
 		}
+		pj := p.(DeepPrjn)
+		ptyp := pj.Type()
+		if ptyp != DeepAttn {
+			continue
+		}
+		pj.RecvAttnGeInc()
 	}
 }
 

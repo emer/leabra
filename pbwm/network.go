@@ -114,6 +114,7 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 	dp.SetClass("PFC")
 	sp.Gate.OutGate = out
 	dp.Gate.OutGate = out
+	dp.Dyns.MaintOnly()
 	dp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 	pj := nt.ConnectLayers(sp, dp, prjn.NewOneToOne(), deep.BurstCtxt)
 	pj.SetClass("PFCToDeep")

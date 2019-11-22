@@ -104,7 +104,7 @@ func (tp *TRCParams) BurstGe(burstGe float32) float32 {
 // AttnParams are parameters determining how the DeepAttn and DeepLrn attentional modulation
 // is computed from the AttnGe inputs received via DeepAttn projections
 type AttnParams struct {
-	On  bool    `desc:"Enable the computation of DeepAttn, DeepLrn from AttnGe (otherwise, DeepAttn and DeepLrn = 1"`
+	On  bool    `desc:"Enable the computation of DeepAttn, DeepLrn from AttnGe (otherwise, DeepAttn and DeepLrn = 1)"`
 	Min float32 `viewif:"On" min:"0" max:"1" def:"0.8" desc:"Minimum DeepAttn value, which can provide a non-zero baseline for attentional modulation (typical biological attentional modulation levels are roughly 30% or so at the neuron-level, e.g., in V4)"`
 	Thr float32 `viewif:"On" min:"0" desc:"Threshold on AttnGe before DeepAttn is compute -- if not receiving even this amount of overall input from deep layer senders, then just set DeepAttn and DeepLrn to 1 for all neurons, as there isn't enough of a signal to go on yet"`
 

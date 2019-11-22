@@ -36,6 +36,7 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 		ly.Act.GeFmRaw(nrn, geRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 	}
+	ly.LeabraLay.(PBWMLayer).AttnGeInc(ltime)
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances

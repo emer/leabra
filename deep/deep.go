@@ -15,6 +15,9 @@ type DeepLayer interface {
 	// AsDeep returns this layer as a deep.Layer -- provides direct access to variables
 	AsDeep() *Layer
 
+	// AttnGeInc integrates new AttnGe from increments sent during last SendGDelta.
+	AttnGeInc(ltime *leabra.Time)
+
 	// AvgMaxAttnGe computes the average and max AttnGe stats
 	AvgMaxAttnGe(ltime *leabra.Time)
 

@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/chewxy/math32"
+	"github.com/emer/etable/minmax"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -20,9 +21,15 @@ import (
 // Use with RWPrjn which does simple delta-rule learning on minus-plus.
 type RWPredLayer struct {
 	ModLayer
+	PredRange minmax.F32 `desc:"default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance"`
 }
 
 var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, deep.LayerProps)
+
+func (ly *RWPredLayer) Defaults() {
+	ly.ModLayer.Defaults()
+	ly.PredRange.Set(0.01, 0.99)
+}
 
 // ActFmG computes linear activation for RWPred
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
@@ -31,7 +38,7 @@ func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.Act = nrn.Ge // linear
+		nrn.Act = ly.PredRange.ClipVal(nrn.Ge) // clipped linear
 	}
 }
 

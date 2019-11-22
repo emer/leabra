@@ -768,6 +768,7 @@ func (ly *Layer) AlphaCycInit() {
 		ly.LeabraLay.GenNoise()
 	}
 	ly.LeabraLay.DecayState(ly.Act.Init.Decay)
+	ly.LeabraLay.InitGInc()
 	if ly.Act.Clamp.Hard && ly.Typ == emer.Input {
 		ly.LeabraLay.HardClamp()
 	}
@@ -838,7 +839,8 @@ func (ly *Layer) GenNoise() {
 	}
 }
 
-// DecayState decays activation state by given proportion (default is on ly.Act.Init.Decay)
+// DecayState decays activation state by given proportion (default is on ly.Act.Init.Decay).
+// This does *not* call InitGInc -- must call that separately at start of AlphaCyc
 func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]

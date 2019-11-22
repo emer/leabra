@@ -24,9 +24,11 @@ func (gp *PFCGateParams) Defaults() {
 	gp.MntThal = 1
 }
 
+// todo: see about getting rid of MntGeMax?
+
 // PFCMaintParams for PFC maintenance functions
 type PFCMaintParams struct {
-	SMnt     minmax.F32 `desc:"default 0.3..0.5 -- for superficial neurons, how much of DeepLrn to add into Ge input to support maintenance, from deep maintenance signal -- 0.25 is generally minimum to support maintenance"`
+	SMnt     minmax.F32 `desc:"default 0.3..0.5 -- for superficial neurons, how much of AttnGe to add into Ge input to support maintenance, from deep maintenance signal -- 0.25 is generally minimum to support maintenance"`
 	MntGeMax float32    `def:"0.5" desc:"maximum GeRaw.Max value required to drive the minimum sMnt.Min maintenance current from deep -- anything above this drives the same SMnt.Min value -- below this value scales the effective mnt current between SMnt.Min to .Max in reverse proportion to GeRaw.Max value"`
 	Clear    float32    `"min:"0" max:"1" def:"0.5" desc:"how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears"`
 	UseDyn   bool       `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in misc_1 -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
@@ -37,27 +39,7 @@ func (mp *PFCMaintParams) Defaults() {
 	mp.SMnt.Set(0.3, 0.5)
 	mp.MntGeMax = 0.5
 	mp.Clear = 0.5
-	mp.UseDyn = true
 	mp.MaxMaint = 100
-}
-
-// PFC dynamic behavior element -- defines the dynamic behavior of deep layer PFC units
-type PFCDyn struct {
-	Init     float32 `desc:"initial value at point when gating starts -- MUST be > 0 when used."`
-	RiseTau  float32 `desc:"time constant for linear rise in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first"`
-	DecayTau float32 `desc:"time constant for linear decay in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first"`
-	Desc     string  `desc:"description of this factor"`
-}
-
-func (pd *PFCDyn) Defaults() {
-	pd.Init = 1
-}
-
-func (pd *PFCDyn) Set(init, rise, decay float32, desc string) {
-	pd.Init = init
-	pd.RiseTau = rise
-	pd.DecayTau = decay
-	pd.Desc = desc
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -65,7 +47,8 @@ func (pd *PFCDyn) Set(init, rise, decay float32, desc string) {
 
 // PFCNeuron contains extra variables for PFCLayer neurons -- stored separately
 type PFCNeuron struct {
-	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	ActG  float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	Maint float32 `desc:"maintenance value for Deep layers"`
 }
 
 // PFCLayer is a Prefrontal Cortex BG-gated working memory layer
@@ -73,7 +56,7 @@ type PFCLayer struct {
 	GateLayer
 	Gate     PFCGateParams  `desc:"PFC Gating parameters"`
 	Maint    PFCMaintParams `desc:"PFC Maintenance parameters"`
-	Dyns     []*PFCDyn      `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
+	Dyns     PFCDyns        `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
 	PFCNeurs []PFCNeuron    `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
@@ -86,10 +69,16 @@ func (ly *PFCLayer) Defaults() {
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
 		ly.DeepBurst.BurstQtr = 0
 		ly.DeepBurst.SetBurstQtr(leabra.Q1)
+		ly.Maint.MaxMaint = 1
 	} else {
 		ly.DeepBurst.BurstQtr = 0
 		ly.DeepBurst.SetBurstQtr(leabra.Q2)
 		ly.DeepBurst.SetBurstQtr(leabra.Q4)
+	}
+	if len(ly.Dyns) > 0 {
+		ly.Maint.UseDyn = true
+	} else {
+		ly.Maint.UseDyn = false
 	}
 }
 
@@ -158,23 +147,24 @@ func (ly *PFCLayer) InitActs() {
 // DecayStatePool decays activation state by given proportion in given pool index (0 based)
 func (ly *PFCLayer) DecayStatePool(pool int, decay float32) {
 	pi := int32(pool + 1) // 1 based
-	for ni := range ly.Neurons {
+	pl := &ly.Pools[pi]
+	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() || nrn.SubPool != pi {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.DecayState(nrn, decay)
 	}
-	pl := &ly.Pools[pi]
 	pl.Inhib.Decay(decay)
 }
 
 // ClearCtxtPool clears CtxtGe in given pool index (0 based)
 func (ly *PFCLayer) ClearCtxtPool(pool int) {
 	pi := int32(pool + 1) // 1 based
-	for ni := range ly.Neurons {
+	pl := &ly.Pools[pi]
+	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() || nrn.SubPool != pi {
+		if nrn.IsOff() {
 			continue
 		}
 		dnr := &ly.DeepNeurs[ni]
@@ -189,42 +179,11 @@ func (ly *PFCLayer) ClearMaint(pool int) {
 	if pfcm == nil {
 		return
 	}
-	pfcm.DecayStatePool(pool, pfcm.Maint.Clear)
 	gs := &ly.GateStates[pool] // 0 based
-	gs.Cnt = -1                // reset
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Dyns
-
-// SetDyn sets given dynamic maint element to given parameters (must exist)
-func (ly *PFCLayer) SetDyn(dyn int, init, rise, decay float32, desc string) *PFCDyn {
-	dy := &PFCDyn{}
-	dy.Set(init, rise, decay, desc)
-	ly.Dyns[dyn] = dy
-	return dy
-}
-
-// MaintDyn creates basic default maintenance dynamic configuration -- every
-// unit just maintains over time.
-// This should be used for Output gating layer.
-func (ly *PFCLayer) MaintDyn() {
-	ly.Dyns = make([]*PFCDyn, 1)
-	ly.SetDyn(0, 1, 0, 0, "maintain stable act")
-}
-
-// FullDyn creates full dynamic Dyn configuration, with 5 different
-// dynamic profiles: stable maint, phasic, rising maint, decaying maint,
-// and up / down maint.  tau is the rise / decay base time constant.
-func (ly *PFCLayer) FullDyn(tau float32) {
-	ndyn := 5
-	ly.Dyns = make([]*PFCDyn, ndyn)
-
-	ly.SetDyn(0, 1, 0, 0, "maintain stable act")
-	ly.SetDyn(1, 1, 0, 1, "immediate phasic response")
-	ly.SetDyn(2, .1, tau, 0, "maintained, rising value over time")
-	ly.SetDyn(3, 1, 0, tau, "maintained, decaying value over time")
-	ly.SetDyn(4, .1, .5*tau, tau, "maintained, rising then falling over time")
+	if gs.Cnt >= 1 {           // important: only for established maint, not just gated..
+		gs.Cnt = -1 // reset
+		pfcm.DecayStatePool(pool, pfcm.Maint.Clear)
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -255,16 +214,17 @@ func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 		geRaw := nrn.GeRaw
 		if gs.Cnt == 0 { // just gated -- only maint if nothing else going on
 			if gs.GeRaw.Max < 0.05 {
-				geRaw += ly.Maint.SMnt.Max * dnr.DeepLrn
+				geRaw += ly.Maint.SMnt.Max * dnr.AttnGe
 			}
 		} else if gs.Cnt > 0 { // maintaining
 			geMax := math32.Min(gs.GeRaw.Max, ly.Maint.MntGeMax)
 			geFact := 1 - (geMax / ly.Maint.MntGeMax)
 			geMnt := ly.Maint.SMnt.ProjVal(geFact)
-			geRaw += geMnt * dnr.DeepLrn
+			geRaw += geMnt * dnr.AttnGe
 		}
 		ly.Act.GeFmRaw(nrn, geRaw)
 	}
+	ly.LeabraLay.(PBWMLayer).AttnGeInc(ltime)
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
@@ -313,12 +273,17 @@ func (ly *PFCLayer) Gating(ltime *leabra.Time) {
 func (ly *PFCLayer) QuarterFinal(ltime *leabra.Time) {
 	ly.GateLayer.QuarterFinal(ltime)
 	if ly.IsSuper() {
-		ly.GateStateToDeep()
+		ly.GateStateToDeep(ltime)
 	}
 }
 
-// GateStateToDeep copies superficial gate state to corresponding deep layer
-func (ly *PFCLayer) GateStateToDeep() {
+// GateStateToDeep copies superficial gate state to corresponding deep layer.
+// This happens at end of BurstQtr (from QuarterFinal), prior to SendCtxtGe
+// call which happens at Network level after QuarterFinal
+func (ly *PFCLayer) GateStateToDeep(ltime *leabra.Time) {
+	if !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+		return
+	}
 	pfcd := ly.DeepPFC()
 	if pfcd == nil {
 		return
@@ -350,6 +315,44 @@ func (ly *PFCLayer) SendCtxtGe(ltime *leabra.Time) {
 	// todo: could optimize to not send if not maint
 
 	ly.GateLayer.SendCtxtGe(ltime)
+}
+
+// CtxtFmGe integrates new CtxtGe excitatory conductance from projections, and computes
+// overall Ctxt value, only on Deep layers.
+// This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
+func (ly *PFCLayer) CtxtFmGe(ltime *leabra.Time) {
+	if ly.Typ != deep.Deep || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+		return
+	}
+	ly.GateLayer.CtxtFmGe(ltime)
+	ly.DeepMaint(ltime)
+}
+
+// DeepMaint updates deep maintenance activations -- called at end of bursting quarter
+// via CtxtFmGe after CtxtGe is updated and available.
+// quarter check is already called.
+func (ly *PFCLayer) DeepMaint(ltime *leabra.Time) {
+	yP := ly.Shp.Dim(0)
+	xP := ly.Shp.Dim(1)
+	pN := yP * xP
+	xN := ly.Shp.Dim(3)
+	for ni := range ly.DeepNeurs {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		dnr := &ly.DeepNeurs[ni]
+		pnr := &ly.PFCNeurs[ni]
+		gs := &ly.GateStates[nrn.SubPool-1]
+		if gs.Cnt <= 1 { // first gating, save first gating value
+			pnr.Maint = dnr.CtxtGe
+		}
+		if ly.Maint.UseDyn {
+			ui := ni % pN
+			uy := ui / xN
+			dnr.CtxtGe = pnr.Maint * ly.Dyns.Value(uy, float32(gs.Cnt-1))
+		}
+	}
 }
 
 // BurstFmAct updates Burst layer 5 IB bursting value from current Act (superficial activation)
@@ -416,26 +419,3 @@ func (ly *PFCLayer) DoQuarter2DWt() bool {
 	}
 	return true
 }
-
-// todo: Quarter_Init_Deep called "Compute_DeepStateUpdt":
-
-// void STATE_CLASS(PFCUnitSpec)::Compute_DeepStateUpdt
-//   (LEABRA_UNIT_STATE* u, LEABRA_NETWORK_STATE* net, int thr_no) {
-//
-//   if(!deep.on || !Quarter_DeepRawPrevQtr(net->quarter)) return;
-//
-//   if(maint.use_dyn && deep.IsDeep() && u->thal_cnt >= 0) { // update dynamics!
-//     LEABRA_LAYER_STATE* lay = u->GetOwnLayer(net);
-//     int unidx = u->ungp_un_idx;
-//     int dyn_row = unidx % n_dyns;
-//     if(u->thal_cnt <= 1.0f) { // first gating -- should only ever be 1.0 here..
-//       u->misc_1 = u->deep_ctxt; // record gating ctxt
-//       u->deep_ctxt *= InitDynVal(dyn_row);
-//     }
-//     else {
-//       u->deep_ctxt = u->misc_1 * UpdtDynVal(dyn_row, (u->thal_cnt-1.0f));
-//     }
-//   }
-//
-//   inherited::Compute_DeepStateUpdt(u, net, thr_no);
-// }

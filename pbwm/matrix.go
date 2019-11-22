@@ -68,6 +68,7 @@ var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, deep.LayerProps)
 func (ly *MatrixLayer) Defaults() {
 	ly.GateLayer.Defaults()
 	ly.Matrix.Defaults()
+	ly.DeepBurst.SetBurstQtr(leabra.Q2) // also
 	// special inhib params
 	ly.Inhib.Layer.Gi = 1.9
 	ly.Inhib.Layer.FB = 0.5
