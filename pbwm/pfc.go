@@ -31,7 +31,7 @@ type PFCMaintParams struct {
 	SMnt     minmax.F32 `desc:"default 0.3..0.5 -- for superficial neurons, how much of AttnGe to add into Ge input to support maintenance, from deep maintenance signal -- 0.25 is generally minimum to support maintenance"`
 	MntGeMax float32    `def:"0.5" desc:"maximum GeRaw.Max value required to drive the minimum sMnt.Min maintenance current from deep -- anything above this drives the same SMnt.Min value -- below this value scales the effective mnt current between SMnt.Min to .Max in reverse proportion to GeRaw.Max value"`
 	Clear    float32    `"min:"0" max:"1" def:"0.5" desc:"how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears"`
-	UseDyn   bool       `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in misc_1 -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
+	UseDyn   bool       `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
 	MaxMaint int        `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
 }
 
@@ -93,11 +93,15 @@ func (ly *PFCLayer) GateType() GateTypes {
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 func (ly *PFCLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
-	if vidx != ActG {
+	pnrn := &ly.PFCNeurs[idx]
+	switch vidx {
+	case ActG:
+		return pnrn.ActG
+	case Cust1:
+		return pnrn.Maint
+	default:
 		return ly.GateLayer.UnitValByIdx(vidx, idx)
 	}
-	pnrn := &ly.PFCNeurs[idx]
-	return pnrn.ActG
 }
 
 // Build constructs the layer state, including calling Build on the projections.

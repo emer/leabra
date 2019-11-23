@@ -24,6 +24,7 @@ variables are actually stored in the layer itself instead of on per-neuron level
 
 Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with something else
 
+##############
 # Basic Level
 
 * ModLayer has DA, ACh, SE -- can be modulated
@@ -34,30 +35,18 @@ Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with somet
 * GateLayer has GateStates in 1-to-1 correspondence with Pools, to keep
    track of gating state -- source gating layers can send updates to other layers.
 
-* msn.go has various elements for Medium Spiny Neuron principal cell of striatum -- core of BG
-
+################
 # PBWM specific
 
 * MatrixLayer for dorsal striatum gating of DLPFC areas, separate D1R = Go, D2R = NoGo
 	Each layer contains Maint and Out GateTypes, as function of outer 4D Pool X dimension
 	(Maint on the left, Out on the right)
 
-* PatchLayer for matrisomes within dorsal striatum modulating dopamine
-
-* GPiLayer receives from Matrix Go and GPe NoGo to compute final WTA gating, and
-   broadcasts GateState info to its SendTo layers.
+* GPiThalLayer receives from Matrix Go and GPe NoGo to compute final WTA gating, and
+   broadcasts GateState info to its SendTo layers.  See Timing params for timing.
 
 * PFCLayer for active maintenance -- uses DeepLeabra framework, with update timing according to
 	deep.Layer DeepBurst.BurstQtr.  Gating is computed in quarter *before* updating in BurstQtr.
 	At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
-	There are different behaviors / defaults for Maint and OutGate.
-	+ Maint:
-		+ Super: Burst value is multiplied by Thal gating signal, sends to Deep; receives
-		    AttnGe from Deep, adds to Ge to reflect maint (but still remain sensitive to input).
-		+ Deep: Receives CtxtGe from Super Burst * Thal -- only when gated.  Optionally has
-		    fixed shaped activation dynamics.
-	+ Out:
-		+ Super:
-
 */
 package pbwm

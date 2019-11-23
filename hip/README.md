@@ -2,8 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/emer/leabra/hip?status.svg)](https://godoc.org/github.com/emer/leabra/hip)
 
-Package hip provides special hippocampus algorithms for implementing the Theta-phase
-hippocampus model from Ketz, Morkonda, & O'Reilly (2013).
+Package hip provides special hippocampus algorithms for implementing the Theta-phase hippocampus model from Ketz, Morkonda, & O'Reilly (2013).
 
 timing of ThetaPhase dynamics -- based on quarter structure:
 
@@ -34,9 +33,11 @@ CA3 -> CA1 = 0, ECin -> CA1 = 1
 * `ActM` = recall minus phase (normal minus phase dynamics for CA3 recall learning)
 * `ActP` = plus (serves as plus phase for both auto and recall)
 
-learning just happens at end of trial as usual, but encoder projections use
-the ActQ1, ActM, ActP variables to learn on the right signals
+learning just happens at end of trial as usual, but encoder projections use the ActQ1, ActM, ActP variables to learn on the right signals
 
-todo: implement a two-trial version of the code to produce a true theta rhythm
-integrating over two adjacent alpha trials..
+# TODO
+
+- [ ] try error-driven CA3 learning based on DG -> CA3 plus phase per https://arxiv.org/abs/1909.10340
+
+- [ ] implement a two-trial version of the code to produce a true theta rhythm integrating over two adjacent alpha trials..
 

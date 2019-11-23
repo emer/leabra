@@ -239,12 +239,11 @@ func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float3
 // PBWM calls GateSend after Cycle and before DeepBurst
 // Deep version adds call to update DeepBurst at end
 func (nt *Network) Cycle(ltime *leabra.Time) {
-	nt.Network.Cycle(ltime)
-	nt.GateSend(ltime)
-	nt.RecGateAct(ltime)
-	nt.DeepBurst(ltime)
-	nt.SendMods(ltime) // send modulators
-	// note C++ version had Act, ActPost, CycleStats, then DeepRaw
+	nt.Network.Network.Cycle(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
+	nt.GateSend(ltime)              // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ltime)            // Record activation state at time of gating (in ActG neuron var)
+	nt.DeepBurst(ltime)             // Act -> Burst (during BurstQtr) (see deep for details)
+	nt.SendMods(ltime)              // send modulators (DA)
 }
 
 // GateSend is called at end of Cycle, computes Gating and sends to other layers
