@@ -10,6 +10,8 @@ See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installati
 
 # Current Status / News
 
+* 11/2019: **nearing 1.0 complete release** -- [CCN textbook simulations](https://github.com/CompCogNeuro/sims) are (nearly) done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.  Nearing full feature parity with C++ emergent!
+
 * 6/12/2019: **Initial beta release** -- see the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25) for a fully functional demo.  This example code is now sufficiently feature complete to provide a reasonable starting point for creating your own simulations, with both the Go and Python versions closely matched in functionality so you can choose either way (or explore both!).  We expect that although there will certainly be changes and improvements etc (there are many planned additions already), the existing code should be reasonably stable at this point, with only relatively minor changes to the API -- it is now safe to start building your own models!   Please file issues on github (use the emergent repository's issue tracker) for any bugs or other issues you find.
 
 * 4/2019: separated this `leabra` repository from the overall `emergent` repository, to make it easier to fork and save / modify just the algorithm components of the system independent of the overall emergent infrastructure.  You just need to replace "github.com/emer/emergent/leabra/leabra" -> "github.com/emer/leabra/leabra" in your imports.
@@ -102,6 +104,11 @@ There are also other implementations of Leabra available:
 * [Matlab](https://grey.colorado.edu/cgi-bin/viewvc.cgi/emergent/trunk/Matlab/) (also available in the C++ emergent source tree) -- a complete implementation of these equations in Matlab, coded by Sergio Verduzco-Flores.
 * [Python](https://github.com/benureau/leabra) implementation by Fabien Benureau.
 * [R](https://github.com/johannes-titz/leabRa) implementation by Johannes Titz.
+
+This repository contains specialized additions to the core algorithm described here:
+* [deep](https://github.com/emer/leabra/blob/master/deep) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
+* [pbwm](https://github.com/emer/leabra/blob/master/pbwm) has the prefrontal-cortex basal ganglia working memory model (PBWM) and associated learning mechanisms such as TD (temporal differences).
+* [hip](https://github.com/emer/leabra/blob/master/hip) has the hippocampus specific learning mechanisms.
 
 ## Timing
 
