@@ -41,9 +41,15 @@ import (
 
 // this is the stub main for gogi that calls our actual mainrun function, at end of file
 func main() {
-	gimain.Main(func() {
-		mainrun()
-	})
+	if len(os.Args) > 1 {
+		TheSim.New()
+		TheSim.Config()
+		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	} else {
+		gimain.Main(func() {
+			guirun()
+		})
+	}
 }
 
 // LogPrec is precision for saving float values in logs
@@ -1480,16 +1486,12 @@ func (ss *Sim) CmdArgs() {
 	ss.Train()
 }
 
-func mainrun() {
+func guirun() {
 	TheSim.New()
 	TheSim.Config()
 
-	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
-	} else {
-		// gi.Update2DTrace = true
-		TheSim.Init()
-		win := TheSim.ConfigGui()
-		win.StartEventLoop()
-	}
+	// gi.Update2DTrace = true
+	TheSim.Init()
+	win := TheSim.ConfigGui()
+	win.StartEventLoop()
 }
