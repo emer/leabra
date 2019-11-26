@@ -39,17 +39,22 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-// this is the stub main for gogi that calls our actual mainrun function, at end of file
 func main() {
+	TheSim.New()
+	TheSim.Config()
 	if len(os.Args) > 1 {
-		TheSim.New()
-		TheSim.Config()
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
-		gimain.Main(func() {
+		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
 			guirun()
 		})
 	}
+}
+
+func guirun() {
+	TheSim.Init()
+	win := TheSim.ConfigGui()
+	win.StartEventLoop()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -1484,14 +1489,4 @@ func (ss *Sim) CmdArgs() {
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
 	ss.Train()
-}
-
-func guirun() {
-	TheSim.New()
-	TheSim.Config()
-
-	// gi.Update2DTrace = true
-	TheSim.Init()
-	win := TheSim.ConfigGui()
-	win.StartEventLoop()
 }
