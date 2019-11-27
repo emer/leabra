@@ -164,8 +164,8 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 		avgSSE := 0.0
 		for pi := 0; pi < np; pi++ {
 			ppi := porder[pi]
-			inp := inPats.SubSpace(2, []int{ppi})
-			outp := outPats.SubSpace(2, []int{ppi})
+			inp := inPats.SubSpace([]int{ppi})
+			outp := outPats.SubSpace([]int{ppi})
 
 			inLay.ApplyExt(inp)
 			outLay.ApplyExt(outp)

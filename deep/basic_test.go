@@ -157,7 +157,7 @@ func TestNetAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpaceTry(2, []int{pi})
+		inpat, err := InPats.SubSpaceTry([]int{pi})
 		if err != nil {
 			t.Error(err)
 		}
@@ -316,7 +316,7 @@ func TestNetLearn(t *testing.T) {
 		ltime := leabra.NewTime()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat, err := InPats.SubSpaceTry(2, []int{pi})
+			inpat, err := InPats.SubSpaceTry([]int{pi})
 			if err != nil {
 				t.Error(err)
 			}
