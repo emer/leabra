@@ -336,6 +336,25 @@ func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern
 	return
 }
 
+// LateralConnectLayer establishes a self-projection within given layer.
+// Does not yet actually connect the units within the layers -- that
+// requires Build.
+func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) emer.Prjn {
+	pj := nt.EmerNet.NewPrjn() // essential to use EmerNet interface here!
+	return nt.LateralConnectLayerPrjn(lay, pat, pj)
+}
+
+// LateralConnectLayerPrjn makes lateral self-projection using given projection.
+// Does not yet actually connect the units within the layers -- that
+// requires Build.
+func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
+	pj.Init(pj)
+	pj.Connect(lay, lay, pat, emer.Lateral)
+	lay.RecvPrjns().Add(pj)
+	lay.SendPrjns().Add(pj)
+	return pj
+}
+
 // Build constructs the layer and projection state based on the layer shapes
 // and patterns of interconnectivity
 func (nt *NetworkStru) Build() error {
