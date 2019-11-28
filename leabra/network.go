@@ -229,6 +229,27 @@ func (nt *Network) LrateMult(mult float32) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Lesion methods
+
+// LayersSetOff sets the Off flag for all layers to given setting
+func (nt *Network) LayersSetOff(off bool) {
+	for _, ly := range nt.Layers {
+		ly.SetOff(off)
+	}
+}
+
+// UnLesionNeurons unlesions neurons in all layers in the network.
+// Provides a clean starting point for subsequent lesion experiments.
+func (nt *Network) UnLesionNeurons() {
+	for _, ly := range nt.Layers {
+		// if ly.IsOff() { // keep all sync'd
+		// 	continue
+		// }
+		ly.(LeabraLayer).AsLeabra().UnLesionNeurons()
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Network props for gui
 
 var NetworkProps = ki.Props{
