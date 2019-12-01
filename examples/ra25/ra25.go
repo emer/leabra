@@ -157,17 +157,18 @@ type Sim struct {
 	LayStatNms   []string          `desc:"names of layers to collect more detailed stats on (avg act, etc)"`
 
 	// statistics: note use float64 as that is best for etable.Table
-	TrlErr     float64 `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"`
-	TrlSSE     float64 `inactive:"+" desc:"current trial's sum squared error"`
-	TrlAvgSSE  float64 `inactive:"+" desc:"current trial's average sum squared error"`
-	TrlCosDiff float64 `inactive:"+" desc:"current trial's cosine difference"`
-	EpcSSE     float64 `inactive:"+" desc:"last epoch's total sum squared error"`
-	EpcAvgSSE  float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
-	EpcPctErr  float64 `inactive:"+" desc:"last epoch's average TrlErr"`
-	EpcPctCor  float64 `inactive:"+" desc:"1 - last epoch's average TrlErr"`
-	EpcCosDiff float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
-	FirstZero  int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
-	NZero      int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
+	TrlErr        float64 `inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"`
+	TrlSSE        float64 `inactive:"+" desc:"current trial's sum squared error"`
+	TrlAvgSSE     float64 `inactive:"+" desc:"current trial's average sum squared error"`
+	TrlCosDiff    float64 `inactive:"+" desc:"current trial's cosine difference"`
+	EpcSSE        float64 `inactive:"+" desc:"last epoch's total sum squared error"`
+	EpcAvgSSE     float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
+	EpcPctErr     float64 `inactive:"+" desc:"last epoch's average TrlErr"`
+	EpcPctCor     float64 `inactive:"+" desc:"1 - last epoch's average TrlErr"`
+	EpcCosDiff    float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
+	EpcPerTrlMSec float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
+	FirstZero     int     `inactive:"+" desc:"epoch at when SSE first went to zero"`
+	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero SSE"`
 
 	// internal state - view:"-"
 	SumErr       float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -192,6 +193,7 @@ type Sim struct {
 	StopNow      bool                        `view:"-" desc:"flag to stop running"`
 	NeedsNewRun  bool                        `view:"-" desc:"flag to initialize NewRun if last one finished"`
 	RndSeed      int64                       `view:"-" desc:"the current random seed"`
+	LastEpcTime  time.Time                   `view:"-" desc:"timer for last epoch"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -720,7 +722,7 @@ func (ss *Sim) ConfigPats() {
 
 	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
 	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.csv", ',', true)
+	dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, true)
 }
 
 func (ss *Sim) OpenPats() {
@@ -784,8 +786,8 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	row := dt.Rows
 	dt.SetNumRows(row + 1)
 
-	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
-	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
+	epc := ss.TrainEnv.Epoch.Prv          // this is triggered by increment so use previous value
+	nt := float64(len(ss.TrainEnv.Order)) // number of trials in view
 
 	ss.EpcSSE = ss.SumSSE / nt
 	ss.SumSSE = 0
@@ -805,6 +807,14 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		ss.NZero = 0
 	}
 
+	if ss.LastEpcTime.IsZero() {
+		ss.EpcPerTrlMSec = 0
+	} else {
+		iv := time.Now().Sub(ss.LastEpcTime)
+		ss.EpcPerTrlMSec = float64(iv) / (nt * float64(time.Millisecond))
+	}
+	ss.LastEpcTime = time.Now()
+
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("SSE", row, ss.EpcSSE)
@@ -812,6 +822,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
+	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
@@ -842,6 +853,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PctErr", etensor.FLOAT64, nil, nil},
 		{"PctCor", etensor.FLOAT64, nil, nil},
 		{"CosDiff", etensor.FLOAT64, nil, nil},
+		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.LayStatNms {
 		sch = append(sch, etable.Column{lnm + " ActAvg", etensor.FLOAT64, nil, nil})
@@ -861,6 +873,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PctErr", true, true, 0, true, 1) // default plot
 	plt.SetColParams("PctCor", true, true, 0, true, 1) // default plot
 	plt.SetColParams("CosDiff", false, true, 0, true, 1)
+	plt.SetColParams("PerTrlMSec", false, true, 0, false, 0)
 
 	for _, lnm := range ss.LayStatNms {
 		plt.SetColParams(lnm+" ActAvg", false, true, 0, true, .5)
