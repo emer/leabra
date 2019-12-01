@@ -1320,9 +1320,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 				dlg := send.(*gi.Dialog)
 				if sig == int64(gi.DialogAccepted) {
 					val := gi.StringPromptDialogValue(dlg)
-					idxs := ss.TestEnv.Table.RowsByString("Name", val, true, true) // contains, ignoreCase
+					idxs := ss.TestEnv.Table.RowsByString("Name", val, etable.Contains, etable.IgnoreCase)
 					if len(idxs) == 0 {
-						gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, true, false, nil, nil)
+						gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, gi.AddOk, gi.NoCancel, nil, nil)
 					} else {
 						if !ss.IsRunning {
 							ss.IsRunning = true
