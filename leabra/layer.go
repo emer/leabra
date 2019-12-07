@@ -426,13 +426,25 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 		}
 	}
 	var err error
-	for pi := range lw.Prjns {
-		pw := &lw.Prjns[pi]
-		pj := ly.RecvPrjns().SendName(pw.From)
-		if pj != nil {
+	rpjs := ly.RecvPrjns()
+	if len(lw.Prjns) == len(*rpjs) { // this is essential if multiple prjns from same layer
+		for pi := range lw.Prjns {
+			pw := &lw.Prjns[pi]
+			pj := (*rpjs)[pi]
 			er := pj.SetWts(pw)
 			if er != nil {
 				err = er
+			}
+		}
+	} else {
+		for pi := range lw.Prjns {
+			pw := &lw.Prjns[pi]
+			pj := rpjs.SendName(pw.From)
+			if pj != nil {
+				er := pj.SetWts(pw)
+				if er != nil {
+					err = er
+				}
 			}
 		}
 	}
