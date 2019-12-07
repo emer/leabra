@@ -59,7 +59,7 @@ func (ch *CHLParams) DWt(hebb, err float32) float32 {
 // pure CHL learning rule, which works better in the hippocampus.
 type CHLPrjn struct {
 	leabra.Prjn           // access as .Prjn
-	CHL         CHLParams `desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
+	CHL         CHLParams `view:"inline" desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
 }
 
 func (pj *CHLPrjn) Defaults() {

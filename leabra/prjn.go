@@ -25,8 +25,8 @@ import (
 type Prjn struct {
 	PrjnStru
 	WtInit  WtInitParams   `view:"inline" desc:"initial random weight distribution"`
-	WtScale WtScaleParams  `desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
-	Learn   LearnSynParams `desc:"synaptic-level learning parameters"`
+	WtScale WtScaleParams  `view:"inline" desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
+	Learn   LearnSynParams `view:"add-fields" desc:"synaptic-level learning parameters"`
 	Syns    []Synapse      `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 
 	// misc state variables below:

@@ -54,8 +54,8 @@ type PFCNeuron struct {
 // PFCLayer is a Prefrontal Cortex BG-gated working memory layer
 type PFCLayer struct {
 	GateLayer
-	Gate     PFCGateParams  `desc:"PFC Gating parameters"`
-	Maint    PFCMaintParams `desc:"PFC Maintenance parameters"`
+	Gate     PFCGateParams  `view:"inline" desc:"PFC Gating parameters"`
+	Maint    PFCMaintParams `view:"inline" desc:"PFC Maintenance parameters"`
 	Dyns     PFCDyns        `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns -- grouped together -- ensure Y dim has even multiple of len(Dyns)"`
 	PFCNeurs []PFCNeuron    `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }

@@ -45,7 +45,7 @@ type MatrixLayer struct {
 	GateLayer
 	MaintN      int            `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
 	DaR         DaReceptors    `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix      MatrixParams   `desc:"matrix parameters"`
+	Matrix      MatrixParams   `view:"inline" desc:"matrix parameters"`
 	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 

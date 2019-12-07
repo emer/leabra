@@ -19,9 +19,9 @@ import (
 // deep.Layer is the DeepLeabra layer, based on basic rate-coded leabra.Layer
 type Layer struct {
 	leabra.Layer             // access as .Layer
-	DeepBurst    BurstParams `desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
-	DeepTRC      TRCParams   `desc:"parameters for computing TRC plus-phase (outcome) activations based on TRCBurstGe excitatory input from BurstTRC projections"`
-	DeepAttn     AttnParams  `desc:"parameters for computing DeepAttn and DeepLrn attentional modulation signals based on DeepAttn projection inputs integrated into AttnGe excitatory conductances"`
+	DeepBurst    BurstParams `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
+	DeepTRC      TRCParams   `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on TRCBurstGe excitatory input from BurstTRC projections"`
+	DeepAttn     AttnParams  `view:"inline" desc:"parameters for computing DeepAttn and DeepLrn attentional modulation signals based on DeepAttn projection inputs integrated into AttnGe excitatory conductances"`
 	DeepNeurs    []Neuron    `desc:"slice of extra deep.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
 	DeepPools    []Pool      `desc:"extra layer and sub-pool (unit group) statistics used in DeepLeabra -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
 }
