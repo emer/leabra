@@ -186,11 +186,13 @@ func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 // for projection into given sending layer and neuron 1D index,
 // for all receiving neurons in this layer,
 // into given float32 slice (only resized if not big enough).
+// prjnType is the string representation of the prjn type -- used if non-empty,
+// useful when there are multiple projections between two layers.
 // Returns error on invalid var name.
 // If the receiving neuron is not connected to the given sending layer or neuron
 // then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int) error {
+func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int, prjnType string) error {
 	vidx, err := SynapseVarByName(varNm)
 	if err != nil {
 		return err
@@ -208,7 +210,15 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 	if sendLay == nil {
 		return fmt.Errorf("sending layer is nil")
 	}
-	pj, err := sendLay.SendPrjns().RecvNameTry(ly.Nm)
+	var pj emer.Prjn
+	if prjnType != "" {
+		pj, err = sendLay.SendPrjns().RecvNameTypeTry(ly.Nm, prjnType)
+		if pj == nil {
+			pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+		}
+	} else {
+		pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+	}
 	if pj == nil {
 		return err
 	}
@@ -226,11 +236,13 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 // for projection into given receiving layer and neuron 1D index,
 // for all sending neurons in this layer,
 // into given float32 slice (only resized if not big enough).
+// prjnType is the string representation of the prjn type -- used if non-empty,
+// useful when there are multiple projections between two layers.
 // Returns error on invalid var name.
 // If the sending neuron is not connected to the given receiving layer or neuron
 // then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int) error {
+func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int, prjnType string) error {
 	vidx, err := SynapseVarByName(varNm)
 	if err != nil {
 		return err
@@ -248,7 +260,15 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 	if recvLay == nil {
 		return fmt.Errorf("receiving layer is nil")
 	}
-	pj, err := recvLay.RecvPrjns().SendNameTry(ly.Nm)
+	var pj emer.Prjn
+	if prjnType != "" {
+		pj, err = recvLay.RecvPrjns().SendNameTypeTry(ly.Nm, prjnType)
+		if pj == nil {
+			pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+		}
+	} else {
+		pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+	}
 	if pj == nil {
 		return err
 	}
