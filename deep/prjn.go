@@ -30,16 +30,17 @@ func (pj *Prjn) UpdateParams() {
 	pj.Prjn.UpdateParams()
 }
 
-func (pj *Prjn) Class() string {
-	switch pj.Typ {
-	case BurstCtxt:
-		return "BurstCtxt " + pj.Cls
-	case BurstTRC:
-		return "BurstTRC " + pj.Cls
-	case DeepAttn:
-		return "DeepAttn " + pj.Cls
+func (pj *Prjn) PrjnTypeName() string {
+	if pj.Typ < emer.PrjnTypeN {
+		return pj.Typ.String()
 	}
-	return pj.Typ.String() + " " + pj.Cls
+	ptyp := PrjnType(pj.Typ)
+	ts := ptyp.String()
+	sz := len(ts)
+	if sz > 0 {
+		return ts[:sz-1] // cut off trailing _
+	}
+	return ""
 }
 
 func (pj *Prjn) Build() error {

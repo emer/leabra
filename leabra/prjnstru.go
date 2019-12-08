@@ -49,7 +49,7 @@ func (ps *PrjnStru) Init(prjn emer.Prjn) {
 }
 
 func (ps *PrjnStru) TypeName() string    { return "Prjn" } // always, for params..
-func (ps *PrjnStru) Class() string       { return ps.Typ.String() + " " + ps.Cls }
+func (ps *PrjnStru) Class() string       { return ps.LeabraPrj.PrjnTypeName() + " " + ps.Cls }
 func (ps *PrjnStru) SetClass(cls string) { ps.Cls = cls }
 func (ps *PrjnStru) Name() string {
 	return ps.Send.Name() + "To" + ps.Recv.Name()
@@ -61,6 +61,8 @@ func (ps *PrjnStru) Pattern() prjn.Pattern       { return ps.Pat }
 func (ps *PrjnStru) SetPattern(pat prjn.Pattern) { ps.Pat = pat }
 func (ps *PrjnStru) Type() emer.PrjnType         { return ps.Typ }
 func (ps *PrjnStru) SetType(typ emer.PrjnType)   { ps.Typ = typ }
+func (ps *PrjnStru) PrjnTypeName() string        { return ps.Typ.String() }
+
 func (ps *PrjnStru) IsOff() bool {
 	return ps.Off || ps.Recv.IsOff() || ps.Send.IsOff()
 }
