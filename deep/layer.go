@@ -284,7 +284,10 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 					if sp.IsOff() {
 						continue
 					}
-					pj := sp.(DeepPrjn)
+					pj, ok := sp.(DeepPrjn)
+					if !ok {
+						continue
+					}
 					ptyp := pj.Type()
 					if ptyp == BurstCtxt || ptyp == BurstTRC {
 						continue
@@ -303,7 +306,10 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj := sp.(DeepPrjn)
+				pj, ok := sp.(DeepPrjn)
+				if !ok {
+					continue
+				}
 				ptyp := pj.Type()
 				if ptyp == BurstCtxt || ptyp == BurstTRC {
 					continue
@@ -367,7 +373,10 @@ func (ly *Layer) AttnGeInc(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		pj := p.(DeepPrjn)
+		pj, ok := p.(DeepPrjn)
+		if !ok {
+			continue
+		}
 		ptyp := pj.Type()
 		if ptyp != DeepAttn {
 			continue
@@ -507,7 +516,10 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 					if sp.IsOff() {
 						continue
 					}
-					pj := sp.(DeepPrjn)
+					pj, ok := sp.(DeepPrjn)
+					if !ok {
+						continue
+					}
 					ptyp := pj.Type()
 					if ptyp != BurstTRC {
 						continue
@@ -522,7 +534,10 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj := sp.(DeepPrjn)
+				pj, ok := sp.(DeepPrjn)
+				if !ok {
+					continue
+				}
 				ptyp := pj.Type()
 				if ptyp != BurstTRC {
 					continue
@@ -543,7 +558,10 @@ func (ly *Layer) TRCBurstGeFmInc(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		pj := p.(DeepPrjn)
+		pj, ok := p.(DeepPrjn)
+		if !ok {
+			continue
+		}
 		ptyp := pj.Type()
 		if ptyp != BurstTRC {
 			continue
@@ -588,7 +606,10 @@ func (ly *Layer) SendCtxtGe(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj := sp.(DeepPrjn)
+				pj, ok := sp.(DeepPrjn)
+				if !ok {
+					continue
+				}
 				ptyp := pj.Type()
 				if ptyp != BurstCtxt {
 					continue
@@ -614,7 +635,10 @@ func (ly *Layer) CtxtFmGe(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		pj := p.(DeepPrjn)
+		pj, ok := p.(DeepPrjn)
+		if !ok {
+			continue
+		}
 		ptyp := pj.Type()
 		if ptyp != BurstCtxt {
 			continue
