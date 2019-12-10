@@ -284,18 +284,16 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 					if sp.IsOff() {
 						continue
 					}
-					pj, ok := sp.(DeepPrjn)
-					if !ok {
-						continue
-					}
-					ptyp := pj.Type()
+					ptyp := sp.Type()
 					if ptyp == BurstCtxt || ptyp == BurstTRC {
 						continue
 					}
 					if ptyp == DeepAttn {
-						pj.SendAttnGeDelta(ni, delta)
+						if ly.DeepAttn.On {
+							sp.(DeepPrjn).SendAttnGeDelta(ni, delta)
+						}
 					} else {
-						pj.SendGDelta(ni, delta)
+						sp.(leabra.LeabraPrjn).SendGDelta(ni, delta)
 					}
 				}
 				nrn.ActSent = nrn.Act
@@ -306,20 +304,16 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj, ok := sp.(DeepPrjn)
-				if !ok {
-					continue
-				}
-				ptyp := pj.Type()
+				ptyp := sp.Type()
 				if ptyp == BurstCtxt || ptyp == BurstTRC {
 					continue
 				}
 				if ptyp == DeepAttn {
 					if ly.DeepAttn.On {
-						pj.SendAttnGeDelta(ni, delta)
+						sp.(DeepPrjn).SendAttnGeDelta(ni, delta)
 					}
 				} else {
-					pj.SendGDelta(ni, delta)
+					sp.(leabra.LeabraPrjn).SendGDelta(ni, delta)
 				}
 			}
 			nrn.ActSent = 0
@@ -516,12 +510,12 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 					if sp.IsOff() {
 						continue
 					}
-					pj, ok := sp.(DeepPrjn)
-					if !ok {
+					ptyp := sp.Type()
+					if ptyp != BurstTRC {
 						continue
 					}
-					ptyp := pj.Type()
-					if ptyp != BurstTRC {
+					pj, ok := sp.(DeepPrjn)
+					if !ok {
 						continue
 					}
 					pj.SendTRCBurstGeDelta(ni, delta)
@@ -534,12 +528,12 @@ func (ly *Layer) SendTRCBurstGeDelta(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj, ok := sp.(DeepPrjn)
-				if !ok {
+				ptyp := sp.Type()
+				if ptyp != BurstTRC {
 					continue
 				}
-				ptyp := pj.Type()
-				if ptyp != BurstTRC {
+				pj, ok := sp.(DeepPrjn)
+				if !ok {
 					continue
 				}
 				pj.SendTRCBurstGeDelta(ni, delta)
@@ -558,12 +552,12 @@ func (ly *Layer) TRCBurstGeFmInc(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		pj, ok := p.(DeepPrjn)
-		if !ok {
+		ptyp := p.Type()
+		if ptyp != BurstTRC {
 			continue
 		}
-		ptyp := pj.Type()
-		if ptyp != BurstTRC {
+		pj, ok := p.(DeepPrjn)
+		if !ok {
 			continue
 		}
 		pj.RecvTRCBurstGeInc()
@@ -606,12 +600,12 @@ func (ly *Layer) SendCtxtGe(ltime *leabra.Time) {
 				if sp.IsOff() {
 					continue
 				}
-				pj, ok := sp.(DeepPrjn)
-				if !ok {
+				ptyp := sp.Type()
+				if ptyp != BurstCtxt {
 					continue
 				}
-				ptyp := pj.Type()
-				if ptyp != BurstCtxt {
+				pj, ok := sp.(DeepPrjn)
+				if !ok {
 					continue
 				}
 				pj.SendCtxtGe(ni, dnr.Burst)
@@ -635,12 +629,12 @@ func (ly *Layer) CtxtFmGe(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		pj, ok := p.(DeepPrjn)
-		if !ok {
+		ptyp := p.Type()
+		if ptyp != BurstCtxt {
 			continue
 		}
-		ptyp := pj.Type()
-		if ptyp != BurstCtxt {
+		pj, ok := p.(DeepPrjn)
+		if !ok {
 			continue
 		}
 		pj.RecvCtxtGeInc()
