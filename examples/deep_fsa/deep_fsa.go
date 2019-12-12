@@ -25,7 +25,7 @@ import (
 	"github.com/emer/etable/eplot"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
-	_ "github.com/emer/etable/etview" // include to get gui views
+	_ "github.com/emer/etable/etview" // _ = include to get gui views
 	"github.com/emer/etable/split"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
