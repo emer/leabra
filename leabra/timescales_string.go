@@ -9,9 +9,33 @@ import (
 
 var _ = errors.New("dummy error")
 
-const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleEventTrialSequenceBlockEpochRunExptSceneEpisodeTimeScalesN"
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[Cycle-0]
+	_ = x[FastSpike-1]
+	_ = x[Quarter-2]
+	_ = x[Phase-3]
+	_ = x[BetaCycle-4]
+	_ = x[AlphaCycle-5]
+	_ = x[ThetaCycle-6]
+	_ = x[Event-7]
+	_ = x[Trial-8]
+	_ = x[Tick-9]
+	_ = x[Sequence-10]
+	_ = x[Block-11]
+	_ = x[Epoch-12]
+	_ = x[Run-13]
+	_ = x[Expt-14]
+	_ = x[Scene-15]
+	_ = x[Episode-16]
+	_ = x[TimeScalesN-17]
+}
 
-var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 65, 73, 78, 83, 86, 90, 95, 102, 113}
+const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleEventTrialTickSequenceBlockEpochRunExptSceneEpisodeTimeScalesN"
+
+var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 65, 69, 77, 82, 87, 90, 94, 99, 106, 117}
 
 func (i TimeScales) String() string {
 	if i < 0 || i >= TimeScales(len(_TimeScales_index)-1) {

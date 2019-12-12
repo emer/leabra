@@ -9,6 +9,18 @@ import (
 
 var _ = errors.New("dummy error")
 
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[NoNoise-0]
+	_ = x[VmNoise-1]
+	_ = x[GeNoise-2]
+	_ = x[ActNoise-3]
+	_ = x[GeMultNoise-4]
+	_ = x[ActNoiseTypeN-5]
+}
+
 const _ActNoiseType_name = "NoNoiseVmNoiseGeNoiseActNoiseGeMultNoiseActNoiseTypeN"
 
 var _ActNoiseType_index = [...]uint8{0, 7, 14, 21, 29, 40, 53}

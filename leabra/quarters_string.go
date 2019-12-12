@@ -9,6 +9,17 @@ import (
 
 var _ = errors.New("dummy error")
 
+func _() {
+	// An "invalid array index" compiler error signifies that the constant values have changed.
+	// Re-run the stringer command to generate them again.
+	var x [1]struct{}
+	_ = x[Q1-0]
+	_ = x[Q2-1]
+	_ = x[Q3-2]
+	_ = x[Q4-3]
+	_ = x[QuartersN-4]
+}
+
 const _Quarters_name = "Q1Q2Q3Q4QuartersN"
 
 var _Quarters_index = [...]uint8{0, 2, 4, 6, 8, 17}

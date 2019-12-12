@@ -161,6 +161,11 @@ const (
 	// last is response)
 	Trial
 
+	// Tick is one step in a sequence -- often it is useful to have Trial count
+	// up throughout the entire Epoch but also include a Tick to count trials
+	// within a Sequence
+	Tick
+
 	// Sequence is a sequential group of Trials (not always needed).
 	Sequence
 

@@ -27,6 +27,7 @@ type FSAEnv struct {
 	Run        env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
 	Epoch      env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
 	Seq        env.Ctr         `view:"inline" desc:"sequence counter within epoch"`
+	Tick       env.Ctr         `view:"inline" desc:"tick counter within sequence"`
 	Trial      env.Ctr         `view:"inline" desc:"trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence"`
 }
 
@@ -76,7 +77,7 @@ func (ev *FSAEnv) Validate() error {
 }
 
 func (ev *FSAEnv) Counters() []env.TimeScales {
-	return []env.TimeScales{env.Run, env.Epoch, env.Sequence, env.Trial}
+	return []env.TimeScales{env.Run, env.Epoch, env.Sequence, env.Tick, env.Trial}
 }
 
 func (ev *FSAEnv) States() env.Elements {
@@ -118,10 +119,12 @@ func (ev *FSAEnv) String() string {
 func (ev *FSAEnv) Init(run int) {
 	ev.Run.Scale = env.Run
 	ev.Epoch.Scale = env.Epoch
+	ev.Tick.Scale = env.Tick
 	ev.Trial.Scale = env.Trial
 	ev.Run.Init()
 	ev.Epoch.Init()
 	ev.Seq.Init()
+	ev.Tick.Init()
 	ev.Trial.Init()
 	ev.Run.Cur = run
 	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
@@ -157,7 +160,9 @@ func (ev *FSAEnv) Step() bool {
 	ev.Epoch.Same() // good idea to just reset all non-inner-most counters at start
 	ev.NextState()
 	ev.Trial.Incr()
+	ev.Tick.Incr()
 	if ev.AState.Prv == 0 {
+		ev.Tick.Init()
 		if ev.Seq.Incr() {
 			ev.Epoch.Incr()
 		}
@@ -177,6 +182,8 @@ func (ev *FSAEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
 		return ev.Epoch.Query()
 	case env.Sequence:
 		return ev.Seq.Query()
+	case env.Tick:
+		return ev.Tick.Query()
 	case env.Trial:
 		return ev.Trial.Query()
 	}
