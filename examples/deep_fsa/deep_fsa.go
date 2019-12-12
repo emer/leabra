@@ -286,7 +286,7 @@ func (ss *Sim) ConfigEnv() {
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
 	in, inp := net.AddInputPulv2D("Input", 1, 15)
-	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, false, false) // no pulv, attn
+	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, deep.NoPulv, deep.NoAttnPrjn)
 
 	hidd.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
 

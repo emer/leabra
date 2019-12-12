@@ -64,6 +64,14 @@ func (nt *Network) AddInputPulv4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 	return
 }
 
+// bool args for greater clarity
+const (
+	AddPulv    bool = true
+	NoPulv          = false
+	AttnPrjn        = true
+	NoAttnPrjn      = false
+)
+
 // AddSuperDeep2D adds a superficial (hidden) and corresponding Deep (D suffix) layer
 // with BurstCtxt Full projection from Hidden to Deep.  Optionally
 // creates a Pulvinar for Hidden with One-to-One BurstTRC to Pulvinar, and
