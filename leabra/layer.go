@@ -839,6 +839,9 @@ func (ly *Layer) GScaleFmAvgAct() {
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
 		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
+		if pj.GScale == 0 {
+			continue
+		}
 		if pj.Typ == emer.Inhib {
 			totGiRel += pj.WtScale.Rel
 		} else {

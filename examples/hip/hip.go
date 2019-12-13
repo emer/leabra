@@ -1302,7 +1302,7 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	for _, ts := range ss.TstStatNms {
 		split.Agg(spl, ts, agg.AggMean)
 	}
-	ss.TstStats = spl.AggsToTable(true) // no stat name
+	ss.TstStats = spl.AggsToTable(etable.ColNameOnly)
 
 	for ri := 0; ri < ss.TstStats.Rows; ri++ {
 		tst := ss.TstStats.CellString("TestNm", ri)
