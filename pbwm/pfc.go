@@ -404,7 +404,7 @@ func (ly *PFCLayer) RecGateAct(ltime *leabra.Time) {
 		if !gs.Now { // not gating now
 			continue
 		}
-		pl := ly.Pools[1+gi]
+		pl := &ly.Pools[1+gi]
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {

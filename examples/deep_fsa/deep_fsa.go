@@ -87,7 +87,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".BurstCtxt", Desc: "no weight balance on deep context prjns -- makes a diff!",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "false",
+					"Prjn.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
 				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{

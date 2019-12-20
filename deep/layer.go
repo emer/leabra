@@ -199,7 +199,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		}
 		pj := p.(leabra.LeabraPrjn).AsLeabra()
 		slay := p.SendLay().(leabra.LeabraLayer).AsLeabra()
-		slpl := slay.Pools[0]
+		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg

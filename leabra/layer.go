@@ -440,7 +440,7 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 		}
 		if ap, ok := lw.MetaData["ActPAvg"]; ok {
 			pv, _ := strconv.ParseFloat(ap, 32)
-			pl := ly.Pools[0]
+			pl := &ly.Pools[0]
 			pl.ActAvg.ActPAvg = float32(pv)
 			ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 		}
@@ -834,7 +834,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		}
 		pj := p.(LeabraPrjn).AsLeabra()
 		slay := p.SendLay().(LeabraLayer).AsLeabra()
-		slpl := slay.Pools[0]
+		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
