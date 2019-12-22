@@ -670,7 +670,7 @@ type LayerType emer.LayerType
 
 //go:generate stringer -type=LayerType
 
-var KiT_LayerType = kit.Enums.AddEnumExt(emer.KiT_LayerType, LayerTypeN, false, nil)
+var KiT_LayerType = kit.Enums.AddEnumExt(emer.KiT_LayerType, LayerTypeN, kit.NotBitFlag, nil)
 
 const (
 	// Deep are deep-layer neurons, reflecting activation of layer 6 regular spiking

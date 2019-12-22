@@ -346,7 +346,7 @@ type ActNoiseType int
 
 //go:generate stringer -type=ActNoiseType
 
-var KiT_ActNoiseType = kit.Enums.AddEnum(ActNoiseTypeN, false, nil)
+var KiT_ActNoiseType = kit.Enums.AddEnum(ActNoiseTypeN, kit.NotBitFlag, nil)
 
 func (ev ActNoiseType) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *ActNoiseType) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }

@@ -160,7 +160,7 @@ type DaReceptors int
 
 //go:generate stringer -type=DaReceptors
 
-var KiT_DaReceptors = kit.Enums.AddEnum(DaReceptorsN, false, nil)
+var KiT_DaReceptors = kit.Enums.AddEnum(DaReceptorsN, kit.NotBitFlag, nil)
 
 func (ev DaReceptors) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *DaReceptors) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
@@ -180,7 +180,7 @@ type Valences int
 
 //go:generate stringer -type=Valences
 
-var KiT_Valences = kit.Enums.AddEnum(ValencesN, false, nil)
+var KiT_Valences = kit.Enums.AddEnum(ValencesN, kit.NotBitFlag, nil)
 
 func (ev Valences) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *Valences) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }

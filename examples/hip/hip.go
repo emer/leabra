@@ -1548,7 +1548,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	gi.SetAppName("hip")
 	gi.SetAppAbout(`This demonstrates a basic Hippocampus model in Leabra. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
-	win := gi.NewWindow2D("hip", "Hippocampus AB-AC", width, height, true)
+	win := gi.NewMainWindow("hip", "Hippocampus AB-AC", width, height)
 	ss.Win = win
 
 	vp := win.WinViewport2D()

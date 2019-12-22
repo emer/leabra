@@ -254,7 +254,7 @@ type GateTypes int
 
 //go:generate stringer -type=GateTypes
 
-var KiT_GateTypes = kit.Enums.AddEnum(GateTypesN, false, nil)
+var KiT_GateTypes = kit.Enums.AddEnum(GateTypesN, kit.NotBitFlag, nil)
 
 func (ev GateTypes) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *GateTypes) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }

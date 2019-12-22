@@ -81,7 +81,7 @@ type Quarters int32
 
 //go:generate stringer -type=Quarters
 
-var KiT_Quarters = kit.Enums.AddEnum(QuartersN, true, nil)
+var KiT_Quarters = kit.Enums.AddEnum(QuartersN, kit.BitFlag, nil)
 
 func (ev Quarters) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *Quarters) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
@@ -111,7 +111,7 @@ type TimeScales int32
 
 //go:generate stringer -type=TimeScales
 
-var KiT_TimeScales = kit.Enums.AddEnum(TimeScalesN, false, nil)
+var KiT_TimeScales = kit.Enums.AddEnum(TimeScalesN, kit.NotBitFlag, nil)
 
 func (ev TimeScales) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *TimeScales) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }

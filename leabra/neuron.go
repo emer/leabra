@@ -143,7 +143,7 @@ type NeurFlags int32
 
 //go:generate stringer -type=NeurFlags
 
-var KiT_NeurFlags = kit.Enums.AddEnum(NeurFlagsN, true, nil)
+var KiT_NeurFlags = kit.Enums.AddEnum(NeurFlagsN, kit.BitFlag, nil)
 
 func (ev NeurFlags) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *NeurFlags) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }

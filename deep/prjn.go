@@ -216,7 +216,7 @@ type PrjnType emer.PrjnType
 
 //go:generate stringer -type=PrjnType
 
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, false, nil)
+var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
 
 // The DeepLeabra prjn types
 const (

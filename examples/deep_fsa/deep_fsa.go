@@ -1216,7 +1216,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	gi.SetAppName("DeepFSA")
 	gi.SetAppAbout(`This demonstrates a basic DeepLeabra model on the Finite State Automaton problem (e.g., the Reber grammar). See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
-	win := gi.NewWindow2D("DeepFSA", "DeepLeabra Finite State Automaton", width, height, true)
+	win := gi.NewMainWindow("DeepFSA", "DeepLeabra Finite State Automaton", width, height)
 	ss.Win = win
 
 	vp := win.WinViewport2D()
