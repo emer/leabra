@@ -839,9 +839,12 @@ func (ly *Layer) GScaleFmAvgAct() {
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
 		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
-		if pj.GScale == 0 {
-			continue
-		}
+		// reverting this change: if you want to eliminate a prjn, set the Off flag
+		// if you want to negate it but keep the relative factor in the denominator
+		// then set the scale to 0.
+		// if pj.GScale == 0 {
+		// 	continue
+		// }
 		if pj.Typ == emer.Inhib {
 			totGiRel += pj.WtScale.Rel
 		} else {

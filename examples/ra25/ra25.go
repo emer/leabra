@@ -1189,6 +1189,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
+	// gi.WinEventTrace = true
+
 	gi.SetAppName("ra25")
 	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
