@@ -721,7 +721,7 @@ func (ss *Sim) ConfigPats() {
 
 	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
 	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, true)
+	dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, etable.Headers)
 }
 
 func (ss *Sim) OpenPats() {
@@ -834,7 +834,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 		}
-		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab, true)
+		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
 	}
 }
 
@@ -1144,7 +1144,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 		if row == 0 {
 			dt.WriteCSVHeaders(ss.RunFile, etable.Tab)
 		}
-		dt.WriteCSVRow(ss.RunFile, row, etable.Tab, true)
+		dt.WriteCSVRow(ss.RunFile, row, etable.Tab)
 	}
 }
 

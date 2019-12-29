@@ -244,5 +244,5 @@ func main() {
 
 	TrainNet(Net, Pats, EpcLog, epochs)
 
-	EpcLog.SaveCSV("bench_epc.dat", ',', true)
+	EpcLog.SaveCSV("bench_epc.dat", ',', etable.Headers)
 }
