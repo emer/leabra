@@ -10,6 +10,7 @@ import (
 )
 
 func TestPFCDyn(t *testing.T) {
+	t.Skip()
 	pd := PFCDyns{}
 	pd.FullDyn(10)
 	mx := float32(20)

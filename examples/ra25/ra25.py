@@ -428,9 +428,9 @@ class Sim(object):
         and add a few tabs at the end to allow for expansion..
         """
         if train:
-            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TrainEnv.Trial.Cur, self.Time.Cycle, self.TrainEnv.TrialName)
+            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TrainEnv.Trial.Cur, self.Time.Cycle, self.TrainEnv.TrialName.Cur)
         else:
-            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\t\tCycle:\t%dName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.Time.Cycle, self.TestEnv.TrialName)
+            return "Run:\t%d\tEpoch:\t%d\tTrial:\t%d\t\tCycle:\t%dName:\t%s\t\t\t" % (self.TrainEnv.Run.Cur, self.TrainEnv.Epoch.Cur, self.TestEnv.Trial.Cur, self.Time.Cycle, self.TestEnv.TrialName.Cur)
 
     def UpdateView(self, train):
         if self.NetView != 0 and self.NetView.IsVisible():
@@ -849,7 +849,7 @@ class Sim(object):
         if self.TrnEpcFile != 0:
             if self.TrainEnv.Run.Cur == 0 and epc == 0:
                 dt.WriteCSVHeaders(self.TrnEpcFile, etable.Tab)
-            dt.WriteCSVRow(self.TrnEpcFile, row, etable.Tab, True)
+            dt.WriteCSVRow(self.TrnEpcFile, row, etable.Tab)
 
         # note: this is how you log to a pandas.DataFrame
         # nwdat = [epc, self.EpcSSE, self.EpcAvgSSE, self.EpcPctErr, self.EpcPctCor, self.EpcCosDiff, 0, 0, 0]
@@ -917,7 +917,7 @@ class Sim(object):
         
         dt.SetCellFloat("Epoch", trl, epc)
         dt.SetCellFloat("Trial", trl, trl)
-        dt.SetCellString("TrialName", trl, self.TestEnv.TrialName)
+        dt.SetCellString("TrialName", trl, self.TestEnv.TrialName.Cur)
         dt.SetCellFloat("SSE", trl, self.TrlSSE)
         dt.SetCellFloat("AvgSSE", trl, self.TrlAvgSSE)
         dt.SetCellFloat("CosDiff", trl, self.TrlCosDiff)
@@ -1158,7 +1158,7 @@ class Sim(object):
         if self.RunFile != 0:
             if row == 0:
                 dt.WriteCSVHeaders(self.RunFile, etable.Tab)
-            dt.WriteCSVRow(self.RunFile, row, etable.Tab, True)
+            dt.WriteCSVRow(self.RunFile, row, etable.Tab)
             
     def ConfigRunLog(self, dt):
         dt.SetMetaData("name", "RunLog")
@@ -1202,7 +1202,7 @@ class Sim(object):
         gi.SetAppName("ra25")
         gi.SetAppAbout('This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>')
         
-        win = gi.NewWindow2D("ra25", "Leabra Random Associator", width, height, True)
+        win = gi.NewMainWindow("ra25", "Leabra Random Associator", width, height)
         self.Win = win
 
         vp = win.WinViewport2D()
