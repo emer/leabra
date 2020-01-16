@@ -325,22 +325,26 @@ func (ly *Layer) SendGDelta(ltime *leabra.Time) {
 func (ly *Layer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	if ly.Typ == TRC && ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
-		// note: TRCBurstGe is sent at *end* of previous cycle, after Burst act is computed
-		lpl := &ly.DeepPools[0]
-		if lpl.TRCBurstGe.Max > 0.1 { // have some actual input
-			for ni := range ly.Neurons {
-				nrn := &ly.Neurons[ni]
-				if nrn.IsOff() {
-					continue
-				}
-				dnr := &ly.DeepNeurs[ni]
-				ly.Act.GRawFmInc(nrn)
-				geRaw := ly.DeepTRC.BurstGe(dnr.TRCBurstGe) // only use trcburst
-				ly.Act.GeFmRaw(nrn, geRaw)
-				ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		for ni := range ly.Neurons {
+			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
 			}
-			return
+			// note: TRCBurstGe is sent at *end* of previous cycle, after Burst act is computed
+			var pl *Pool
+			if ly.DeepTRC.InhibPool {
+				pl = &ly.DeepPools[nrn.SubPool]
+			} else {
+				pl = &ly.DeepPools[0]
+			}
+			dnr := &ly.DeepNeurs[ni]
+			ly.Act.GRawFmInc(nrn)
+			burstInhib := math32.Min(1, pl.TRCBurstGe.Max/ly.DeepTRC.MaxInhib)
+			geRaw := (1-burstInhib)*nrn.GeRaw + ly.DeepTRC.BurstGe(dnr.TRCBurstGe)
+			ly.Act.GeFmRaw(nrn, geRaw)
+			ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 		}
+		return
 	}
 	if ly.Typ == Deep {
 		for ni := range ly.Neurons {

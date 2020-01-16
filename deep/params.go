@@ -70,10 +70,12 @@ func (db *BurstParams) PrevIsBurstQtr(qtr int) bool {
 // (e.g., Pulvinar) neurons is computed from the BurstTRC projections that drive TRCBurstGe
 // excitatory conductance.
 type TRCParams struct {
-	Binarize bool    `desc:"Apply threshold to TRCBurstGe input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  Typically used for one-to-one BurstTRC prjns with fixed wts = 1, so threshold is in terms of sending activation."`
-	BinThr   float32 `viewif:"Binarize" desc:"Threshold for binarizing -- typically used for one-to-one BurstTRC prjns with fixed wts = 1, so threshold is in terms of sending activation"`
-	BinOn    float32 `def:"0.3" viewif:"Binarize" desc:"Effective value for units above threshold -- lower value around 0.3 or so seems best."`
-	BinOff   float32 `def:"0" viewif:"Binarize" desc:"Effective value for units below threshold -- typically 0."`
+	MaxInhib  float32 `def:"0.2" min:"0.01" desc:"Level of pooled TRCBurstGe.Max at which the predictive non-burst inputs are fully inhibited (see InhibPool for option on what level of pooling this is computed over).  Computationally, it is essential that burst inputs inhibit effect of predictive non-burst (deep layer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max burst input exceeds this value, predictive non-burst inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning."`
+	InhibPool bool    `desc:"For the MaxInhib mechanism, if this is true then the TRCBurstGe.Max value comes from the specific pool (if sub-pools exist in layer) -- otherwise it comes from the entire layer."`
+	Binarize  bool    `desc:"Apply threshold to TRCBurstGe input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  Typically used for one-to-one BurstTRC prjns with fixed wts = 1, so threshold is in terms of sending activation.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs."`
+	BinThr    float32 `viewif:"Binarize" desc:"Threshold for binarizing -- typically used for one-to-one BurstTRC prjns with fixed wts = 1, so threshold is in terms of sending activation"`
+	BinOn     float32 `def:"0.3" viewif:"Binarize" desc:"Effective value for units above threshold -- lower value around 0.3 or so seems best."`
+	BinOff    float32 `def:"0" viewif:"Binarize" desc:"Effective value for units below threshold -- typically 0."`
 	//	POnlyM   bool    `desc:"TRC plus-phase for TRC units only occurs if the minus phase max activation for given unit group Pool is above .1 -- this reduces 'main effect' positive weight changes that can drive hogging."`
 }
 
@@ -81,6 +83,8 @@ func (tp *TRCParams) Update() {
 }
 
 func (tp *TRCParams) Defaults() {
+	tp.MaxInhib = 0.2
+	tp.InhibPool = false
 	tp.Binarize = false
 	tp.BinThr = 0.4
 	tp.BinOn = 0.3
