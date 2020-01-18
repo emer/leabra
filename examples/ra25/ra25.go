@@ -375,22 +375,20 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ss.Time.AlphaCycStart()
 	for qtr := 0; qtr < 4; qtr++ {
 		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
-			if cyc == ss.Time.CycPerQtr-1 { // don't update view - will be update by quarter
-				ss.Time.CycleInc()
-			} else {
-				ss.Net.Cycle(&ss.Time)
-				if !train {
-					ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
-				}
-				ss.Time.CycleInc()
-				if ss.ViewOn {
-					switch viewUpdt {
-					case leabra.Cycle:
+			ss.Net.Cycle(&ss.Time)
+			if !train {
+				ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
+			}
+			ss.Time.CycleInc()
+			if ss.ViewOn {
+				switch viewUpdt {
+				case leabra.Cycle:
+					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
 						ss.UpdateView(train)
-					case leabra.FastSpike:
-						if (cyc+1)%10 == 0 {
-							ss.UpdateView(train)
-						}
+					}
+				case leabra.FastSpike:
+					if (cyc+1)%10 == 0 {
+						ss.UpdateView(train)
 					}
 				}
 			}
