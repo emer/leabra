@@ -31,7 +31,7 @@ import "github.com/chewxy/math32"
 // A hand-optimized piece-wise function approximation is used to generate the NXX1 function
 // instead of requiring a lookup table of the gaussian convolution.  This is much easier
 // to use across a range of computational platforms including GPU's, and produces very similar
-// overall values.
+// overall values.  abc.
 type Params struct {
 	Thr          float32 `def:"0.5" desc:"threshold value Theta (Q) for firing output activation (.5 is more accurate value based on AdEx biological parameters and normalization"`
 	Gain         float32 `def:"80,100,40,20" min:"0" desc:"gain (gamma) of the rate-coded activation functions -- 100 is default, 80 works better for larger models, and 20 is closer to the actual spiking behavior of the AdEx model -- use lower values for more graded signals, generally in lower input/sensory layers of the network"`

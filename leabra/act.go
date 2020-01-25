@@ -20,7 +20,7 @@ import (
 //  act.go contains the activation params and functions for leabra
 
 // leabra.ActParams contains all the activation computation params and functions
-// for basic Leabra, at the neuron level.
+// for basic Leabra, at the neuron level .
 // This is included in leabra.Layer to drive the computation.
 type ActParams struct {
 	XX1        nxx1.Params     `view:"inline" desc:"Noisy X/X+1 rate code activation function parameters"`
@@ -411,7 +411,7 @@ func (cp *ClampParams) Defaults() {
 	cp.AvgGain = 0.2
 }
 
-// AvgGe computes Avg-based Ge clamping value if using that option
+// AvgGe computes Avg-based Ge clamping value if using that option.
 func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
 	return cp.AvgGain*cp.Gain*ext + (1-cp.AvgGain)*ge
 }
