@@ -29,3 +29,6 @@ install-exe:
 	# install executable into /usr/local/bin
 	cp leabra/pyleabra /usr/local/bin/
 
+clean:
+	rm -rf leabra dist build */*.egg-info *.egg-info
+	
