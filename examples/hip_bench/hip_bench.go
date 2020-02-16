@@ -152,16 +152,11 @@ var ParamSets = params.Sets{
 	}},
 }
 
-// Sim encapsulates the entire simulation model, and we define all the
-// functionality as methods on this struct.  This structure keeps all relevant
-// state information organized and available without having to pass everything around
-// as arguments to methods, and provides the core GUI interface (note the view tags
-// for the fields which provide hints to how things should be displayed).
-type Sim struct {
-	YSize     int        `desc:"size of EC Y"`
-	XSize     int        `desc:"size of EC X"`
-	ECPool    evec.Vec2i `desc:"size of EC pool"`
-	CA1Pool   evec.Vec2i `desc:"size of CA1 pool"`
+// HipParams have the hippocampus size and connectivity parameters
+type HipParams struct {
+	ECSize    evec.Vec2i `desc:"size of EC in terms of overall pools (outer dimension)"`
+	ECPool    evec.Vec2i `desc:"size of one EC pool"`
+	CA1Pool   evec.Vec2i `desc:"size of one CA1 pool"`
 	CA3Size   evec.Vec2i `desc:"size of CA3"`
 	DGRatio   float32    `desc:"size of DG / CA3"`
 	DGSize    evec.Vec2i `inactive:"+" desc:"size of DG"`
@@ -169,10 +164,51 @@ type Sim struct {
 	CA3PCon   float32    `desc:"percent connectivity into CA3"`
 	MossyPCon float32    `desc:"percent connectivity into CA3 from DG"`
 	ECPctAct  float32    `desc:"percent activation in EC pool"`
-	ListSize  int        `desc:"number of A-B + A-C patterns"`
-	NFlipBits int        `desc:"number of flipped bits in context"`
+}
 
+func (hp *HipParams) Defaults() {
+	// size
+	hp.ECSize.Set(2, 3)
+	hp.ECPool.Set(7, 7)
+	hp.CA1Pool.Set(10, 10)
+	hp.CA3Size.Set(20, 20)
+	hp.DGRatio = 1.5
+
+	// ratio
+	hp.DGPCon = 0.25
+	hp.CA3PCon = 0.25
+	hp.MossyPCon = 0.05
+	hp.ECPctAct = 0.2
+}
+
+func (hp *HipParams) Update() {
+	hp.DGSize.X = int(float32(hp.CA3Size.X) * hp.DGRatio)
+	hp.DGSize.Y = int(float32(hp.CA3Size.Y) * hp.DGRatio)
+}
+
+// PatParams have the pattern parameters
+type PatParams struct {
+	ListSize  int     `desc:"number of A-B, A-C patterns each"`
+	DriftCtxt bool    `desc:"use drifting context representations -- otherwise does bit flips from prototype"`
+	CtxtFlip  int     `desc:"number of flipped bits in context, for non-drifting"`
+	DriftPct  float32 `desc:"percentage of active bits that drift, per step, for drifting context"`
+}
+
+func (pp *PatParams) Defaults() {
+	pp.ListSize = 10
+	pp.CtxtFlip = 3
+	pp.DriftPct = .2
+}
+
+// Sim encapsulates the entire simulation model, and we define all the
+// functionality as methods on this struct.  This structure keeps all relevant
+// state information organized and available without having to pass everything around
+// as arguments to methods, and provides the core GUI interface (note the view tags
+// for the fields which provide hints to how things should be displayed).
+type Sim struct {
 	Net          *leabra.Network             `view:"no-inline"`
+	Hip          HipParams                   `desc:"hippocampus sizing parameters"`
+	Pat          PatParams                   `desc:"parameters for the input patterns"`
 	PoolVocab    map[string]*etensor.Float32 `view:"no-inline" desc:"pool patterns vocabulary"`
 	TrainAB      *etable.Table               `view:"no-inline" desc:"AB training patterns to use"`
 	TrainAC      *etable.Table               `view:"no-inline" desc:"AC training patterns to use"`
@@ -289,28 +325,13 @@ func (ss *Sim) New() {
 }
 
 func (ss *Sim) Defaults() {
-	// size
-	ss.ECPool.Set(7, 7)
-	ss.YSize = 3
-	ss.XSize = 2
-	ss.CA1Pool.Set(10, 10)
-	ss.CA3Size.Set(20, 20)
-	ss.DGRatio = 1.5
-	ss.ListSize = 10
-	ss.NFlipBits = 3
-
-	// ratio
-	ss.DGPCon = 0.25
-	ss.CA3PCon = 0.25
-	ss.MossyPCon = 0.05
-	ss.ECPctAct = 0.2
-
+	ss.Hip.Defaults()
+	ss.Pat.Defaults()
 	ss.Update()
 }
 
 func (ss *Sim) Update() {
-	ss.DGSize.X = int(float32(ss.CA3Size.X) * ss.DGRatio)
-	ss.DGSize.Y = int(float32(ss.CA3Size.Y) * ss.DGRatio)
+	ss.Hip.Update()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +339,7 @@ func (ss *Sim) Update() {
 
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
-	ss.OpenPats()
+	ss.ConfigPats()
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigTrnTrlLog(ss.TrnTrlLog)
@@ -366,12 +387,13 @@ func (ss *Sim) SetEnv(trainAC bool) {
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "Hip_bench")
-	in := net.AddLayer4D("Input", ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X, emer.Input)
-	ecin := net.AddLayer4D("ECin", ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X, emer.Hidden)
-	ecout := net.AddLayer4D("ECout", ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X, emer.Target) // clamped in plus phase
-	ca1 := net.AddLayer4D("CA1", ss.YSize, ss.XSize, ss.CA1Pool.Y, ss.CA1Pool.X, emer.Hidden)
-	dg := net.AddLayer2D("DG", ss.DGSize.Y, ss.DGSize.X, emer.Hidden)
-	ca3 := net.AddLayer2D("CA3", ss.CA3Size.Y, ss.CA3Size.X, emer.Hidden)
+	hp := &ss.Hip
+	in := net.AddLayer4D("Input", hp.ECSize.Y, hp.ECSize.X, hp.ECPool.Y, hp.ECPool.X, emer.Input)
+	ecin := net.AddLayer4D("ECin", hp.ECSize.Y, hp.ECSize.X, hp.ECPool.Y, hp.ECPool.X, emer.Hidden)
+	ecout := net.AddLayer4D("ECout", hp.ECSize.Y, hp.ECSize.X, hp.ECPool.Y, hp.ECPool.X, emer.Target) // clamped in plus phase
+	ca1 := net.AddLayer4D("CA1", hp.ECSize.Y, hp.ECSize.X, hp.CA1Pool.Y, hp.CA1Pool.X, emer.Hidden)
+	dg := net.AddLayer2D("DG", hp.DGSize.Y, hp.DGSize.X, emer.Hidden)
+	ca3 := net.AddLayer2D("CA3", hp.CA3Size.Y, hp.CA3Size.X, emer.Hidden)
 
 	ecin.SetClass("EC")
 	ecout.SetClass("EC")
@@ -395,9 +417,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 
 	// Perforant pathway
 	ppathDG := prjn.NewUnifRnd()
-	ppathDG.PCon = ss.DGPCon
+	ppathDG.PCon = hp.DGPCon
 	ppathCA3 := prjn.NewUnifRnd()
-	ppathCA3.PCon = ss.CA3PCon
+	ppathCA3.PCon = hp.CA3PCon
 
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("HippoCHL")
@@ -406,7 +428,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 
 	// Mossy fibers
 	mossy := prjn.NewUnifRnd()
-	mossy.PCon = ss.MossyPCon
+	mossy.PCon = hp.MossyPCon
 	pj = net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
 	pj.SetClass("HippoCHL")
 
@@ -437,7 +459,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 }
 
 func (ss *Sim) ReConfigNet() {
-	ss.OpenPats()
+	ss.ConfigPats()
 	ss.Net = &leabra.Network{}
 	ss.ConfigNet(ss.Net)
 	if ss.NetView != nil {
@@ -993,76 +1015,48 @@ func (ss *Sim) OpenPat(dt *etable.Table, fname, name, desc string) {
 	dt.SetMetaData("desc", desc)
 }
 
-// not using this is the only diff from sims version:
-// // OpenPatAsset opens pattern file from embedded assets
-// func (ss *Sim) OpenPatAsset(dt *etable.Table, fnm, name, desc string) error {
-// 	dt.SetMetaData("name", name)
-// 	dt.SetMetaData("desc", desc)
-// 	ab, err := Asset(fnm)
-// 	if err != nil {
-// 		log.Println(err)
-// 		return err
-// 	}
-// 	err = dt.ReadCSV(bytes.NewBuffer(ab), etable.Tab)
-// 	if err != nil {
-// 		log.Println(err)
-// 	} else {
-// 		for i := 1; i < len(dt.Cols); i++ {
-// 			dt.Cols[i].SetMetaData("grid-fill", "0.9")
-// 		}
-// 	}
-// 	return err
-// }
+func (ss *Sim) ConfigPats() {
+	hp := &ss.Hip
+	plY := hp.ECPool.Y // good idea to get shorter vars when used frequently
+	plX := hp.ECPool.X // makes much more readable
+	npats := ss.Pat.ListSize
+	patgen.AddVocabEmpty(ss.PoolVocab, "empty", npats, plY, plX)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "A", npats, plY, plX, hp.ECPctAct)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "B", npats, plY, plX, hp.ECPctAct)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "C", npats, plY, plX, hp.ECPctAct)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lA", npats, plY, plX, hp.ECPctAct)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lB", npats, plY, plX, hp.ECPctAct)
 
-func (ss *Sim) OpenPats() {
-	// one-time conversion from C++ patterns to Go patterns
-	// patgen.ReshapeCppFile(ss.TrainAB, "Train_AB.dat", "TrainAB.dat")
-	// patgen.ReshapeCppFile(ss.TrainAC, "Train_AC.dat", "TrainAC.dat")
-	// patgen.ReshapeCppFile(ss.TestAB, "Test_AB.dat", "TestAB.dat")
-	// patgen.ReshapeCppFile(ss.TestAC, "Test_AC.dat", "TestAC.dat")
-	// patgen.ReshapeCppFile(ss.TestLure, "Lure.dat", "TestLure.dat")
-
-	// ss.OpenPat(ss.TrainAB, "train_ab.tsv", "TrainAB", "AB Training Patterns")
-	// ss.OpenPat(ss.TrainAC, "train_ac.tsv", "TrainAC", "AC Training Patterns")
-	// ss.OpenPat(ss.TestAB, "test_ab.tsv", "TestAB", "AB Testing Patterns")
-	// ss.OpenPat(ss.TestAC, "test_ac.tsv", "TestAC", "AC Testing Patterns")
-	// ss.OpenPat(ss.TestLure, "test_lure.tsv", "TestLure", "Lure Testing Patterns") // ??? zycyc: modified into ConfigPats
-
-	patgen.AddVocabEmpty(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, "empty")
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "A")
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "B")
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "C")
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "lA")
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "lB")
-	for i := 0; i < 12; i++ {
-		patgen.AddVocabRepeat(ss.PoolVocab, 10, ss.ECPool.Y, ss.ECPool.X, ss.ECPctAct, "ctxt"+strconv.Itoa(i+1))
-
-		// solution 1: flip based on prototype context
-		for row := 0; row < 10; row++ {
-			patgen.FlipBits(ss.PoolVocab["ctxt"+strconv.Itoa(i+1)].SubSpace([]int{row}), ss.NFlipBits, ss.NFlipBits, 1, 0)
-		}
-
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "ctxt", 1, plY, plX, hp.ECPctAct)
+	for i := 0; i < 12; i++ { // 12 contexts!
+		ctxtNm := fmt.Sprintf("ctxt%d", i+1)
+		tsr, _ := patgen.AddVocabRepeat(ss.PoolVocab, ctxtNm, npats, "ctxt", 0)
+		patgen.FlipBitsRows(tsr, ss.Pat.CtxtFlip, ss.Pat.CtxtFlip, 1, 0)
+		// todo: also support drifting
 		// solution 2: drift based on last trial (will require sequential learning)
 		// patgen.VocabDrift(ss.PoolVocab, ss.NFlipBits, "ctxt"+strconv.Itoa(i+1))
 	}
 
-	patgen.InitPats(ss.TrainAB, "TrainAB", "TrainAB Pats", "Input", "ECout", 10, ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X)
+	ecY := hp.ECSize.Y
+	ecX := hp.ECSize.X
+
+	patgen.InitPats(ss.TrainAB, "TrainAB", "TrainAB Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TrainAB, ss.PoolVocab, "Input", []string{"A", "B", "ctxt1", "ctxt2", "ctxt3", "ctxt4"})
 	patgen.MixPats(ss.TrainAB, ss.PoolVocab, "ECout", []string{"A", "B", "ctxt1", "ctxt2", "ctxt3", "ctxt4"})
 
-	patgen.InitPats(ss.TestAB, "TestAB", "TestAB Pats", "Input", "ECout", 10, ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X)
+	patgen.InitPats(ss.TestAB, "TestAB", "TestAB Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TestAB, ss.PoolVocab, "Input", []string{"A", "empty", "ctxt1", "ctxt2", "ctxt3", "ctxt4"})
 	patgen.MixPats(ss.TestAB, ss.PoolVocab, "ECout", []string{"A", "B", "ctxt1", "ctxt2", "ctxt3", "ctxt4"})
 
-	patgen.InitPats(ss.TrainAC, "TrainAC", "TrainAC Pats", "Input", "ECout", 10, ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X)
+	patgen.InitPats(ss.TrainAC, "TrainAC", "TrainAC Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TrainAC, ss.PoolVocab, "Input", []string{"A", "C", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 	patgen.MixPats(ss.TrainAC, ss.PoolVocab, "ECout", []string{"A", "C", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 
-	patgen.InitPats(ss.TestAC, "TestAC", "TestAC Pats", "Input", "ECout", 10, ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X)
+	patgen.InitPats(ss.TestAC, "TestAC", "TestAC Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TestAC, ss.PoolVocab, "Input", []string{"A", "empty", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 	patgen.MixPats(ss.TestAC, ss.PoolVocab, "ECout", []string{"A", "C", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 
-	patgen.InitPats(ss.TestLure, "TestLure", "TestLure Pats", "Input", "ECout", 10, ss.YSize, ss.XSize, ss.ECPool.Y, ss.ECPool.X)
+	patgen.InitPats(ss.TestLure, "TestLure", "TestLure Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TestLure, ss.PoolVocab, "Input", []string{"lA", "empty", "ctxt9", "ctxt10", "ctxt11", "ctxt12"}) // arbitrary ctxt here
 	patgen.MixPats(ss.TestLure, ss.PoolVocab, "ECout", []string{"lA", "lB", "ctxt9", "ctxt10", "ctxt11", "ctxt12"})    // arbitrary ctxt here
 }
