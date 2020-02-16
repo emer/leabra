@@ -1,8 +1,8 @@
-// Copyright (c) 2019, The Emergent Authors. All rights reserved.
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// hip_bench runs a hippocampus model on the AB-AC paired associate learning task with paramsets by the user
+// hip_bench runs a hippocampus model for testing parameters and new learning ideas
 package main
 
 import (
@@ -59,98 +59,10 @@ func guirun() {
 // LogPrec is precision for saving float values in logs
 const LogPrec = 4
 
-// ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
-// selected to apply on top of that
-var ParamSets = params.Sets{
-	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "keeping default params for generic prjns",
-				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.WtBal.On":    "false",
-				}},
-			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
-				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.04",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "false",
-				}},
-			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
-				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.4", // note: 0.2 can sometimes take a really long time to learn
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
-				}},
-			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
-				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0",
-				}},
-			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
-				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0.0",
-				}},
-			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
-				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5",
-				}},
-			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
-				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.001",
-					"Prjn.CHL.SAvgCor": "1",
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "8",
-				}},
-			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons",
-				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.01",
-					"Prjn.CHL.SAvgCor": "1",
-					"Prjn.WtScale.Rel": "2",
-				}},
-			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
-				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.005",
-					"Prjn.CHL.SAvgCor": "0.4",
-					"Prjn.Learn.Lrate": "0.1",
-				}},
-			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
-				Params: params.Params{
-					"Layer.Act.Gbar.L":        ".1",
-					"Layer.Inhib.ActAvg.Init": "0.2",
-					"Layer.Inhib.Layer.On":    "false",
-					"Layer.Inhib.Pool.Gi":     "2.0",
-					"Layer.Inhib.Pool.On":     "true",
-				}},
-			{Sel: "#DG", Desc: "very sparse = high inibhition",
-				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.Layer.Gi":    "3.6",
-				}},
-			{Sel: "#CA3", Desc: "sparse = high inibhition",
-				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.02",
-					"Layer.Inhib.Layer.Gi":    "2.8",
-				}},
-			{Sel: "#CA1", Desc: "CA1 only Pools",
-				Params: params.Params{
-					"Layer.Inhib.ActAvg.Init": "0.1",
-					"Layer.Inhib.Layer.On":    "false",
-					"Layer.Inhib.Pool.Gi":     "2.2",
-					"Layer.Inhib.Pool.On":     "true",
-				}},
-		},
-	}},
-}
+// see def_params.go for the default params, and params.go for user-saved versions
+// from the gui.
+
+// see bottom of file for multi-factor testing params
 
 // HipParams have the hippocampus size and connectivity parameters
 type HipParams struct {
@@ -188,15 +100,17 @@ func (hp *HipParams) Update() {
 
 // PatParams have the pattern parameters
 type PatParams struct {
-	ListSize  int     `desc:"number of A-B, A-C patterns each"`
-	DriftCtxt bool    `desc:"use drifting context representations -- otherwise does bit flips from prototype"`
-	CtxtFlip  int     `desc:"number of flipped bits in context, for non-drifting"`
-	DriftPct  float32 `desc:"percentage of active bits that drift, per step, for drifting context"`
+	ListSize    int     `desc:"number of A-B, A-C patterns each"`
+	MinDiffPct  float32 `desc:"minimum difference between item random patterns, as a proportion (0-1) of total active"`
+	DriftCtxt   bool    `desc:"use drifting context representations -- otherwise does bit flips from prototype"`
+	CtxtFlipPct float32 `desc:"proportion (0-1) of active bits to flip for each context pattern, relative to a prototype, for non-drifting"`
+	DriftPct    float32 `desc:"percentage of active bits that drift, per step, for drifting context"`
 }
 
 func (pp *PatParams) Defaults() {
 	pp.ListSize = 10
-	pp.CtxtFlip = 3
+	pp.MinDiffPct = 0.5
+	pp.CtxtFlipPct = .25
 	pp.DriftPct = .2
 }
 
@@ -248,13 +162,14 @@ type Sim struct {
 	TrlAvgSSE      float64 `inactive:"+" desc:"current trial's average sum squared error"`
 	TrlCosDiff     float64 `inactive:"+" desc:"current trial's cosine difference"`
 
-	EpcSSE     float64 `inactive:"+" desc:"last epoch's total sum squared error"`
-	EpcAvgSSE  float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
-	EpcPctErr  float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE > 0 (subject to .5 unit-wise tolerance)"`
-	EpcPctCor  float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE == 0 (subject to .5 unit-wise tolerance)"`
-	EpcCosDiff float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
-	FirstZero  int     `inactive:"+" desc:"epoch at when Mem err first went to zero"`
-	NZero      int     `inactive:"+" desc:"number of epochs in a row with zero Mem err"`
+	EpcSSE        float64 `inactive:"+" desc:"last epoch's total sum squared error"`
+	EpcAvgSSE     float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
+	EpcPctErr     float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE > 0 (subject to .5 unit-wise tolerance)"`
+	EpcPctCor     float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE == 0 (subject to .5 unit-wise tolerance)"`
+	EpcCosDiff    float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
+	EpcPerTrlMSec float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
+	FirstZero     int     `inactive:"+" desc:"epoch at when Mem err first went to zero"`
+	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero Mem err"`
 
 	// internal state - view:"-"
 	SumSSE       float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -271,6 +186,9 @@ type Sim struct {
 	TstCycPlot   *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
 	RunPlot      *eplot.Plot2D    `view:"-" desc:"the run plot"`
 	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
+	TrnEpcHdrs   bool             `view:"-" desc:"headers written"`
+	TstEpcFile   *os.File         `view:"-" desc:"log file"`
+	TstEpcHdrs   bool             `view:"-" desc:"headers written"`
 	RunFile      *os.File         `view:"-" desc:"log file"`
 	TmpVals      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
 	LayStatNms   []string         `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
@@ -283,6 +201,7 @@ type Sim struct {
 	StopNow      bool             `view:"-" desc:"flag to stop running"`
 	NeedsNewRun  bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
 	RndSeed      int64            `view:"-" desc:"the current random seed"`
+	LastEpcTime  time.Time        `view:"-" desc:"timer for last epoch"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -355,7 +274,7 @@ func (ss *Sim) ConfigEnv() {
 		ss.MaxRuns = 10
 	}
 	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 50
+		ss.MaxEpcs = 30
 		ss.NZeroStop = 1
 	}
 
@@ -438,10 +357,10 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj = net.ConnectLayersPrjn(ca3, ca1, prjn.NewFull(), emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("HippoCHL")
 
-	// using 3 threads :)
+	// using 3 threads total (rest on 0)
 	dg.SetThread(1)
-	ca3.SetThread(2)
-	ca1.SetThread(3)
+	ca3.SetThread(1)
+	ca1.SetThread(2)
 
 	// note: if you wanted to change a layer type from e.g., Target to Compare, do this:
 	// outLay.SetType(emer.Compare)
@@ -460,7 +379,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 
 func (ss *Sim) ReConfigNet() {
 	ss.ConfigPats()
-	ss.Net = &leabra.Network{}
+	ss.Net = &leabra.Network{} // start over with new network
 	ss.ConfigNet(ss.Net)
 	if ss.NetView != nil {
 		ss.NetView.SetNet(ss.Net)
@@ -475,10 +394,11 @@ func (ss *Sim) ReConfigNet() {
 // and resets the epoch log table
 func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
+	ss.SetParams("", ss.LogSetParams) // all sheets
+	ss.ReConfigNet()
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
 	ss.StopNow = false
-	ss.SetParams("", ss.LogSetParams) // all sheets
 	ss.NewRun()
 	ss.UpdateView(true)
 }
@@ -969,7 +889,7 @@ func (ss *Sim) ParamsName() string {
 func (ss *Sim) SetParams(sheet string, setMsg bool) error {
 	if sheet == "" {
 		// this is important for catching typos and ensuring that all sheets can be used
-		ss.Params.ValidateSheets([]string{"Network", "Sim"})
+		ss.Params.ValidateSheets([]string{"Network", "Sim", "Hip", "Pat"})
 	}
 	err := ss.SetParamsSet("Base", sheet, setMsg)
 	if ss.ParamSet != "" && ss.ParamSet != "Base" {
@@ -1000,6 +920,21 @@ func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
 			simp.Apply(ss, setMsg)
 		}
 	}
+
+	if sheet == "" || sheet == "Hip" {
+		simp, ok := pset.Sheets["Hip"]
+		if ok {
+			simp.Apply(&ss.Hip, setMsg)
+		}
+	}
+
+	if sheet == "" || sheet == "Pat" {
+		simp, ok := pset.Sheets["Pat"]
+		if ok {
+			simp.Apply(&ss.Pat, setMsg)
+		}
+	}
+
 	// note: if you have more complex environments with parameters, definitely add
 	// sheets for them, e.g., "TrainEnv", "TestEnv" etc
 	return err
@@ -1020,18 +955,22 @@ func (ss *Sim) ConfigPats() {
 	plY := hp.ECPool.Y // good idea to get shorter vars when used frequently
 	plX := hp.ECPool.X // makes much more readable
 	npats := ss.Pat.ListSize
+	pctAct := hp.ECPctAct
+	minDiff := ss.Pat.MinDiffPct
+	nOn := patgen.NFmPct(pctAct, plY*plX)
+	ctxtflip := patgen.NFmPct(ss.Pat.CtxtFlipPct, nOn)
 	patgen.AddVocabEmpty(ss.PoolVocab, "empty", npats, plY, plX)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "A", npats, plY, plX, hp.ECPctAct)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "B", npats, plY, plX, hp.ECPctAct)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "C", npats, plY, plX, hp.ECPctAct)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lA", npats, plY, plX, hp.ECPctAct)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lB", npats, plY, plX, hp.ECPctAct)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "A", npats, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "B", npats, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "C", npats, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lA", npats, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lB", npats, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "ctxt", 1, plY, plX, pctAct, minDiff)
 
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "ctxt", 1, plY, plX, hp.ECPctAct)
 	for i := 0; i < 12; i++ { // 12 contexts!
 		ctxtNm := fmt.Sprintf("ctxt%d", i+1)
 		tsr, _ := patgen.AddVocabRepeat(ss.PoolVocab, ctxtNm, npats, "ctxt", 0)
-		patgen.FlipBitsRows(tsr, ss.Pat.CtxtFlip, ss.Pat.CtxtFlip, 1, 0)
+		patgen.FlipBitsRows(tsr, ctxtflip, ctxtflip, 1, 0)
 		// todo: also support drifting
 		// solution 2: drift based on last trial (will require sequential learning)
 		// patgen.VocabDrift(ss.PoolVocab, ss.NFlipBits, "ctxt"+strconv.Itoa(i+1))
@@ -1212,8 +1151,9 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TrnEpcPlot.GoUpdate()
 	if ss.TrnEpcFile != nil {
-		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
+		if !ss.TrnEpcHdrs {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
+			ss.TrnEpcHdrs = true
 		}
 		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
 	}
@@ -1379,10 +1319,20 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	tix := etable.NewIdxView(trl)
 	epc := ss.TrainEnv.Epoch.Prv // ?
 
+	if ss.LastEpcTime.IsZero() {
+		ss.EpcPerTrlMSec = 0
+	} else {
+		iv := time.Now().Sub(ss.LastEpcTime)
+		nt := ss.TrainAB.Rows * 4 // 1 train and 3 tests
+		ss.EpcPerTrlMSec = float64(iv) / (float64(nt) * float64(time.Millisecond))
+	}
+	ss.LastEpcTime = time.Now()
+
 	// note: this shows how to use agg methods to compute summary data from another
 	// data table, instead of incrementing on the Sim
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
 	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
 	dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
 	dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
@@ -1426,6 +1376,13 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstEpcPlot.GoUpdate()
+	if ss.TstEpcFile != nil {
+		if !ss.TstEpcHdrs {
+			dt.WriteCSVHeaders(ss.TstEpcFile, etable.Tab)
+			ss.TstEpcHdrs = true
+		}
+		dt.WriteCSVRow(ss.TstEpcFile, row, etable.Tab)
+	}
 }
 
 func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
@@ -1437,6 +1394,7 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
+		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
@@ -1458,6 +1416,7 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1551,6 +1510,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
+	dt.SetCellFloat("NEpochs", row, float64(ss.TstEpcLog.Rows))
 	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
 	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
 	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
@@ -1572,6 +1532,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 		split.Desc(spl, nm)
 	}
 	split.Desc(spl, "FirstZero")
+	split.Desc(spl, "NEpochs")
 	ss.RunStats = spl.AggsToTable(etable.AddAggName)
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1593,6 +1554,7 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Params", etensor.STRING, nil, nil},
+		{"NEpochs", etensor.FLOAT64, nil, nil},
 		{"FirstZero", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
@@ -1614,6 +1576,7 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("NEpochs", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("FirstZero", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
@@ -1922,6 +1885,35 @@ var SimProps = ki.Props{
 	},
 }
 
+// OuterLoopParams are the parameters to run for outer crossed factor testing
+var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
+
+// InnerLoopParams are the parameters to run for inner crossed factor testing
+var InnerLoopParams = []string{"List10", "List20", "List50", "List100"}
+
+// TwoFactorRun runs outer-loop crossed with inner-loop params
+func (ss *Sim) TwoFactorRun() {
+	tag := ss.Tag
+	usetag := tag
+	if usetag != "" {
+		usetag += "_"
+	}
+	for _, otf := range OuterLoopParams {
+		for _, inf := range InnerLoopParams {
+			ss.Tag = usetag + otf + "_" + inf
+			rand.Seed(ss.RndSeed) // each run starts at same seed..
+			ss.SetParamsSet(otf, "", ss.LogSetParams)
+			ss.SetParamsSet(inf, "", ss.LogSetParams)
+			ss.ReConfigNet() // note: this applies Base params to Network
+			ss.ConfigEnv()
+			ss.StopNow = false
+			ss.NewRun()
+			ss.Train()
+		}
+	}
+	ss.Tag = tag
+}
+
 func (ss *Sim) CmdArgs() {
 	ss.NoGui = true
 	var nogui bool
@@ -1931,7 +1923,8 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
@@ -1950,13 +1943,13 @@ func (ss *Sim) CmdArgs() {
 	if saveEpcLog {
 		var err error
 		fnm := ss.LogFileName("epc")
-		ss.TrnEpcFile, err = os.Create(fnm)
+		ss.TstEpcFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
-			ss.TrnEpcFile = nil
+			ss.TstEpcFile = nil
 		} else {
-			fmt.Printf("Saving epoch log to: %v\n", fnm)
-			defer ss.TrnEpcFile.Close()
+			fmt.Printf("Saving test epoch log to: %v\n", fnm)
+			defer ss.TstEpcFile.Close()
 		}
 	}
 	if saveRunLog {
@@ -1975,5 +1968,8 @@ func (ss *Sim) CmdArgs() {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
-	ss.Train()
+	// ss.Train()
+	ss.TwoFactorRun()
+	fnm := ss.LogFileName("runs")
+	ss.RunStats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers)
 }
