@@ -19,10 +19,12 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.04",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Prjn.Learn.Lrate":        "0.04",
+					"Prjn.Learn.Momentum.On":  "false",
+					"Prjn.Learn.Norm.On":      "false",
+					"Prjn.Learn.WtBal.On":     "false", // todo: test
+					"Prjn.Learn.XCal.SetLLrn": "true",  // bcm is now active -- control
+					"Prjn.Learn.XCal.LLrn":    "0",     // 0 = turn off BCM
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
@@ -58,11 +60,11 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "8",
 				}},
-			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons",
+			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
 					"Prjn.CHL.Hebb":    "0.01",
 					"Prjn.CHL.SAvgCor": "1",
-					"Prjn.WtScale.Rel": "2",
+					"Prjn.WtScale.Rel": "1", // 1 is *slightly* better
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
@@ -112,6 +114,14 @@ var ParamSets = params.Sets{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
 					"PatParams.ListSize": "20",
+				}},
+		},
+	}},
+	{Name: "List30", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "30",
 				}},
 		},
 	}},

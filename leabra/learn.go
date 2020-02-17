@@ -101,7 +101,7 @@ func (ls *LearnSynParams) WtFmLWt(syn *Synapse) {
 	syn.Wt *= syn.Scale
 }
 
-// CHLdWt returns the error-driven and bcm Hebbian weight change components for the
+// CHLdWt returns the error-driven and BCM Hebbian weight change components for the
 // temporally eXtended Contrastive Attractor Learning (XCAL), CHL version
 func (ls *LearnSynParams) CHLdWt(suAvgSLrn, suAvgM, ruAvgSLrn, ruAvgM, ruAvgL float32) (err, bcm float32) {
 	srs := suAvgSLrn * ruAvgSLrn
@@ -109,6 +109,13 @@ func (ls *LearnSynParams) CHLdWt(suAvgSLrn, suAvgM, ruAvgSLrn, ruAvgM, ruAvgL fl
 	bcm = ls.XCal.DWt(srs, ruAvgL)
 	err = ls.XCal.DWt(srs, srm)
 	return
+}
+
+// BCMdWt returns the BCM Hebbian weight change for AvgSLrn vs. AvgL
+// long-term average floating activation on the receiver.
+func (ls *LearnSynParams) BCMdWt(suAvgSLrn, ruAvgSLrn, ruAvgL float32) float32 {
+	srs := suAvgSLrn * ruAvgSLrn
+	return ls.XCal.DWt(srs, ruAvgL)
 }
 
 // WtFmDWt updates the synaptic weights from accumulated weight changes

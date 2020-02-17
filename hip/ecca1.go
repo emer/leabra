@@ -53,7 +53,12 @@ func (pj *EcCa1Prjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			dwt := (sn.ActP * rn.ActP) - (sn.ActQ1 * rn.ActQ1)
+			err := (sn.ActP * rn.ActP) - (sn.ActQ1 * rn.ActQ1)
+			bcm := pj.Learn.BCMdWt(sn.AvgSLrn, rn.AvgSLrn, rn.AvgL)
+			bcm *= pj.Learn.XCal.LongLrate(rn.AvgLLrn)
+			err *= pj.Learn.XCal.MLrn
+			dwt := bcm + err
+
 			norm := float32(1)
 			if pj.Learn.Norm.On {
 				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))

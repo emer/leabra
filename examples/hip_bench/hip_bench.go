@@ -185,6 +185,7 @@ type Sim struct {
 	TstTrlPlot   *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
 	TstCycPlot   *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
 	RunPlot      *eplot.Plot2D    `view:"-" desc:"the run plot"`
+	RunStatsPlot *eplot.Plot2D    `view:"-" desc:"the run stats plot"`
 	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
 	TrnEpcHdrs   bool             `view:"-" desc:"headers written"`
 	TstEpcFile   *os.File         `view:"-" desc:"log file"`
@@ -452,10 +453,13 @@ func (ss *Sim) AlphaCyc(train bool) {
 	}
 
 	ca1 := ss.Net.LayerByName("CA1").(leabra.LeabraLayer).AsLeabra()
+	input := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
 	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
 	ca1FmECin := ca1.RcvPrjns.SendName("ECin").(*hip.EcCa1Prjn)
 	ca1FmCa3 := ca1.RcvPrjns.SendName("CA3").(*hip.CHLPrjn)
+	_ = ecin
+	_ = input
 
 	if train {
 		ecout.SetType(emer.Target) // clamp a plus phase during testing
@@ -504,7 +508,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 
 			if train { // clamp ECout from ECin
-				ecin.UnitVals(&ss.TmpVals, "Act")
+				input.UnitVals(&ss.TmpVals, "Act")
 				ecout.ApplyExt1D32(ss.TmpVals)
 			}
 		}
@@ -1007,7 +1011,12 @@ func (ss *Sim) ConfigPats() {
 // any file names that are saved.
 func (ss *Sim) RunName() string {
 	if ss.Tag != "" {
-		return ss.Tag + "_" + ss.ParamsName()
+		pnm := ss.ParamsName()
+		if pnm == "Base" {
+			return ss.Tag
+		} else {
+			return ss.Tag + "_" + pnm
+		}
 	} else {
 		return ss.ParamsName()
 	}
@@ -1525,15 +1534,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 		}
 	}
 
-	runix := etable.NewIdxView(dt)
-	spl := split.GroupBy(runix, []string{"Params"})
-	for _, tn := range ss.TstNms {
-		nm := tn + " " + "Mem"
-		split.Desc(spl, nm)
-	}
-	split.Desc(spl, "FirstZero")
-	split.Desc(spl, "NEpochs")
-	ss.RunStats = spl.AggsToTable(etable.AddAggName)
+	ss.LogRunStats()
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.RunPlot.GoUpdate()
@@ -1596,6 +1597,33 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 	return plt
 }
 
+//////////////////////////////////////////////
+//  RunStats
+
+// LogRunStats computes RunStats from RunLog data -- can be used for looking at prelim results
+func (ss *Sim) LogRunStats() {
+	dt := ss.RunLog
+	runix := etable.NewIdxView(dt)
+	spl := split.GroupBy(runix, []string{"Params"})
+	for _, tn := range ss.TstNms {
+		nm := tn + " " + "Mem"
+		split.Desc(spl, nm)
+	}
+	split.Desc(spl, "FirstZero")
+	split.Desc(spl, "NEpochs")
+	ss.RunStats = spl.AggsToTable(etable.AddAggName)
+	ss.ConfigRunStatsPlot(ss.RunStatsPlot, ss.RunStats)
+}
+
+func (ss *Sim) ConfigRunStatsPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+	plt.Params.Title = "Hippocampus Run Stats Plot"
+	plt.Params.XAxisCol = "Params"
+	plt.Params.Type = eplot.Bar
+	plt.Params.XAxisRot = 45
+	plt.SetTable(dt)
+	return plt
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
@@ -1654,6 +1682,10 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "RunPlot").(*eplot.Plot2D)
 	ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
+
+	plt = tv.AddNewTab(eplot.KiT_Plot2D, "RunStatsPlot").(*eplot.Plot2D)
+	// ss.RunStatsPlot = ss.ConfigRunStatsPlot(plt, ss.RunStats)
+	ss.RunStatsPlot = plt
 
 	split.SetSplits(.2, .8)
 
@@ -1779,6 +1811,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.ReConfigNet()
 		})
 
+	tbar.AddAction(gi.ActOpts{Label: "Run Stats", Icon: "file-data", Tooltip: "compute stats from run log -- avail in plot"}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.LogRunStats()
+		})
+
 	tbar.AddSeparator("misc")
 
 	tbar.AddAction(gi.ActOpts{Label: "New Seed", Icon: "new", Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time."}, win.This(),
@@ -1889,7 +1926,7 @@ var SimProps = ki.Props{
 var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List10", "List20", "List50", "List100"}
+var InnerLoopParams = []string{"List10", "List20", "List30"} // "List50"} // , "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {

@@ -70,10 +70,12 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.04",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Prjn.Learn.Lrate":        "0.04",
+					"Prjn.Learn.Momentum.On":  "false",
+					"Prjn.Learn.Norm.On":      "false",
+					"Prjn.Learn.WtBal.On":     "false",
+					"Prjn.Learn.XCal.SetLLrn": "true", // bcm is now active -- control
+					"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
