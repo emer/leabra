@@ -22,21 +22,28 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Lrate":        "0.04",
 					"Prjn.Learn.Momentum.On":  "false",
 					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "false", // todo: test
-					"Prjn.Learn.XCal.SetLLrn": "true",  // bcm is now active -- control
-					"Prjn.Learn.XCal.LLrn":    "0",     // 0 = turn off BCM
+					"Prjn.Learn.WtBal.On":     "true",  // better
+					"Prjn.Learn.XCal.SetLLrn": "false", // bcm = better!  now avail
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.4", // note: 0.2 can sometimes take a really long time to learn
+					"Prjn.CHL.Hebb":          "0.05", // .01 > .05? > .1?
+					"Prjn.Learn.Lrate":       "0.4",  // .2 probably better? .4 was prev default
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
 				}},
+			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Prjn prjns",
+				Params: params.Params{
+					"Prjn.Learn.Lrate":        "0.04", // regular lrate!?
+					"Prjn.Learn.Momentum.On":  "false",
+					"Prjn.Learn.Norm.On":      "false",
+					"Prjn.Learn.WtBal.On":     "true",
+					"Prjn.Learn.XCal.SetLLrn": "false",
+				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0",
+					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
@@ -49,7 +56,14 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5",
+					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
+				}},
+			{Sel: "#ECinToDG", Desc: "maybe DG doesn't learn at all",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "true", // todo: try turning it off
+					// "Prjn.WtInit.Mean": "0.9",
+					// "Prjn.WtInit.Var":  "0.01",
+					// "Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
@@ -58,19 +72,23 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "8",
+					"Prjn.WtScale.Rel": "2", // todo: try a range!  old: 8 > 20 > 1
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.01",
-					"Prjn.CHL.SAvgCor": "1",
+					// todo: this only applies for non-dg err config
+					// "Prjn.CHL.Hebb":    "0.01",
+					// "Prjn.CHL.SAvgCor": "1",
 					"Prjn.WtScale.Rel": "1", // 1 is *slightly* better
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.005",
-					"Prjn.CHL.SAvgCor": "0.4",
-					"Prjn.Learn.Lrate": "0.1",
+					"Prjn.CHL.Hebb":          "0.005", // .005 = .01? > .001 -- .01 maybe tiny bit better?
+					"Prjn.CHL.SAvgCor":       "0.4",
+					"Prjn.Learn.Lrate":       "0.1", // .1 > .2, .05 (sig worse)
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.WtBal.On":    "true",
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
@@ -122,6 +140,14 @@ var ParamSets = params.Sets{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
 					"PatParams.ListSize": "30",
+				}},
+		},
+	}},
+	{Name: "List40", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "40",
 				}},
 		},
 	}},
