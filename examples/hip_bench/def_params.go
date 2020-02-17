@@ -6,6 +6,12 @@ package main
 
 import "github.com/emer/emergent/params"
 
+// todo:
+// * refine mossy, lrate, try no wtbal, but likely to be key
+// * no learning in EC -> DG
+// * CA3->CA1 try higher AvgLMax, also SavgCor < .4 -- this prjn is key and interesting..
+// * try diff CA3, DG inhib params finally.
+
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
 var ParamSets = params.Sets{
@@ -35,11 +41,15 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Prjn prjns",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":        "0.04", // regular lrate!?
-					"Prjn.Learn.Momentum.On":  "false",
-					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "true",
-					"Prjn.Learn.XCal.SetLLrn": "false",
+					"Prjn.Learn.Lrate":       "0.1", // for err-driven, .1 is best
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.WtBal.On":    "true",
+					// "Prjn.Learn.XCal.SetLLrn": "false",
+					// "Prjn.Learn.XCal.LLrn":    "0",
+					"Prjn.CHL.Hebb":    "0.005",
+					"Prjn.CHL.SAvgCor": ".4",
+					"Prjn.CHL.MinusQ1": "true",
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
@@ -72,7 +82,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "2", // todo: try a range!  old: 8 > 20 > 1
+					"Prjn.WtScale.Rel": "4", // todo: try a range!  old: 8 > 20 > 1
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
@@ -80,6 +90,7 @@ var ParamSets = params.Sets{
 					// "Prjn.CHL.Hebb":    "0.01",
 					// "Prjn.CHL.SAvgCor": "1",
 					"Prjn.WtScale.Rel": "1", // 1 is *slightly* better
+					// "Prjn.Learn.Lrate": ".04", // lower recurrent is better?
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
@@ -107,6 +118,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
 					"Layer.Inhib.Layer.Gi":    "2.8",
+					"Layer.Learn.AvgL.Gain":   "3",
 				}},
 			{Sel: "#CA1", Desc: "CA1 only Pools",
 				Params: params.Params{

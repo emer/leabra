@@ -78,6 +78,7 @@ type HipParams struct {
 	MossyPCon float32    `desc:"percent connectivity into CA3 from DG"`
 	ECPctAct  float32    `desc:"percent activation in EC pool"`
 	DgErr     bool       `desc:"use DG input to CA3 as an error-driven learning signal: turn DG -> CA3 off in first quarter -- if true, then EcCA1Prjn's are used in CA3"`
+	MossyDel  float32    `desc:"delta in mossy strength between minus and plus phase"`
 	DgOffTest bool       `desc:"turn DG input to CA3 off during testing"`
 }
 
@@ -96,7 +97,8 @@ func (hp *HipParams) Defaults() {
 	hp.ECPctAct = 0.2
 
 	hp.DgErr = true
-	hp.DgOffTest = true
+	hp.MossyDel = 2
+	hp.DgOffTest = false
 }
 
 func (hp *HipParams) Update() {
@@ -114,7 +116,7 @@ type PatParams struct {
 }
 
 func (pp *PatParams) Defaults() {
-	pp.ListSize = 10
+	pp.ListSize = 20 // 10 is too small to see issues..
 	pp.MinDiffPct = 0.5
 	pp.CtxtFlipPct = .25
 	pp.DriftPct = .2
@@ -359,9 +361,17 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("EcDg")
 	if hp.DgErr {
-		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
-		pj.SetClass("PPath")
-		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
+		if false {
+			pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
+			pj.SetClass("PPath")
+			pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
+			pj.SetClass("PPath")
+		} else {
+			pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
+			pj.SetClass("PPath")
+			pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
+			pj.SetClass("PPath")
+		}
 		// this works really poorly!  have to crank lrate up to .8 or so and even then
 		// it shows massive interference!
 		// pj.SetClass("PPath")
@@ -494,14 +504,14 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	dgwtscale := ca3FmDg.WtScale.Rel
 	if ss.Hip.DgErr {
-		ca3FmDg.WtScale.Rel = 0 // no
+		ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel
 	}
 
 	if train {
 		ecout.SetType(emer.Target) // clamp a plus phase during testing
 	} else {
 		if ss.Hip.DgOffTest {
-			ca3FmDg.WtScale.Abs = 0 // no
+			ca3FmDg.WtScale.Abs = dgwtscale - ss.Hip.MossyDel
 		}
 		ecout.SetType(emer.Compare) // don't clamp
 	}
@@ -544,7 +554,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.GScaleFmAvgAct() // update computed scaling factors
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 			if train {              // clamp ECout from ECin
-				ecin.UnitVals(&ss.TmpVals, "Act")
+				input.UnitVals(&ss.TmpVals, "Act")
 				ecout.ApplyExt1D32(ss.TmpVals)
 			}
 		}
