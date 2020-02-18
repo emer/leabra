@@ -77,28 +77,8 @@ type HipParams struct {
 	CA3PCon   float32    `desc:"percent connectivity into CA3"`
 	MossyPCon float32    `desc:"percent connectivity into CA3 from DG"`
 	ECPctAct  float32    `desc:"percent activation in EC pool"`
-	DgErr     bool       `desc:"use DG input to CA3 as an error-driven learning signal: turn DG -> CA3 off in first quarter -- if true, then EcCA1Prjn's are used in CA3"`
 	MossyDel  float32    `desc:"delta in mossy strength between minus and plus phase"`
 	DgOffTest bool       `desc:"turn DG input to CA3 off during testing"`
-}
-
-func (hp *HipParams) Defaults() {
-	// size
-	hp.ECSize.Set(2, 3)
-	hp.ECPool.Set(7, 7)
-	hp.CA1Pool.Set(10, 10)
-	hp.CA3Size.Set(20, 20)
-	hp.DGRatio = 1.5
-
-	// ratio
-	hp.DGPCon = 0.25
-	hp.CA3PCon = 0.25
-	hp.MossyPCon = 0.05
-	hp.ECPctAct = 0.2
-
-	hp.DgErr = true
-	hp.MossyDel = 2
-	hp.DgOffTest = false
 }
 
 func (hp *HipParams) Update() {
@@ -113,13 +93,6 @@ type PatParams struct {
 	DriftCtxt   bool    `desc:"use drifting context representations -- otherwise does bit flips from prototype"`
 	CtxtFlipPct float32 `desc:"proportion (0-1) of active bits to flip for each context pattern, relative to a prototype, for non-drifting"`
 	DriftPct    float32 `desc:"percentage of active bits that drift, per step, for drifting context"`
-}
-
-func (pp *PatParams) Defaults() {
-	pp.ListSize = 20 // 10 is too small to see issues..
-	pp.MinDiffPct = 0.5
-	pp.CtxtFlipPct = .25
-	pp.DriftPct = .2
 }
 
 // Sim encapsulates the entire simulation model, and we define all the
@@ -245,7 +218,7 @@ func (ss *Sim) New() {
 	ss.RndSeed = 2
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
-	ss.TestUpdt = leabra.Cycle
+	ss.TestUpdt = leabra.AlphaCycle
 	ss.TestInterval = 1
 	ss.LogSetParams = false
 	ss.MemThr = 0.34
@@ -256,9 +229,35 @@ func (ss *Sim) New() {
 	ss.Defaults()
 }
 
+func (pp *PatParams) Defaults() {
+	pp.ListSize = 20 // 10 is too small to see issues..
+	pp.MinDiffPct = 0.5
+	pp.CtxtFlipPct = .25
+	pp.DriftPct = .2
+}
+
+func (hp *HipParams) Defaults() {
+	// size
+	hp.ECSize.Set(2, 3)
+	hp.ECPool.Set(7, 7)
+	hp.CA1Pool.Set(10, 10)
+	hp.CA3Size.Set(20, 20)
+	hp.DGRatio = 1.5
+
+	// ratio
+	hp.DGPCon = 0.25
+	hp.CA3PCon = 0.25
+	hp.MossyPCon = 0.05
+	hp.ECPctAct = 0.2
+
+	hp.MossyDel = 4 // note: key parameter
+	hp.DgOffTest = false
+}
+
 func (ss *Sim) Defaults() {
 	ss.Hip.Defaults()
 	ss.Pat.Defaults()
+	ss.Time.CycPerQtr = 25 // note: key param - 25 seems like it is actually fine?
 	ss.Update()
 }
 
@@ -359,32 +358,28 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ppathCA3.PCon = hp.CA3PCon
 
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
-	pj.SetClass("EcDg")
-	if hp.DgErr {
-		if false {
-			pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
-			pj.SetClass("PPath")
-			pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
-			pj.SetClass("PPath")
-		} else {
-			pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
-			pj.SetClass("PPath")
-			pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
-			pj.SetClass("PPath")
-		}
-		// this works really poorly!  have to crank lrate up to .8 or so and even then
-		// it shows massive interference!
-		// pj.SetClass("PPath")
-		// pj = net.ConnectLayers(ca3, ca1, full, emer.Forward) // regular prjn!
+	pj.SetClass("HippoCHL")
+
+	if true { // toggle for bcm vs. ppath
+		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
+		pj.SetClass("PPath")
+		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
+		pj.SetClass("PPath")
 	} else {
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
-		pj.SetClass("HippoCHL")
+		pj.SetClass("PPath")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
-		pj.SetClass("HippoCHL")
+		pj.SetClass("PPath")
 	}
+
 	// always use this for now:
-	pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
-	pj.SetClass("HippoCHL")
+	if false {
+		pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
+		pj.SetClass("HippoCHL")
+	} else {
+		pj = net.ConnectLayers(ca3, ca1, full, emer.Forward) // default con
+		// pj.SetClass("HippoCHL")
+	}
 
 	// Mossy fibers
 	mossy := prjn.NewUnifRnd()
@@ -496,6 +491,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca3FmDg := ca3.RcvPrjns.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
 	_ = ecin
 	_ = input
+	_ = ca3FmDg
 
 	// First Quarter: CA1 is driven by ECin, not by CA3 recall
 	// (which is not really active yet anyway)
@@ -503,15 +499,13 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca1FmCa3.WtScale.Abs = 0
 
 	dgwtscale := ca3FmDg.WtScale.Rel
-	if ss.Hip.DgErr {
-		ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel
-	}
+	ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel
 
 	if train {
 		ecout.SetType(emer.Target) // clamp a plus phase during testing
 	} else {
 		if ss.Hip.DgOffTest {
-			ca3FmDg.WtScale.Abs = dgwtscale - ss.Hip.MossyDel
+			ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel
 		}
 		ecout.SetType(emer.Compare) // don't clamp
 	}
@@ -1758,9 +1752,9 @@ func (ss *Sim) ConfigRunStatsPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Pl
 	cp.ErrCol = "AB Mem:Sem"
 	cp = plt.SetColParams("AC Mem:Mean", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	cp.ErrCol = "AC Mem:Sem"
-	cp = plt.SetColParams("FirstZero:Mean", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	cp = plt.SetColParams("FirstZero:Mean", eplot.On, eplot.FixMin, 0, eplot.FixMax, 30)
 	cp.ErrCol = "FirstZero:Sem"
-	cp = plt.SetColParams("NEpochs:Mean", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	cp = plt.SetColParams("NEpochs:Mean", eplot.On, eplot.FixMin, 0, eplot.FixMax, 30)
 	cp.ErrCol = "NEpochs:Sem"
 	return plt
 }
