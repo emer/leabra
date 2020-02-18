@@ -373,7 +373,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	}
 
 	// always use this for now:
-	if false {
+	if true {
 		pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
 		pj.SetClass("HippoCHL")
 	} else {
@@ -1744,9 +1744,10 @@ func (ss *Sim) LogRunStats() {
 func (ss *Sim) ConfigRunStatsPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Hippocampus Run Stats Plot"
 	plt.Params.XAxisCol = "Params"
+	plt.SetTable(dt)
+	plt.Params.BarWidth = 10
 	plt.Params.Type = eplot.Bar
 	plt.Params.XAxisRot = 45
-	plt.SetTable(dt)
 
 	cp := plt.SetColParams("AB Mem:Mean", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 	cp.ErrCol = "AB Mem:Sem"
@@ -2068,10 +2069,11 @@ var SimProps = ki.Props{
 }
 
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
+var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List10", "List20", "List30", "List40", "List50"} // , "List100"}
+var InnerLoopParams = []string{"List40", "List50", "List60", "List70", "List80"} // , "List100"}
+//var InnerLoopParams = []string{"List10", "List20", "List30", "List40", "List50"} // , "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {

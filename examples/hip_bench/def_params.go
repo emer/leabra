@@ -57,8 +57,8 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					// "Prjn.CHL.Hebb":    "0.01",
 					// "Prjn.CHL.SAvgCor": "1", // this is original
-					"Prjn.WtScale.Rel": "1",  // 1 is *slightly* better
-					"Prjn.Learn.Lrate": ".1", // trying much lower!
+					"Prjn.WtScale.Rel": "0.1", // .1 > .2 > .5 > 1 !
+					"Prjn.Learn.Lrate": ".1",  // .1 > .2 > .04 (with rec = .1)
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
@@ -86,16 +86,16 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#ECinToDG", Desc: "maybe DG doesn't learn at all",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "true", // todo: try turning it off
+					"Prjn.Learn.Learn": "true", // absolutely essential to have on!  explore params!
 					// "Prjn.WtInit.Mean": "0.9",
 					// "Prjn.WtInit.Var":  "0.01",
 					// "Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					// "Prjn.CHL.Hebb":          "0.005", // .005 = .01? > .001 -- .01 maybe tiny bit better?
-					// "Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.5", // CHL: .1 > .2, .05 (sig worse)
+					"Prjn.CHL.Hebb":          "0.005", // .005 = .01? > .001 -- .01 maybe tiny bit better?
+					"Prjn.CHL.SAvgCor":       "0.4",
+					"Prjn.Learn.Lrate":       "0.1", // BCM: .6 > .5 etc    CHL: .1 > .2, .05 (sig worse)
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -117,7 +117,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
 					"Layer.Inhib.Layer.Gi":    "2.8", // totally unclear: 3.0 > 2.8 maybe?
-					"Layer.Learn.AvgL.Gain":   "2.5", // also unclear: 3.0 > 2.5 maybe?
+					"Layer.Learn.AvgL.Gain":   "2.5", // stick with 3
 				}},
 			{Sel: "#CA1", Desc: "CA1 only Pools",
 				Params: params.Params{
@@ -125,7 +125,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.Gi":     "2.2",
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Learn.AvgL.Gain":   "2.5", // also unclear: 3.0 > 2.5 maybe?
+					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
 				}},
 		},
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
@@ -168,6 +168,38 @@ var ParamSets = params.Sets{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
 					"PatParams.ListSize": "50",
+				}},
+		},
+	}},
+	{Name: "List60", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "60",
+				}},
+		},
+	}},
+	{Name: "List70", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "70",
+				}},
+		},
+	}},
+	{Name: "List80", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "80",
+				}},
+		},
+	}},
+	{Name: "List90", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "90",
 				}},
 		},
 	}},
