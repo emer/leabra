@@ -245,13 +245,13 @@ func (hp *HipParams) Defaults() {
 	hp.DGRatio = 1.5
 
 	// ratio
-	hp.DGPCon = 0.2 // .35 is sig worse, .2 looks like sweet spot potentially
-	hp.CA3PCon = 0.2
+	hp.DGPCon = 0.25 // .35 is sig worse, .2 learns faster but AB recall is worse
+	hp.CA3PCon = 0.25
 	hp.MossyPCon = 0.02 // .02 > .05 > .01 (for small net)
 	hp.ECPctAct = 0.2
 
 	hp.MossyDel = 4     // note: key parameter
-	hp.MossyDelTest = 0 // delta for testing
+	hp.MossyDelTest = 3 // delta for testing - 3 > 2 > 0!
 }
 
 func (ss *Sim) Defaults() {

@@ -89,7 +89,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.Learn": "true", // absolutely essential to have on!  explore params!
 					// todo: explore
-					"Prjn.CHL.Hebb":          "0.05",  // .05 def
+					"Prjn.CHL.Hebb":          ".5",    // .05 def
 					"Prjn.CHL.SAvgCor":       "0.4",   // .4 def
 					"Prjn.CHL.MinusQ1":       "false", // dg self err?
 					"Prjn.Learn.Lrate":       "0.2",   // .2 probably better? .4 was prev default
