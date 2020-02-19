@@ -8,6 +8,7 @@ import "github.com/emer/emergent/params"
 
 // todo:
 // * refine mossy, lrate, try no wtbal, but likely to be key
+// * chl for err-driven ppath
 // * no learning in EC -> DG
 // * CA3->CA1 try higher AvgLMax, also SavgCor < .4 -- this prjn is key and interesting..
 // * try diff CA3, DG inhib params finally.
@@ -49,9 +50,9 @@ var ParamSets = params.Sets{
 					// moss=4, del=2, lr=0.1,.2 is worse than others.
 					// "Prjn.Learn.XCal.SetLLrn": "false",
 					// "Prjn.Learn.XCal.LLrn":    "0",
-					// "Prjn.CHL.Hebb":    "0.001",
+					// "Prjn.CHL.Hebb":    "0.02", // .01 > .005 > .001
 					// "Prjn.CHL.SAvgCor": ".4",
-					// "Prjn.CHL.MinusQ1": "true", // dg err
+					// "Prjn.CHL.MinusQ1": "false", // dg err
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
@@ -84,18 +85,23 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
 				}},
-			{Sel: "#ECinToDG", Desc: "maybe DG doesn't learn at all",
+			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "true", // absolutely essential to have on!  explore params!
-					// "Prjn.WtInit.Mean": "0.9",
-					// "Prjn.WtInit.Var":  "0.01",
-					// "Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
+					// todo: explore
+					"Prjn.CHL.Hebb":          "0.05",  // .05 def
+					"Prjn.CHL.SAvgCor":       "0.4",   // .4 def
+					"Prjn.CHL.MinusQ1":       "false", // dg self err?
+					"Prjn.Learn.Lrate":       "0.2",   // .2 probably better? .4 was prev default
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
 					"Prjn.CHL.Hebb":          "0.005", // .005 = .01? > .001 -- .01 maybe tiny bit better?
 					"Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.1", // BCM: .6 > .5 etc    CHL: .1 > .2, .05 (sig worse)
+					"Prjn.Learn.Lrate":       "0.1", // BCM: 1 > .8 > 1.5 > etc    CHL: .1 > .2, .05 (sig worse)
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -111,7 +117,7 @@ var ParamSets = params.Sets{
 			{Sel: "#DG", Desc: "very sparse = high inibhition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.Layer.Gi":    "3.6",
+					"Layer.Inhib.Layer.Gi":    "3.6", // 3.6 def
 				}},
 			{Sel: "#CA3", Desc: "sparse = high inibhition",
 				Params: params.Params{
@@ -123,8 +129,8 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.1",
 					"Layer.Inhib.Layer.On":    "false",
-					"Layer.Inhib.Pool.Gi":     "2.2",
 					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.Pool.Gi":     "2.2", // 2.2 def
 					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
 				}},
 		},

@@ -67,18 +67,18 @@ const LogPrec = 4
 
 // HipParams have the hippocampus size and connectivity parameters
 type HipParams struct {
-	ECSize    evec.Vec2i `desc:"size of EC in terms of overall pools (outer dimension)"`
-	ECPool    evec.Vec2i `desc:"size of one EC pool"`
-	CA1Pool   evec.Vec2i `desc:"size of one CA1 pool"`
-	CA3Size   evec.Vec2i `desc:"size of CA3"`
-	DGRatio   float32    `desc:"size of DG / CA3"`
-	DGSize    evec.Vec2i `inactive:"+" desc:"size of DG"`
-	DGPCon    float32    `desc:"percent connectivity into DG"`
-	CA3PCon   float32    `desc:"percent connectivity into CA3"`
-	MossyPCon float32    `desc:"percent connectivity into CA3 from DG"`
-	ECPctAct  float32    `desc:"percent activation in EC pool"`
-	MossyDel  float32    `desc:"delta in mossy strength between minus and plus phase"`
-	DgOffTest bool       `desc:"turn DG input to CA3 off during testing"`
+	ECSize       evec.Vec2i `desc:"size of EC in terms of overall pools (outer dimension)"`
+	ECPool       evec.Vec2i `desc:"size of one EC pool"`
+	CA1Pool      evec.Vec2i `desc:"size of one CA1 pool"`
+	CA3Size      evec.Vec2i `desc:"size of CA3"`
+	DGRatio      float32    `desc:"size of DG / CA3"`
+	DGSize       evec.Vec2i `inactive:"+" desc:"size of DG"`
+	DGPCon       float32    `desc:"percent connectivity into DG"`
+	CA3PCon      float32    `desc:"percent connectivity into CA3"`
+	MossyPCon    float32    `desc:"percent connectivity into CA3 from DG"`
+	ECPctAct     float32    `desc:"percent activation in EC pool"`
+	MossyDel     float32    `desc:"delta in mossy effective strength between minus and plus phase"`
+	MossyDelTest float32    `desc:"delta in mossy strength for testing (relative to base param)"`
 }
 
 func (hp *HipParams) Update() {
@@ -245,13 +245,13 @@ func (hp *HipParams) Defaults() {
 	hp.DGRatio = 1.5
 
 	// ratio
-	hp.DGPCon = 0.25
-	hp.CA3PCon = 0.25
-	hp.MossyPCon = 0.05
+	hp.DGPCon = 0.2 // .35 is sig worse, .2 looks like sweet spot potentially
+	hp.CA3PCon = 0.2
+	hp.MossyPCon = 0.02 // .02 > .05 > .01 (for small net)
 	hp.ECPctAct = 0.2
 
-	hp.MossyDel = 4 // note: key parameter
-	hp.DgOffTest = false
+	hp.MossyDel = 4     // note: key parameter
+	hp.MossyDelTest = 0 // delta for testing
 }
 
 func (ss *Sim) Defaults() {
@@ -366,6 +366,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
 		pj.SetClass("PPath")
 	} else {
+		// so far, this is sig worse, even with error-driven MinusQ1 case (which is better than off)
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
 		pj.SetClass("PPath")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
@@ -377,6 +378,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 		pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
 		pj.SetClass("HippoCHL")
 	} else {
+		// note: this requires lrate = 1.0 or maybe 1.2, doesn't work *nearly* as well
 		pj = net.ConnectLayers(ca3, ca1, full, emer.Forward) // default con
 		// pj.SetClass("HippoCHL")
 	}
@@ -504,9 +506,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if train {
 		ecout.SetType(emer.Target) // clamp a plus phase during testing
 	} else {
-		if ss.Hip.DgOffTest {
-			ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel
-		}
 		ecout.SetType(emer.Compare) // don't clamp
 	}
 	ecout.UpdateExtFlags() // call this after updating type
@@ -537,8 +536,10 @@ func (ss *Sim) AlphaCyc(train bool) {
 		case 1: // Second, Third Quarters: CA1 is driven by CA3 recall
 			ca1FmECin.WtScale.Abs = 0
 			ca1FmCa3.WtScale.Abs = 1
-			if !(!train && ss.Hip.DgOffTest) {
-				ca3FmDg.WtScale.Rel = dgwtscale // restore
+			if train {
+				ca3FmDg.WtScale.Rel = dgwtscale
+			} else {
+				ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDelTest // restore
 			}
 			ss.Net.GScaleFmAvgAct() // update computed scaling factors
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins

@@ -44,7 +44,10 @@ func (ch *CHLParams) HebbDWt(sact, ract, savgCor, linWt float32) float32 {
 	return ract * (sact*(savgCor-linWt) - (1-sact)*linWt)
 }
 
-// ErrDWt computes the error-driven DWt value from sending, recv acts in both phases, and linear Wt
+// ErrDWt computes the error-driven DWt value from sending,
+// recv acts in both phases, and linear Wt, which is used
+// for soft weight bounding (always applied here, separate from hebbian
+// which has its own soft weight bounding dynamic).
 func (ch *CHLParams) ErrDWt(sactP, sactM, ractP, ractM, linWt float32) float32 {
 	err := (ractP * sactP) - (ractM * sactM)
 	if err > 0 {
