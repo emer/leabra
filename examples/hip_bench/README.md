@@ -2,7 +2,9 @@ This project supports testing of the hippocampus model, systematically varying d
 
 It is both for optimizing parameters and also testing new learning ideas in the hippocampus.
 
-# Best Params for AB-AC Feb 2020
+# Best Params for AB-AC, Feb 2020
+
+Dramatic improvements in learning performance were achieved by optimizing the following parameters and adding the following mechanisms:
 
 ## Error-driven CA3
 
@@ -30,5 +32,7 @@ Reducing strength of recurrent collaterals in CA3 improves performance significa
 
 Reducing MossyPCon = .02 instead of .05 was better, but not further.
 
+## Adding BCM Hebbian to EC <-> CA1
 
+The standard Leabra BCM hebbian learning works better than the hip.CHLPrjn CPCA Hebbian learning.
 

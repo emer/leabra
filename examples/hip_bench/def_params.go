@@ -88,8 +88,8 @@ var ParamSets = params.Sets{
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical",
 				Params: params.Params{
 					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!  explore params!
-					"Prjn.CHL.Hebb":          "0.5",  // .05 def
-					"Prjn.CHL.SAvgCor":       "0.4",  // .4 def
+					"Prjn.CHL.Hebb":          ".5",   // .5 > lower -- not sure h1 though
+					"Prjn.CHL.SAvgCor":       "0.3",  // .4 def
 					"Prjn.CHL.MinusQ1":       "true", // dg self err?
 					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
 					"Prjn.Learn.Momentum.On": "false",
@@ -98,7 +98,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .002 > .001 -- .01 sig better
+					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .02 > .002 > .001 > .05 (crazy)-- .01 sig better
 					"Prjn.CHL.SAvgCor":       "0.4",
 					"Prjn.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse) BCM: 1 > .8 > 1.5 > etc
 					"Prjn.Learn.Momentum.On": "false",
@@ -213,6 +213,30 @@ var ParamSets = params.Sets{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
 					"PatParams.ListSize": "100",
+				}},
+		},
+	}},
+	{Name: "List120", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "120",
+				}},
+		},
+	}},
+	{Name: "List160", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "160",
+				}},
+		},
+	}},
+	{Name: "List200", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "200",
 				}},
 		},
 	}},
