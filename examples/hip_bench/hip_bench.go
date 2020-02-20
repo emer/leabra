@@ -250,8 +250,8 @@ func (hp *HipParams) Defaults() {
 	hp.MossyPCon = 0.02 // .02 > .05 > .01 (for small net)
 	hp.ECPctAct = 0.2
 
-	hp.MossyDel = 4     // note: key parameter
-	hp.MossyDelTest = 3 // delta for testing - 3 > 2 > 0!
+	hp.MossyDel = 4     // 4 > 2 -- best is 4 del on 4 rel baseline
+	hp.MossyDelTest = 3 // for rel = 4: 3 > 2 > 0 > 4 -- 4 is very bad -- need a small amount..
 }
 
 func (ss *Sim) Defaults() {

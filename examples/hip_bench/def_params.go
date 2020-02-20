@@ -45,7 +45,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
-					"Prjn.Learn.Lrate":       "0.2", // err driven: .2 > .1;  .4 orig
+					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1;  .4 orig
 					// moss=4, del=4, lr=0.2 or 8/4 are best so far
 					// moss=4, del=2, lr=0.1,.2 is worse than others.
 					// "Prjn.Learn.XCal.SetLLrn": "false",
@@ -58,15 +58,15 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					// "Prjn.CHL.Hebb":    "0.01",
 					// "Prjn.CHL.SAvgCor": "1", // this is original
-					"Prjn.WtScale.Rel": "0.1", // .1 > .2 > .5 > 1 !
-					"Prjn.Learn.Lrate": ".1",  // .1 > .2 > .04 (with rec = .1)
+					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
+					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04 (with rec = .1)
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
+					"Prjn.Learn.Learn": "false", // learning on these synapses definitely does NOT work!
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "4", // todo: try a range!  old: 8 > 20 > 1
+					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
@@ -87,21 +87,20 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "true", // absolutely essential to have on!  explore params!
-					// todo: explore
-					"Prjn.CHL.Hebb":          ".5",    // .05 def
-					"Prjn.CHL.SAvgCor":       "0.4",   // .4 def
-					"Prjn.CHL.MinusQ1":       "false", // dg self err?
-					"Prjn.Learn.Lrate":       "0.2",   // .2 probably better? .4 was prev default
+					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!  explore params!
+					"Prjn.CHL.Hebb":          "0.5",  // .05 def
+					"Prjn.CHL.SAvgCor":       "0.4",  // .4 def
+					"Prjn.CHL.MinusQ1":       "true", // dg self err?
+					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.005", // .005 = .01? > .001 -- .01 maybe tiny bit better?
+					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .002 > .001 -- .01 sig better
 					"Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.1", // BCM: 1 > .8 > 1.5 > etc    CHL: .1 > .2, .05 (sig worse)
+					"Prjn.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse) BCM: 1 > .8 > 1.5 > etc
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -117,20 +116,20 @@ var ParamSets = params.Sets{
 			{Sel: "#DG", Desc: "very sparse = high inibhition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.Layer.Gi":    "3.6", // 3.6 def
+					"Layer.Inhib.Layer.Gi":    "3.8", // 3.8 > 3.6 > 4.0 (too far -- tanks)
 				}},
 			{Sel: "#CA3", Desc: "sparse = high inibhition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
-					"Layer.Inhib.Layer.Gi":    "2.8", // totally unclear: 3.0 > 2.8 maybe?
-					"Layer.Learn.AvgL.Gain":   "2.5", // stick with 3
+					"Layer.Inhib.Layer.Gi":    "2.8", // 2.8 = 3.0 really -- some better, some worse
+					"Layer.Learn.AvgL.Gain":   "2.5", // stick with 2.5
 				}},
 			{Sel: "#CA1", Desc: "CA1 only Pools",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.1",
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.On":     "true",
-					"Layer.Inhib.Pool.Gi":     "2.2", // 2.2 def
+					"Layer.Inhib.Pool.Gi":     "2.4", // 2.4 > 2.2 > 2.6 > 2.8 -- 2.4 better *for small net* but not for larger!
 					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
 				}},
 		},
