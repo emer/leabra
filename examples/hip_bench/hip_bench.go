@@ -2070,13 +2070,13 @@ var SimProps = ki.Props{
 }
 
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
-// var OuterLoopParams = []string{"MedHip"} //, "BigHip"}
+// var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
+var OuterLoopParams = []string{"MedHip"} //, "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List40", "List50", "List60", "List70", "List80"} // , "List100"}
-// var InnerLoopParams = []string{"List40", "List80", "List120", "List160", "List200"} // , "List100"}
-//var InnerLoopParams = []string{"List10", "List20", "List30", "List40", "List50"} // , "List100"}
+//var InnerLoopParams = []string{"List040", "List050", "List060", "List070", "List080"} // , "List100"}
+var InnerLoopParams = []string{"List040", "List080", "List120", "List160", "List200"} // , "List100"}
+//var InnerLoopParams = []string{"List010", "List020", "List030", "List040", "List50"} // , "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {

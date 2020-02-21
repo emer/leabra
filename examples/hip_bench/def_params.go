@@ -85,11 +85,11 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
 				}},
-			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical",
+			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
 					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!  explore params!
-					"Prjn.CHL.Hebb":          ".5",   // .5 > lower -- not sure h1 though
-					"Prjn.CHL.SAvgCor":       "0.3",  // .4 def
+					"Prjn.CHL.Hebb":          ".5",   // 1 > .5  for raw epochs, but .5 > 1 for reducing inteference!
+					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
 					"Prjn.CHL.MinusQ1":       "true", // dg self err?
 					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
 					"Prjn.Learn.Momentum.On": "false",
@@ -136,7 +136,7 @@ var ParamSets = params.Sets{
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
 		// to initialize the network every time, even if it is a different size..
 	}},
-	{Name: "List10", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List010", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -144,7 +144,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List20", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List020", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -152,7 +152,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List30", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List030", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -160,7 +160,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List40", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List040", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -168,7 +168,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List50", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List050", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -176,7 +176,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List60", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List060", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -184,7 +184,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List70", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List070", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -192,7 +192,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List80", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List080", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
@@ -200,7 +200,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List90", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List090", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
