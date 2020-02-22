@@ -38,14 +38,8 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
-					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1;  .4 orig
-					// moss=4, del=4, lr=0.2 or 8/4 are best so far
-					// moss=4, del=2, lr=0.1,.2 is worse than others.
-					// "Prjn.Learn.XCal.SetLLrn": "false",
-					// "Prjn.Learn.XCal.LLrn":    "0",
-					// "Prjn.CHL.Hebb":    "0.02", // .01 > .005 > .001
-					// "Prjn.CHL.SAvgCor": ".4",
-					// "Prjn.CHL.MinusQ1": "false", // dg err
+					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
+					// moss=4, delta=4, lr=0.2, test = 3 are best
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
@@ -66,17 +60,15 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false", // learning on these synapses definitely does NOT work!
+					"Prjn.Learn.Learn": "false", // learning here definitely does NOT work!
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
-					// "Prjn.CHL.Hebb":    "0.01",
-					// "Prjn.CHL.SAvgCor": "1", // this is original
 					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
-					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04 (with rec = .1)
+					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
@@ -91,9 +83,9 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .02 > .002 > .001 > .05 (crazy)-- .01 sig better
+					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .02 > .002 > .001 > .05 (crazy)
 					"Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse) BCM: 1 > .8 > 1.5 > etc
+					"Prjn.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse)
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
