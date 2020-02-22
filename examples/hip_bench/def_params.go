@@ -47,20 +47,6 @@ var ParamSets = params.Sets{
 					// "Prjn.CHL.SAvgCor": ".4",
 					// "Prjn.CHL.MinusQ1": "false", // dg err
 				}},
-			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
-				Params: params.Params{
-					// "Prjn.CHL.Hebb":    "0.01",
-					// "Prjn.CHL.SAvgCor": "1", // this is original
-					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
-					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04 (with rec = .1)
-				}},
-			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
-				Params: params.Params{
-					"Prjn.Learn.Learn": "false", // learning on these synapses definitely does NOT work!
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
-				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
 					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
@@ -77,6 +63,20 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
+				}},
+			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "false", // learning on these synapses definitely does NOT work!
+					"Prjn.WtInit.Mean": "0.9",
+					"Prjn.WtInit.Var":  "0.01",
+					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
+				}},
+			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
+				Params: params.Params{
+					// "Prjn.CHL.Hebb":    "0.01",
+					// "Prjn.CHL.SAvgCor": "1", // this is original
+					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
+					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04 (with rec = .1)
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{

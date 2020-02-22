@@ -97,5 +97,153 @@ var OrigParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",
 				}},
 		},
+		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
+		// to initialize the network every time, even if it is a different size..
+	}},
+	{Name: "List010", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "10",
+				}},
+		},
+	}},
+	{Name: "List020", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "20",
+				}},
+		},
+	}},
+	{Name: "List030", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "30",
+				}},
+		},
+	}},
+	{Name: "List040", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "40",
+				}},
+		},
+	}},
+	{Name: "List050", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "50",
+				}},
+		},
+	}},
+	{Name: "List060", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "60",
+				}},
+		},
+	}},
+	{Name: "List070", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "70",
+				}},
+		},
+	}},
+	{Name: "List080", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "80",
+				}},
+		},
+	}},
+	{Name: "List090", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "90",
+				}},
+		},
+	}},
+	{Name: "List100", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "100",
+				}},
+		},
+	}},
+	{Name: "List120", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "120",
+				}},
+		},
+	}},
+	{Name: "List160", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "160",
+				}},
+		},
+	}},
+	{Name: "List200", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "200",
+				}},
+		},
+	}},
+	{Name: "SmallHip", Desc: "hippo size", Sheets: params.Sheets{
+		"Hip": &params.Sheet{
+			{Sel: "HipParams", Desc: "hip sizes",
+				Params: params.Params{
+					"HipParams.ECPool.Y":  "7",
+					"HipParams.ECPool.X":  "7",
+					"HipParams.CA1Pool.Y": "10",
+					"HipParams.CA1Pool.X": "10",
+					"HipParams.CA3Size.Y": "20",
+					"HipParams.CA3Size.X": "20",
+					"HipParams.DGRatio":   "1.5",
+				}},
+		},
+	}},
+	{Name: "MedHip", Desc: "hippo size", Sheets: params.Sheets{
+		"Hip": &params.Sheet{
+			{Sel: "HipParams", Desc: "hip sizes",
+				Params: params.Params{
+					"HipParams.ECPool.Y":  "7",
+					"HipParams.ECPool.X":  "7",
+					"HipParams.CA1Pool.Y": "15",
+					"HipParams.CA1Pool.X": "15",
+					"HipParams.CA3Size.Y": "30",
+					"HipParams.CA3Size.X": "30",
+					"HipParams.DGRatio":   "1.5",
+				}},
+		},
+	}},
+	{Name: "BigHip", Desc: "hippo size", Sheets: params.Sheets{
+		"Hip": &params.Sheet{
+			{Sel: "HipParams", Desc: "hip sizes",
+				Params: params.Params{
+					"HipParams.ECPool.Y":  "7",
+					"HipParams.ECPool.X":  "7",
+					"HipParams.CA1Pool.Y": "20",
+					"HipParams.CA1Pool.X": "20",
+					"HipParams.CA3Size.Y": "40",
+					"HipParams.CA3Size.X": "40",
+					"HipParams.DGRatio":   "1.5",
+				}},
+		},
 	}},
 }
