@@ -1086,11 +1086,12 @@ func (ss *Sim) ConfigPats() {
 	patgen.AddVocabPermutedBinary(ss.PoolVocab, "C", npats, plY, plX, pctAct, minDiff)
 	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lA", npats, plY, plX, pctAct, minDiff)
 	patgen.AddVocabPermutedBinary(ss.PoolVocab, "lB", npats, plY, plX, pctAct, minDiff)
-	patgen.AddVocabPermutedBinary(ss.PoolVocab, "ctxt", 1, plY, plX, pctAct, minDiff)
+	patgen.AddVocabPermutedBinary(ss.PoolVocab, "ctxt", 3, plY, plX, pctAct, minDiff) // totally diff
 
 	for i := 0; i < 12; i++ { // 12 contexts!
+		list := i / 4
 		ctxtNm := fmt.Sprintf("ctxt%d", i+1)
-		tsr, _ := patgen.AddVocabRepeat(ss.PoolVocab, ctxtNm, npats, "ctxt", 0)
+		tsr, _ := patgen.AddVocabRepeat(ss.PoolVocab, ctxtNm, npats, "ctxt", list)
 		patgen.FlipBitsRows(tsr, ctxtflip, ctxtflip, 1, 0)
 		// todo: also support drifting
 		// solution 2: drift based on last trial (will require sequential learning)

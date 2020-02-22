@@ -48,7 +48,7 @@ Here are the diffs between the `orig_params.go` (starting params inherited from 
 
 ## Performance
 
-The graphs below show number of epochs to get to 100% perfect performance, for the first AB list (First Zero) and both AB and AC lists (NEpochs), and also for the memory performance at the end of training, showing how much of the AB list is still remembered after full training on the AC list.
+The graphs below show number of epochs to get to 100% perfect performance, for the first AB list (First Zero) and both AB and AC lists (NEpochs), and also for the memory performance at the end of training, showing how much of the AB list is still remembered after full training on the AC list.  The new params show robust learning up to list sizes of 200 *each* for AB, AC lists, in the medium sized network, although the AB items are almost completely interfered away after learning the AC list.  In comparison, the original params failed quickly above 20 items.
 
 All models have 7x7 EC pools with A, B/C item pools and 4 additional Context pools that differentiate the AB / AC lists.  The `SmallHip` has 20x20 = 400 CA3, DG = 1.5x = 600, and 10x10=100 CA1 pools (i.e., original textbook model size) while `MedHip` has 30x30 = 900 CA3, DG = 1.5x = 1350, and 15x15 = 225 CA1 pools.
 
@@ -58,6 +58,6 @@ All models have 7x7 EC pools with A, B/C item pools and 4 additional Context poo
 
 ![Best Epochs 20-80 Epc](fig_hipbench_best2-20_20-80_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)")
 
-![Best Epochs 20-80 Mem](fig_hipbench_best2-20_40-80_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)")
+![Best Epochs 20-80 Mem](fig_hipbench_best2-20_20-80_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)")
 
 

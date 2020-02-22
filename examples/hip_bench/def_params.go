@@ -73,7 +73,7 @@ var ParamSets = params.Sets{
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
 					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!  explore params!
-					"Prjn.CHL.Hebb":          ".5",   // 1 > .5  for raw epochs, but .5 > 1 for reducing inteference!
+					"Prjn.CHL.Hebb":          ".5",   // .5 > 1 overall
 					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
 					"Prjn.CHL.MinusQ1":       "true", // dg self err?
 					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
