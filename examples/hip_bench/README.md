@@ -6,6 +6,12 @@ It is both for optimizing parameters and also testing new learning ideas in the 
 
 Dramatic improvements in learning performance were achieved by optimizing the following parameters and adding the following mechanisms:
 
+## Strong ECin -> DG learning
+
+ECin -> DG is playing perhaps the strongest role in learning overall, and benefits from a high, fast learning rate, with largely Hebbian learning, and a very low "SAvgCor" correction factor, meaning that it is really trying to turn off all other units that were not active.  In effect, it is stamping-in a specific pattern for each DG unit, and potentially separating the units further through this strong Hebbian learning which, using the CPCA mode, is turning off inactive inputs.  This ability to turn off inactive inputs also seems to be important for CA3 -> CA1, which works better with CPCA than BCM hebbian.
+
+However, learning in the DG -> CA3 pathway (mossies) is definitely bad.  My interpretation is that you want the CA3 neurons to be able to participate in many different "DG coded" memories, so having CA3 be biased toward any specific subset of DG units is not good, but the DG units themselves are really very specific.
+
 ## Error-driven CA3
 
 Modified `AlphaCyc` to reduce the strength of DG -> CA3 mossy inputs for the first quarter, then increase back to regular strength in Q2 onward.  This creates a minus phase state in CA3 in ActQ1, where it is driven primarily / exclusively by its ECin -> CA3 inputs.  By contrasting with final ActP state, this drives std error-driven learning in all the CA3 projections.
@@ -17,12 +23,6 @@ While theoretically interesting, this is not the most critical performance facto
 ## Reduced DG on Test
 
 Decreasing the DG -> CA3 input during test significantly improves performance overall -- setting MossyDelTest = 3 was best (going all the way to 4 was significantly worse).  This allows the EC -> CA3 pathway to dominate more during testing, supporting more of a pattern-completion dynamic.  This is also closer to what the network experiences during error-driven learning.
-
-## Strong ECin -> DG learning
-
-ECin -> DG is playing a critical role in learning overall, and benefits from a high, fast learning rate.  In effect, it is stamping-in a specific pattern for each DG unit, and potentially separating the units further through this strong Hebbian learning which, using the CPCA mode, is turning off inactive inputs.  This ability to turn off inactive inputs also seems to be important for CA3 -> CA1, which works better with CPCA than BCM hebbian.
-
-However, learning in the DG -> CA3 pathway (mossies) is definitely bad
 
 ## Reduced CA3 <-> CA3 recurrents
 

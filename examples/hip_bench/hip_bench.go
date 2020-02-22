@@ -213,7 +213,8 @@ func (ss *Sim) New() {
 	ss.TstCycLog = &etable.Table{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
-	ss.Params = ParamSets
+	// ss.Params = ParamSets
+	ss.Params = OrigParamSets
 	// ss.Params = SavedParamsSets
 	ss.RndSeed = 2
 	ss.ViewOn = true
@@ -247,11 +248,11 @@ func (hp *HipParams) Defaults() {
 	// ratio
 	hp.DGPCon = 0.25 // .35 is sig worse, .2 learns faster but AB recall is worse
 	hp.CA3PCon = 0.25
-	hp.MossyPCon = 0.02 // .02 > .05 > .01 (for small net)
+	hp.MossyPCon = 0.05 // .02 > .05 > .01 (for small net)
 	hp.ECPctAct = 0.2
 
-	hp.MossyDel = 4     // 4 > 2 -- best is 4 del on 4 rel baseline
-	hp.MossyDelTest = 3 // for rel = 4: 3 > 2 > 0 > 4 -- 4 is very bad -- need a small amount..
+	hp.MossyDel = 0     // 4 > 2 -- best is 4 del on 4 rel baseline
+	hp.MossyDelTest = 0 // for rel = 4: 3 > 2 > 0 > 4 -- 4 is very bad -- need a small amount..
 }
 
 func (ss *Sim) Defaults() {
@@ -360,7 +361,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("HippoCHL")
 
-	if true { // toggle for bcm vs. ppath
+	if false { // toggle for bcm vs. ppath
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
 		pj.SetClass("PPath")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
@@ -2070,12 +2071,12 @@ var SimProps = ki.Props{
 }
 
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-// var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
-var OuterLoopParams = []string{"MedHip"} //, "BigHip"}
+var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
+// var OuterLoopParams = []string{"MedHip"} //, "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-//var InnerLoopParams = []string{"List040", "List050", "List060", "List070", "List080"} // , "List100"}
-var InnerLoopParams = []string{"List040", "List080", "List120", "List160", "List200"} // , "List100"}
+var InnerLoopParams = []string{"List020", "List040", "List050", "List060", "List070", "List080"} // , "List100"}
+// var InnerLoopParams = []string{"List040", "List080", "List120", "List160", "List200"} // , "List100"}
 //var InnerLoopParams = []string{"List010", "List020", "List030", "List040", "List50"} // , "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params

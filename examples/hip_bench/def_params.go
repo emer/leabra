@@ -6,13 +6,6 @@ package main
 
 import "github.com/emer/emergent/params"
 
-// todo:
-// * refine mossy, lrate, try no wtbal, but likely to be key
-// * chl for err-driven ppath
-// * no learning in EC -> DG
-// * CA3->CA1 try higher AvgLMax, also SavgCor < .4 -- this prjn is key and interesting..
-// * try diff CA3, DG inhib params finally.
-
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
 var ParamSets = params.Sets{
