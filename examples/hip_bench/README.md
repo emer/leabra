@@ -42,9 +42,20 @@ The standard Leabra BCM hebbian learning works better than the hip.CHLPrjn CPCA 
 
 Here are the diffs between the `orig_params.go` (starting params inherited from C++ emergent hip model) and current `def_params.go` representing the optimized params as described above.  Left panel shows original params, right the new best params, and differences are highlighted in brighter red color:
 
-![Diffs 1](fig_param_diffs_1.png?raw=true "Diffs 1")
+![](fig_param_diffs_1.png?raw=true "Diffs 1")
 
-![Diffs 2](fig_param_diffs_2.png?raw=true "Diffs 2")
+![](fig_param_diffs_2.png?raw=true "Diffs 2")
+
+And here are the diffs to the standard `hip.go` from `leabra/examples/hip` implementing the different network configuration and `AlphaCyc` code to achieve the above changes.  The full diffs including some changes to logging are here:
+
+![](fig_netconfig_diffs.png?raw=true "ConfigNet Diffs")
+
+![](fig_alphacyc_diffs_1.png?raw=true "AlphaCyc Diffs 1")
+
+![](fig_alphacyc_diffs_2.png?raw=true "AlphaCyc Diffs 2")
+
+![](fig_alphacyc_diffs_3.png?raw=true "AlphaCyc Diffs 3")
+
 
 ## Performance
 
