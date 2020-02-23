@@ -68,11 +68,11 @@ var ParamSets = params.Sets{
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
-					"Prjn.Learn.Lrate": ".1",  // .1 > .08 (close) > .15 > .2 > .04
+					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!  explore params!
+					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!
 					"Prjn.CHL.Hebb":          ".5",   // .5 > 1 overall
 					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
 					"Prjn.CHL.MinusQ1":       "true", // dg self err?

@@ -494,7 +494,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca3FmDg := ca3.RcvPrjns.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
 	_ = ecin
 	_ = input
-	_ = ca3FmDg
 
 	// First Quarter: CA1 is driven by ECin, not by CA3 recall
 	// (which is not really active yet anyway)
@@ -540,7 +539,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			if train {
 				ca3FmDg.WtScale.Rel = dgwtscale
 			} else {
-				ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDelTest // restore
+				ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDelTest // testing
 			}
 			ss.Net.GScaleFmAvgAct() // update computed scaling factors
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
@@ -550,7 +549,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.GScaleFmAvgAct() // update computed scaling factors
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 			if train {              // clamp ECout from ECin
-				input.UnitVals(&ss.TmpVals, "Act")
+				ecin.UnitVals(&ss.TmpVals, "Act") // note: could use input instead -- not much diff
 				ecout.ApplyExt1D32(ss.TmpVals)
 			}
 		}

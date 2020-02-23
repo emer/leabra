@@ -40,7 +40,7 @@ The standard Leabra BCM hebbian learning works better than the hip.CHLPrjn CPCA 
 
 ## Diffs
 
-Here are the diffs between the `orig_params.go` (starting params inherited from C++ emergent hip model) and current `def_params.go` representing the optimized params as described above:
+Here are the diffs between the `orig_params.go` (starting params inherited from C++ emergent hip model) and current `def_params.go` representing the optimized params as described above.  Left panel shows original params, right the new best params, and differences are highlighted in brighter red color:
 
 ![Diffs 1](fig_param_diffs_1.png?raw=true "Diffs 1")
 
@@ -62,17 +62,17 @@ All models have 7x7 EC pools with A, B/C item pools and 4 additional Context poo
 
 #### Best Learning
 
-![Best Epochs 20-80](fig_hipbench_best2-20_20-80_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)")
+<img src="fig_hipbench_best2-20_20-80_epc.png" alt="Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)" width="640" />
 
 #### Orig Learning
 
-![Orig Epochs 20-80](fig_hipbench_origpars_20-80_epc.png?raw=true "Original params, learning epochs, list sizes 20-80")
+<img src="fig_hipbench_origpars_20-80_epc.png" alt="Original params, learning epochs, list sizes 20-80" width="640" />
 
 #### Best Memory
 
-![Best Memory 20-80](fig_hipbench_best2-20_20-80_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)")
+<img src="fig_hipbench_best2-20_20-80_mem.png" alt="Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)"  width="640" />
 
 #### Orig Memory
 
-![Orig Memory 20-80](fig_hipbench_origpars_20-80_mem.png?raw=true "Original params, item memory, list sizes 20-80")
+<img src="fig_hipbench_origpars_20-80_mem.png" alt="Original params, item memory, list sizes 20-80"  width="640" />
 
