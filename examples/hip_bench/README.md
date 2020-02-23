@@ -54,9 +54,9 @@ All models have 7x7 EC pools with A, B/C item pools and 4 additional Context poo
 
 ### Current best params from 2/2020, list sizes 40-200
 
-![Best Epochs 40-200](fig_hipbench_best2-20_40-200_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 40-200")
+<img src="fig_hipbench_best2-20_40-200_epc.png" alt="Current best params from 2/2020, learning epochs, list sizes 40-200"  width="640" />
 
-![Best Memory 40-200](fig_hipbench_best2-20_40-200_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 40-200")
+<img src="fig_hipbench_best2-20_40-200_mem.png" alt="Current best params from 2/2020, item memory, list sizes 40-200"  width="640" />
 
 ### List sizes 20-80 (comparison with orig)
 
