@@ -52,12 +52,27 @@ The graphs below show number of epochs to get to 100% perfect performance, for t
 
 All models have 7x7 EC pools with A, B/C item pools and 4 additional Context pools that differentiate the AB / AC lists.  The `SmallHip` has 20x20 = 400 CA3, DG = 1.5x = 600, and 10x10=100 CA1 pools (i.e., original textbook model size) while `MedHip` has 30x30 = 900 CA3, DG = 1.5x = 1350, and 15x15 = 225 CA1 pools.
 
-![Best Epochs 40-200 Epc](fig_hipbench_best2-20_40-200_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 40-200")
+### Current best params from 2/2020, list sizes 40-200
 
-![Best Epochs 40-200 Mem](fig_hipbench_best2-20_40-200_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 40-200")
+![Best Epochs 40-200](fig_hipbench_best2-20_40-200_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 40-200")
 
-![Best Epochs 20-80 Epc](fig_hipbench_best2-20_20-80_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)")
+![Best Memory 40-200](fig_hipbench_best2-20_40-200_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 40-200")
 
-![Best Epochs 20-80 Mem](fig_hipbench_best2-20_20-80_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)")
+### List sizes 20-80 (comparison with orig)
 
+#### Best Learning
+
+![Best Epochs 20-80](fig_hipbench_best2-20_20-80_epc.png?raw=true "Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)")
+
+#### Orig Learning
+
+![Orig Epochs 20-80](fig_hipbench_origpars_20-80_epc.png?raw=true "Original params, learning epochs, list sizes 20-80")
+
+#### Best Memory
+
+![Best Memory 20-80](fig_hipbench_best2-20_20-80_mem.png?raw=true "Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)")
+
+#### Orig Memory
+
+![Orig Memory 20-80](fig_hipbench_origpars_20-80_mem.png?raw=true "Original params, item memory, list sizes 20-80")
 
