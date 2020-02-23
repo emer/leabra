@@ -46,7 +46,7 @@ Here are the diffs between the `orig_params.go` (starting params inherited from 
 
 ![](fig_param_diffs_2.png?raw=true "Diffs 2")
 
-And here are the diffs to the standard `hip.go` from `leabra/examples/hip` implementing the different network configuration and `AlphaCyc` code to achieve the above changes.  The full diffs including some changes to logging are here:
+And here are the diffs to the standard `hip.go` from `leabra/examples/hip` implementing the different network configuration and `AlphaCyc` code to achieve the above changes.  The full diffs including some changes to logging are here:  https://github.com/emer/leabra/blob/master/examples/hip/best_2-20.diff
 
 ![](fig_netconfig_diffs.png?raw=true "ConfigNet Diffs")
 
