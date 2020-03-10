@@ -43,7 +43,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
+					// "Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
+					"Prjn.WtScale.Rel": "4.0", // trying rel instead of abs
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
