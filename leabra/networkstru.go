@@ -22,9 +22,9 @@ import (
 	"github.com/emer/emergent/timer"
 	"github.com/emer/emergent/weights"
 	"github.com/goki/gi/gi"
-	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"
+	"github.com/goki/mat32"
 )
 
 // LayFunChan is a channel that runs LeabraLayer functions

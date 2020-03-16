@@ -10,7 +10,7 @@ import (
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/gi/giv"
-	"github.com/goki/gi/mat32"
+	"github.com/goki/mat32"
 )
 
 // leabra.LayerStru manages the structural elements of the layer, which are common

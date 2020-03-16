@@ -11,9 +11,9 @@ import (
 	"github.com/emer/leabra/chans"
 	"github.com/emer/leabra/knadapt"
 	"github.com/emer/leabra/nxx1"
-	"github.com/goki/gi/mat32"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 ///////////////////////////////////////////////////////////////////////
