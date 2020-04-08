@@ -3,8 +3,8 @@
 package leabra
 
 const (
-	Version = "v1.0.1"
-	GitCommit = "71b1d69" // the commit JUST BEFORE the release
-	VersionDate = "2020-03-16 02:09" // UTC
+	Version = "v1.0.2"
+	GitCommit = "5614dd4" // the commit JUST BEFORE the release
+	VersionDate = "2020-04-08 09:35" // UTC
 )
 
