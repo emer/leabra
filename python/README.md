@@ -1,6 +1,6 @@
 # Python interface to Emergent
 
-You can now run the Go version of *emergent* via Python, using a newly-updated version of the [gopy](https://github.com/go-python/gopy) tool that automatically creates Python bindings for Go packages.  As of now, that main repository of gopy has not merged the pull request -- see [goki fork](https://github.com/goki/gopy) for an updated README.
+You can now run the Go version of *emergent* via Python, using a newly-updated version of the [gopy](https://github.com/go-python/gopy) tool that automatically creates Python bindings for Go packages. 
 
 See the [GoGi Python README](https://github.com/goki/gi/blob/master/python/README.md) for more details on how the python wrapper works and how to use it for GUI-level functionality.
 
