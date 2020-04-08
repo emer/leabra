@@ -1339,7 +1339,7 @@ def main(argv):
     TheSim.Config()
 
     # print("n args: %d" % len(argv))
-    TheSim.NoGui = len(argv) > 0
+    TheSim.NoGui = len(argv) > 1
     saveEpcLog = True
     saveRunLog = True
         
