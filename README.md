@@ -12,6 +12,8 @@ See the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25/
 
 # Current Status / News
 
+* April 2020: GoGi GUI version 1.0 released, and updated install instructions to use go.mod modules for most users.
+
 * 12/30/2019: Version 1.0.0 Released! -- [CCN textbook simulations](https://github.com/CompCogNeuro/sims) are done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.
 
 * 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/leabra25ra` code using Python, including the GUI etc.
