@@ -81,7 +81,7 @@ func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLa
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
 // are made to drive GPiThal, with BgFixed class name set so
 // they can be styled appropriately (no learning, WtRnd.Mean=0.8, Var=0)
-func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi emer.Layer) {
+func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi leabra.LeabraLayer) {
 	mtxGo = nt.AddMatrixLayer(prefix+"MatrixGo", nY, nMaint, nOut, nNeurY, nNeurX, D1R)
 	mtxNoGo = nt.AddMatrixLayer(prefix+"MatrixNoGo", nY, nMaint, nOut, nNeurY, nNeurX, D2R)
 	gpe = nt.AddGPeLayer(prefix+"GPeNoGo", nY, nMaint, nOut)
@@ -128,7 +128,7 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 // nY = number of pools in Y dimension, nMaint, nOut are pools in X dimension,
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
 // are made within super / deep (see AddPFCLayer) and between PFCmntD -> PFCout.
-func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD emer.Layer) {
+func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
 	if prefix == "" {
 		prefix = "PFC"
 	}
@@ -147,7 +147,7 @@ func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (
 }
 
 // AddPBWM adds a DorsalBG an PFC with given params
-func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD emer.Layer) {
+func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
 	mtxGo, mtxNoGo, gpe, gpi = nt.AddDorsalBG(prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
 	pfcMnt, pfcMntD, pfcOut, pfcOutD = nt.AddPFC(prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX)
 	if pfcMnt != nil {
@@ -169,7 +169,7 @@ func (nt *Network) AddClampDaLayer(name string) *ClampDaLayer {
 // AddTDLayers adds the standard TD temporal differences layers, generating a DA signal.
 // Projection from Rew to RewInteg is given class TDRewToInteg -- should
 // have no learning and 1 weight.
-func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, ri, td emer.Layer) {
+func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, ri, td leabra.LeabraLayer) {
 	rew = &Layer{}
 	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
 	rp = &TDRewPredLayer{}
@@ -205,7 +205,7 @@ func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float3
 // Only generates DA when Rew layer has external input -- otherwise zero.
 // Projection from RWPred to DA is given class RWPredToDA -- should
 // have no learning and 1 weight.
-func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, da emer.Layer) {
+func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, da leabra.LeabraLayer) {
 	rew = &Layer{}
 	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
 	rp = &RWPredLayer{}
