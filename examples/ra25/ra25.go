@@ -280,11 +280,13 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	// default is Above, YAlign = Front, XAlign = Center
 	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
-	net.ConnectLayers(inp, hid1, prjn.NewFull(), emer.Forward)
-	net.BidirConnectLayers(hid1, hid2, prjn.NewFull())
-	net.BidirConnectLayers(hid2, out, prjn.NewFull())
 	// note: see emergent/prjn module for all the options on how to connect
 	// NewFull returns a new prjn.Full connectivity pattern
+	full := prjn.NewFull()
+
+	net.ConnectLayers(inp, hid1, full, emer.Forward)
+	net.BidirConnectLayers(hid1, hid2, full)
+	net.BidirConnectLayers(hid2, out, full)
 
 	// note: can set these to do parallel threaded computation across multiple cpus
 	// not worth it for this small of a model, but definitely helps for larger ones

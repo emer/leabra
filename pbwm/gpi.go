@@ -169,10 +169,14 @@ func (ly *GPiThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 // SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmnt, PFCout
 // with optional prefix -- excludes mnt, out cases if corresp shape = 0
 func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
-	std := []string{"MatrixGo", "MatrixNoGo", "PFCmnt", "PFCout"}
+	pfcprefix := "PFC"
+	if prefix != "" {
+		pfcprefix = prefix
+	}
+	std := []string{prefix + "MatrixGo", prefix + "MatrixNoGo", pfcprefix + "mnt", pfcprefix + "out"}
 	ly.SendTo = make([]string, 2)
 	for i, s := range std {
-		nm := prefix + s
+		nm := s
 		switch {
 		case i < 2:
 			ly.SendTo[i] = nm

@@ -129,11 +129,14 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
 // are made within super / deep (see AddPFCLayer) and between PFCmntD -> PFCout.
 func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD emer.Layer) {
+	if prefix == "" {
+		prefix = "PFC"
+	}
 	if nMaint > 0 {
-		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"PFCmnt", nY, nMaint, nNeurY, nNeurX, false)
+		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"mnt", nY, nMaint, nNeurY, nNeurX, false)
 	}
 	if nOut > 0 {
-		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"PFCout", nY, nOut, nNeurY, nNeurX, true)
+		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"out", nY, nOut, nNeurY, nNeurX, true)
 	}
 	if pfcOut != nil && pfcMnt != nil {
 		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
