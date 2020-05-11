@@ -13,7 +13,7 @@ import (
 )
 
 // DaSrcLayer is the basic type of layer that sends dopamine to other layers.
-// Uses a list of layer names to send to -- not use Prjn infrastructure
+// Uses a list of layer names to send to -- not using Prjn infrastructure
 // as it is global broadcast modulator -- individual neurons
 // can use it in their own special way.
 type DaSrcLayer struct {

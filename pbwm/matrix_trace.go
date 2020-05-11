@@ -24,6 +24,7 @@ type TraceParams struct {
 	GateNoGoPosLR float32 `def:"0.1" min:"0" desc:"learning rate for gated, NoGo (D2), positive dopamine (weights decrease) -- this is the single most important learning parameter here -- by making this relatively small (but non-zero), an asymmetry in the role of Go vs. NoGo is established, whereby the NoGo pathway focuses largely on punishing and preventing actions associated with negative outcomes, while those assoicated with positive outcomes only very slowly get relief from this NoGo pressure -- this is critical for causing the model to explore other possible actions even when a given action SOMETIMES produces good results -- NoGo demands a very high, consistent level of good outcomes in order to have a net decrease in these avoidance weights.  Note that the gating signal applies to both Go and NoGo MSN's for gated stripes, ensuring learning is about the action that was actually selected (see not_ cases for logic for actions that were close but not taken)"`
 	AChResetThr   float32 `min:"0" def:"0.5" desc:"threshold on receiving unit ACh value, sent by TAN units, for reseting the trace"`
 	Deriv         bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+	Decay         float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
 }
 
 func (tp *TraceParams) Defaults() {
@@ -31,6 +32,7 @@ func (tp *TraceParams) Defaults() {
 	tp.GateNoGoPosLR = 0.1
 	tp.AChResetThr = 0.5
 	tp.Deriv = true
+	tp.Decay = 1
 }
 
 // LrnFactor resturns multiplicative factor for level of msn activation.  If Deriv
@@ -81,13 +83,17 @@ func (pj *MatrixTracePrjn) Build() error {
 	return err
 }
 
-func (pj *MatrixTracePrjn) InitWts() {
-	pj.Prjn.InitWts()
+func (pj *MatrixTracePrjn) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.NTr = 0
 		sy.Tr = 0
 	}
+}
+
+func (pj *MatrixTracePrjn) InitWts() {
+	pj.Prjn.InitWts()
+	pj.ClearTrace()
 }
 
 // DWt computes the weight change (learning) -- on sending projections.
@@ -120,9 +126,11 @@ func (pj *MatrixTracePrjn) DWt() {
 			gateAct := rlayi.UnitValByIdx(GateAct, int(ri))
 
 			dwt := float32(0)
-			posDA := (da > 0)
 			if da != 0 {
-				dwt += pj.Trace.LrateMod((tr > 0), d2r, posDA) * daLrn * tr
+				dwt = daLrn * tr
+				if d2r && da > 0 && tr < 0 {
+					dwt *= pj.Trace.GateNoGoPosLR
+				}
 			}
 
 			if ach >= pj.Trace.AChResetThr {
@@ -134,10 +142,10 @@ func (pj *MatrixTracePrjn) DWt() {
 			if gateAct > 0 { // gated
 				ntr = newNTr
 			} else { // not-gated
-				ntr = -newNTr // opposite sign for non-gated
+				ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
 			}
 
-			decay := math32.Abs(ntr) // decay is function of new trace
+			decay := pj.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
 			if decay > 1 {
 				decay = 1
 			}

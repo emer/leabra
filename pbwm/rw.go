@@ -122,6 +122,7 @@ func (ly *RWDaLayer) SendMods(ltime *leabra.Time) {
 // Has no weight bounds or limits on sign etc.
 type RWPrjn struct {
 	deep.Prjn
+	DaTol float32 `desc:"tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal"`
 }
 
 var KiT_RWPrjn = kit.Types.AddType(&RWPrjn{}, deep.PrjnProps)
@@ -142,6 +143,7 @@ func (pj *RWPrjn) DWt() {
 	}
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
 	rlayi := pj.Recv.(PBWMLayer)
+	rlay := rlayi.AsLeabra()
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
@@ -152,8 +154,20 @@ func (pj *RWPrjn) DWt() {
 		for ci := range syns {
 			sy := &syns[ci]
 			ri := scons[ci]
+			rn := &rlay.Neurons[ri]
 
 			da := rlayi.UnitValByIdx(DALrn, int(ri))
+			if pj.DaTol > 0 {
+				if math32.Abs(da) <= pj.DaTol {
+					da = 0
+				}
+			}
+			if rn.Ge > rn.Act && da > 0 { // clipped at top, saturate up
+				da = 0
+			}
+			if rn.Ge < rn.Act && da < 0 { // clipped at bottom, saturate down
+				da = 0
+			}
 
 			dwt := da * sn.Act // no recv unit activation
 

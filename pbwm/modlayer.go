@@ -15,8 +15,9 @@ import (
 )
 
 // ModLayer is the base layer type for PBWM framework -- has variables for the
-// layer-level neuromodulatory variables: dopamine, ach, serotonin.  Create
-// a pbwm.Layer as a usable version of this base ModLayer
+// layer-level neuromodulatory variables: dopamine, ach, serotonin.
+// The pbwm.Layer is a usable generic version of this base ModLayer,
+// and other more specialized types build directly from ModLayer.
 type ModLayer struct {
 	deep.Layer
 	DA  float32 `desc:"current dopamine level for this layer"`
