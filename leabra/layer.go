@@ -538,6 +538,10 @@ func (ly *Layer) InitActs() {
 		nrn := &ly.Neurons[ni]
 		ly.Act.InitActs(nrn)
 	}
+	for pi := range ly.Pools {
+		pl := &ly.Pools[pi]
+		pl.Inhib.Init()
+	}
 }
 
 // InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers

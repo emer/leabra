@@ -470,7 +470,7 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 	}
 }
 
-// IniteGInc initializes the per-projection GInc threadsafe increment -- not
+// InitGInc initializes the per-projection GInc threadsafe increment -- not
 // typically needed (called during InitWts only) but can be called when needed
 func (pj *Prjn) InitGInc() {
 	for ri := range pj.GInc {
