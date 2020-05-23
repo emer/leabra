@@ -47,13 +47,14 @@ func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 
 // RWDaLayer computes a dopamine (Da) signal based on a simple Rescorla-Wagner
 // learning dynamic (i.e., PV learning in the PVLV framework).
-// It computes difference between r(t) and RWPred inputs.
+// It computes difference between r(t) and RWPred values.
 // r(t) is accessed directly from a Rew layer -- if no external input then no
 // DA is computed -- critical for effective use of RW only for PV cases.
-// Receives RWPred prediction from direct (fixed) weights.
+// RWPred prediction is also accessed directly from Rew layer to avoid any issues.
 type RWDaLayer struct {
 	DaSrcLayer
-	RewLay string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
+	RewLay    string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
+	RWPredLay string `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
 }
 
 var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
@@ -61,15 +62,22 @@ var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
 func (ly *RWDaLayer) Defaults() {
 	ly.DaSrcLayer.Defaults()
 	ly.RewLay = "Rew"
+	ly.RWPredLay = "RWPred"
 }
 
-func (ly *RWDaLayer) RewLayer() (*ModLayer, error) {
+// RWLayers returns the reward and RWPred layers based on names
+func (ly *RWDaLayer) RWLayers() (*ModLayer, *RWPredLayer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
 	if err != nil {
 		log.Printf("RWDaLayer %s, RewLay: %v\n", ly.Name(), err)
-		return nil, err
+		return nil, nil, err
 	}
-	return tly.(PBWMLayer).AsMod(), nil
+	ply, err := ly.Network.LayerByNameTry(ly.RWPredLay)
+	if err != nil {
+		log.Printf("RWDaLayer %s, RWPredLay: %v\n", ly.Name(), err)
+		return nil, nil, err
+	}
+	return tly.(PBWMLayer).AsMod(), ply.(*RWPredLayer), nil
 }
 
 // Build constructs the layer state, including calling Build on the projections.
@@ -78,13 +86,13 @@ func (ly *RWDaLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	_, err = ly.RewLayer()
+	_, _, err = ly.RWLayers()
 	return err
 }
 
 func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
-	rly, _ := ly.RewLayer()
-	if rly == nil {
+	rly, ply, _ := ly.RWLayers()
+	if rly == nil || ply == nil {
 		return
 	}
 	rnrn := &(rly.Neurons[0])
@@ -93,13 +101,15 @@ func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
 		hasRew = true
 	}
 	ract := rnrn.Act
+	pnrn := &(ply.Neurons[0])
+	pact := pnrn.Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		if hasRew {
-			nrn.Act = ract - nrn.Ge
+			nrn.Act = ract - pact
 		} else {
 			nrn.Act = 0 // nothing
 		}

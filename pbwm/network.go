@@ -203,8 +203,6 @@ func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float3
 // AddRWLayers adds simple Rescorla-Wagner (PV only) dopamine system, with a primary
 // Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
 // Only generates DA when Rew layer has external input -- otherwise zero.
-// Projection from RWPred to DA is given class RWPredToDA -- should
-// have no learning and 1 weight.
 func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, da leabra.LeabraLayer) {
 	rew = &Layer{}
 	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
@@ -216,19 +214,6 @@ func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float3
 	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
 	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
 
-	pj := nt.ConnectLayers(rp, da, prjn.NewFull(), emer.Forward).(leabra.LeabraPrjn).AsLeabra()
-	pj.SetClass("RWPredToDA")
-	pj.Learn.Learn = false
-	pj.WtInit.Mean = 1
-	pj.WtInit.Var = 0
-	pj.WtInit.Sym = false
-	// {Sel: ".RWPredToDA", Desc: "rew to da",
-	// 	Params: params.Params{
-	// 		"Prjn.Learn.Learn": "false",
-	// 		"Prjn.WtInit.Mean": "1",
-	// 		"Prjn.WtInit.Var":  "0",
-	// 		"Prjn.WtInit.Sym":  "false",
-	// 	}},
 	return
 }
 
