@@ -159,95 +159,50 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 	return
 }
 
-// AddClampDaLayer adds a ClampDaLayer of given name
-func (nt *Network) AddClampDaLayer(name string) *ClampDaLayer {
-	da := &ClampDaLayer{}
-	nt.AddLayerInit(da, name, []int{1, 1}, emer.Input)
-	return da
-}
-
-// AddTDLayers adds the standard TD temporal differences layers, generating a DA signal.
-// Projection from Rew to RewInteg is given class TDRewToInteg -- should
-// have no learning and 1 weight.
-func (nt *Network) AddTDLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, ri, td leabra.LeabraLayer) {
-	rew = &Layer{}
-	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
-	rp = &TDRewPredLayer{}
-	nt.AddLayerInit(rp, prefix+"RewPred", []int{1, 1}, emer.Hidden)
-	ri = &TDRewIntegLayer{}
-	nt.AddLayerInit(ri, prefix+"RewInteg", []int{1, 1}, emer.Hidden)
-	td = &TDDaLayer{}
-	nt.AddLayerInit(td, prefix+"TD", []int{1, 1}, emer.Hidden)
-	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name()
-	td.(*TDDaLayer).RewInteg = ri.Name()
-	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
-	ri.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
-	td.SetRelPos(relpos.Rel{Rel: rel, Other: ri.Name(), YAlign: relpos.Front, Space: space})
-
-	pj := nt.ConnectLayers(rew, ri, prjn.NewFull(), emer.Forward).(leabra.LeabraPrjn).AsLeabra()
-	pj.SetClass("TDRewToInteg")
-	pj.Learn.Learn = false
-	pj.WtInit.Mean = 1
-	pj.WtInit.Var = 0
-	pj.WtInit.Sym = false
-	// {Sel: ".TDRewToInteg", Desc: "rew to integ",
-	// 	Params: params.Params{
-	// 		"Prjn.Learn.Learn": "false",
-	// 		"Prjn.WtInit.Mean": "1",
-	// 		"Prjn.WtInit.Var":  "0",
-	// 		"Prjn.WtInit.Sym":  "false",
-	// 	}},
-	return
-}
-
-// AddRWLayers adds simple Rescorla-Wagner (PV only) dopamine system, with a primary
-// Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
-// Only generates DA when Rew layer has external input -- otherwise zero.
-func (nt *Network) AddRWLayers(prefix string, rel relpos.Relations, space float32) (rew, rp, da leabra.LeabraLayer) {
-	rew = &Layer{}
-	nt.AddLayerInit(rew, prefix+"Rew", []int{1, 1}, emer.Input)
-	rp = &RWPredLayer{}
-	nt.AddLayerInit(rp, prefix+"RWPred", []int{1, 1}, emer.Hidden)
-	da = &RWDaLayer{}
-	nt.AddLayerInit(da, prefix+"DA", []int{1, 1}, emer.Hidden)
-	da.(*RWDaLayer).RewLay = rew.Name()
-	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
-	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
-
-	return
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Act methods
 
-// Cycle runs one cycle of activation updating
+// CycleImpl runs one cycle of activation updating
 // PBWM calls GateSend after Cycle and before DeepBurst
 // Deep version adds call to update DeepBurst at end
-func (nt *Network) Cycle(ltime *leabra.Time) {
-	nt.Network.Network.Cycle(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
-	nt.GateSend(ltime)              // GateLayer (GPiThal) computes gating, sends to other layers
-	nt.RecGateAct(ltime)            // Record activation state at time of gating (in ActG neuron var)
-	nt.DeepBurst(ltime)             // Act -> Burst (during BurstQtr) (see deep for details)
-	nt.SendMods(ltime)              // send modulators (DA)
+func (nt *Network) CycleImpl(ltime *leabra.Time) {
+	nt.Network.Network.CycleImpl(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
+	nt.GateSend(ltime)                  // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ltime)                // Record activation state at time of gating (in ActG neuron var)
+	nt.DeepBurst(ltime)                 // Act -> Burst (during BurstQtr) (see deep for details)
+
+	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }
 
 // GateSend is called at end of Cycle, computes Gating and sends to other layers
 func (nt *Network) GateSend(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).GateSend(ltime) }, "GateSend")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if pl, ok := ly.(PBWMLayer); ok {
+			pl.GateSend(ltime)
+		}
+	}, "GateSend")
 }
 
 // RecGateAct is called after GateSend, to record gating activations at time of gating
 func (nt *Network) RecGateAct(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).RecGateAct(ltime) }, "RecGateAct")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if pl, ok := ly.(PBWMLayer); ok {
+			pl.RecGateAct(ltime)
+		}
+	}, "RecGateAct")
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing
 func (nt *Network) SendMods(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(PBWMLayer).SendMods(ltime) }, "SendMods")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if pl, ok := ly.(PBWMLayer); ok {
+			pl.SendMods(ltime)
+		}
+	}, "SendMods")
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

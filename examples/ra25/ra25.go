@@ -425,7 +425,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 // args so that it can be used for various different contexts
 // (training, testing, etc).
 func (ss *Sim) ApplyInputs(en env.Env) {
-	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
+	// ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
 	lays := []string{"Input", "Output"}

@@ -1,8 +1,8 @@
-// Copyright (c) 2019, The Emergent Authors. All rights reserved.
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package pbwm
+package rl
 
 import (
 	"log"
@@ -20,16 +20,22 @@ import (
 // (which can be negative -- there are no constraints).
 // Use with RWPrjn which does simple delta-rule learning on minus-plus.
 type RWPredLayer struct {
-	ModLayer
+	leabra.Layer
 	PredRange minmax.F32 `desc:"default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance"`
+	DA        float32    `desc:"dopamine value for this layer"`
 }
 
-var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, deep.LayerProps)
+var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, leabra.LayerProps)
 
 func (ly *RWPredLayer) Defaults() {
-	ly.ModLayer.Defaults()
+	ly.Layer.Defaults()
 	ly.PredRange.Set(0.01, 0.99)
 }
+
+// DALayer interface:
+
+func (ly *RWPredLayer) GetDA() float32   { return ly.DA }
+func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 
 // ActFmG computes linear activation for RWPred
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
@@ -45,28 +51,35 @@ func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  RWDaLayer
 
-// RWDaLayer computes a dopamine (Da) signal based on a simple Rescorla-Wagner
+// RWDaLayer computes a dopamine (DA) signal based on a simple Rescorla-Wagner
 // learning dynamic (i.e., PV learning in the PVLV framework).
 // It computes difference between r(t) and RWPred values.
 // r(t) is accessed directly from a Rew layer -- if no external input then no
 // DA is computed -- critical for effective use of RW only for PV cases.
 // RWPred prediction is also accessed directly from Rew layer to avoid any issues.
 type RWDaLayer struct {
-	DaSrcLayer
-	RewLay    string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
-	RWPredLay string `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
+	leabra.Layer
+	SendDA    SendDA  `desc:"list of layers to send dopamine to"`
+	RewLay    string  `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
+	RWPredLay string  `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
+	DA        float32 `desc:"dopamine value for this layer"`
 }
 
 var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
 
 func (ly *RWDaLayer) Defaults() {
-	ly.DaSrcLayer.Defaults()
+	ly.Layer.Defaults()
 	ly.RewLay = "Rew"
 	ly.RWPredLay = "RWPred"
 }
 
+// DALayer interface:
+
+func (ly *RWDaLayer) GetDA() float32   { return ly.DA }
+func (ly *RWDaLayer) SetDA(da float32) { ly.DA = da }
+
 // RWLayers returns the reward and RWPred layers based on names
-func (ly *RWDaLayer) RWLayers() (*ModLayer, *RWPredLayer, error) {
+func (ly *RWDaLayer) RWLayers() (*leabra.Layer, *RWPredLayer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
 	if err != nil {
 		log.Printf("RWDaLayer %s, RewLay: %v\n", ly.Name(), err)
@@ -77,12 +90,16 @@ func (ly *RWDaLayer) RWLayers() (*ModLayer, *RWPredLayer, error) {
 		log.Printf("RWDaLayer %s, RWPredLay: %v\n", ly.Name(), err)
 		return nil, nil, err
 	}
-	return tly.(PBWMLayer).AsMod(), ply.(*RWPredLayer), nil
+	return tly.(leabra.LeabraLayer).AsLeabra(), ply.(*RWPredLayer), nil
 }
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *RWDaLayer) Build() error {
-	err := ly.ModLayer.Build()
+	err := ly.Layer.Build()
+	if err != nil {
+		return err
+	}
+	err = ly.SendDA.Validate(ly.Network, ly.Name()+" SendTo list")
 	if err != nil {
 		return err
 	}
@@ -116,12 +133,12 @@ func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
 	}
 }
 
-// SendMods is called at end of Cycle to send modulator signals (DA, etc)
-// which will then be active for the next cycle of processing
-func (ly *RWDaLayer) SendMods(ltime *leabra.Time) {
+// CyclePost is called at end of Cycle
+// We use it to send DA, which will then be active for the next cycle of processing.
+func (ly *RWDaLayer) CyclePost(ltime *leabra.Time) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
-	ly.SendDA(act)
+	ly.SendDA.SendDA(ly.Network, act)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -131,7 +148,7 @@ func (ly *RWDaLayer) SendMods(ltime *leabra.Time) {
 // Use in RWPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
 type RWPrjn struct {
-	deep.Prjn
+	leabra.Prjn
 	DaTol float32 `desc:"tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal"`
 }
 
@@ -152,8 +169,13 @@ func (pj *RWPrjn) DWt() {
 		return
 	}
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
-	rlayi := pj.Recv.(PBWMLayer)
-	rlay := rlayi.AsLeabra()
+	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
+	lda := pj.Recv.(DALayer).GetDA()
+	if pj.DaTol > 0 {
+		if math32.Abs(lda) <= pj.DaTol {
+			return // lda = 0 -- no learning
+		}
+	}
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
@@ -166,12 +188,7 @@ func (pj *RWPrjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			da := rlayi.UnitValByIdx(DALrn, int(ri))
-			if pj.DaTol > 0 {
-				if math32.Abs(da) <= pj.DaTol {
-					da = 0
-				}
-			}
+			da := lda
 			if rn.Ge > rn.Act && da > 0 { // clipped at top, saturate up
 				da = 0
 			}

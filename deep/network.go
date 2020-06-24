@@ -120,19 +120,39 @@ func (nt *Network) AddSuperDeep4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Act methods
 
-// Cycle runs one cycle of activation updating
+// CycleImpl runs one cycle of activation updating
 // Deep version adds call to update DeepBurst at end
-func (nt *Network) Cycle(ltime *leabra.Time) {
-	nt.Network.Cycle(ltime)
+func (nt *Network) CycleImpl(ltime *leabra.Time) {
+	nt.Network.CycleImpl(ltime)
 	nt.DeepBurst(ltime)
+	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }
 
 // DeepBurst is called at end of Cycle, computes Burst and sends it to other layers
 func (nt *Network) DeepBurst(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).BurstFmAct(ltime) }, "BurstFmAct")
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).SendTRCBurstGeDelta(ltime) }, "SendTRCBurstGeDelta")
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).TRCBurstGeFmInc(ltime) }, "TRCBurstGeFmInc")
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).AvgMaxTRCBurstGe(ltime) }, "AvgMaxTRCBurstGe")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.BurstFmAct(ltime)
+		}
+	}, "BurstFmAct")
+
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.SendTRCBurstGeDelta(ltime)
+		}
+	}, "SendTRCBurstGeDelta")
+
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.TRCBurstGeFmInc(ltime)
+		}
+	}, "TRCBurstGeFmInc")
+
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.AvgMaxTRCBurstGe(ltime)
+		}
+	}, "AvgMaxTRCBurstGe")
 }
 
 // QuarterFinal does updating after end of a quarter
@@ -143,6 +163,15 @@ func (nt *Network) QuarterFinal(ltime *leabra.Time) {
 
 // DeepCtxt sends DeepBurst to Deep layers and integrates DeepCtxt on Deep layers
 func (nt *Network) DeepCtxt(ltime *leabra.Time) {
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).SendCtxtGe(ltime) }, "SendCtxtGe")
-	nt.ThrLayFun(func(ly leabra.LeabraLayer) { ly.(DeepLayer).CtxtFmGe(ltime) }, "CtxtFmGe")
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.SendCtxtGe(ltime)
+		}
+	}, "SendCtxtGe")
+
+	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
+		if dl, ok := ly.(DeepLayer); ok {
+			dl.CtxtFmGe(ltime)
+		}
+	}, "CtxtFmGe")
 }

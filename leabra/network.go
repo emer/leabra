@@ -48,6 +48,58 @@ func (nt *Network) UpdateParams() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Primary Algorithmic interface.
+//
+//  The following methods constitute the primary user-called API during AlphaCyc method
+//  to compute one complete algorithmic alpha cycle update.
+//
+//  They just call the corresponding Impl method using the LeabraNetwork interface
+//  so that other network types can specialize any of these entry points.
+
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// input scaling from running average activation etc.
+func (nt *Network) AlphaCycInit() {
+	nt.EmerNet.(LeabraNetwork).AlphaCycInitImpl()
+}
+
+// Cycle runs one cycle of activation updating:
+// * Sends Ge increments from sending to receiving layers
+// * Average and Max Ge stats
+// * Inhibition based on Ge stats and Act Stats (computed at end of Cycle)
+// * Activation from Ge, Gi, and Gl
+// * Average and Max Act stats
+// This basic version doesn't use the time info, but more specialized types do, and we
+// want to keep a consistent API for end-user code.
+func (nt *Network) Cycle(ltime *Time) {
+	nt.EmerNet.(LeabraNetwork).CycleImpl(ltime)
+	nt.EmerNet.(LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
+}
+
+// CyclePost is called after the standard Cycle update, and calls CyclePost
+// on Layers -- this is reserved for any kind of special ad-hoc types that
+// need to do something special after Act is finally computed.
+// For example, sending a neuromodulatory signal such as dopamine.
+func (nt *Network) CyclePost(ltime *Time) {
+	nt.EmerNet.(LeabraNetwork).CyclePostImpl(ltime)
+}
+
+// QuarterFinal does updating after end of a quarter
+func (nt *Network) QuarterFinal(ltime *Time) {
+	nt.EmerNet.(LeabraNetwork).QuarterFinalImpl(ltime)
+}
+
+// DWt computes the weight change (learning) based on current running-average activation values
+func (nt *Network) DWt() {
+	nt.EmerNet.(LeabraNetwork).DWtImpl()
+}
+
+// WtFmDWt updates the weights from delta-weight changes.
+// Also calls WtBalFmWt every WtBalInterval times
+func (nt *Network) WtFmDWt() {
+	nt.EmerNet.(LeabraNetwork).WtFmDWtImpl()
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
 // InitWts initializes synaptic weights and all other associated long-term state variables
@@ -115,9 +167,9 @@ func (nt *Network) InitGInc() {
 	}
 }
 
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// AlphaCycInitImpl handles all initialization at start of new input pattern, including computing
 // input scaling from running average activation etc.
-func (nt *Network) AlphaCycInit() {
+func (nt *Network) AlphaCycInitImpl() {
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
 			continue
@@ -145,7 +197,7 @@ func (nt *Network) GScaleFmAvgAct() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Act methods
 
-// Cycle runs one cycle of activation updating:
+// CycleImpl runs one cycle of activation updating:
 // * Sends Ge increments from sending to receiving layers
 // * Average and Max Ge stats
 // * Inhibition based on Ge stats and Act Stats (computed at end of Cycle)
@@ -153,7 +205,7 @@ func (nt *Network) GScaleFmAvgAct() {
 // * Average and Max Act stats
 // This basic version doesn't use the time info, but more specialized types do, and we
 // want to keep a consistent API for end-user code.
-func (nt *Network) Cycle(ltime *Time) {
+func (nt *Network) CycleImpl(ltime *Time) {
 	nt.SendGDelta(ltime) // also does integ
 	nt.AvgMaxGe(ltime)
 	nt.InhibFmGeAct(ltime)
@@ -188,22 +240,30 @@ func (nt *Network) AvgMaxAct(ltime *Time) {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxAct(ltime) }, "AvgMaxAct")
 }
 
-// QuarterFinal does updating after end of a quarter
-func (nt *Network) QuarterFinal(ltime *Time) {
+// CyclePostImpl is called after the standard Cycle update, and calls CyclePost
+// on Layers -- this is reserved for any kind of special ad-hoc types that
+// need to do something special after Act is finally computed.
+// For example, sending a neuromodulatory signal such as dopamine.
+func (nt *Network) CyclePostImpl(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.CyclePost(ltime) }, "CyclePost")
+}
+
+// QuarterFinalImpl does updating after end of a quarter
+func (nt *Network) QuarterFinalImpl(ltime *Time) {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.QuarterFinal(ltime) }, "QuarterFinal")
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) based on current running-average activation values
-func (nt *Network) DWt() {
+// DWtImpl computes the weight change (learning) based on current running-average activation values
+func (nt *Network) DWtImpl() {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt     ")
 }
 
-// WtFmDWt updates the weights from delta-weight changes.
+// WtFmDWtImpl updates the weights from delta-weight changes.
 // Also calls WtBalFmWt every WtBalInterval times
-func (nt *Network) WtFmDWt() {
+func (nt *Network) WtFmDWtImpl() {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtFmDWt() }, "WtFmDWt")
 	nt.WtBalCtr++
 	if nt.WtBalCtr >= nt.WtBalInterval {

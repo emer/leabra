@@ -1,6 +1,6 @@
 # PBWM Version 1
 
-[![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm)
+[![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm1?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm1)
 
 See [sir2](https://github.com/emer/leabra/blob/master/examples/sir2) example for working model.
 
@@ -68,11 +68,9 @@ Here are the details about each different layer type in PBWM:
 
 * [PFCLayer](https://godoc.org/github.com/emer/leabra/pbwm#PFCLayer): Uses `deep` super vs. deep dynamics with gating (in `GateState` values broadcast from GPiThal) determining when super drives deep.  Actual maintenance in deep layer can be set using `PFCDyn` fixed dynamics that provides a simple way of shaping a temporally-evolving activation pattern over the layer, with a minimal case of just stable fixed maintenance.  Gating in the `out` stripe will drive clearing of maintenance in corresponding `mnt` stripe.
 
-# Dopamine layers
+# Dopamine Layers
 
-This package provides core infrastructure for neuromodulation of all types.  The base type `ModLayer` contains layer-level variables recording `DA` dopamine, `ACh` acetylcholine, and `SE` serotonin neuromodulator values.  Corresponding `DaSrcLayer` etc layers can broadcast these neuromodulators to a list of layers (note: we are not using `MarkerConSpec` from C++ version in this code -- instead just lists of layer names are used).
-
-The minimal `ClampDaLayer` can be used to send an arbitrary DA signal.  There are `TD` versions for temporal differences algorithm, and a basic Rescorla-Wagner delta rule version in `RWDaLayer` and `RWPredLayer`.  The separate `pvlv` package builds the full biologically-based pvlv model on top of this basic DA infrastructure.
+See the `rl` package for the `DALayer` interface and simpler forms of phasic dopamine algorithms, including Rescorla-Wagner and Temporal Differences (TD).
 
 Given that PBWM minimally requires a RW-level "primary value" dopamine signal, basic models can use this as follows:
 

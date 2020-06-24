@@ -1,8 +1,8 @@
-// Copyright (c) 2019, The Emergent Authors. All rights reserved.
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package pbwm
+package rl
 
 import (
 	"log"
@@ -18,10 +18,16 @@ import (
 // estimated V(t+1) based on its learned weights in plus phase.
 // Use TDRewPredPrjn for DA modulated learning.
 type TDRewPredLayer struct {
-	ModLayer
+	leabra.Layer
+	DA float32 `desc:"dopamine value for this layer"`
 }
 
-var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, deep.LayerProps)
+var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, leabra.LayerProps)
+
+// DALayer interface:
+
+func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
+func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 
 // ActFmG computes linear activation for TDRewPred
 func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
@@ -58,16 +64,22 @@ func (tp *TDRewIntegParams) Defaults() {
 // It computes r(t) from (typically fixed) weights from a reward layer,
 // and directly accesses values from RewPred layer.
 type TDRewIntegLayer struct {
-	ModLayer
+	leabra.Layer
 	RewInteg TDRewIntegParams `desc:"parameters for reward integration"`
+	DA       float32          `desc:"dopamine value for this layer"`
 }
 
-var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, deep.LayerProps)
+var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, leabra.LayerProps)
 
 func (ly *TDRewIntegLayer) Defaults() {
-	ly.ModLayer.Defaults()
+	ly.Layer.Defaults()
 	ly.RewInteg.Defaults()
 }
+
+// DALayer interface:
+
+func (ly *TDRewIntegLayer) GetDA() float32   { return ly.DA }
+func (ly *TDRewIntegLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewInteg.RewPred)
@@ -80,7 +92,7 @@ func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *TDRewIntegLayer) Build() error {
-	err := ly.ModLayer.Build()
+	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
@@ -111,19 +123,26 @@ func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  TDDaLayer
 
-// TDDaLayer computes a dopamine (Da) signal as the temporal difference (TD)
+// TDDaLayer computes a dopamine (DA) signal as the temporal difference (TD)
 // between the TDRewIntegLayer activations in the minus and plus phase.
 type TDDaLayer struct {
-	DaSrcLayer
-	RewInteg string `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
+	leabra.Layer
+	SendDA   SendDA  `desc:"list of layers to send dopamine to"`
+	RewInteg string  `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
+	DA       float32 `desc:"dopamine value for this layer"`
 }
 
 var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, deep.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
-	ly.DaSrcLayer.Defaults()
+	ly.Layer.Defaults()
 	ly.RewInteg = "RewInteg"
 }
+
+// DALayer interface:
+
+func (ly *TDDaLayer) GetDA() float32   { return ly.DA }
+func (ly *TDDaLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewInteg)
@@ -136,7 +155,11 @@ func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *TDDaLayer) Build() error {
-	err := ly.ModLayer.Build()
+	err := ly.Layer.Build()
+	if err != nil {
+		return err
+	}
+	err = ly.SendDA.Validate(ly.Network, ly.Name()+" SendTo list")
 	if err != nil {
 		return err
 	}
@@ -165,12 +188,12 @@ func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
 	}
 }
 
-// SendMods is called at end of Cycle to send modulator signals (DA, etc)
-// which will then be active for the next cycle of processing
-func (ly *TDDaLayer) SendMods(ltime *leabra.Time) {
+// CyclePost is called at end of Cycle
+// We use it to send DA, which will then be active for the next cycle of processing.
+func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
-	ly.SendDA(act)
+	ly.SendDA.SendDA(ly.Network, act)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -201,19 +224,18 @@ func (pj *TDRewPredPrjn) DWt() {
 		return
 	}
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
-	rlayi := pj.Recv.(PBWMLayer)
+	// rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
+	da := pj.Recv.(DALayer).GetDA()
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
 		st := int(pj.SConIdxSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		// scons := pj.SConIdx[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
-			ri := scons[ci]
-
-			da := rlayi.UnitValByIdx(DALrn, int(ri))
+			// ri := scons[ci]
 
 			dwt := da * sn.ActQ0 // no recv unit activation, prior trial act
 

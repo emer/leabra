@@ -1071,6 +1071,14 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 	}
 }
 
+// CyclePost is called after the standard Cycle update, as a separate
+// network layer loop.
+// This is reserved for any kind of special ad-hoc types that
+// need to do something special after Act is finally computed.
+// For example, sending a neuromodulatory signal such as dopamine.
+func (ly *Layer) CyclePost(ltime *Time) {
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarter
 

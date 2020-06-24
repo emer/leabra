@@ -27,6 +27,11 @@ type ModLayer struct {
 
 var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, deep.LayerProps)
 
+// DALayer interface:
+
+func (ly *ModLayer) GetDA() float32   { return ly.DA }
+func (ly *ModLayer) SetDA(da float32) { ly.DA = da }
+
 // AsMod returns this layer as a pbwm.ModLayer
 func (ly *ModLayer) AsMod() *ModLayer {
 	return ly
@@ -216,9 +221,10 @@ func (ly *ModLayer) Quarter2DWt() {
 		if p.IsOff() {
 			continue
 		}
-		rly := p.RecvLay().(PBWMLayer)
-		if rly.DoQuarter2DWt() {
-			p.(leabra.LeabraPrjn).DWt()
+		if rly, ok := p.RecvLay().(PBWMLayer); ok {
+			if rly.DoQuarter2DWt() {
+				p.(leabra.LeabraPrjn).DWt()
+			}
 		}
 	}
 }
