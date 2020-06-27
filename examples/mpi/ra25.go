@@ -228,7 +228,7 @@ func (ss *Sim) New() {
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
-	ss.TestInterval = 500
+	ss.TestInterval = 5
 	ss.LayStatNms = []string{"Hidden1", "Hidden2", "Output"}
 }
 
@@ -972,7 +972,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 
 	trl := ss.TestEnv.Trial.Cur
-	row := trl
+	row := dt.Rows
 
 	if dt.Rows <= row {
 		dt.SetNumRows(row + 1)
@@ -1013,7 +1013,6 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	nt := ss.TestEnv.Table.Len() // number in view
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
@@ -1032,7 +1031,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"OutActM", etensor.FLOAT64, out.Shp.Shp, nil},
 		{"OutActP", etensor.FLOAT64, out.Shp.Shp, nil},
 	}...)
-	dt.SetFromSchema(sch, nt)
+	dt.SetFromSchema(sch, 0)
 }
 
 func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
@@ -1067,6 +1066,11 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	dt.SetNumRows(row + 1)
 
 	trl := ss.TstTrlLog
+	if ss.UseMPI {
+		empi.GatherTableRows(ss.TstTrlLogAll, ss.TstTrlLog, ss.Comm)
+		trl = ss.TstTrlLogAll
+	}
+
 	tix := etable.NewIdxView(trl)
 	epc := ss.TrainEnv.Epoch.Prv // ?
 
@@ -1094,6 +1098,8 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	split.Agg(allsp, "OutActP", agg.AggMean)
 
 	ss.TstErrStats = allsp.AggsToTable(etable.AddAggName)
+
+	ss.TstTrlLog.SetNumRows(0)
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstEpcPlot.GoUpdate()
