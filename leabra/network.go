@@ -310,6 +310,57 @@ func (nt *Network) UnLesionNeurons() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Methods used in MPI computation, which don't depend on MPI specifically
+
+// CollectDWts writes all of the synaptic DWt values to given dwts slice
+// which is pre-allocated to given nwts size if dwts is nil,
+// in which case the method returns true so that the actual length of
+// dwts can be passed next time around.
+// Used for MPI sharing of weight changes across processors.
+func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
+	idx := 0
+	made := false
+	if *dwts == nil {
+		*dwts = make([]float32, 0, nwts)
+		made = true
+	}
+	for _, lyi := range nt.Layers {
+		ly := lyi.(LeabraLayer).AsLeabra()
+		for _, pji := range ly.SndPrjns {
+			pj := pji.(LeabraPrjn).AsLeabra()
+			ns := len(pj.Syns)
+			nsz := idx + ns
+			if len(*dwts) < nsz {
+				*dwts = append(*dwts, make([]float32, nsz-len(*dwts))...)
+			}
+			for j := range pj.Syns {
+				sy := &(pj.Syns[j])
+				(*dwts)[idx+j] = sy.DWt
+			}
+			idx += ns
+		}
+	}
+	return made
+}
+
+// SetDWts sets the DWt weight changes from given array of floats, which must be correct size
+func (nt *Network) SetDWts(dwts []float32) {
+	idx := 0
+	for _, lyi := range nt.Layers {
+		ly := lyi.(LeabraLayer).AsLeabra()
+		for _, pji := range ly.SndPrjns {
+			pj := pji.(LeabraPrjn).AsLeabra()
+			ns := len(pj.Syns)
+			for j := range pj.Syns {
+				sy := &(pj.Syns[j])
+				sy.DWt = dwts[idx+j]
+			}
+			idx += ns
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Network props for gui
 
 var NetworkProps = ki.Props{

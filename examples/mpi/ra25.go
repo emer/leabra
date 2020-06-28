@@ -1652,47 +1652,9 @@ func (ss *Sim) MPIFinalize() {
 
 // CollectDWts collects the weight changes from all synapses into AllDWts
 func (ss *Sim) CollectDWts(net *leabra.Network) {
-	idx := 0
-	made := false
-	if ss.AllDWts == nil {
-		ss.AllDWts = make([]float32, 0, 8329) // plug in number from printout below, to avoid realloc
-		made = true
-	}
-	for _, lyi := range net.Layers {
-		ly := lyi.(leabra.LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(leabra.LeabraPrjn).AsLeabra()
-			ns := len(pj.Syns)
-			nsz := idx + ns
-			if len(ss.AllDWts) < nsz {
-				ss.AllDWts = append(ss.AllDWts, make([]float32, nsz-len(ss.AllDWts))...)
-			}
-			for j := range pj.Syns {
-				sy := &(pj.Syns[j])
-				ss.AllDWts[idx+j] = sy.DWt
-			}
-			idx += ns
-		}
-	}
+	made := net.CollectDWts(&ss.AllDWts, 8329) // plug in number from printout below, to avoid realloc
 	if made {
 		mpi.Printf("MPI: AllDWts len: %d\n", len(ss.AllDWts)) // put this number in above make
-	}
-}
-
-// SetDWts sets the weight changes from given array of floats, which must be correct size
-func (ss *Sim) SetDWts(net *leabra.Network, dwts []float32) {
-	idx := 0
-	for _, lyi := range net.Layers {
-		ly := lyi.(leabra.LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(leabra.LeabraPrjn).AsLeabra()
-			ns := len(pj.Syns)
-			for j := range pj.Syns {
-				sy := &(pj.Syns[j])
-				sy.DWt = dwts[idx+j]
-			}
-			idx += ns
-		}
 	}
 }
 
@@ -1707,7 +1669,7 @@ func (ss *Sim) MPIWtFmDWt() {
 			ss.SumDWts = make([]float32, ndw)
 		}
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
-		ss.SetDWts(ss.Net, ss.SumDWts)
+		ss.Net.SetDWts(ss.SumDWts)
 	}
 	ss.Net.WtFmDWt()
 }
