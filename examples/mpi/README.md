@@ -111,7 +111,6 @@ We use `mpi.Printf` instead of `fmt.Printf` to have it only print on the root no
 
 The main MPI-specific code is at the end, reproduced here for easy reference.  NOTE: please always use the code in ra25.go as a copy-paste source as there might be a few small changes, which will be more closely tracked there than here.
 
-Although some elements of this could be put in standard methods, it is all sufficiently simple that just having it explicitly written should be fine.
 
 ```go
 // MPIInit initializes MPI
