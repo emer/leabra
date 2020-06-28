@@ -40,6 +40,7 @@ master:
 	@echo "GO111MODULE = $(value GO111MODULE)"
 	go get -u github.com/emer/etable@master
 	go get -u github.com/emer/emergent@master
+	go get -u github.com/emer/empi@master
 	go list -m all | grep emer
 	go mod tidy
 	
