@@ -775,7 +775,7 @@ func (ss *Sim) WeightsFileName() string {
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
 }
 
 //////////////////////////////////////////////
@@ -827,7 +827,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Nm+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -857,7 +857,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.LayStatNms {
-		sch = append(sch, etable.Column{lnm + " ActAvg", etensor.FLOAT64, nil, nil})
+		sch = append(sch, etable.Column{lnm + "_ActAvg", etensor.FLOAT64, nil, nil})
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -877,7 +877,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 
 	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, .5)
+		plt.SetColParams(lnm+"_ActAvg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, .5)
 	}
 	return plt
 }
