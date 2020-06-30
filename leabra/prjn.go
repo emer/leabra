@@ -377,7 +377,7 @@ func (pj *Prjn) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) flo
 			wt := wtFun(si, ri, ssh, rsh)
 			rsi := pj.RSynIdx[st+ci]
 			sy := &pj.Syns[rsi]
-			sy.Wt = wt
+			sy.Wt = wt * sy.Scale
 			pj.Learn.LWtFmWt(sy)
 		}
 	}

@@ -321,6 +321,7 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 	idx := 0
 	made := false
 	if *dwts == nil {
+		// todo: if nil, compute right size right away
 		*dwts = make([]float32, 0, nwts)
 		made = true
 	}
