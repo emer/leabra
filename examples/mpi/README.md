@@ -24,7 +24,7 @@ To run, do something like this:
 $ mpirun -np 2 ./mpi -mpi
 ```
 
-The number of processors must divide into 24 (number of patterns) evenly (2, 3, 4, 6, 8).
+The number of processors must divide into 24 for this example (number of patterns used in ra25) evenly (2, 3, 4, 6, 8).
 
 # General tips for MPI usage
 
