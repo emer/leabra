@@ -53,6 +53,11 @@ func (nt *Network) AddMatrixLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 	return mtx
 }
 
+// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixTracePrjn{})
+}
+
 // AddGPLayer adds a GPLayer of given size, with given name.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
@@ -89,7 +94,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
 	gpeIn = nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
 	gpeTA = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
-	stn = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
+	stn = nt.AddGPeLayer(prefix+"STN", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
 
