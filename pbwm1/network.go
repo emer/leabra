@@ -13,7 +13,7 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-// pbwm.Network has parameters for running a DeepLeabra network
+// pbwm.Network has methods for configuring specialized PBWM network components
 type Network struct {
 	deep.Network
 }
@@ -116,9 +116,12 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 	dp.Gate.OutGate = out
 	dp.Dyns.MaintOnly()
 	dp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	pj := nt.ConnectLayers(sp, dp, prjn.NewOneToOne(), deep.BurstCtxt)
+
+	one2one := prjn.NewOneToOne()
+
+	pj := nt.ConnectLayers(sp, dp, one2one, deep.BurstCtxt)
 	pj.SetClass("PFCToDeep")
-	pj = nt.ConnectLayers(dp, sp, prjn.NewOneToOne(), deep.DeepAttn)
+	pj = nt.ConnectLayers(dp, sp, one2one, deep.DeepAttn)
 	pj.SetClass("PFCFmDeep")
 	return
 }

@@ -27,8 +27,8 @@ type MatrixLayer struct {
 	leabra.Layer
 	DaR    DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
 	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
-	DA     float32      `desc:"dopamine value for this layer"`
-	DALrn  float32      `desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+	DA     float32      `inactive:"+" desc:"dopamine value for this layer"`
+	DALrn  float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
 }
 
 var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)

@@ -22,7 +22,7 @@ import (
 type RWPredLayer struct {
 	leabra.Layer
 	PredRange minmax.F32 `desc:"default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance"`
-	DA        float32    `desc:"dopamine value for this layer"`
+	DA        float32    `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, leabra.LayerProps)
@@ -62,7 +62,7 @@ type RWDaLayer struct {
 	SendDA    SendDA  `desc:"list of layers to send dopamine to"`
 	RewLay    string  `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
 	RWPredLay string  `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
-	DA        float32 `desc:"dopamine value for this layer"`
+	DA        float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)

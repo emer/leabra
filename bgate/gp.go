@@ -14,7 +14,7 @@ import (
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type GPLayer struct {
 	leabra.Layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)

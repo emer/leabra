@@ -9,11 +9,21 @@ import (
 	"github.com/goki/ki/kit"
 )
 
+// KCaParams are Calcium-gated potassium channels that drive the long
+// afterhyperpolarization of STN neurons.
+// The conductance is applied to KNa channels ta take advantage
+// of the existing infrastructure.
+type KCaParams struct {
+	ActThr float32 `desc:"threshold for activation to turn on KCa channels -- assuming that there is a sufficiently nonlinear increase in Ca influx above a critical firing rate, so as to make these channels threshold-like"`
+	GKCa   float32 `desc:"kCa conductance after threshold is hit -- actual conductance is applied to KNa channels"`
+}
+
 // STNLayer represents the dorsal matrisome MSN's that are the main
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type STNLayer struct {
 	leabra.Layer
-	DA float32 `desc:"dopamine value for this layer"`
+	KCa KCaParams `desc:"parameters for the calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
+	DA  float32   `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
@@ -81,4 +91,19 @@ func (ly *STNLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 func (ly *STNLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.DA = 0
+}
+
+func (ly *STNLayer) ActFmG() {
+	for ni := range ly.Neurons { // note: copied from leabra ActFmG
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		ly.Act.VmFmG(nrn)
+		ly.Act.ActFmG(nrn)
+		if nrn.Act >= ly.KCa.ActThr {
+			nrn.Gk = ly.KCa.GKCa
+		}
+		ly.Learn.AvgsFmAct(nrn)
+	}
 }

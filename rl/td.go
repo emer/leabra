@@ -19,7 +19,7 @@ import (
 // Use TDRewPredPrjn for DA modulated learning.
 type TDRewPredLayer struct {
 	leabra.Layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, leabra.LayerProps)

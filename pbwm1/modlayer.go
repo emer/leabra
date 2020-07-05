@@ -20,9 +20,9 @@ import (
 // and other more specialized types build directly from ModLayer.
 type ModLayer struct {
 	deep.Layer
-	DA  float32 `desc:"current dopamine level for this layer"`
-	ACh float32 `desc:"current acetylcholine level for this layer"`
-	SE  float32 `desc:"current serotonin level for this layer"`
+	DA  float32 `inactive:"+" desc:"current dopamine level for this layer"`
+	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
+	SE  float32 `inactive:"+" desc:"current serotonin level for this layer"`
 }
 
 var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, deep.LayerProps)
