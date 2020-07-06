@@ -75,8 +75,13 @@ func (ly *MatrixLayer) Defaults() {
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
-		if _, ok := pj.Send.(*GPLayer); ok {
+		if _, ok := pj.Send.(*GPLayer); ok { // From GPeTA
 			pj.WtScale.Abs = 3
+			pj.Learn.Learn = false
+			pj.Learn.WtSig.Gain = 1
+			pj.WtInit.Mean = 0.9
+			pj.WtInit.Var = 0
+			pj.WtInit.Sym = false
 		}
 	}
 
