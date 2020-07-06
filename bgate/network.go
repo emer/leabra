@@ -76,11 +76,22 @@ func (nt *Network) AddGPiLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int
 	return gpi
 }
 
+// AddSTNLayer adds a subthalamic nucleus Layer of given size, with given name.
+// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
+// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
+func (nt *Network) AddSTNLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNLayer {
+	stn := &STNLayer{}
+	nt.AddLayerInit(stn, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	return stn
+}
+
 // AddVThalLayer adds a ventral thalamus (VA/VL/VM) Layer of given size, with given name.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) leabra.LeabraLayer {
-	return nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Hidden).(leabra.LeabraLayer)
+func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *VThalLayer {
+	vthal := &VThalLayer{}
+	nt.AddLayerInit(vthal, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	return vthal
 }
 
 // AddBG adds MtxGo, No, GPeOut, GPeIn, GPeTA, STN, GPi, and VThal layers, with given optional prefix.
@@ -94,7 +105,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
 	gpeIn = nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
 	gpeTA = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
-	stn = nt.AddGPeLayer(prefix+"STN", nPoolsY, nPoolsX, 1, 1)
+	stn = nt.AddSTNLayer(prefix+"STN", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
 
@@ -118,8 +129,10 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	nt.ConnectLayersPrjn(gpeOut, gpeIn, one2one, emer.Inhib, &GPeInPrjn{})
 	nt.ConnectLayersPrjn(mtxGo, gpeIn, full, emer.Inhib, &GPeInPrjn{}) // full = all but self..
 
-	nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
-	nt.ConnectLayers(gpeIn, stn, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
+	pj.SetClass("BgFixed")
+	pj = nt.ConnectLayers(gpeIn, stn, one2one, emer.Inhib)
+	pj.SetClass("BgFixed")
 
 	nt.ConnectLayersPrjn(gpeIn, gpi, one2one, emer.Inhib, &GPiPrjn{})
 	nt.ConnectLayersPrjn(mtxGo, gpi, one2one, emer.Inhib, &GPiPrjn{})
@@ -138,7 +151,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	pj = nt.ConnectLayers(gpeTA, mtxNo, one2one, emer.Inhib)
 	pj.SetClass("FmGPeTA")
 
-	nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
+	pj.SetClass("BgFixed")
 
 	return
 }

@@ -36,15 +36,20 @@ var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",
 // 	Params: params.Params{
-// 		"Layer.Inhib.Layer.Gi":     "1.9",
-// 		"Layer.Inhib.Layer.FB":     "0.5",
-// 		"Layer.Inhib.Pool.On":      "true",
-// 		"Layer.Inhib.Pool.Gi":      "1.9",
-// 		"Layer.Inhib.Pool.FB":      "0",
+// 		"Layer.Inhib.Layer.On":     "true",
+// 		"Layer.Inhib.Layer.Gi":     "1.5",
+// 		"Layer.Inhib.Layer.FB":     "0.0",
+// 		"Layer.Inhib.Pool.On":      "false",
 // 		"Layer.Inhib.Self.On":      "true",
-// 		"Layer.Inhib.Self.Gi":      "0.3",
-// 		"Layer.Inhib.ActAvg.Init":  "0.2",
+// 		"Layer.Inhib.Self.Gi":      "0.3", // 0.6 in localist -- expt
+// 		"Layer.Inhib.Self.Tau":     "3.0",
+// 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
+// 		"Layer.Act.Dt.VmTau":       "4",
+// 		"Layer.Act.Dt.GTau":        "5", // 5 also works but less smooth RT dist
+// 		"Layer.Act.Gbar.L":         "0.1",
+// 		"Layer.Act.Init.Decay":     "0",
 // 	}}
 
 func (ly *MatrixLayer) Defaults() {
@@ -52,15 +57,29 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Matrix.Defaults()
 
 	// special inhib params
-	ly.Inhib.Layer.Gi = 1.9
-	ly.Inhib.Layer.FB = 0.5
-	ly.Inhib.Pool.On = true
-	ly.Inhib.Pool.Gi = 1.9
-	ly.Inhib.Pool.FB = 0
+	ly.Inhib.Layer.On = true
+	ly.Inhib.Layer.Gi = 1.5
+	ly.Inhib.Layer.FB = 0
+	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
 	ly.Inhib.Self.Gi = 0.3 // 0.6 in localist one
 	ly.Inhib.ActAvg.Fixed = true
-	ly.Inhib.ActAvg.Init = 0.2
+	ly.Inhib.ActAvg.Init = 0.25
+	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
+	ly.Act.Dt.VmTau = 4
+	ly.Act.Dt.GTau = 5 // could be slower
+	ly.Act.Gbar.L = 0.1
+	ly.Act.Init.Decay = 0
+
+	// todo: important -- need to adjust wt scale of some PFC inputs vs others:
+	// drivers vs. modulators
+
+	for _, pji := range ly.RcvPrjns {
+		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+		if _, ok := pj.Send.(*GPLayer); ok {
+			pj.WtScale.Abs = 3
+		}
+	}
 }
 
 // DALayer interface:

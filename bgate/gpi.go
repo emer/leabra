@@ -25,6 +25,19 @@ var KiT_GPiLayer = kit.Types.AddType(&GPiLayer{}, leabra.LayerProps)
 func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GateThr = 0.2
+
+	// note: GPLayer took care of STN input prjns
+
+	for _, pji := range ly.RcvPrjns {
+		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+		if _, ok := pj.Send.(*MatrixLayer); ok {
+			pj.WtScale.Rel = 0.2
+		} else if _, ok := pj.Send.(*GPiLayer); ok {
+			pj.WtScale.Rel = 1.8
+		} else if _, ok := pj.Send.(*STNLayer); ok {
+			pj.WtScale.Abs = 0.5 // todo: 1 in orig, 0.5 for GPeIn, 0.1 in others
+		}
+	}
 }
 
 /*

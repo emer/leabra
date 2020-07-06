@@ -5,6 +5,8 @@
 package bgate
 
 import (
+	"strings"
+
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -50,6 +52,7 @@ func (ly *GPLayer) Defaults() {
 	ly.Act.Erev.L = 0.9
 	ly.Act.Gbar.L = 0.2
 	ly.Inhib.Layer.On = false
+	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
 	ly.Inhib.Self.Gi = 0.4 // 0.4 in localist one
 	ly.Inhib.ActAvg.Init = 0.25
@@ -57,9 +60,56 @@ func (ly *GPLayer) Defaults() {
 	ly.Inhib.Self.Tau = 3.0
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 4
-	ly.Act.Dt.GTau = 5 // 5 also works but less smooth RT dist
+	ly.Act.Dt.GTau = 5 // could be slower
 	ly.Act.Gbar.L = 0.1
 	ly.Act.Init.Decay = 0
+
+	for _, pjii := range ly.RcvPrjns {
+		pji := pjii.(leabra.LeabraPrjn)
+		if _, ok := pji.(*GPeInPrjn); ok {
+			continue
+		}
+		if _, ok := pji.(*GPiPrjn); ok {
+			continue
+		}
+		pj := pji.AsLeabra()
+		pj.Learn.Learn = false
+		pj.WtInit.Mean = 0.9
+		pj.WtInit.Var = 0
+
+		if _, ok := pj.Send.(*MatrixLayer); ok {
+			pj.WtScale.Abs = 0.5
+		} else if _, ok := pj.Send.(*STNLayer); ok {
+			pj.WtScale.Abs = 0.1 // 0.1 orig
+		}
+
+		switch {
+		case strings.HasSuffix(ly.Nm, "GPeOut"):
+			if _, ok := pj.Send.(*MatrixLayer); ok {
+				pj.WtScale.Abs = 0.5
+			} else if _, ok := pj.Send.(*GPiLayer); ok {
+				pj.WtScale.Abs = 1.8
+			}
+		case strings.HasSuffix(ly.Nm, "GPeIn"):
+			if ml, ok := pj.Send.(*MatrixLayer); ok {
+				if ml.DaR == D1R {
+					pj.WtScale.Abs = 1 // note: had rel = 0.3 in orig
+				} else {
+					pj.WtScale.Abs = 2.5 // todo: lower?
+				}
+			} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeOut
+				pj.WtScale.Abs = 1.5
+			} else if _, ok := pj.Send.(*STNLayer); ok {
+				pj.WtScale.Abs = 0.5 // todo: 0.1 default
+			}
+		case strings.HasSuffix(ly.Nm, "GPeTA"):
+			if _, ok := pj.Send.(*GPLayer); ok {
+				pj.WtScale.Rel = 0.5
+			} else if _, ok := pj.Send.(*GPiLayer); ok {
+				pj.WtScale.Rel = 1.8
+			}
+		}
+	}
 }
 
 // DALayer interface:

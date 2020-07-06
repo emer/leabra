@@ -9,27 +9,16 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-// KCaParams are Calcium-gated potassium channels that drive the long
-// afterhyperpolarization of STN neurons.
-// The conductance is applied to KNa channels ta take advantage
-// of the existing infrastructure.
-type KCaParams struct {
-	ActThr float32 `desc:"threshold for activation to turn on KCa channels -- assuming that there is a sufficiently nonlinear increase in Ca influx above a critical firing rate, so as to make these channels threshold-like"`
-	GKCa   float32 `desc:"kCa conductance after threshold is hit -- actual conductance is applied to KNa channels"`
-}
-
-// STNLayer represents the dorsal matrisome MSN's that are the main
-// Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
-type STNLayer struct {
+// VThalLayer represents the Ventral thalamus: VA / VM / VL which receives BG gating.
+type VThalLayer struct {
 	leabra.Layer
-	KCa KCaParams `desc:"parameters for the calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
-	DA  float32   `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
-var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
+var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
-// Sel: "STNLayer", Desc: "defaults",
+// Sel: "VThalLayer", Desc: "defaults",
 // 	Params: params.Params{
 // 		"Layer.Act.Init.Vm":   "0.9",
 // 		"Layer.Act.Init.Act":  "0.5",
@@ -48,11 +37,12 @@ var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
 // 		"Layer.Act.Init.Decay":     "0",
 // }}
 
-func (ly *STNLayer) Defaults() {
+func (ly *VThalLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.DA = 0
 
-	// STN is tonically self-active and has no FFFB inhibition
+	// Thal is tonically self-active and has no FFFB inhibition
+	// TODO: experiment with this
 
 	ly.Act.Init.Vm = 0.9
 	ly.Act.Init.Act = 0.5
@@ -73,21 +63,21 @@ func (ly *STNLayer) Defaults() {
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
-		if _, ok := pj.Send.(*GPLayer); ok { // GPeIn -- others are PFC, 1.5 in orig
-			pj.WtScale.Rel = 0.5
-		}
+		pj.Learn.Learn = false
+		pj.WtInit.Mean = 0.9
+		pj.WtInit.Var = 0
 	}
 }
 
 // DALayer interface:
 
-func (ly *STNLayer) GetDA() float32   { return ly.DA }
-func (ly *STNLayer) SetDA(da float32) { ly.DA = da }
+func (ly *VThalLayer) GetDA() float32   { return ly.DA }
+func (ly *VThalLayer) SetDA(da float32) { ly.DA = da }
 
 /*
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *STNLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
+func (ly *VThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 	switch vidx {
 	case DA:
 		return ly.DA
@@ -96,22 +86,7 @@ func (ly *STNLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 }
 */
 
-func (ly *STNLayer) InitActs() {
+func (ly *VThalLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.DA = 0
-}
-
-func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
-	for ni := range ly.Neurons { // note: copied from leabra ActFmG, not calling it..
-		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
-			continue
-		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
-		if nrn.Act >= ly.KCa.ActThr {
-			nrn.Gk = ly.KCa.GKCa
-		}
-		ly.Learn.AvgsFmAct(nrn)
-	}
 }

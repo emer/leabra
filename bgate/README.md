@@ -1,3 +1,3 @@
-# BGATE: Basal Ganglia Action & Thought Engagement
+# BGate: Basal Ganglia Action & Thought Engagement
 
 
