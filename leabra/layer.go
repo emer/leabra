@@ -507,6 +507,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 // InitWts initializes the weight values in the network, i.e., resetting learning
 // Also calls InitActs
 func (ly *Layer) InitWts() {
+	ly.LeabraLay.(LeabraLayer).UpdateParams()
 	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue

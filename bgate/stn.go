@@ -10,12 +10,17 @@ import (
 )
 
 // KCaParams are Calcium-gated potassium channels that drive the long
-// afterhyperpolarization of STN neurons.
+// afterhyperpolarization of STN neurons.  Auto reset at each AlphaCycle.
 // The conductance is applied to KNa channels ta take advantage
 // of the existing infrastructure.
 type KCaParams struct {
-	ActThr float32 `desc:"threshold for activation to turn on KCa channels -- assuming that there is a sufficiently nonlinear increase in Ca influx above a critical firing rate, so as to make these channels threshold-like"`
+	ActThr float32 `def:"0.7" desc:"threshold for activation to turn on KCa channels -- assuming that there is a sufficiently nonlinear increase in Ca influx above a critical firing rate, so as to make these channels threshold-like"`
 	GKCa   float32 `desc:"kCa conductance after threshold is hit -- actual conductance is applied to KNa channels"`
+}
+
+func (kc *KCaParams) Defaults() {
+	kc.ActThr = 0.7
+	kc.GKCa = 10
 }
 
 // STNLayer represents the dorsal matrisome MSN's that are the main
@@ -50,6 +55,7 @@ var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
 
 func (ly *STNLayer) Defaults() {
 	ly.Layer.Defaults()
+	ly.KCa.Defaults()
 	ly.DA = 0
 
 	// STN is tonically self-active and has no FFFB inhibition
@@ -68,15 +74,21 @@ func (ly *STNLayer) Defaults() {
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 4
 	ly.Act.Dt.GTau = 5 // 5 also works but less smooth RT dist
-	ly.Act.Gbar.L = 0.1
 	ly.Act.Init.Decay = 0
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+		pj.Learn.Learn = false
+		pj.Learn.WtSig.Gain = 1
+		pj.WtInit.Mean = 0.9
+		pj.WtInit.Var = 0
+		pj.WtInit.Sym = false
 		if _, ok := pj.Send.(*GPLayer); ok { // GPeIn -- others are PFC, 1.5 in orig
-			pj.WtScale.Rel = 0.5
+			pj.WtScale.Abs = 0.5
 		}
 	}
+
+	ly.UpdateParams()
 }
 
 // DALayer interface:
@@ -99,6 +111,20 @@ func (ly *STNLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 func (ly *STNLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.DA = 0
+}
+
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// input scaling from running average activation etc.
+// should already have presented the external input to the network at this point.
+func (ly *STNLayer) AlphaCycInit() {
+	ly.Layer.AlphaCycInit()
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.Gk = 0
+	}
 }
 
 func (ly *STNLayer) ActFmG(ltime *leabra.Time) {

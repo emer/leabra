@@ -68,7 +68,6 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 4
 	ly.Act.Dt.GTau = 5 // could be slower
-	ly.Act.Gbar.L = 0.1
 	ly.Act.Init.Decay = 0
 
 	// todo: important -- need to adjust wt scale of some PFC inputs vs others:
@@ -80,6 +79,8 @@ func (ly *MatrixLayer) Defaults() {
 			pj.WtScale.Abs = 3
 		}
 	}
+
+	ly.UpdateParams()
 }
 
 // DALayer interface:

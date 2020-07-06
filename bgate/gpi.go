@@ -26,18 +26,26 @@ func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GateThr = 0.2
 
+	ly.Act.Gbar.L = 0.3 // stronger than .2 default
+
 	// note: GPLayer took care of STN input prjns
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+		pj.Learn.WtSig.Gain = 1
+		pj.WtInit.Mean = 0.5
+		pj.WtInit.Var = 0
+		pj.WtInit.Sym = false
 		if _, ok := pj.Send.(*MatrixLayer); ok {
-			pj.WtScale.Rel = 0.2
-		} else if _, ok := pj.Send.(*GPiLayer); ok {
-			pj.WtScale.Rel = 1.8
+			pj.WtScale.Abs = 0.2
+		} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeIn
+			pj.WtScale.Abs = 1.8
 		} else if _, ok := pj.Send.(*STNLayer); ok {
-			pj.WtScale.Abs = 0.5 // todo: 1 in orig, 0.5 for GPeIn, 0.1 in others
+			pj.WtScale.Abs = 1 // todo: 1 in orig, 0.5 for GPeIn, 0.1 in others
 		}
 	}
+
+	ly.UpdateParams()
 }
 
 /*

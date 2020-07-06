@@ -48,7 +48,7 @@ func (ly *GPLayer) Defaults() {
 	// GP is tonically self-active and has no FFFB inhibition
 
 	ly.Act.Init.Vm = 0.9
-	ly.Act.Init.Act = 0.
+	ly.Act.Init.Act = 0.5
 	ly.Act.Erev.L = 0.9
 	ly.Act.Gbar.L = 0.2
 	ly.Inhib.Layer.On = false
@@ -61,21 +61,31 @@ func (ly *GPLayer) Defaults() {
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 4
 	ly.Act.Dt.GTau = 5 // could be slower
-	ly.Act.Gbar.L = 0.1
 	ly.Act.Init.Decay = 0
 
 	for _, pjii := range ly.RcvPrjns {
 		pji := pjii.(leabra.LeabraPrjn)
+		pj := pji.AsLeabra()
+		pj.Learn.WtSig.Gain = 1
+		pj.WtInit.Mean = 0.9
+		pj.WtInit.Var = 0
+		pj.WtInit.Sym = false
 		if _, ok := pji.(*GPeInPrjn); ok {
+			if ml, ok := pj.Send.(*MatrixLayer); ok {
+				if ml.DaR == D1R {
+					pj.WtScale.Abs = 1 // note: had rel = 0.3 in orig
+				} else {
+					pj.WtScale.Abs = 2.5 // todo: lower?
+				}
+			} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeOut
+				pj.WtScale.Abs = 1.5
+			}
 			continue
 		}
 		if _, ok := pji.(*GPiPrjn); ok {
 			continue
 		}
-		pj := pji.AsLeabra()
 		pj.Learn.Learn = false
-		pj.WtInit.Mean = 0.9
-		pj.WtInit.Var = 0
 
 		if _, ok := pj.Send.(*MatrixLayer); ok {
 			pj.WtScale.Abs = 0.5
@@ -91,25 +101,17 @@ func (ly *GPLayer) Defaults() {
 				pj.WtScale.Abs = 1.8
 			}
 		case strings.HasSuffix(ly.Nm, "GPeIn"):
-			if ml, ok := pj.Send.(*MatrixLayer); ok {
-				if ml.DaR == D1R {
-					pj.WtScale.Abs = 1 // note: had rel = 0.3 in orig
-				} else {
-					pj.WtScale.Abs = 2.5 // todo: lower?
-				}
-			} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeOut
-				pj.WtScale.Abs = 1.5
-			} else if _, ok := pj.Send.(*STNLayer); ok {
+			if _, ok := pj.Send.(*STNLayer); ok {
 				pj.WtScale.Abs = 0.5 // todo: 0.1 default
 			}
 		case strings.HasSuffix(ly.Nm, "GPeTA"):
 			if _, ok := pj.Send.(*GPLayer); ok {
-				pj.WtScale.Rel = 0.5
-			} else if _, ok := pj.Send.(*GPiLayer); ok {
-				pj.WtScale.Rel = 1.8
+				pj.WtScale.Abs = 1 // 1 by default
 			}
 		}
 	}
+
+	ly.UpdateParams()
 }
 
 // DALayer interface:
@@ -148,6 +150,9 @@ var KiT_GPeInPrjn = kit.Types.AddType(&GPeInPrjn{}, leabra.PrjnProps)
 func (pj *GPeInPrjn) Defaults() {
 	pj.Prjn.Defaults()
 	// no additional factors
+	pj.WtInit.Mean = 0.9
+	pj.WtInit.Var = 0
+	pj.WtInit.Sym = false
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
 	pj.Learn.Momentum.On = false

@@ -5,6 +5,8 @@
 package bgate
 
 import (
+	"strings"
+
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -58,15 +60,21 @@ func (ly *VThalLayer) Defaults() {
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 4
 	ly.Act.Dt.GTau = 5 // 5 also works but less smooth RT dist
-	ly.Act.Gbar.L = 0.1
 	ly.Act.Init.Decay = 0
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
 		pj.Learn.Learn = false
+		pj.Learn.WtSig.Gain = 1
 		pj.WtInit.Mean = 0.9
 		pj.WtInit.Var = 0
+		pj.WtInit.Sym = false
+		if strings.HasSuffix(pj.Send.Name(), "GPi") {
+			pj.WtScale.Abs = 2.0
+		}
 	}
+
+	ly.UpdateParams()
 }
 
 // DALayer interface:
