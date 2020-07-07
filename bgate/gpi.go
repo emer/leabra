@@ -43,6 +43,8 @@ func (ly *GPiLayer) Defaults() {
 			pj.WtScale.Abs = 1
 		} else if _, ok := pj.Send.(*STNpLayer); ok { // STNpToGPi
 			pj.WtScale.Abs = 1
+		} else if _, ok := pj.Send.(*STNsLayer); ok { // STNsToGPi
+			pj.WtScale.Abs = 0.2
 		}
 	}
 

@@ -5,6 +5,8 @@
 package bgate
 
 import (
+	"strings"
+
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -201,6 +203,10 @@ func (ly *STNsLayer) Defaults() {
 		pj.WtInit.Mean = 0.9
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
+		pj.WtScale.Abs = 0.2                            // weaker inputs
+		if strings.HasSuffix(pj.Send.Name(), "GPeTA") { // GPeTAToSTNs
+			pj.WtScale.Abs = 0.7
+		}
 	}
 
 	ly.UpdateParams()

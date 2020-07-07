@@ -74,10 +74,10 @@ func (ly *GPLayer) Defaults() {
 				if ml.DaR == D1R {
 					pj.WtScale.Abs = .2 // .2 is lowest for effective WTA -- .1 allows more stripes to gate -- but lower is better for less complex dynamics.
 				} else { // MtxNoToGPeIn -- primary NoGo pathway
-					pj.WtScale.Abs = 1.5 // 2.5 orig -- 1.5 is about as low as you can go
+					pj.WtScale.Abs = 1 // was as high as 2.5
 				}
 			} else if _, ok := pj.Send.(*GPLayer); ok { // GPeOutToGPeIn
-				pj.WtScale.Abs = 1.5
+				pj.WtScale.Abs = 0.5
 			}
 			continue
 		}
