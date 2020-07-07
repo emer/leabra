@@ -22,10 +22,6 @@ var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 // Defaults in param.Sheet format
 // Sel: "VThalLayer", Desc: "defaults",
 // 	Params: params.Params{
-// 		"Layer.Act.Init.Vm":   "0.9",
-// 		"Layer.Act.Init.Act":  "0.5",
-// 		"Layer.Act.Erev.L":    "0.9",
-// 		"Layer.Act.Gbar.L":    "0.2", // 0.2 orig
 // 		"Layer.Inhib.Layer.On":     "false",
 // 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
@@ -45,10 +41,6 @@ func (ly *VThalLayer) Defaults() {
 	// Thal is tonically self-active and has no FFFB inhibition
 	// TODO: experiment with this
 
-	ly.Act.Init.Vm = 0.9
-	ly.Act.Init.Act = 0.5
-	ly.Act.Erev.L = 0.9
-	ly.Act.Gbar.L = 0.2
 	ly.Inhib.Layer.On = false
 	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true

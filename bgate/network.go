@@ -78,11 +78,20 @@ func (nt *Network) AddGPiLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int
 	return gpi
 }
 
-// AddSTNLayer adds a subthalamic nucleus Layer of given size, with given name.
+// AddSTNpLayer adds a subthalamic nucleus Layer of given size, with given name.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddSTNLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNLayer {
-	stn := &STNLayer{}
+func (nt *Network) AddSTNpLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNpLayer {
+	stn := &STNpLayer{}
+	nt.AddLayerInit(stn, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	return stn
+}
+
+// AddSTNsLayer adds a subthalamic nucleus Layer of given size, with given name.
+// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
+// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
+func (nt *Network) AddSTNsLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNsLayer {
+	stn := &STNsLayer{}
 	nt.AddLayerInit(stn, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
 	return stn
 }
@@ -96,18 +105,20 @@ func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	return vthal
 }
 
-// AddBG adds MtxGo, No, GPeOut, GPeIn, GPeTA, STN, GPi, and VThal layers, with given optional prefix.
+// AddBG adds MtxGo, No, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
+// with given optional prefix.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
 // using standard styles
-func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, gpeOut, gpeIn, gpeTA, stn, gpi, vthal leabra.LeabraLayer) {
+func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	gpi = nt.AddGPiLayer(prefix+"GPi", nPoolsY, nPoolsX, 1, 1)
 	vthal = nt.AddVThalLayer(prefix+"VThal", nPoolsY, nPoolsX, 1, 1)
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
 	gpeIn = nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
 	gpeTA = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
-	stn = nt.AddSTNLayer(prefix+"STN", nPoolsY, nPoolsX, 1, 1)
+	stnp = nt.AddSTNpLayer(prefix+"STNp", nPoolsY, nPoolsX, 1, 1)
+	stns = nt.AddSTNsLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
 
@@ -116,7 +127,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	gpeOut.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpi.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
 	gpeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeOut.Name(), YAlign: relpos.Front, Space: 2})
 	gpeTA.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeIn.Name(), YAlign: relpos.Front, Space: 2})
-	stn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name(), YAlign: relpos.Front, Space: 2})
+	stnp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name(), YAlign: relpos.Front, Space: 2})
+	stns.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: stnp.Name(), YAlign: relpos.Front, Space: 2})
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
 	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
@@ -133,25 +145,33 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 
 	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(gpeIn, stn, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
 
 	nt.ConnectLayersPrjn(gpeIn, gpi, one2one, emer.Inhib, &GPiPrjn{})
 	nt.ConnectLayersPrjn(mtxGo, gpi, one2one, emer.Inhib, &GPiPrjn{})
 
-	pj = nt.ConnectLayers(stn, gpeOut, one2one, emer.Forward)
-	pj.SetClass("FmSTN")
-	pj = nt.ConnectLayers(stn, gpeIn, one2one, emer.Forward)
-	pj.SetClass("FmSTN")
-	pj = nt.ConnectLayers(stn, gpeTA, one2one, emer.Forward)
-	pj.SetClass("FmSTN")
-	pj = nt.ConnectLayers(stn, gpi, one2one, emer.Forward)
-	pj.SetClass("FmSTN")
+	pj = nt.ConnectLayers(stnp, gpeOut, one2one, emer.Forward)
+	pj.SetClass("FmSTNp")
+	pj = nt.ConnectLayers(stnp, gpeIn, one2one, emer.Forward)
+	pj.SetClass("FmSTNp")
+	pj = nt.ConnectLayers(stnp, gpeTA, one2one, emer.Forward)
+	pj.SetClass("FmSTNp")
+	pj = nt.ConnectLayers(stnp, gpi, one2one, emer.Forward)
+	pj.SetClass("FmSTNp")
+
+	pj = nt.ConnectLayers(stns, gpi, one2one, emer.Forward)
+	pj.SetClass("FmSTNs")
 
 	pj = nt.ConnectLayers(gpeTA, mtxGo, one2one, emer.Inhib)
 	pj.SetClass("FmGPeTA")
-	pj = nt.ConnectLayers(gpeTA, mtxNo, one2one, emer.Inhib)
-	pj.SetClass("FmGPeTA")
+	// pj = nt.ConnectLayers(gpeTA, mtxNo, one2one, emer.Inhib)
+	// pj.SetClass("FmGPeTA")
+
+	pj = nt.ConnectLayers(gpeIn, mtxGo, one2one, emer.Inhib)
+	pj.SetClass("GPeInToMtx")
+	// pj = nt.ConnectLayers(gpeIn, mtxNo, one2one, emer.Inhib)
+	// pj.SetClass("GPeInToMtx")
 
 	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")

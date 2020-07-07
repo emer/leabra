@@ -26,7 +26,7 @@ var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
 // 	Params: params.Params{
 // 		"Layer.Act.Init.Vm":   "0.9",
 // 		"Layer.Act.Init.Act":  "0.5",
-// 		"Layer.Act.Erev.L":    "0.9",
+// 		"Layer.Act.Erev.L":    "0.8",
 // 		"Layer.Act.Gbar.L":    "0.3", // 0.2 orig
 // 		"Layer.Inhib.Layer.On":     "false",
 // 		"Layer.Inhib.ActAvg.Init":  "0.25",
@@ -48,8 +48,8 @@ func (ly *GPLayer) Defaults() {
 
 	ly.Act.Init.Vm = 0.9
 	ly.Act.Init.Act = 0.5
-	ly.Act.Erev.L = 0.9
-	ly.Act.Gbar.L = 0.3 // 0.2 def, making everything "stiffer" to clamp down on oscillations
+	ly.Act.Erev.L = 0.8
+	ly.Act.Gbar.L = 0.3
 	ly.Inhib.Layer.On = false
 	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
@@ -88,17 +88,17 @@ func (ly *GPLayer) Defaults() {
 
 		if _, ok := pj.Send.(*MatrixLayer); ok {
 			pj.WtScale.Abs = 0.5
-		} else if _, ok := pj.Send.(*STNLayer); ok {
+		} else if _, ok := pj.Send.(*STNpLayer); ok {
 			pj.WtScale.Abs = 0.1 // 0.1 orig
 		}
 
 		switch {
 		case strings.HasSuffix(ly.Nm, "GPeOut"):
 			if _, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPeOut
-				pj.WtScale.Abs = 0.5
+				pj.WtScale.Abs = 0.5 // Go firing threshold
 			}
 		case strings.HasSuffix(ly.Nm, "GPeIn"):
-			if _, ok := pj.Send.(*STNLayer); ok { // STNToGPeIn
+			if _, ok := pj.Send.(*STNpLayer); ok { // STNToGPeIn
 				pj.WtScale.Abs = 0.5 // todo: 0.1 default
 			}
 		case strings.HasSuffix(ly.Nm, "GPeTA"):

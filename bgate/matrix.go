@@ -5,6 +5,8 @@
 package bgate
 
 import (
+	"strings"
+
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -74,13 +76,16 @@ func (ly *MatrixLayer) Defaults() {
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
-		if _, ok := pj.Send.(*GPLayer); ok { // From GPeTA
+		if _, ok := pj.Send.(*GPLayer); ok { // From GPe TA or In
 			pj.WtScale.Abs = 3
 			pj.Learn.Learn = false
 			pj.Learn.WtSig.Gain = 1
 			pj.WtInit.Mean = 0.9
 			pj.WtInit.Var = 0
 			pj.WtInit.Sym = false
+			if strings.HasSuffix(pj.Send.Name(), "GPeIn") {
+				pj.WtScale.Abs = 1 // weaker
+			}
 		}
 	}
 

@@ -26,8 +26,8 @@ func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GateThr = 0.2
 
-	ly.Act.Dt.GTau = 10 // slower to integrate everything
-	ly.Act.Gbar.L = 0.3 // stronger than .2 default
+	// no longer with STNs
+	// ly.Act.Dt.GTau = 10 // slower to integrate everything
 
 	// note: GPLayer took care of STN input prjns
 
@@ -37,12 +37,12 @@ func (ly *GPiLayer) Defaults() {
 		pj.WtInit.Mean = 0.5
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
-		if _, ok := pj.Send.(*MatrixLayer); ok {
-			pj.WtScale.Abs = 0.2
-		} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeIn
-			pj.WtScale.Abs = 1.8
-		} else if _, ok := pj.Send.(*STNLayer); ok {
-			pj.WtScale.Abs = 1 // todo: 1 in orig, 0.5 for GPeIn, 0.1 in others
+		if _, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPi
+			pj.WtScale.Abs = 1
+		} else if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPi
+			pj.WtScale.Abs = 1
+		} else if _, ok := pj.Send.(*STNpLayer); ok { // STNpToGPi
+			pj.WtScale.Abs = 1
 		}
 	}
 
