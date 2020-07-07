@@ -27,7 +27,7 @@ var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
 // 		"Layer.Act.Init.Vm":   "0.9",
 // 		"Layer.Act.Init.Act":  "0.5",
 // 		"Layer.Act.Erev.L":    "0.9",
-// 		"Layer.Act.Gbar.L":    "0.2", // stronger here makes them more robust to inputs -- .2 is best
+// 		"Layer.Act.Gbar.L":    "0.3", // 0.2 orig
 // 		"Layer.Inhib.Layer.On":     "false",
 // 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
@@ -35,9 +35,8 @@ var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
 // 		"Layer.Inhib.Self.Gi":      "0.4",
 // 		"Layer.Inhib.Self.Tau":     "3.0",
 // 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
-// 		"Layer.Act.Dt.VmTau":       "4",
-// 		"Layer.Act.Dt.GTau":        "5", // 5 also works but less smooth RT dist
-// 		"Layer.Act.Gbar.L":         "0.1",
+// 		"Layer.Act.Dt.VmTau":       "3.3",
+// 		"Layer.Act.Dt.GTau":        "3", // 5 orig
 // 		"Layer.Act.Init.Decay":     "0",
 // }}
 
@@ -50,7 +49,7 @@ func (ly *GPLayer) Defaults() {
 	ly.Act.Init.Vm = 0.9
 	ly.Act.Init.Act = 0.5
 	ly.Act.Erev.L = 0.9
-	ly.Act.Gbar.L = 0.2
+	ly.Act.Gbar.L = 0.3 // 0.2 def, making everything "stiffer" to clamp down on oscillations
 	ly.Inhib.Layer.On = false
 	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
@@ -58,9 +57,9 @@ func (ly *GPLayer) Defaults() {
 	ly.Inhib.ActAvg.Init = 0.25
 	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.Self.Tau = 3.0
-	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
-	ly.Act.Dt.VmTau = 4
-	ly.Act.Dt.GTau = 5 // could be slower
+	ly.Act.XX1.Gain = 20  // more graded -- still works with 40 but less Rt distrib
+	ly.Act.Dt.VmTau = 3.3 // fastest
+	ly.Act.Dt.GTau = 3
 	ly.Act.Init.Decay = 0
 
 	for _, pjii := range ly.RcvPrjns {
@@ -71,13 +70,13 @@ func (ly *GPLayer) Defaults() {
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
 		if _, ok := pji.(*GPeInPrjn); ok {
-			if ml, ok := pj.Send.(*MatrixLayer); ok {
+			if ml, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPeIn is key off-beam WTA pathway
 				if ml.DaR == D1R {
-					pj.WtScale.Abs = 1 // note: had rel = 0.3 in orig
-				} else {
-					pj.WtScale.Abs = 2.5 // todo: lower?
+					pj.WtScale.Abs = .2 // .2 is lowest for effective WTA -- .1 allows more stripes to gate -- but lower is better for less complex dynamics.
+				} else { // MtxNoToGPeIn -- primary NoGo pathway
+					pj.WtScale.Abs = 1.5 // 2.5 orig -- 1.5 is about as low as you can go
 				}
-			} else if _, ok := pj.Send.(*GPLayer); ok { // from GPeOut
+			} else if _, ok := pj.Send.(*GPLayer); ok { // GPeOutToGPeIn
 				pj.WtScale.Abs = 1.5
 			}
 			continue
@@ -95,17 +94,15 @@ func (ly *GPLayer) Defaults() {
 
 		switch {
 		case strings.HasSuffix(ly.Nm, "GPeOut"):
-			if _, ok := pj.Send.(*MatrixLayer); ok {
+			if _, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPeOut
 				pj.WtScale.Abs = 0.5
-			} else if _, ok := pj.Send.(*GPiLayer); ok {
-				pj.WtScale.Abs = 1.8
 			}
 		case strings.HasSuffix(ly.Nm, "GPeIn"):
-			if _, ok := pj.Send.(*STNLayer); ok {
+			if _, ok := pj.Send.(*STNLayer); ok { // STNToGPeIn
 				pj.WtScale.Abs = 0.5 // todo: 0.1 default
 			}
 		case strings.HasSuffix(ly.Nm, "GPeTA"):
-			if _, ok := pj.Send.(*GPLayer); ok {
+			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPeTA
 				pj.WtScale.Abs = 1 // 1 by default
 			}
 		}

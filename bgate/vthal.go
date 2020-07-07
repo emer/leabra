@@ -25,7 +25,7 @@ var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 // 		"Layer.Act.Init.Vm":   "0.9",
 // 		"Layer.Act.Init.Act":  "0.5",
 // 		"Layer.Act.Erev.L":    "0.9",
-// 		"Layer.Act.Gbar.L":    "0.2", // stronger here makes them more robust to inputs -- .2 is best
+// 		"Layer.Act.Gbar.L":    "0.2", // 0.2 orig
 // 		"Layer.Inhib.Layer.On":     "false",
 // 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
@@ -33,9 +33,8 @@ var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 // 		"Layer.Inhib.Self.Gi":      "0.4",
 // 		"Layer.Inhib.Self.Tau":     "3.0",
 // 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
-// 		"Layer.Act.Dt.VmTau":       "4",
-// 		"Layer.Act.Dt.GTau":        "5", // 5 also works but less smooth RT dist
-// 		"Layer.Act.Gbar.L":         "0.1",
+// 		"Layer.Act.Dt.VmTau":       "3.3",
+// 		"Layer.Act.Dt.GTau":        "3", // fastest
 // 		"Layer.Act.Init.Decay":     "0",
 // }}
 
@@ -58,8 +57,8 @@ func (ly *VThalLayer) Defaults() {
 	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.Self.Tau = 3.0
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
-	ly.Act.Dt.VmTau = 4
-	ly.Act.Dt.GTau = 5 // 5 also works but less smooth RT dist
+	ly.Act.Dt.VmTau = 3.3
+	ly.Act.Dt.GTau = 3 // fastest
 	ly.Act.Init.Decay = 0
 
 	for _, pji := range ly.RcvPrjns {

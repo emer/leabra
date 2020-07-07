@@ -46,9 +46,8 @@ var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 // 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
 // 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
-// 		"Layer.Act.Dt.VmTau":       "4",
-// 		"Layer.Act.Dt.GTau":        "5", // 5 also works but less smooth RT dist
-// 		"Layer.Act.Gbar.L":         "0.1",
+// 		"Layer.Act.Dt.VmTau":       "3.3",
+// 		"Layer.Act.Dt.GTau":        "3",
 // 		"Layer.Act.Init.Decay":     "0",
 // 	}}
 
@@ -65,9 +64,9 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Inhib.Self.Gi = 0.3 // 0.6 in localist one
 	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.ActAvg.Init = 0.25
-	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
-	ly.Act.Dt.VmTau = 4
-	ly.Act.Dt.GTau = 5 // could be slower
+	ly.Act.XX1.Gain = 20  // more graded -- still works with 40 but less Rt distrib
+	ly.Act.Dt.VmTau = 3.3 // fastest
+	ly.Act.Dt.GTau = 3
 	ly.Act.Init.Decay = 0
 
 	// todo: important -- need to adjust wt scale of some PFC inputs vs others:

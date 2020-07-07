@@ -26,6 +26,7 @@ func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GateThr = 0.2
 
+	ly.Act.Dt.GTau = 10 // slower to integrate everything
 	ly.Act.Gbar.L = 0.3 // stronger than .2 default
 
 	// note: GPLayer took care of STN input prjns

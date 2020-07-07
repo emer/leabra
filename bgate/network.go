@@ -64,6 +64,7 @@ func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer
 func (nt *Network) AddGPeLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPLayer {
 	gp := &GPLayer{}
 	nt.AddLayerInit(gp, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	gp.SetClass("GP")
 	return gp
 }
 
@@ -73,6 +74,7 @@ func (nt *Network) AddGPeLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int
 func (nt *Network) AddGPiLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPiLayer {
 	gpi := &GPiLayer{}
 	nt.AddLayerInit(gpi, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	gpi.SetClass("GP")
 	return gpi
 }
 
