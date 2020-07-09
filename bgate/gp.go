@@ -88,7 +88,7 @@ func (ly *GPLayer) Defaults() {
 
 		if _, ok := pj.Send.(*MatrixLayer); ok {
 			pj.WtScale.Abs = 0.5
-		} else if _, ok := pj.Send.(*STNpLayer); ok {
+		} else if _, ok := pj.Send.(*STNLayer); ok {
 			pj.WtScale.Abs = 0.1 // 0.1 orig
 		}
 
@@ -98,7 +98,7 @@ func (ly *GPLayer) Defaults() {
 				pj.WtScale.Abs = 0.5 // Go firing threshold
 			}
 		case strings.HasSuffix(ly.Nm, "GPeIn"):
-			if _, ok := pj.Send.(*STNpLayer); ok { // STNToGPeIn
+			if _, ok := pj.Send.(*STNLayer); ok { // STNToGPeIn
 				pj.WtScale.Abs = 0.5 // todo: 0.1 default
 			}
 		case strings.HasSuffix(ly.Nm, "GPeTA"):

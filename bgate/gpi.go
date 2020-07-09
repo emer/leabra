@@ -5,6 +5,8 @@
 package bgate
 
 import (
+	"strings"
+
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -41,9 +43,9 @@ func (ly *GPiLayer) Defaults() {
 			pj.WtScale.Abs = 1
 		} else if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPi
 			pj.WtScale.Abs = 1
-		} else if _, ok := pj.Send.(*STNpLayer); ok { // STNpToGPi
+		} else if strings.HasSuffix(pj.Send.Name(), "STNp") { // STNpToGPi
 			pj.WtScale.Abs = 1
-		} else if _, ok := pj.Send.(*STNsLayer); ok { // STNsToGPi
+		} else if strings.HasSuffix(pj.Send.Name(), "STNs") { // STNsToGPi
 			pj.WtScale.Abs = 0.2
 		}
 	}

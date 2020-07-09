@@ -78,20 +78,11 @@ func (nt *Network) AddGPiLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int
 	return gpi
 }
 
-// AddSTNpLayer adds a subthalamic nucleus Layer of given size, with given name.
+// AddSTNLayer adds a subthalamic nucleus Layer of given size, with given name.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddSTNpLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNpLayer {
-	stn := &STNpLayer{}
-	nt.AddLayerInit(stn, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
-	return stn
-}
-
-// AddSTNsLayer adds a subthalamic nucleus Layer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddSTNsLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNsLayer {
-	stn := &STNsLayer{}
+func (nt *Network) AddSTNLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNLayer {
+	stn := &STNLayer{}
 	nt.AddLayerInit(stn, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
 	return stn
 }
@@ -117,8 +108,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
 	gpeIn = nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
 	gpeTA = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
-	stnp = nt.AddSTNpLayer(prefix+"STNp", nPoolsY, nPoolsX, 1, 1)
-	stns = nt.AddSTNsLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
+	stnp = nt.AddSTNLayer(prefix+"STNp", nPoolsY, nPoolsX, 1, 1)
+	stns = nt.AddSTNLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
 
