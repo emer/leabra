@@ -25,8 +25,8 @@ type PrjnStru struct {
 	Off         bool            `desc:"inactivate this projection -- allows for easy experimentation"`
 	Cls         string          `desc:"Class is for applying parameter styles, can be space separated multple tags"`
 	Notes       string          `desc:"can record notes about this projection here"`
-	Recv        emer.Layer      `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
 	Send        emer.Layer      `desc:"sending layer for this projection"`
+	Recv        emer.Layer      `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
 	Pat         prjn.Pattern    `desc:"pattern of connectivity"`
 	Typ         emer.PrjnType   `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
 	RConN       []int32         `view:"-" desc:"number of recv connections for each neuron in the receiving layer, as a flat list"`

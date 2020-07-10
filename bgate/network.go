@@ -132,12 +132,15 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 
 	nt.ConnectLayersPrjn(mtxNo, gpeIn, one2one, emer.Inhib, &GPeInPrjn{})
 	nt.ConnectLayersPrjn(gpeOut, gpeIn, one2one, emer.Inhib, &GPeInPrjn{})
-	nt.ConnectLayersPrjn(mtxGo, gpeIn, full, emer.Inhib, &GPeInPrjn{}) // full = all but self..
 
 	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
 	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
+
+	// note: this projection exists in bio, but does weird things with Ca dynamics in STNs..
+	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
+	// pj.SetClass("BgFixed")
 
 	nt.ConnectLayersPrjn(gpeIn, gpi, one2one, emer.Inhib, &GPiPrjn{})
 	nt.ConnectLayersPrjn(mtxGo, gpi, one2one, emer.Inhib, &GPiPrjn{})
@@ -146,24 +149,23 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	pj.SetClass("FmSTNp")
 	pj = nt.ConnectLayers(stnp, gpeIn, one2one, emer.Forward)
 	pj.SetClass("FmSTNp")
-	pj = nt.ConnectLayers(stnp, gpeTA, one2one, emer.Forward)
+	pj = nt.ConnectLayers(stnp, gpeTA, full, emer.Forward)
 	pj.SetClass("FmSTNp")
 	pj = nt.ConnectLayers(stnp, gpi, one2one, emer.Forward)
 	pj.SetClass("FmSTNp")
 
-	pj = nt.ConnectLayers(stns, gpi, full, emer.Forward)
+	pj = nt.ConnectLayers(stns, gpi, one2one, emer.Forward)
 	pj.SetClass("FmSTNs")
 
-	pj = nt.ConnectLayers(gpeTA, mtxGo, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxGo, full, emer.Inhib)
 	pj.SetClass("FmGPeTA")
-	// pj = nt.ConnectLayers(gpeTA, mtxNo, one2one, emer.Inhib)
-	// pj.SetClass("FmGPeTA")
-	pj = nt.ConnectLayers(gpeTA, stns, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxNo, full, emer.Inhib)
+	pj.SetClass("FmGPeTA")
 
 	pj = nt.ConnectLayers(gpeIn, mtxGo, one2one, emer.Inhib)
 	pj.SetClass("GPeInToMtx")
-	// pj = nt.ConnectLayers(gpeIn, mtxNo, one2one, emer.Inhib)
-	// pj.SetClass("GPeInToMtx")
+	pj = nt.ConnectLayers(gpeIn, mtxNo, one2one, emer.Inhib)
+	pj.SetClass("GPeInToMtx")
 
 	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")

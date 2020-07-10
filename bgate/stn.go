@@ -28,8 +28,8 @@ type CaParams struct {
 	BurstThr float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
 	ActThr   float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
 	BurstCa  float32 `desc:"Ca level for burst level activation"`
-	ActCa    float32 `desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
-	GbarKCa  float32 `desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
+	ActCa    float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
+	GbarKCa  float32 `def:"20" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
 	KCaTau   float32 `def:"40" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006"`
 	CaTau    float32 `def:"185.7" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006"`
 }
@@ -38,7 +38,7 @@ func (kc *CaParams) Defaults() {
 	kc.BurstThr = 0.9
 	kc.ActThr = 0.7
 	kc.BurstCa = 200
-	kc.ActCa = 0.1
+	kc.ActCa = 0.2
 	kc.GbarKCa = 20
 	kc.KCaTau = 40
 	kc.CaTau = 185.7
@@ -118,9 +118,10 @@ func (ly *STNLayer) Defaults() {
 				pj.WtScale.Abs = 0.1
 			}
 		} else { // STNs
-			pj.WtScale.Abs = 0.2                            // weaker inputs
-			if strings.HasSuffix(pj.Send.Name(), "GPeTA") { // GPeTAToSTNs
-				pj.WtScale.Abs = 0.7
+			if _, ok := pj.Send.(*GPLayer); ok { // GPeIn -- others are PFC, 1.5 in orig
+				pj.WtScale.Abs = 0.1
+			} else {
+				pj.WtScale.Abs = 0.2 // weaker inputs
 			}
 		}
 	}
