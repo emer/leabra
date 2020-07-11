@@ -11,6 +11,9 @@ import (
 	"github.com/emer/leabra/leabra"
 )
 
+// NOTE: rl layers are designed to be "mix-ins" with other networks so there is no
+// RL network type -- just routines to add layers of different types.
+
 // AddClampDaLayer adds a ClampDaLayer of given name
 func AddClampDaLayer(nt *leabra.Network, name string) *ClampDaLayer {
 	da := &ClampDaLayer{}

@@ -193,10 +193,7 @@ func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
 // then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
 func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int, prjnType string) error {
-	vidx, err := SynapseVarByName(varNm)
-	if err != nil {
-		return err
-	}
+	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
@@ -222,12 +219,8 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 	if pj == nil {
 		return err
 	}
-	lpj := pj.(LeabraPrjn).AsLeabra()
 	for ri := range ly.Neurons {
-		sy := lpj.Syn(sendIdx1D, ri)
-		if sy != nil {
-			(*vals)[ri] = sy.VarByIndex(vidx)
-		}
+		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
 }
@@ -243,10 +236,7 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 // then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
 func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int, prjnType string) error {
-	vidx, err := SynapseVarByName(varNm)
-	if err != nil {
-		return err
-	}
+	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
@@ -272,12 +262,8 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 	if pj == nil {
 		return err
 	}
-	lpj := pj.(LeabraPrjn).AsLeabra()
 	for si := range ly.Neurons {
-		sy := lpj.Syn(si, recvIdx1D)
-		if sy != nil {
-			(*vals)[si] = sy.VarByIndex(vidx)
-		}
+		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
 	}
 	return nil
 }

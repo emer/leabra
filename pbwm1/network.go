@@ -43,6 +43,26 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
+// UnitVarNames returns a list of variable names available on the units in this layer
+func (nt *Network) UnitVarNames() []string {
+	return ModNeuronVarsAll
+}
+
+// SynVarsAll is the pbwm collection of all synapse-level vars (includes TraceSynVars)
+var SynVarsAll []string
+
+func init() {
+	ln := len(leabra.SynapseVars)
+	SynVarsAll = make([]string, len(TraceSynVars)+ln)
+	copy(SynVarsAll, leabra.SynapseVars)
+	copy(SynVarsAll[ln:], TraceSynVars)
+}
+
+// SynVarNames returns the names of all the variables on the synapses in this network.
+func (nt *Network) SynVarNames() []string {
+	return SynVarsAll
+}
+
 // AddMatrixLayer adds a MatrixLayer of given size, with given name.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)

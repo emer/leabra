@@ -31,6 +31,7 @@ type MatrixLayer struct {
 	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
 	DA     float32      `inactive:"+" desc:"dopamine value for this layer"`
 	DALrn  float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+	ACh    float32      `inactive:"+" desc:"acetylcholine value from TAN tonically active neurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
 }
 
 var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
@@ -103,6 +104,11 @@ func (ly *MatrixLayer) Defaults() {
 func (ly *MatrixLayer) GetDA() float32   { return ly.DA }
 func (ly *MatrixLayer) SetDA(da float32) { ly.DA = da }
 
+// AChLayer interface:
+
+func (ly *MatrixLayer) GetACh() float32    { return ly.ACh }
+func (ly *MatrixLayer) SetACh(ach float32) { ly.ACh = ach }
+
 // DALrnFmDA returns effective learning dopamine value from given raw DA value
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
 func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
@@ -132,6 +138,8 @@ func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 func (ly *MatrixLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.DA = 0
+	ly.DALrn = 0
+	ly.ACh = 0
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances

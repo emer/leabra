@@ -103,9 +103,10 @@ func (pj *Prjn) SynVals(vals *[]float32, varNm string) error {
 	return nil
 }
 
-// Syn returns the synapse between given send, recv unit indexes (1D, flat indexes).
-// Returns nil for access errors (see SynTry for version that returns errors).
-func (pj *Prjn) Syn(sidx, ridx int) *Synapse {
+// SynIdx returns the index of the synapse between given send, recv unit indexes
+// (1D, flat indexes). Returns -1 if synapse not found between these two neurons.
+// Requires searching within connections for receiving unit.
+func (pj *Prjn) SynIdx(sidx, ridx int) int {
 	nc := int(pj.RConN[ridx])
 	st := int(pj.RConIdxSt[ridx])
 	for ci := 0; ci < nc; ci++ {
@@ -114,10 +115,20 @@ func (pj *Prjn) Syn(sidx, ridx int) *Synapse {
 			continue
 		}
 		rsi := pj.RSynIdx[st+ci]
-		sy := &pj.Syns[rsi]
-		return sy
+		return int(rsi)
 	}
-	return nil
+	return -1
+}
+
+// Syn returns the synapse between given send, recv unit indexes (1D, flat indexes).
+// Returns nil for access errors (see SynTry for version that returns errors).
+// Requires searching within connections for receiving unit.
+func (pj *Prjn) Syn(sidx, ridx int) *Synapse {
+	rsi := pj.SynIdx(sidx, ridx)
+	if rsi < 0 {
+		return nil
+	}
+	return &pj.Syns[rsi]
 }
 
 // SynTry returns the synapse between given send, recv unit indexes (1D, flat indexes).
@@ -133,18 +144,11 @@ func (pj *Prjn) SynTry(sidx, ridx int) (*Synapse, error) {
 	if sidx >= ns {
 		return nil, fmt.Errorf("Prjn.SynVal: send unit index %v is > size of send layer: %v", sidx, ns)
 	}
-	nc := int(pj.RConN[ridx])
-	st := int(pj.RConIdxSt[ridx])
-	for ci := 0; ci < nc; ci++ {
-		si := int(pj.RConIdx[st+ci])
-		if si != sidx {
-			continue
-		}
-		rsi := pj.RSynIdx[st+ci]
-		sy := &pj.Syns[rsi]
-		return sy, nil
+	rsi := pj.SynIdx(sidx, ridx)
+	if rsi < 0 {
+		return nil, fmt.Errorf("Prjn.SynTry: recv unit index %v does not recv from send unit index %v", ridx, sidx)
 	}
-	return nil, fmt.Errorf("Prjn.SynTry: recv unit index %v does not recv from send unit index %v", ridx, sidx)
+	return &pj.Syns[rsi], nil
 }
 
 // SynVal returns value of given variable name on the synapse

@@ -42,6 +42,11 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
+// UnitVarNames returns a list of variable names available on the units in this layer
+func (nt *Network) UnitVarNames() []string {
+	return NeuronVarsAll
+}
+
 // AddInputPulv2D adds an input and corresponding Pulvinar (P suffix) layer
 // with BurstTRC one-to-one projection from Input to Pulvinar.
 // Pulvinar is placed Behind Input.

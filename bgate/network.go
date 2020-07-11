@@ -43,6 +43,13 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
+// AddTANLayer adds a TANLayer, with a single neuron.
+func (nt *Network) AddTANLayer(name string) *TANLayer {
+	tan := &TANLayer{}
+	nt.AddLayerInit(tan, name, []int{1, 1}, emer.Hidden)
+	return tan
+}
+
 // AddMatrixLayer adds a MatrixLayer of given size, with given name.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // da gives the DaReceptor type (D1R = Go, D2R = NoGo)

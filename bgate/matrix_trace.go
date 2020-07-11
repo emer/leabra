@@ -6,8 +6,8 @@ package bgate
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // TraceSyn holds extra synaptic state for trace projections
@@ -18,19 +18,21 @@ type TraceSyn struct {
 
 var TraceSynVars = []string{"NTr", "Tr"}
 
-// Params for for trace-based learning in the MatrixTracePrjn
+// Params for for trace-based learning in the MatrixTracePrjn.
+// A trace of synaptic co-activity is formed, and then modulated by dopamine
+// whenever it occurs.  This bridges the temporal gap between gating activity
+// and subsequent activity, and is based biologically on synaptic tags.
+// Trace is reset at time of reward based on ACh level from TANs.
 type TraceParams struct {
-	NotGatedLR    float32 `def:"0.7" min:"0" desc:"learning rate for all not-gated stripes, which learn in the opposite direction to the gated stripes, and typically with a slightly lower learning rate -- although there are different learning logics associated with each of these different not-gated cases, in practice the same learning rate for all works best, and is simplest"`
-	GateNoGoPosLR float32 `def:"0.1" min:"0" desc:"learning rate for gated, NoGo (D2), positive dopamine (weights decrease) -- this is the single most important learning parameter here -- by making this relatively small (but non-zero), an asymmetry in the role of Go vs. NoGo is established, whereby the NoGo pathway focuses largely on punishing and preventing actions associated with negative outcomes, while those assoicated with positive outcomes only very slowly get relief from this NoGo pressure -- this is critical for causing the model to explore other possible actions even when a given action SOMETIMES produces good results -- NoGo demands a very high, consistent level of good outcomes in order to have a net decrease in these avoidance weights.  Note that the gating signal applies to both Go and NoGo MSN's for gated stripes, ensuring learning is about the action that was actually selected (see not_ cases for logic for actions that were close but not taken)"`
-	Deriv         bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
-	Decay         float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+	CurTrlDA bool    `def:"false" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
+	Deriv    bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+	Decay    float32 `def:"2" min:"0" desc:"multiplier on TAN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
 }
 
 func (tp *TraceParams) Defaults() {
-	tp.NotGatedLR = 0.7
-	tp.GateNoGoPosLR = 0.1
+	tp.CurTrlDA = false
 	tp.Deriv = true
-	tp.Decay = 1
+	tp.Decay = 2
 }
 
 // LrnFactor resturns multiplicative factor for level of msn activation.  If Deriv
@@ -43,24 +45,13 @@ func (tp *TraceParams) LrnFactor(act float32) float32 {
 	return 2 * act * (1 - act)
 }
 
-// LrateMod returns the learning rate modulator based on gating, d2r, and posDa factors
-func (tp *TraceParams) LrateMod(gated, d2r, posDa bool) float32 {
-	if !gated {
-		return tp.NotGatedLR
-	}
-	if d2r && posDa {
-		return tp.GateNoGoPosLR
-	}
-	return 1
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  MatrixTracePrjn
 
 // MatrixTracePrjn does dopamine-modulated, gated trace learning, for Matrix learning
 // in PBWM context
 type MatrixTracePrjn struct {
-	deep.Prjn
+	leabra.Prjn
 	Trace  TraceParams `view:"inline" desc:"special parameters for matrix trace learning"`
 	TrSyns []TraceSyn  `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 }
@@ -103,8 +94,10 @@ func (pj *MatrixTracePrjn) DWt() {
 	rlay := pj.Recv.(*MatrixLayer)
 
 	da := rlay.DA
-	daLrn := rlay.DALrn
-	d2r := (rlay.DaR == D2R)
+	daLrn := rlay.DALrn // includes d2 reversal etc
+
+	ach := rlay.ACh
+	dk := mat32.Min(1, ach*pj.Trace.Decay)
 
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
@@ -121,37 +114,22 @@ func (pj *MatrixTracePrjn) DWt() {
 			rn := &rlay.Neurons[ri]
 
 			tr := trsy.Tr
-			rAct := rn.Act
 
-			_ = rAct
-
+			ntr := pj.Trace.LrnFactor(rn.Act) * sn.Act
 			dwt := float32(0)
+
+			if pj.Trace.CurTrlDA {
+				tr += ntr
+			}
+
 			if da != 0 {
 				dwt = daLrn * tr
-				if d2r && da > 0 && tr < 0 {
-					dwt *= pj.Trace.GateNoGoPosLR
-				}
 			}
+			tr -= dk * tr // decay trace that drove dwt
 
-			newNTr := pj.Trace.LrnFactor(rn.Act) * sn.Act
-			ntr := float32(0)
-
-			_ = newNTr
-
-			// todo: in this model, Mtx is fully inhibited to 0 when not gated
-			// so just use activation directly -- need to figure out logic.
-
-			// if gateAct > 0 { // gated
-			// 	ntr = newNTr
-			// } else { // not-gated
-			// 	ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
-			// }
-
-			decay := pj.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
-			if decay > 1 {
-				decay = 1
+			if !pj.Trace.CurTrlDA {
+				tr += ntr
 			}
-			tr += ntr - decay*tr
 			trsy.Tr = tr
 			trsy.NTr = ntr
 
@@ -185,3 +163,12 @@ func (pj *MatrixTracePrjn) DWt() {
 		}
 	}
 }
+
+// todo: in this model, Mtx is fully inhibited to 0 when not gated
+// so just use activation directly -- need to figure out logic.
+
+// if gateAct > 0 { // gated
+// 	ntr = newNTr
+// } else { // not-gated
+// 	ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
+// }

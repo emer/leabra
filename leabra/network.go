@@ -47,6 +47,32 @@ func (nt *Network) UpdateParams() {
 	}
 }
 
+// UnitVarNames returns a list of variable names available on the units in this network.
+// Not all layers need to support all variables, but must safely return 0's for
+// unsupported ones.  The order of this list determines NetView variable display order.
+// This is typically a global list so do not modify!
+func (nt *Network) UnitVarNames() []string {
+	return NeuronVars
+}
+
+// UnitVarProps returns properties for variables
+func (nt *Network) UnitVarProps() map[string]string {
+	return NeuronVarProps
+}
+
+// SynVarNames returns the names of all the variables on the synapses in this network.
+// Not all projections need to support all variables, but must safely return 0's for
+// unsupported ones.  The order of this list determines NetView variable display order.
+// This is typically a global list so do not modify!
+func (nt *Network) SynVarNames() []string {
+	return SynapseVars
+}
+
+// SynVarProps returns properties for variables
+func (nt *Network) SynVarProps() map[string]string {
+	return SynapseVarProps
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Primary Algorithmic interface.
 //
