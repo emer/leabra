@@ -40,9 +40,9 @@ func (ly *GPiLayer) Defaults() {
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
 		if _, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPi
-			pj.WtScale.Abs = 1
+			pj.WtScale.Abs = 0.8 // slightly weaker than GPeIn
 		} else if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPi
-			pj.WtScale.Abs = 1
+			pj.WtScale.Abs = 1 // stronger because integrated signal, also act can be weaker
 		} else if strings.HasSuffix(pj.Send.Name(), "STNp") { // STNpToGPi
 			pj.WtScale.Abs = 1
 		} else if strings.HasSuffix(pj.Send.Name(), "STNs") { // STNsToGPi

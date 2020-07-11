@@ -83,8 +83,14 @@ func (ly *MatrixLayer) Defaults() {
 			pj.WtInit.Mean = 0.9
 			pj.WtInit.Var = 0
 			pj.WtInit.Sym = false
-			if strings.HasSuffix(pj.Send.Name(), "GPeIn") {
-				pj.WtScale.Abs = 1 // weaker
+			if strings.HasSuffix(pj.Send.Name(), "GPeIn") { // GPeInToMtx
+				pj.WtScale.Abs = 0.3 // counterbalance for GPeTA to reduce oscillations
+			} else if strings.HasSuffix(pj.Send.Name(), "GPeTA") { // GPeTAToMtx
+				if strings.HasSuffix(ly.Nm, "MtxGo") {
+					pj.WtScale.Abs = 0.8
+				} else {
+					pj.WtScale.Abs = 0.3 // GPeTAToMtxNo must be weaker to prevent oscillations, even with GPeIn offset
+				}
 			}
 		}
 	}

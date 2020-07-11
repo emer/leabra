@@ -158,13 +158,13 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	pj.SetClass("FmSTNs")
 
 	pj = nt.ConnectLayers(gpeTA, mtxGo, full, emer.Inhib)
-	pj.SetClass("FmGPeTA")
+	pj.SetClass("GPeTAToMtx")
 	pj = nt.ConnectLayers(gpeTA, mtxNo, full, emer.Inhib)
-	pj.SetClass("FmGPeTA")
+	pj.SetClass("GPeTAToMtx")
 
-	pj = nt.ConnectLayers(gpeIn, mtxGo, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxGo, full, emer.Inhib)
 	pj.SetClass("GPeInToMtx")
-	pj = nt.ConnectLayers(gpeIn, mtxNo, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxNo, full, emer.Inhib)
 	pj.SetClass("GPeInToMtx")
 
 	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)

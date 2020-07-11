@@ -70,12 +70,8 @@ func (ly *GPLayer) Defaults() {
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
 		if _, ok := pji.(*GPeInPrjn); ok {
-			if ml, ok := pj.Send.(*MatrixLayer); ok { // MtxGoToGPeIn is key off-beam WTA pathway
-				if ml.DaR == D1R {
-					pj.WtScale.Abs = .2 // .2 is lowest for effective WTA -- .1 allows more stripes to gate -- but lower is better for less complex dynamics.
-				} else { // MtxNoToGPeIn -- primary NoGo pathway
-					pj.WtScale.Abs = 1 // was as high as 2.5
-				}
+			if _, ok := pj.Send.(*MatrixLayer); ok { // MtxNoToGPeIn -- primary NoGo pathway
+				pj.WtScale.Abs = 1
 			} else if _, ok := pj.Send.(*GPLayer); ok { // GPeOutToGPeIn
 				pj.WtScale.Abs = 0.5
 			}
@@ -89,7 +85,7 @@ func (ly *GPLayer) Defaults() {
 		if _, ok := pj.Send.(*MatrixLayer); ok {
 			pj.WtScale.Abs = 0.5
 		} else if _, ok := pj.Send.(*STNLayer); ok {
-			pj.WtScale.Abs = 0.1 // 0.1 orig
+			pj.WtScale.Abs = 0.1 // default level for GPeOut and GPeTA -- weaker to not oppose GPeIn surge
 		}
 
 		switch {
@@ -98,12 +94,12 @@ func (ly *GPLayer) Defaults() {
 				pj.WtScale.Abs = 0.5 // Go firing threshold
 			}
 		case strings.HasSuffix(ly.Nm, "GPeIn"):
-			if _, ok := pj.Send.(*STNLayer); ok { // STNToGPeIn
-				pj.WtScale.Abs = 0.5 // todo: 0.1 default
+			if _, ok := pj.Send.(*STNLayer); ok { // STNpToGPeIn -- stronger to drive burst of activity
+				pj.WtScale.Abs = 0.5
 			}
 		case strings.HasSuffix(ly.Nm, "GPeTA"):
 			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPeTA
-				pj.WtScale.Abs = 1 // 1 by default
+				pj.WtScale.Abs = 0.9 // just enough to knock down to near-zero at baseline
 			}
 		}
 	}

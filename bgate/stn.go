@@ -114,12 +114,12 @@ func (ly *STNLayer) Defaults() {
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
 		if strings.HasSuffix(ly.Nm, "STNp") {
-			if _, ok := pj.Send.(*GPLayer); ok { // GPeIn -- others are PFC, 1.5 in orig
+			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToSTNp
 				pj.WtScale.Abs = 0.1
 			}
 		} else { // STNs
-			if _, ok := pj.Send.(*GPLayer); ok { // GPeIn -- others are PFC, 1.5 in orig
-				pj.WtScale.Abs = 0.1
+			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToSTNs
+				pj.WtScale.Abs = 0.1 // note: not currently used -- interferes with threshold-based Ca self-inhib dynamics
 			} else {
 				pj.WtScale.Abs = 0.2 // weaker inputs
 			}
