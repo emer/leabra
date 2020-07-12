@@ -85,8 +85,8 @@ func (ly *STNLayer) Defaults() {
 
 	// STN is tonically self-active and has no FFFB inhibition
 
-	ly.Act.Init.Vm = 0.9
-	ly.Act.Init.Act = 0.5
+	ly.Act.Init.Vm = 0.56
+	ly.Act.Init.Act = 0.57
 	ly.Act.Erev.L = 0.8
 	ly.Act.Gbar.L = 0.3
 	ly.Inhib.Layer.On = false
@@ -100,6 +100,10 @@ func (ly *STNLayer) Defaults() {
 	ly.Act.Dt.VmTau = 3.3
 	ly.Act.Dt.GTau = 3 // fastest
 	ly.Act.Init.Decay = 0
+
+	if strings.HasSuffix(ly.Nm, "STNp") {
+		ly.Act.Init.Act = 0.48
+	}
 
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()

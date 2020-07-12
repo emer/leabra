@@ -45,8 +45,8 @@ func (ly *GPLayer) Defaults() {
 
 	// GP is tonically self-active and has no FFFB inhibition
 
-	ly.Act.Init.Vm = 0.9
-	ly.Act.Init.Act = 0.5
+	ly.Act.Init.Vm = 0.57
+	ly.Act.Init.Act = 0.65
 	ly.Act.Erev.L = 0.8
 	ly.Act.Gbar.L = 0.3
 	ly.Inhib.Layer.On = false
@@ -60,6 +60,14 @@ func (ly *GPLayer) Defaults() {
 	ly.Act.Dt.VmTau = 3.3 // fastest
 	ly.Act.Dt.GTau = 3
 	ly.Act.Init.Decay = 0
+
+	switch {
+	case strings.HasSuffix(ly.Nm, "GPeIn"):
+		ly.Act.Init.Act = 0.77
+	case strings.HasSuffix(ly.Nm, "GPeTA"):
+		ly.Act.Init.Act = 0.15
+		ly.Act.Init.Vm = 0.50
+	}
 
 	for _, pjii := range ly.RcvPrjns {
 		pji := pjii.(leabra.LeabraPrjn)
