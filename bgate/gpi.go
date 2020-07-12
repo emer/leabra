@@ -53,18 +53,6 @@ func (ly *GPiLayer) Defaults() {
 	ly.UpdateParams()
 }
 
-/*
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
-// and flat neuron index (from layer or neuron-specific one).
-func (ly *GPiLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
-	switch vidx {
-	case DA:
-		return ly.DA
-	}
-	return 0
-}
-*/
-
 // Build constructs the layer state, including calling Build on the projections
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.

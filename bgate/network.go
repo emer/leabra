@@ -43,29 +43,6 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
-var (
-	// NeuronVars are extra neuron variables for bgate
-	NeuronVars = []string{"DA", "DALrn", "ACh", "Ca", "KCa"}
-
-	// NeuronVarsAll is the bgate collection of all neuron-level vars
-	NeuronVarsAll []string
-
-	// SynVarsAll is the bgate collection of all synapse-level vars (includes TraceSynVars)
-	SynVarsAll []string
-)
-
-func init() {
-	ln := len(deep.NeuronVarsAll)
-	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
-	copy(NeuronVarsAll, deep.NeuronVarsAll)
-	copy(NeuronVarsAll[ln:], NeuronVars)
-
-	ln = len(leabra.SynapseVars)
-	SynVarsAll = make([]string, len(TraceSynVars)+ln)
-	copy(SynVarsAll, leabra.SynapseVars)
-	copy(SynVarsAll[ln:], TraceSynVars)
-}
-
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {
 	return NeuronVarsAll
@@ -142,7 +119,7 @@ func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
 // using standard styles
-func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
+func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, tan, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	gpi = nt.AddGPiLayer(prefix+"GPi", nPoolsY, nPoolsX, 1, 1)
 	vthal = nt.AddVThalLayer(prefix+"VThal", nPoolsY, nPoolsX, 1, 1)
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
@@ -152,6 +129,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	stns = nt.AddSTNLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
+	tan = nt.AddTANLayer(prefix + "TAN")
 
 	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: 2})
 
@@ -163,6 +141,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
 	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
+	tan.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: 2})
 
 	one2one := prjn.NewPoolOneToOne()
 	full := prjn.NewFull()

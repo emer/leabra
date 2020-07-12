@@ -55,7 +55,9 @@ type TDRewIntegParams struct {
 
 func (tp *TDRewIntegParams) Defaults() {
 	tp.Discount = 0.9
-	tp.RewPred = "RewPred"
+	if tp.RewPred == "" {
+		tp.RewPred = "RewPred"
+	}
 }
 
 // TDRewIntegLayer is the temporal differences reward integration layer.
@@ -136,7 +138,9 @@ var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, deep.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.RewInteg = "RewInteg"
+	if ly.RewInteg == "" {
+		ly.RewInteg = "RewInteg"
+	}
 }
 
 // DALayer interface:

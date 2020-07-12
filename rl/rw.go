@@ -69,8 +69,10 @@ var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
 
 func (ly *RWDaLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.RewLay = "Rew"
-	ly.RWPredLay = "RWPred"
+	if ly.RewLay == "" {
+		ly.RewLay = "Rew"
+		ly.RWPredLay = "RWPred"
+	}
 }
 
 // DALayer interface:

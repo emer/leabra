@@ -15,8 +15,7 @@ import (
 // GPLayer represents the dorsal matrisome MSN's that are the main
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type GPLayer struct {
-	leabra.Layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	Layer
 }
 
 var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
@@ -105,28 +104,6 @@ func (ly *GPLayer) Defaults() {
 	}
 
 	ly.UpdateParams()
-}
-
-// DALayer interface:
-
-func (ly *GPLayer) GetDA() float32   { return ly.DA }
-func (ly *GPLayer) SetDA(da float32) { ly.DA = da }
-
-/*
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
-// and flat neuron index (from layer or neuron-specific one).
-func (ly *GPLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
-	switch vidx {
-	case DA:
-		return ly.DA
-	}
-	return 0
-}
-*/
-
-func (ly *GPLayer) InitActs() {
-	ly.Layer.InitActs()
-	ly.DA = 0
 }
 
 //////////////////////////////////////////////////////////////////////

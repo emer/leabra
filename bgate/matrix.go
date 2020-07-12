@@ -5,8 +5,10 @@
 package bgate
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -26,10 +28,9 @@ func (mp *MatrixParams) Defaults() {
 // MatrixLayer represents the dorsal matrisome MSN's that are the main
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type MatrixLayer struct {
-	leabra.Layer
+	Layer
 	DaR    DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
 	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
-	DA     float32      `inactive:"+" desc:"dopamine value for this layer"`
 	DALrn  float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
 	ACh    float32      `inactive:"+" desc:"acetylcholine value from TAN tonically active neurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
 }
@@ -99,11 +100,6 @@ func (ly *MatrixLayer) Defaults() {
 	ly.UpdateParams()
 }
 
-// DALayer interface:
-
-func (ly *MatrixLayer) GetDA() float32   { return ly.DA }
-func (ly *MatrixLayer) SetDA(da float32) { ly.DA = da }
-
 // AChLayer interface:
 
 func (ly *MatrixLayer) GetACh() float32    { return ly.ACh }
@@ -123,18 +119,6 @@ func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
 	return da
 }
 
-/*
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
-// and flat neuron index (from layer or neuron-specific one).
-func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
-	switch vidx {
-	case DA:
-		return ly.DA
-	}
-	return 0
-}
-*/
-
 func (ly *MatrixLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.DA = 0
@@ -148,4 +132,47 @@ func (ly *MatrixLayer) InitActs() {
 func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
 	ly.DALrn = ly.DALrnFmDA(ly.DA)
 	ly.Layer.ActFmG(ltime)
+}
+
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	if !(varNm == "DALrn" || varNm == "ACh") {
+		return -1, fmt.Errorf("bgate.NeuronVars: variable named: %s not found", varNm)
+	}
+	nn := len(leabra.NeuronVars)
+	// nn = DA
+	if varNm == "DALrn" {
+		return nn + 1, nil
+	}
+	return nn + 2, nil
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
+	nn := len(leabra.NeuronVars)
+	if varIdx < 0 || varIdx > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
+		return math32.NaN()
+	}
+	if varIdx <= nn { //
+		return ly.Layer.UnitVal1D(varIdx, idx)
+	}
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	if varIdx > nn+2 {
+		return math32.NaN()
+	}
+	if varIdx == nn+1 { // DALrn
+		return ly.DALrn
+	}
+	return ly.ACh
 }

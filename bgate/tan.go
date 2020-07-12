@@ -5,8 +5,10 @@
 package bgate
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/rl"
 	"github.com/goki/ki/kit"
@@ -28,7 +30,9 @@ var KiT_TANLayer = kit.Types.AddType(&TANLayer{}, leabra.LayerProps)
 
 func (ly *TANLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.RewLay = "Rew"
+	if ly.RewLay == "" {
+		ly.RewLay = "Rew"
+	}
 }
 
 // AChLayer interface:
@@ -79,4 +83,40 @@ func (ly *TANLayer) CyclePost(ltime *leabra.Time) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)
+}
+
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *TANLayer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	if varNm != "ACh" {
+		return -1, fmt.Errorf("bgate.NeuronVars: variable named: %s not found", varNm)
+	}
+	nn := len(leabra.NeuronVars)
+	return nn, nil
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *TANLayer) UnitVal1D(varIdx int, idx int) float32 {
+	nn := len(leabra.NeuronVars)
+	if varIdx < 0 || varIdx > nn { // nn = ACh
+		return math32.NaN()
+	}
+	if varIdx < nn {
+		return ly.Layer.UnitVal1D(varIdx, idx)
+	}
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	if varIdx > nn {
+		return math32.NaN()
+	}
+	return ly.ACh
 }
