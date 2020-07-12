@@ -390,14 +390,8 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx], err = hidLay.RcvPrjns[0].SynValTry("DWt", pi, pi)
-			if err != nil {
-				t.Error(err)
-			}
-			outdwt[didx], err = outLay.RcvPrjns[0].SynValTry("DWt", pi, pi)
-			if err != nil {
-				t.Error(err)
-			}
+			hiddwt[didx] = hidLay.RcvPrjns[0].SynVal("DWt", pi, pi)
+			outdwt[didx] = outLay.RcvPrjns[0].SynVal("DWt", pi, pi)
 			hidnorm[didx] = hidLay.RcvPrjns[0].SynVal("Norm", pi, pi)
 			outnorm[didx] = outLay.RcvPrjns[0].SynVal("Norm", pi, pi)
 			hidmoment[didx] = hidLay.RcvPrjns[0].SynVal("Moment", pi, pi)

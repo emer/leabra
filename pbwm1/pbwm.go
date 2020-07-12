@@ -14,15 +14,15 @@ import (
 type PBWMLayer interface {
 	deep.DeepLayer
 
-	// AsMod returns this layer as a pbwm.ModLayer (minimum layer in PBWM)
-	AsMod() *ModLayer
+	// AsPBWM returns this layer as a pbwm.Layer (base Layer in PBWM)
+	AsPBWM() *Layer
 
 	// AsGate returns this layer as a pbwm.GateLayer (gated layer type) -- nil if not impl
 	AsGate() *GateLayer
 
 	// UnitValByIdx returns value of given PBWM-specific variable by variable index
 	// and flat neuron index (from layer or neuron-specific one).
-	UnitValByIdx(vidx NeuronVars, idx int) float32
+	UnitValByIdx(vidx NeurVars, idx int) float32
 
 	// GateSend updates gating state and sends it along to other layers.
 	// Called after std Cycle methods.

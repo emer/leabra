@@ -16,6 +16,17 @@ type TraceSyn struct {
 	Tr  float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)"`
 }
 
+// VarByName returns synapse variable by name
+func (sy *TraceSyn) VarByName(varNm string) float32 {
+	switch varNm {
+	case "NTr":
+		return sy.NTr
+	case "Tr":
+		return sy.Tr
+	}
+	return math32.NaN()
+}
+
 var TraceSynVars = []string{"NTr", "Tr"}
 
 // Params for for trace-based learning in the MatrixTracePrjn.
@@ -164,11 +175,58 @@ func (pj *MatrixTracePrjn) DWt() {
 	}
 }
 
-// todo: in this model, Mtx is fully inhibited to 0 when not gated
-// so just use activation directly -- need to figure out logic.
+///////////////////////////////////////////////////////////////////////////////
+// SynVals
 
-// if gateAct > 0 { // gated
-// 	ntr = newNTr
-// } else { // not-gated
-// 	ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
-// }
+// SynVals sets values of given variable name for each synapse, using the natural ordering
+// of the synapses (sender based for Leabra),
+// into given float32 slice (only resized if not big enough).
+// Returns error on invalid var name.
+func (pj *MatrixTracePrjn) SynVals(vals *[]float32, varNm string) error {
+	_, err := leabra.SynapseVarByName(varNm)
+	if err == nil {
+		return pj.Prjn.SynVals(vals, varNm)
+	}
+	ns := len(pj.TrSyns)
+	if *vals == nil || cap(*vals) < ns {
+		*vals = make([]float32, ns)
+	} else if len(*vals) < ns {
+		*vals = (*vals)[0:ns]
+	}
+	for i := range pj.TrSyns {
+		sy := &pj.TrSyns[i]
+		(*vals)[i] = sy.VarByName(varNm)
+	}
+	return nil
+}
+
+// SynVal returns value of given variable name on the synapse
+// between given send, recv unit indexes (1D, flat indexes).
+// Returns math32.NaN() for access errors (see SynValTry for error message)
+func (pj *MatrixTracePrjn) SynVal(varNm string, sidx, ridx int) float32 {
+	_, err := leabra.SynapseVarByName(varNm)
+	if err == nil {
+		return pj.Prjn.SynVal(varNm, sidx, ridx)
+	}
+	if !(varNm == "NTr" || varNm == "Tr") {
+		return math32.NaN()
+	}
+	rsi := pj.SynIdx(sidx, ridx)
+	if rsi < 0 {
+		return math32.NaN()
+	}
+	sy := &pj.TrSyns[rsi]
+	return sy.VarByName(varNm)
+}
+
+// SynValTry returns value of given variable name on the synapse
+// between given send, recv unit indexes (1D, flat indexes).
+// Returns error for access errors.
+func (pj *MatrixTracePrjn) SynValTry(varNm string, sidx, ridx int) (float32, error) {
+	sv, err := pj.Prjn.SynValTry(varNm, sidx, ridx)
+	if err == nil {
+		return sv, err
+	}
+	sv = pj.SynVal(varNm, sidx, ridx)
+	return sv, nil
+}

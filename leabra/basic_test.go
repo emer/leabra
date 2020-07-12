@@ -105,11 +105,11 @@ func TestSynVals(t *testing.T) {
 	hidLay := TestNet.LayerByName("Hidden").(*Layer)
 	fmIn := hidLay.RcvPrjns.SendName("Input").(*Prjn)
 
-	bfWt, err := fmIn.SynValTry("Wt", 1, 1)
-	if err != nil {
-		t.Error(err)
+	bfWt := fmIn.SynVal("Wt", 1, 1)
+	if math32.IsNaN(bfWt) {
+		t.Errorf("Wt syn var not found")
 	}
-	bfLWt, err := fmIn.SynValTry("LWt", 1, 1)
+	bfLWt := fmIn.SynVal("LWt", 1, 1)
 
 	fmIn.SetSynVal("Wt", 1, 1, .15)
 
@@ -406,14 +406,8 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx], err = hidLay.RcvPrjns[0].SynValTry("DWt", pi, pi)
-			if err != nil {
-				t.Error(err)
-			}
-			outdwt[didx], err = outLay.RcvPrjns[0].SynValTry("DWt", pi, pi)
-			if err != nil {
-				t.Error(err)
-			}
+			hiddwt[didx] = hidLay.RcvPrjns[0].SynVal("DWt", pi, pi)
+			outdwt[didx] = outLay.RcvPrjns[0].SynVal("DWt", pi, pi)
 			hidnorm[didx] = hidLay.RcvPrjns[0].SynVal("Norm", pi, pi)
 			outnorm[didx] = outLay.RcvPrjns[0].SynVal("Norm", pi, pi)
 			hidmoment[didx] = hidLay.RcvPrjns[0].SynVal("Moment", pi, pi)

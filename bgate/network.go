@@ -43,6 +43,39 @@ func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
 
+var (
+	// NeuronVars are extra neuron variables for bgate
+	NeuronVars = []string{"DA", "DALrn", "ACh", "Ca", "KCa"}
+
+	// NeuronVarsAll is the bgate collection of all neuron-level vars
+	NeuronVarsAll []string
+
+	// SynVarsAll is the bgate collection of all synapse-level vars (includes TraceSynVars)
+	SynVarsAll []string
+)
+
+func init() {
+	ln := len(deep.NeuronVarsAll)
+	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
+	copy(NeuronVarsAll, deep.NeuronVarsAll)
+	copy(NeuronVarsAll[ln:], NeuronVars)
+
+	ln = len(leabra.SynapseVars)
+	SynVarsAll = make([]string, len(TraceSynVars)+ln)
+	copy(SynVarsAll, leabra.SynapseVars)
+	copy(SynVarsAll[ln:], TraceSynVars)
+}
+
+// UnitVarNames returns a list of variable names available on the units in this layer
+func (nt *Network) UnitVarNames() []string {
+	return NeuronVarsAll
+}
+
+// SynVarNames returns the names of all the variables on the synapses in this network.
+func (nt *Network) SynVarNames() []string {
+	return SynVarsAll
+}
+
 // AddTANLayer adds a TANLayer, with a single neuron.
 func (nt *Network) AddTANLayer(name string) *TANLayer {
 	tan := &TANLayer{}

@@ -117,7 +117,7 @@ func (gs *GateState) CopyFrom(fm *GateState) {
 // GateLayer is a layer that cares about thalamic (BG) gating signals, and has
 // slice of GateState fields that a gating layer will update.
 type GateLayer struct {
-	ModLayer
+	Layer
 	GateShp    GateShape   `desc:"shape of overall Maint + Out gating system that this layer is part of"`
 	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
 }
@@ -170,7 +170,7 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *GateLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
+func (ly *GateLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	nrn := &ly.Neurons[idx]
 	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based
 	switch vidx {
@@ -195,7 +195,7 @@ func (ly *GateLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *GateLayer) Build() error {
-	err := ly.ModLayer.Build()
+	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (ly *GateLayer) Build() error {
 }
 
 func (ly *GateLayer) InitActs() {
-	ly.ModLayer.InitActs()
+	ly.Layer.InitActs()
 	for si := range ly.GateStates {
 		gs := &ly.GateStates[si]
 		gs.Init()

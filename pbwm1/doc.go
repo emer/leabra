@@ -7,6 +7,8 @@ Package pbwm provides the prefrontal cortex basal ganglia working memory (PBWM)
 model of the basal ganglia (BG) and prefrontal cortex (PFC) circuitry that
 supports dynamic BG gating of PFC robust active maintenance.
 
+In the Go framework, it is version 1 (was version 5 in cemer).
+
 This package builds on the deep package for defining thalamocortical circuits
 involved in predictive learning -- the BG basically acts to gate these circuits.
 
@@ -19,7 +21,7 @@ exploring new variants.
 Each different Layer type defines and manages its own Neuron type, despite some
 redundancy, so only one type is needed and it is exactly what that layer needs.
 However, a Network must have a single consistent set of Neuron variables, which
-is given by ModNeuronVars and NeuronVars enum.  In many cases, those "neuron"
+is given by NeuronVars and NeurVars enum.  In many cases, those "neuron"
 variables are actually stored in the layer itself instead of on per-neuron level.
 
 Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with something else
@@ -27,10 +29,9 @@ Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with somet
 ##############
 # Basic Level
 
-* ModLayer has DA, ACh, SE -- can be modulated
+* pbwm.Layer has DA, ACh, SE -- can be modulated
 
-* DaSrcLayer sends DA to a list of layers (does not use Prjns)
-	+ AChSrcLayer, SeSrcLayer likewise for ACh and SE (serotonin)
+* ModLayer adds DA-modulated learning on top of basic Leabra learning
 
 * GateLayer has GateStates in 1-to-1 correspondence with Pools, to keep
    track of gating state -- source gating layers can send updates to other layers.

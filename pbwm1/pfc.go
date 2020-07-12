@@ -92,7 +92,7 @@ func (ly *PFCLayer) GateType() GateTypes {
 
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *PFCLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
+func (ly *PFCLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	pnrn := &ly.PFCNeurs[idx]
 	switch vidx {
 	case ActG:

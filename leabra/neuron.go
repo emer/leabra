@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/chewxy/math32"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/kit"
 )
@@ -93,7 +94,7 @@ func (nrn *Neuron) VarNames() []string {
 func NeuronVarByName(varNm string) (int, error) {
 	i, ok := NeuronVarsMap[varNm]
 	if !ok {
-		return 0, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }
@@ -108,7 +109,7 @@ func (nrn *Neuron) VarByIndex(idx int) float32 {
 func (nrn *Neuron) VarByName(varNm string) (float32, error) {
 	i, err := NeuronVarByName(varNm)
 	if err != nil {
-		return 0, err
+		return math32.NaN(), err
 	}
 	return nrn.VarByIndex(i), nil
 }

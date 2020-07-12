@@ -16,7 +16,7 @@ import (
 // as it is global broadcast modulator -- individual neurons
 // can use it in their own special way.
 type AChSrcLayer struct {
-	ModLayer
+	Layer
 	SendTo []string `desc:"list of layers to send ACh to"`
 }
 
@@ -37,7 +37,7 @@ func (ly *AChSrcLayer) SendToCheck() error {
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *AChSrcLayer) Build() error {
-	err := ly.ModLayer.Build()
+	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (ly *AChSrcLayer) Build() error {
 // SendACh sends ACh to SendTo list of layers
 func (ly *AChSrcLayer) SendACh(ach float32) {
 	for _, lnm := range ly.SendTo {
-		ml := ly.Network.LayerByName(lnm).(PBWMLayer).AsMod()
+		ml := ly.Network.LayerByName(lnm).(PBWMLayer).AsPBWM()
 		ml.ACh = ach
 	}
 }

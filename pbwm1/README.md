@@ -6,7 +6,7 @@ See [sir2](https://github.com/emer/leabra/blob/master/examples/sir2) example for
 
 In the [cemer](https://github.com/emer/cemer) (C++ emergent) versioning system, this is **version 5** of PBWM, reflecting a number of intermediate unpublished versions.
 
-In the Go framework, it is version 1.  A version 2 is in progress as of 6/2020.
+In the Go framework, it is version 1.
 
 PBWM is the *prefrontal-cortex basal-ganglia working memory* model [O'Reilly & Frank, 2006](#references), where the basal ganglia (BG) drives *gating* of PFC working memory maintenance, switching it dynamically between *updating* of new information vs. *maintenance* of existing information.  It was originally inspired by existing data, biology, and theory about the role of the BG in motor action selection, and the LSTM (long short-term-memory) computational model of [Hochreiter & Schmidhuber](#references), which solved limitations in existing recurrent backpropagation networks by adding dynamic input and output gates.  These LSTM models have experienced a significant resurgence along with the backpropagation neural networks in general.
 

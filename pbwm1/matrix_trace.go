@@ -5,6 +5,8 @@
 package pbwm
 
 import (
+	"fmt"
+
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
@@ -16,11 +18,23 @@ type TraceSyn struct {
 	Tr  float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)"`
 }
 
+// VarByName returns synapse variable by name
 func (sy *TraceSyn) VarByName(varNm string) float32 {
 	switch varNm {
 	case "NTr":
 		return sy.NTr
 	case "Tr":
+		return sy.Tr
+	}
+	return math32.NaN()
+}
+
+// VarByIndex returns synapse variable by index
+func (sy *TraceSyn) VarByIndex(varIdx int) float32 {
+	switch varIdx {
+	case 0:
+		return sy.NTr
+	case 1:
 		return sy.Tr
 	}
 	return math32.NaN()
@@ -197,55 +211,40 @@ func (pj *MatrixTracePrjn) DWt() {
 ///////////////////////////////////////////////////////////////////////////////
 // SynVals
 
-// SynVals sets values of given variable name for each synapse, using the natural ordering
-// of the synapses (sender based for Leabra),
-// into given float32 slice (only resized if not big enough).
-// Returns error on invalid var name.
-func (pj *MatrixTracePrjn) SynVals(vals *[]float32, varNm string) error {
-	_, err := leabra.SynapseVarByName(varNm)
+// SynVarIdx returns the index of given variable within the synapse,
+// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (pj *MatrixTracePrjn) SynVarIdx(varNm string) (int, error) {
+	vidx, err := pj.Prjn.SynVarIdx(varNm)
 	if err == nil {
-		return pj.Prjn.SynVals(vals, varNm)
+		return vidx, err
 	}
-	ns := len(pj.TrSyns)
-	if *vals == nil || cap(*vals) < ns {
-		*vals = make([]float32, ns)
-	} else if len(*vals) < ns {
-		*vals = (*vals)[0:ns]
+	nn := len(leabra.SynapseVars)
+	switch varNm {
+	case "NTr":
+		return nn, nil
+	case "Tr":
+		return nn + 1, nil
 	}
-	for i := range pj.TrSyns {
-		sy := &pj.TrSyns[i]
-		(*vals)[i] = sy.VarByName(varNm)
-	}
-	return nil
+	return -1, fmt.Errorf("MatrixTracePrjn SynVarIdx: variable name: %v not valid", varNm)
 }
 
-// SynVal returns value of given variable name on the synapse
-// between given send, recv unit indexes (1D, flat indexes).
-// Returns math32.NaN() for access errors (see SynValTry for error message)
-func (pj *MatrixTracePrjn) SynVal(varNm string, sidx, ridx int) float32 {
-	_, err := leabra.SynapseVarByName(varNm)
-	if err == nil {
-		return pj.Prjn.SynVal(varNm, sidx, ridx)
-	}
-	if !(varNm == "NTr" || varNm == "Tr") {
+// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// Returns NaN on invalid index.
+// This is the core synapse var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (pj *MatrixTracePrjn) SynVal1D(varIdx int, synIdx int) float32 {
+	if varIdx < 0 || varIdx >= len(SynVarsAll) {
 		return math32.NaN()
 	}
-	rsi := pj.SynIdx(sidx, ridx)
-	if rsi < 0 {
+	nn := len(leabra.SynapseVars)
+	if varIdx < nn {
+		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	}
+	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
 		return math32.NaN()
 	}
-	sy := &pj.TrSyns[rsi]
-	return sy.VarByName(varNm)
-}
-
-// SynValTry returns value of given variable name on the synapse
-// between given send, recv unit indexes (1D, flat indexes).
-// Returns error for access errors.
-func (pj *MatrixTracePrjn) SynValTry(varNm string, sidx, ridx int) (float32, error) {
-	sv, err := pj.Prjn.SynValTry(varNm, sidx, ridx)
-	if err == nil {
-		return sv, err
-	}
-	sv = pj.SynVal(varNm, sidx, ridx)
-	return sv, nil
+	varIdx -= nn
+	sy := &pj.TrSyns[synIdx]
+	return sy.VarByIndex(varIdx)
 }

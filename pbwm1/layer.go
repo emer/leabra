@@ -5,59 +5,160 @@
 package pbwm
 
 import (
+	"fmt"
+
+	"github.com/chewxy/math32"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
-// pbwm.Layer is the default layer type for PBWM framework, based on the ModLayer
-// with dopamine modulation -- can be used for basic DA-modulated learning.
+// pbwm.Layer is the base layer type for PBWM framework -- has variables for the
+// layer-level neuromodulatory variables: dopamine, ach, serotonin.
+// See ModLayer for a version that includes DA-modulated learning parameters,
 type Layer struct {
-	ModLayer
-	DaMod DaModParams `desc:"dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning."`
+	deep.Layer
+	DA  float32 `inactive:"+" desc:"current dopamine level for this layer"`
+	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
+	SE  float32 `inactive:"+" desc:"current serotonin level for this layer"`
 }
 
 var KiT_Layer = kit.Types.AddType(&Layer{}, deep.LayerProps)
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *Layer) GFmInc(ltime *leabra.Time) {
-	if !ly.DaMod.GeModOn() {
-		ly.ModLayer.GFmInc(ltime)
-		return
-	}
-	ly.RecvGInc(ltime)
-	for ni := range ly.Neurons {
-		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
-			continue
-		}
-		ly.Act.GRawFmInc(nrn)
-		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ltime.PlusPhase)
-		ly.Act.GeFmRaw(nrn, geRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
-	}
-	ly.LeabraLay.(PBWMLayer).AttnGeInc(ltime)
+// DALayer interface:
+
+func (ly *Layer) GetDA() float32   { return ly.DA }
+func (ly *Layer) SetDA(da float32) { ly.DA = da }
+
+// AsPBWM returns this layer as a pbwm.Layer
+func (ly *Layer) AsPBWM() *Layer {
+	return ly
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
-// and updates learning running-average activations from that Act
-func (ly *Layer) ActFmG(ltime *leabra.Time) {
-	if !ly.DaMod.GainModOn() {
-		ly.ModLayer.ActFmG(ltime)
-		return
+// AsGate returns this layer as a pbwm.GateLayer -- nil for Layer
+func (ly *Layer) AsGate() *GateLayer {
+	return nil
+}
+
+// GateSend updates gating state and sends it along to other layers.
+// most layers don't implement -- only gating layers
+func (ly *Layer) GateSend(ltime *leabra.Time) {
+}
+
+// RecGateAct records the gating activation from current activation, when gating occcurs
+// based on GateState.Now -- only for gating layers
+func (ly *Layer) RecGateAct(ltime *leabra.Time) {
+}
+
+// SendMods is called at end of Cycle to send modulator signals (DA, etc)
+// which will then be active for the next cycle of processing
+func (ly *Layer) SendMods(ltime *leabra.Time) {
+}
+
+func (ly *Layer) Defaults() {
+	ly.Layer.Defaults()
+}
+
+// UpdateParams updates all params given any changes that might have been made to individual values
+// including those in the receiving projections of this layer
+func (ly *Layer) UpdateParams() {
+	ly.Layer.UpdateParams()
+}
+
+// Note: Special layer types should define this!
+// func (ly *Layer) Class() string
+
+// UnitVarNames returns a list of variable names available on the units in this layer.
+func (ly *Layer) UnitVarNames() []string {
+	return NeuronVarsAll
+}
+
+// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// and flat neuron index (from layer or neuron-specific one).
+// This must be updated for specialized PBWM layer types to return correct variables!
+func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+	switch vidx {
+	case DA:
+		return ly.DA
+	case DALrn:
+		return ly.DA
+	case ACh:
+		return ly.ACh
+	case SE:
+		return ly.SE
 	}
-	curGain := ly.Act.XX1.Gain
-	ly.Act.XX1.Gain = ly.DaMod.Gain(ly.DA, curGain, ltime.PlusPhase)
-	ly.Act.XX1.Update()
-	for ni := range ly.Neurons {
-		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+	return math32.NaN()
+}
+
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	var ok bool
+	vidx, ok = NeuronVarsMap[varNm]
+	if !ok {
+		return -1, fmt.Errorf("pbwm.NeuronVars: variable named: %s not found", varNm)
+	}
+	vidx += len(deep.NeuronVarsAll)
+	return vidx, err
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+	if varIdx < 0 || varIdx >= len(NeuronVarsAll) {
+		return math32.NaN()
+	}
+	nn := len(deep.NeuronVars)
+	if varIdx < nn {
+		return ly.Layer.UnitVal1D(varIdx, idx)
+	}
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	varIdx -= nn
+	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeurVars(varIdx), idx)
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Init methods
+
+func (ly *Layer) InitActs() {
+	ly.Layer.InitActs()
+	ly.DA = 0
+	ly.ACh = 0
+	ly.SE = 0
+}
+
+// DoQuarter2DWt indicates whether to do optional Q2 DWt
+func (ly *Layer) DoQuarter2DWt() bool {
+	return false
+}
+
+// QuarterFinal does updating after end of a quarter
+func (ly *Layer) QuarterFinal(ltime *leabra.Time) {
+	ly.Layer.QuarterFinal(ltime)
+	if ltime.Quarter == 1 {
+		ly.LeabraLay.(PBWMLayer).Quarter2DWt()
+	}
+}
+
+// Quarter2DWt is optional Q2 DWt -- define where relevant
+func (ly *Layer) Quarter2DWt() {
+	for _, p := range ly.SndPrjns {
+		if p.IsOff() {
 			continue
 		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
-		ly.Learn.AvgsFmAct(nrn)
+		if rly, ok := p.RecvLay().(PBWMLayer); ok {
+			if rly.DoQuarter2DWt() {
+				p.(leabra.LeabraPrjn).DWt()
+			}
+		}
 	}
-	ly.Act.XX1.Gain = curGain
-	ly.Act.XX1.Update()
 }

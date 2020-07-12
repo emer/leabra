@@ -5,12 +5,8 @@
 package deep
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
-	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
@@ -73,84 +69,41 @@ func (ly *Layer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitVals fills in values of given variable name on unit,
-// for each unit in the layer, into given float32 slice (only resized if not big enough).
-// Returns error on invalid var name.
-func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
-	vidx, err := leabra.NeuronVarByName(varNm)
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
 	if err == nil {
-		return ly.Layer.UnitVals(vals, varNm)
+		return vidx, err
 	}
 	vidx, err = NeuronVarByName(varNm)
 	if err != nil {
-		return err
+		return vidx, err
 	}
-	nn := len(ly.Neurons)
-	if *vals == nil || cap(*vals) < nn {
-		*vals = make([]float32, nn)
-	} else if len(*vals) < nn {
-		*vals = (*vals)[0:nn]
-	}
-	for i := range ly.DeepNeurs {
-		dnr := &ly.DeepNeurs[i]
-		(*vals)[i] = dnr.VarByIndex(vidx)
-	}
-	return nil
+	vidx += len(leabra.NeuronVars)
+	return vidx, err
 }
 
-// UnitValsTensor returns values of given variable name on unit
-// for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
-	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
-		log.Println(err)
-		return err
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
 	}
-	vidx, err := leabra.NeuronVarByName(varNm)
-	if err == nil {
-		return ly.Layer.UnitValsTensor(tsr, varNm)
+	if varIdx < 0 || varIdx >= len(NeuronVarsAll) {
+		return math32.NaN()
 	}
-	vidx, err = NeuronVarByName(varNm)
-	if err != nil {
-		return err
+	nn := len(leabra.NeuronVars)
+	if varIdx < nn {
+		nrn := &ly.Neurons[idx]
+		return nrn.VarByIndex(varIdx)
 	}
-	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
-	for i := range ly.DeepNeurs {
-		dnr := &ly.DeepNeurs[i]
-		tsr.SetFloat1D(i, float64(dnr.VarByIndex(vidx)))
-	}
-	return nil
-}
-
-// UnitValTry returns value of given variable name on given unit,
-// using shape-based dimensional index
-func (ly *Layer) UnitValTry(varNm string, idx []int) (float32, error) {
-	_, err := leabra.NeuronVarByName(varNm)
-	if err == nil {
-		return ly.Layer.UnitValTry(varNm, idx)
-	}
-	fidx := ly.Shp.Offset(idx)
-	nn := len(ly.DeepNeurs)
-	if fidx < 0 || fidx >= nn {
-		return 0, fmt.Errorf("Layer UnitVal index: %v out of range, N = %v", fidx, nn)
-	}
-	dnr := &ly.DeepNeurs[fidx]
-	return dnr.VarByName(varNm)
-}
-
-// UnitVal1DTry returns value of given variable name on given unit,
-// using 1-dimensional index.
-func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
-	_, err := leabra.NeuronVarByName(varNm)
-	if err == nil {
-		return ly.Layer.UnitVal1DTry(varNm, idx)
-	}
-	nn := len(ly.DeepNeurs)
-	if idx < 0 || idx >= nn {
-		return 0, fmt.Errorf("Layer UnitVal1D index: %v out of range, N = %v", idx, nn)
-	}
+	varIdx -= nn
 	dnr := &ly.DeepNeurs[idx]
-	return dnr.VarByName(varNm)
+	return dnr.VarByIndex(varIdx)
 }
 
 // Build constructs the layer state, including calling Build on the projections.

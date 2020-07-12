@@ -45,7 +45,7 @@ func (nt *Network) UpdateParams() {
 
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {
-	return ModNeuronVarsAll
+	return NeuronVarsAll
 }
 
 // SynVarsAll is the pbwm collection of all synapse-level vars (includes TraceSynVars)
@@ -75,12 +75,12 @@ func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX 
 	return mtx
 }
 
-// AddGPeLayer adds a ModLayer to serve as a GPe layer, with given name.
+// AddGPeLayer adds a pbwm.Layer to serve as a GPe layer, with given name.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has 1x1 neurons.
-func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *ModLayer {
+func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
-	gpe := &ModLayer{}
+	gpe := &Layer{}
 	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, emer.Hidden)
 	return gpe
 }

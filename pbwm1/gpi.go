@@ -158,7 +158,7 @@ func (ly *GPiThalLayer) GateType() GateTypes {
 
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *GPiThalLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
+func (ly *GPiThalLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	if vidx != ActG {
 		return ly.GateLayer.UnitValByIdx(vidx, idx)
 	}

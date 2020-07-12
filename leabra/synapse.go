@@ -43,7 +43,7 @@ func (sy *Synapse) VarNames() []string {
 func SynapseVarByName(varNm string) (int, error) {
 	i, ok := SynapseVarsMap[varNm]
 	if !ok {
-		return 0, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }

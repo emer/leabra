@@ -101,7 +101,7 @@ func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
 
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *MatrixLayer) UnitValByIdx(vidx NeuronVars, idx int) float32 {
+func (ly *MatrixLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	mnrn := &ly.MatrixNeurs[idx]
 	nrn := &ly.Neurons[idx]
 	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based
@@ -164,7 +164,7 @@ func (ly *MatrixLayer) InitActs() {
 // InhibiFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 // Matrix version applies OutAChInhib to bias output gating on reward trials
 func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
-	ly.ModLayer.InhibFmGeAct(ltime)
+	ly.GateLayer.InhibFmGeAct(ltime)
 
 	if ly.Matrix.OutAChInhib == 0 {
 		return

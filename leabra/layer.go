@@ -104,11 +104,33 @@ func (ly *Layer) UnitVarProps() map[string]string {
 	return NeuronVarProps
 }
 
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to *this layer's* UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
+	return NeuronVarByName(varNm)
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	if varIdx < 0 || varIdx >= len(NeuronVars) {
+		return math32.NaN()
+	}
+	nrn := &ly.Neurons[idx]
+	return nrn.VarByIndex(varIdx)
+}
+
 // UnitVals fills in values of given variable name on unit,
 // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
 func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
-	vidx, err := NeuronVarByName(varNm)
+	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
 		return err
 	}
@@ -119,8 +141,7 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 		*vals = (*vals)[0:nn]
 	}
 	for i := range ly.Neurons {
-		nrn := &ly.Neurons[i]
-		(*vals)[i] = nrn.VarByIndex(vidx)
+		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
 	}
 	return nil
 }
@@ -133,14 +154,13 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 		log.Println(err)
 		return err
 	}
-	vidx, err := NeuronVarByName(varNm)
+	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
 		return err
 	}
 	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.Neurons {
-		nrn := &ly.Neurons[i]
-		tsr.SetFloat1D(i, float64(nrn.VarByIndex(vidx)))
+		tsr.SetFloat1D(i, float64(ly.LeabraLay.UnitVal1D(vidx, i)))
 	}
 	return nil
 }
@@ -148,38 +168,12 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
-	uv, _ := ly.LeabraLay.UnitValTry(varNm, idx)
-	return uv
-}
-
-// UnitValTry returns value of given variable name on given unit,
-// using shape-based dimensional index
-func (ly *Layer) UnitValTry(varNm string, idx []int) (float32, error) {
+	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	if err != nil {
+		return math32.NaN()
+	}
 	fidx := ly.Shp.Offset(idx)
-	nn := len(ly.Neurons)
-	if fidx < 0 || fidx >= nn {
-		return 0, fmt.Errorf("Layer UnitVal index: %v out of range, N = %v", fidx, nn)
-	}
-	nrn := &ly.Neurons[fidx]
-	return nrn.VarByName(varNm)
-}
-
-// UnitVal1D returns value of given variable name on given unit,
-// using 1-dimensional index.
-func (ly *Layer) UnitVal1D(varNm string, idx int) float32 {
-	uv, _ := ly.LeabraLay.UnitVal1DTry(varNm, idx)
-	return uv
-}
-
-// UnitVal1DTry returns value of given variable name on given unit,
-// using 1-dimensional index.
-func (ly *Layer) UnitVal1DTry(varNm string, idx int) (float32, error) {
-	nn := len(ly.Neurons)
-	if idx < 0 || idx >= nn {
-		return 0, fmt.Errorf("Layer UnitVal1D index: %v out of range, N = %v", idx, nn)
-	}
-	nrn := &ly.Neurons[idx]
-	return nrn.VarByName(varNm)
+	return ly.LeabraLay.UnitVal1D(vidx, fidx)
 }
 
 // RecvPrjnVals fills in values of given synapse variable name,
@@ -493,7 +487,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 // InitWts initializes the weight values in the network, i.e., resetting learning
 // Also calls InitActs
 func (ly *Layer) InitWts() {
-	ly.LeabraLay.(LeabraLayer).UpdateParams()
+	ly.LeabraLay.UpdateParams()
 	for _, p := range ly.SndPrjns {
 		if p.IsOff() {
 			continue
