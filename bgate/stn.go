@@ -21,23 +21,24 @@ import (
 // The conductance is applied to KNa channels to take advantage
 // of the existing infrastructure.
 type CaParams struct {
-	BurstThr float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
-	ActThr   float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
-	BurstCa  float32 `desc:"Ca level for burst level activation"`
-	ActCa    float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
-	GbarKCa  float32 `def:"20" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
-	KCaTau   float32 `def:"40" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006"`
-	CaTau    float32 `def:"185.7" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006"`
+	BurstThr  float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
+	ActThr    float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
+	BurstCa   float32 `def:"0.1" desc:"Ca level for burst level activation"`
+	ActCa     float32 `def:"0.1" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
+	GbarKCa   float32 `def:"20" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
+	KCaTau    float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006"`
+	CaTau     float32 `def:"185.7" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006"`
+	AlphaInit bool    `desc:"initialize Ca, KCa values at start of every AlphaCycle"`
 }
 
 func (kc *CaParams) Defaults() {
 	kc.BurstThr = 0.9
 	kc.ActThr = 0.7
-	kc.BurstCa = 1
+	kc.BurstCa = 1 // just long enough for 100 msec alpha trial window
 	kc.ActCa = 0.2
-	kc.GbarKCa = 20
-	kc.KCaTau = 40
-	kc.CaTau = 185.7
+	kc.GbarKCa = 10 // 20
+	kc.KCaTau = 20  // 20
+	kc.CaTau = 50   // 185.7
 }
 
 // KCaGFmCa returns the driving conductance for KCa channels based on given Ca level.
@@ -88,7 +89,7 @@ func (ly *STNLayer) Defaults() {
 	ly.Act.Init.Vm = 0.56
 	ly.Act.Init.Act = 0.57
 	ly.Act.Erev.L = 0.8
-	ly.Act.Gbar.L = 0.3
+	ly.Act.Gbar.L = 0.4
 	ly.Inhib.Layer.On = false
 	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
@@ -147,6 +148,9 @@ func (ly *STNLayer) InitActs() {
 // should already have presented the external input to the network at this point.
 func (ly *STNLayer) AlphaCycInit() {
 	ly.Layer.AlphaCycInit()
+	if !ly.Ca.AlphaInit {
+		return
+	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -207,7 +211,7 @@ func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
 		return -1, err
 	}
 	nn := len(leabra.NeuronVars)
-	return nn + vidx, err
+	return nn + 1 + vidx, err // +1 = da -- need a better global var for this
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.

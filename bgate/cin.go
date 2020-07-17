@@ -15,20 +15,20 @@ import (
 	"github.com/goki/mat32"
 )
 
-// TANLayer (tonically active neuron) reads reward signals from a named source layer
+// CINLayer (cholinergic interneuron) reads reward signals from a named source layer
 // and sends the absolute value of that activity as the positively-rectified
-// non-prediction-discounted reward signal computed TANs, and sent as
-// an acetylcholine signal.
-type TANLayer struct {
+// non-prediction-discounted reward signal computed by CINs, and sent as
+// an acetylcholine (ACh) signal.
+type CINLayer struct {
 	leabra.Layer
 	RewLay  string     `desc:"name of Reward-representing layer from which this computes ACh as absolute value"`
 	SendACh rl.SendACh `desc:"list of layers to send acetylcholine to"`
 	ACh     float32    `desc:"acetylcholine value for this layer"`
 }
 
-var KiT_TANLayer = kit.Types.AddType(&TANLayer{}, leabra.LayerProps)
+var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
-func (ly *TANLayer) Defaults() {
+func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
 	if ly.RewLay == "" {
 		ly.RewLay = "Rew"
@@ -37,21 +37,21 @@ func (ly *TANLayer) Defaults() {
 
 // AChLayer interface:
 
-func (ly *TANLayer) GetACh() float32    { return ly.ACh }
-func (ly *TANLayer) SetACh(ach float32) { ly.ACh = ach }
+func (ly *CINLayer) GetACh() float32    { return ly.ACh }
+func (ly *CINLayer) SetACh(ach float32) { ly.ACh = ach }
 
 // RewLayer returns the reward layer based on name
-func (ly *TANLayer) RewLayer() (*leabra.Layer, error) {
+func (ly *CINLayer) RewLayer() (*leabra.Layer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
 	if err != nil {
-		log.Printf("TANLayer %s, RewLay: %v\n", ly.Name(), err)
+		log.Printf("CINLayer %s, RewLay: %v\n", ly.Name(), err)
 		return nil, err
 	}
 	return tly.(leabra.LeabraLayer).AsLeabra(), nil
 }
 
 // Build constructs the layer state, including calling Build on the projections.
-func (ly *TANLayer) Build() error {
+func (ly *CINLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (ly *TANLayer) Build() error {
 	return err
 }
 
-func (ly *TANLayer) ActFmG(ltime *leabra.Time) {
+func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 	rly, _ := ly.RewLayer()
 	if rly == nil {
 		return
@@ -79,7 +79,7 @@ func (ly *TANLayer) ActFmG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send ACh, which will then be active for the next cycle of processing.
-func (ly *TANLayer) CyclePost(ltime *leabra.Time) {
+func (ly *CINLayer) CyclePost(ltime *leabra.Time) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)
@@ -88,7 +88,7 @@ func (ly *TANLayer) CyclePost(ltime *leabra.Time) {
 // UnitVarIdx returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *TANLayer) UnitVarIdx(varNm string) (int, error) {
+func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 	vidx, err := ly.Layer.UnitVarIdx(varNm)
 	if err == nil {
 		return vidx, err
@@ -104,7 +104,7 @@ func (ly *TANLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *TANLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := len(leabra.NeuronVars)
 	if varIdx < 0 || varIdx > nn { // nn = ACh
 		return math32.NaN()

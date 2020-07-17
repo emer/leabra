@@ -5,6 +5,7 @@
 package bgate
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/chewxy/math32"
@@ -14,8 +15,13 @@ import (
 
 // GPLayer represents the dorsal matrisome MSN's that are the main
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
+// Minimum activation during gating period drives ActLrn value used for learning.
+// Typically just a single unit per Pool representing a given stripe.
 type GPLayer struct {
 	Layer
+	MinActCyc   int       `def:"30" desc:"cycle after which the AlphaMinAct starts being updated, which in turn determines the ActLearn learning activation -- default of 30 is after initial oscillations and should capture gating time activations"`
+	AlphaMinAct []float32 `desc:"per-neuron minimum activation value during alpha cycle, after MinActCyc"`
+	ACh         float32   `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
 }
 
 var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
@@ -42,6 +48,9 @@ var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
 func (ly *GPLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.DA = 0
+	if ly.MinActCyc == 0 {
+		ly.MinActCyc = 30
+	}
 
 	// GP is tonically self-active and has no FFFB inhibition
 
@@ -114,6 +123,105 @@ func (ly *GPLayer) Defaults() {
 	ly.UpdateParams()
 }
 
+// AChLayer interface:
+
+func (ly *GPLayer) GetACh() float32    { return ly.ACh }
+func (ly *GPLayer) SetACh(ach float32) { ly.ACh = ach }
+
+// Build constructs the layer state, including calling Build on the projections
+// you MUST have properly configured the Inhib.Pool.On setting by this point
+// to properly allocate Pools for the unit groups if necessary.
+func (ly *GPLayer) Build() error {
+	err := ly.Layer.Build()
+	if err != nil {
+		return err
+	}
+	nn := len(ly.Neurons)
+	ly.AlphaMinAct = make([]float32, nn)
+	return nil
+}
+
+// InitMinAct initializes AlphaMinAct to 0
+func (ly *GPLayer) InitMinAct() {
+	for pi := range ly.AlphaMinAct {
+		ly.AlphaMinAct[pi] = ly.Act.Init.Act
+	}
+}
+
+func (ly *GPLayer) InitActs() {
+	ly.Layer.InitActs()
+	ly.InitMinAct()
+}
+
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// input scaling from running average activation etc.
+// should already have presented the external input to the network at this point.
+func (ly *GPLayer) AlphaCycInit() {
+	ly.Layer.AlphaCycInit()
+	ly.InitMinAct()
+}
+
+// MinActFmAct computes the AlphaMinAct values from current activations,
+// and updates ActLrn
+func (ly *GPLayer) MinActFmAct(ltime *leabra.Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		min := &ly.AlphaMinAct[ni]
+		*min = math32.Min(*min, nrn.Act)
+		nrn.ActLrn = *min
+	}
+}
+
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// and updates learning running-average activations from that Act.
+// GP extends to compute AlphaMinAct
+func (ly *GPLayer) ActFmG(ltime *leabra.Time) {
+	ly.Layer.ActFmG(ltime)
+	if ltime.Cycle >= ly.MinActCyc {
+		ly.MinActFmAct(ltime)
+	}
+}
+
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *GPLayer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	if !(varNm == "ACh") {
+		return -1, fmt.Errorf("bgate.NeuronVars: variable named: %s not found", varNm)
+	}
+	nn := len(leabra.NeuronVars)
+	// nn = DA
+	return nn + 1, nil
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *GPLayer) UnitVal1D(varIdx int, idx int) float32 {
+	nn := len(leabra.NeuronVars)
+	if varIdx < 0 || varIdx > nn+1 { // nn = DA, nn+1 = ACh
+		return math32.NaN()
+	}
+	if varIdx <= nn { //
+		return ly.Layer.UnitVal1D(varIdx, idx)
+	}
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	if varIdx > nn+1 {
+		return math32.NaN()
+	}
+	return ly.ACh
+}
+
 //////////////////////////////////////////////////////////////////////
 // GPeInPrjn
 
@@ -160,7 +268,7 @@ func (pj *GPeInPrjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			dwt := da * rn.Act * sn.Act
+			dwt := da * rn.ActLrn * sn.ActLrn
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
@@ -189,3 +297,48 @@ func (pj *GPeInPrjn) DWt() {
 		}
 	}
 }
+
+/*
+
+///////////////////////////////////////////////////////////////////////////////
+// SynVals
+
+// SynVarIdx returns the index of given variable within the synapse,
+// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (pj *GPeInPrjn) SynVarIdx(varNm string) (int, error) {
+	vidx, err := pj.Prjn.SynVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	nn := len(leabra.SynapseVars)
+	switch varNm {
+	case "NTr":
+		return nn, nil
+	case "Tr":
+		return nn + 1, nil
+	}
+	return -1, fmt.Errorf("GPiPrjn SynVarIdx: variable name: %v not valid", varNm)
+}
+
+// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// Returns NaN on invalid index.
+// This is the core synapse var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (pj *GPeInPrjn) SynVal1D(varIdx int, synIdx int) float32 {
+	if varIdx < 0 || varIdx >= len(SynVarsAll) {
+		return math32.NaN()
+	}
+	nn := len(leabra.SynapseVars)
+	if varIdx < nn {
+		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	}
+	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
+		return math32.NaN()
+	}
+	varIdx -= nn
+	sy := &pj.TrSyns[synIdx]
+	return sy.VarByIndex(varIdx)
+}
+
+*/

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -130,15 +131,19 @@ func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
 func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
-	if err != nil {
-		return err
-	}
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
+	}
+	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	if err != nil {
+		nan := math32.NaN()
+		for i := range ly.Neurons {
+			(*vals)[i] = nan
+		}
+		return err
 	}
 	for i := range ly.Neurons {
 		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
@@ -154,13 +159,22 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 		log.Println(err)
 		return err
 	}
+	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
+		nan := math.NaN()
+		for i := range ly.Neurons {
+			tsr.SetFloat1D(i, nan)
+		}
 		return err
 	}
-	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.Neurons {
-		tsr.SetFloat1D(i, float64(ly.LeabraLay.UnitVal1D(vidx, i)))
+		v := ly.LeabraLay.UnitVal1D(vidx, i)
+		if math32.IsNaN(v) {
+			tsr.SetFloat1D(1, math.NaN())
+		} else {
+			tsr.SetFloat1D(i, float64(v))
+		}
 	}
 	return nil
 }

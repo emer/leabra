@@ -53,9 +53,9 @@ func (nt *Network) SynVarNames() []string {
 	return SynVarsAll
 }
 
-// AddTANLayer adds a TANLayer, with a single neuron.
-func (nt *Network) AddTANLayer(name string) *TANLayer {
-	tan := &TANLayer{}
+// AddCINLayer adds a CINLayer, with a single neuron.
+func (nt *Network) AddCINLayer(name string) *CINLayer {
+	tan := &CINLayer{}
 	nt.AddLayerInit(tan, name, []int{1, 1}, emer.Hidden)
 	return tan
 }
@@ -72,7 +72,7 @@ func (nt *Network) AddMatrixLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 
 // ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
 func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixTracePrjn{})
+	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixPrjn{})
 }
 
 // AddGPLayer adds a GPLayer of given size, with given name.
@@ -113,13 +113,13 @@ func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	return vthal
 }
 
-// AddBG adds MtxGo, No, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
+// AddBG adds MtxGo, No, CIN, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
 // with given optional prefix.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
 // using standard styles
-func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, tan, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
+func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	gpi = nt.AddGPiLayer(prefix+"GPi", nPoolsY, nPoolsX, 1, 1)
 	vthal = nt.AddVThalLayer(prefix+"VThal", nPoolsY, nPoolsX, 1, 1)
 	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
@@ -129,7 +129,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	stns = nt.AddSTNLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = nt.AddMatrixLayer(prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
-	tan = nt.AddTANLayer(prefix + "TAN")
+	cin = nt.AddCINLayer(prefix + "CIN")
 
 	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: 2})
 
@@ -141,7 +141,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
 	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
-	tan.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: 2})
+	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: 2})
 
 	one2one := prjn.NewPoolOneToOne()
 	full := prjn.NewFull()
