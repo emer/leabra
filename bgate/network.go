@@ -122,9 +122,15 @@ func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	gpi = nt.AddGPiLayer(prefix+"GPi", nPoolsY, nPoolsX, 1, 1)
 	vthal = nt.AddVThalLayer(prefix+"VThal", nPoolsY, nPoolsX, 1, 1)
-	gpeOut = nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
-	gpeIn = nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
-	gpeTA = nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
+	gpeOuti := nt.AddGPeLayer(prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
+	gpeOuti.GPLay = GPeOut
+	gpeOut = gpeOuti
+	gpeIni := nt.AddGPeLayer(prefix+"GPeIn", nPoolsY, nPoolsX, 1, 1)
+	gpeIni.GPLay = GPeIn
+	gpeIn = gpeIni
+	gpeTAi := nt.AddGPeLayer(prefix+"GPeTA", nPoolsY, nPoolsX, 1, 1)
+	gpeTAi.GPLay = GPeTA
+	gpeTA = gpeTAi
 	stnp = nt.AddSTNLayer(prefix+"STNp", nPoolsY, nPoolsX, 1, 1)
 	stns = nt.AddSTNLayer(prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = nt.AddMatrixLayer(prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
@@ -149,8 +155,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
 
-	nt.ConnectLayersPrjn(mtxNo, gpeIn, one2one, emer.Inhib, &GPeInPrjn{})
-	nt.ConnectLayersPrjn(gpeOut, gpeIn, one2one, emer.Inhib, &GPeInPrjn{})
+	nt.ConnectLayers(mtxNo, gpeIn, one2one, emer.Inhib)
+	nt.ConnectLayers(gpeOut, gpeIn, one2one, emer.Inhib)
 
 	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
@@ -161,8 +167,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
 	// pj.SetClass("BgFixed")
 
-	nt.ConnectLayersPrjn(gpeIn, gpi, one2one, emer.Inhib, &GPiPrjn{})
-	nt.ConnectLayersPrjn(mtxGo, gpi, one2one, emer.Inhib, &GPiPrjn{})
+	nt.ConnectLayers(gpeIn, gpi, one2one, emer.Inhib)
+	nt.ConnectLayers(mtxGo, gpi, one2one, emer.Inhib)
 
 	pj = nt.ConnectLayers(stnp, gpeOut, one2one, emer.Forward)
 	pj.SetClass("FmSTNp")

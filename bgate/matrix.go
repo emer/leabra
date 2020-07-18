@@ -42,15 +42,15 @@ var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",
 // 	Params: params.Params{
+// 		"Layer.Inhib.Pool.On":      "false",
 // 		"Layer.Inhib.Layer.On":     "true",
 // 		"Layer.Inhib.Layer.Gi":     "1.5",
 // 		"Layer.Inhib.Layer.FB":     "0.0",
-// 		"Layer.Inhib.Pool.On":      "false",
 // 		"Layer.Inhib.Self.On":      "true",
 // 		"Layer.Inhib.Self.Gi":      "0.3", // 0.6 in localist -- expt
 // 		"Layer.Inhib.Self.Tau":     "3.0",
-// 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
 // 		"Layer.Act.Dt.VmTau":       "3.3",
 // 		"Layer.Act.Dt.GTau":        "3",
@@ -62,12 +62,13 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Matrix.Defaults()
 
 	// special inhib params
+	ly.Inhib.Pool.On = false
 	ly.Inhib.Layer.On = true
 	ly.Inhib.Layer.Gi = 1.5
 	ly.Inhib.Layer.FB = 0
-	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
 	ly.Inhib.Self.Gi = 0.3 // 0.6 in localist one
+	ly.Inhib.Self.Tau = 3.0
 	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.ActAvg.Init = 0.25
 	ly.Act.XX1.Gain = 20  // more graded -- still works with 40 but less Rt distrib
@@ -75,7 +76,7 @@ func (ly *MatrixLayer) Defaults() {
 	ly.Act.Dt.GTau = 3
 	ly.Act.Init.Decay = 0
 
-	// important -- user needs to adjust wt scale of some PFC inputs vs others:
+	// important: user needs to adjust wt scale of some PFC inputs vs others:
 	// drivers vs. modulators
 
 	for _, pji := range ly.RcvPrjns {
@@ -83,6 +84,8 @@ func (ly *MatrixLayer) Defaults() {
 		if _, ok := pj.Send.(*GPLayer); ok { // From GPe TA or In
 			pj.WtScale.Abs = 3
 			pj.Learn.Learn = false
+			pj.Learn.Norm.On = false
+			pj.Learn.Momentum.On = false
 			pj.Learn.WtSig.Gain = 1
 			pj.WtInit.Mean = 0.9
 			pj.WtInit.Var = 0

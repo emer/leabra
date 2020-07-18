@@ -23,11 +23,11 @@ import (
 type CaParams struct {
 	BurstThr  float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
 	ActThr    float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
-	BurstCa   float32 `def:"0.1" desc:"Ca level for burst level activation"`
-	ActCa     float32 `def:"0.1" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
-	GbarKCa   float32 `def:"20" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
-	KCaTau    float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006"`
-	CaTau     float32 `def:"185.7" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006"`
+	BurstCa   float32 `def:"1" desc:"Ca level for burst level activation"`
+	ActCa     float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
+	GbarKCa   float32 `def:"10" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
+	KCaTau    float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
+	CaTau     float32 `def:"50" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
 	AlphaInit bool    `desc:"initialize Ca, KCa values at start of every AlphaCycle"`
 }
 
@@ -50,8 +50,14 @@ func (kc *CaParams) KCaGFmCa(ca float32) float32 {
 ///////////////////////////////////////////////////////////////////////////
 // STNLayer
 
-// STNLayer represents the pausing subtype of STN neurons.
-// These open the gating window.
+// STNLayer represents STN neurons, with two subtypes:
+// STNp are more strongly driven and get over bursting threshold, driving strong,
+// rapid activation of the KCa channels, causing a long pause in firing, which
+// creates a window during which GPe dynamics resolve Go vs. No balance.
+// STNs are more weakly driven and thus more slowly activate KCa, resulting in
+// a longer period of activation, during which the GPi is inhibited to prevent
+// premature gating based only MtxGo inhibition -- gating only occurs when
+// GPeIn signal has had a chance to integrate its MtxNo inputs.
 type STNLayer struct {
 	Layer
 	Ca       CaParams    `view:"inline" desc:"parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
@@ -63,16 +69,17 @@ var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
 // Defaults in param.Sheet format
 // Sel: "STNLayer", Desc: "defaults",
 // 	Params: params.Params{
-// 		"Layer.Act.Init.Vm":   "0.9",
-// 		"Layer.Act.Init.Act":  "0.5",
+// 		"Layer.Act.Init.Vm":   "0.56",
+// 		"Layer.Act.Init.Act":  "0.57",
 // 		"Layer.Act.Erev.L":    "0.8",
-// 		"Layer.Act.Gbar.L":    "0.3",
+// 		"Layer.Act.Gbar.L":    "0.4",
 // 		"Layer.Inhib.Layer.On":     "false",
-// 		"Layer.Inhib.ActAvg.Init":  "0.25",
-// 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 		"Layer.Inhib.Pool.On":      "false",
 // 		"Layer.Inhib.Self.On":      "true",
 // 		"Layer.Inhib.Self.Gi":      "0.4",
 // 		"Layer.Inhib.Self.Tau":     "3.0",
+// 		"Layer.Inhib.ActAvg.Fixed": "true",
+// 		"Layer.Inhib.ActAvg.Init":  "0.25",
 // 		"Layer.Act.XX1.Gain":       "20", // more graded -- still works with 40 but less Rt distrib
 // 		"Layer.Act.Dt.VmTau":       "3.3",
 // 		"Layer.Act.Dt.GTau":        "3",
@@ -94,9 +101,9 @@ func (ly *STNLayer) Defaults() {
 	ly.Inhib.Pool.On = false
 	ly.Inhib.Self.On = true
 	ly.Inhib.Self.Gi = 0.4 // 0.4 in localist one
-	ly.Inhib.ActAvg.Init = 0.25
-	ly.Inhib.ActAvg.Fixed = true
 	ly.Inhib.Self.Tau = 3.0
+	ly.Inhib.ActAvg.Fixed = true
+	ly.Inhib.ActAvg.Init = 0.25
 	ly.Act.XX1.Gain = 20 // more graded -- still works with 40 but less Rt distrib
 	ly.Act.Dt.VmTau = 3.3
 	ly.Act.Dt.GTau = 3 // fastest
@@ -109,6 +116,8 @@ func (ly *STNLayer) Defaults() {
 	for _, pji := range ly.RcvPrjns {
 		pj := pji.(leabra.LeabraPrjn).AsLeabra()
 		pj.Learn.Learn = false
+		pj.Learn.Norm.On = false
+		pj.Learn.Momentum.On = false
 		pj.Learn.WtSig.Gain = 1
 		pj.WtInit.Mean = 0.9
 		pj.WtInit.Var = 0
