@@ -49,6 +49,8 @@ github.com/dlclark/regexp2 v1.2.0 h1:8sAhBGEM0dRWogWqWyQeIJnxjWO6oIjl8FKqREDsGfk
 github.com/dlclark/regexp2 v1.2.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
 github.com/emer/emergent v1.1.0 h1:emb2zwEKZeQ3tUHMlO3dh/jP41Udm3uqOdORrsfkROQ=
 github.com/emer/emergent v1.1.0/go.mod h1:w1XAfz1M/1kJjMem7oIFXS82ge7/jSuoGYpZCOTQuUU=
+github.com/emer/emergent v1.1.1 h1:4rKawFVPtshUmlReHkCnZwiMhSJZ1DQblvHJUHj8FTE=
+github.com/emer/emergent v1.1.1/go.mod h1:w1XAfz1M/1kJjMem7oIFXS82ge7/jSuoGYpZCOTQuUU=
 github.com/emer/empi v1.0.2 h1:VG9W2YPJharybgP5RePQHj+y5J7WNwmGCjvn5StwGfE=
 github.com/emer/empi v1.0.2/go.mod h1:QNlKbD1oG09w41S2kXR8V4bAz6J7i4Ykubll5HmInD8=
 github.com/emer/etable v1.0.7 h1:AVceaTvF67vCUBvERlk5s6dAPmtrEo91eLl9Kcx+jS4=
