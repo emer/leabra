@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 )
 
@@ -24,9 +23,9 @@ var (
 )
 
 func init() {
-	ln := len(deep.NeuronVarsAll)
+	ln := len(leabra.NeuronVars)
 	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
-	copy(NeuronVarsAll, deep.NeuronVarsAll)
+	copy(NeuronVarsAll, leabra.NeuronVars)
 	copy(NeuronVarsAll[ln:], NeuronVars)
 
 	ln = len(leabra.SynapseVars)
