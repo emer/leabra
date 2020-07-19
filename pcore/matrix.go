@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package bgate
+package pcore
 
 import (
 	"fmt"
@@ -186,7 +186,7 @@ func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
 		return vidx, err
 	}
 	if !(varNm == "DALrn" || varNm == "ACh") {
-		return -1, fmt.Errorf("bgate.NeuronVars: variable named: %s not found", varNm)
+		return -1, fmt.Errorf("pcore.NeuronVars: variable named: %s not found", varNm)
 	}
 	nn := len(leabra.NeuronVars)
 	// nn = DA

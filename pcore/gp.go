@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package bgate
+package pcore
 
 import (
 	"github.com/emer/leabra/leabra"
@@ -46,7 +46,7 @@ func (ly *GPLayer) Defaults() {
 	// GP is tonically self-active and has no FFFB inhibition
 
 	ly.Act.Init.Vm = 0.57
-	ly.Act.Init.Act = 0.65
+	ly.Act.Init.Act = 0.67
 	ly.Act.Erev.L = 0.8
 	ly.Act.Gbar.L = 0.3
 	ly.Inhib.Layer.On = false
@@ -63,9 +63,10 @@ func (ly *GPLayer) Defaults() {
 
 	switch ly.GPLay {
 	case GPeIn:
-		ly.Act.Init.Act = 0.77
+		ly.Act.Init.Act = 0.81
+		ly.Act.Init.Vm = 0.60
 	case GPeTA:
-		ly.Act.Init.Act = 0.15
+		ly.Act.Init.Act = 0.26
 		ly.Act.Init.Vm = 0.50
 	}
 

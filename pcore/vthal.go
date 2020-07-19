@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package bgate
+package pcore
 
 import (
 	"strings"
@@ -12,7 +12,7 @@ import (
 )
 
 // VThalLayer represents the Ventral thalamus: VA / VM / VL,
-// which receives BG gating in the form of inhibitory projection from GPi.
+// which receives BG gating   the form of inhibitory projection from GPi.
 type VThalLayer struct {
 	Layer
 }

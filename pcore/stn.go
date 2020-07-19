@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package bgate
+package pcore
 
 import (
 	"strings"
@@ -94,7 +94,7 @@ func (ly *STNLayer) Defaults() {
 	// STN is tonically self-active and has no FFFB inhibition
 
 	ly.Act.Init.Vm = 0.56
-	ly.Act.Init.Act = 0.57
+	ly.Act.Init.Act = 0.63
 	ly.Act.Erev.L = 0.8
 	ly.Act.Gbar.L = 0.4
 	ly.Inhib.Layer.On = false

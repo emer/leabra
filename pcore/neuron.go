@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package bgate
+package pcore
 
 import (
 	"fmt"
@@ -13,13 +13,13 @@ import (
 )
 
 var (
-	// NeuronVars are extra neuron variables for bgate
+	// NeuronVars are extra neuron variables for pcore
 	NeuronVars = []string{"DA", "DALrn", "ACh", "Ca", "KCa"}
 
-	// NeuronVarsAll is the bgate collection of all neuron-level vars
+	// NeuronVarsAll is the pcore collection of all neuron-level vars
 	NeuronVarsAll []string
 
-	// SynVarsAll is the bgate collection of all synapse-level vars (includes TraceSynVars)
+	// SynVarsAll is the pcore collection of all synapse-level vars (includes TraceSynVars)
 	SynVarsAll []string
 )
 
