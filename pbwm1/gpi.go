@@ -21,8 +21,8 @@ import (
 // GPiThalPrjn accumulates per-prjn raw conductance that is needed for separately weighting
 // NoGo vs. Go inputs
 type GPiThalPrjn struct {
-	deep.Prjn           // access as .Prjn
-	GeRaw     []float32 `desc:"per-recv, per-prjn raw excitatory input"`
+	leabra.Prjn           // access as .Prjn
+	GeRaw       []float32 `desc:"per-recv, per-prjn raw excitatory input"`
 }
 
 var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, deep.PrjnProps)

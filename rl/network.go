@@ -64,6 +64,7 @@ func AddRWLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 	da = &RWDaLayer{}
 	nt.AddLayerInit(da, prefix+"DA", []int{1, 1}, emer.Hidden)
 	da.(*RWDaLayer).RewLay = rew.Name()
+	da.(*RWDaLayer).RewLay = rew.Name()
 	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
 	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
 

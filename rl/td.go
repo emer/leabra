@@ -134,7 +134,7 @@ type TDDaLayer struct {
 	DA       float32 `desc:"dopamine value for this layer"`
 }
 
-var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, deep.LayerProps)
+var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -208,7 +208,7 @@ func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
 // Use in TDRewPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
 type TDRewPredPrjn struct {
-	deep.Prjn
+	leabra.Prjn
 }
 
 var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, deep.PrjnProps)

@@ -68,7 +68,7 @@ var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, deep.LayerProps)
 func (ly *MatrixLayer) Defaults() {
 	ly.GateLayer.Defaults()
 	ly.Matrix.Defaults()
-	ly.DeepBurst.SetBurstQtr(leabra.Q2) // also
+	// ly.DeepBurst.SetBurstQtr(leabra.Q2) // also
 	// special inhib params
 	ly.Inhib.Layer.Gi = 1.9
 	ly.Inhib.Layer.FB = 0.5
@@ -242,8 +242,8 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 
 // DoQuarter2DWt indicates whether to do optional Q2 DWt
 func (ly *MatrixLayer) DoQuarter2DWt() bool {
-	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(1) {
-		return false
-	}
+	// if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(1) {
+	// 	return false
+	// }
 	return true
 }

@@ -17,13 +17,13 @@ import (
 // layer-level neuromodulatory variables: dopamine, ach, serotonin.
 // See ModLayer for a version that includes DA-modulated learning parameters,
 type Layer struct {
-	deep.Layer
+	leabra.Layer
 	DA  float32 `inactive:"+" desc:"current dopamine level for this layer"`
 	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
 	SE  float32 `inactive:"+" desc:"current serotonin level for this layer"`
 }
 
-var KiT_Layer = kit.Types.AddType(&Layer{}, deep.LayerProps)
+var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 

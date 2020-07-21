@@ -15,12 +15,12 @@ import (
 
 // pbwm.Network has methods for configuring specialized PBWM network components
 type Network struct {
-	deep.Network
+	leabra.Network
 }
 
 var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
-var NetworkProps = deep.NetworkProps
+var NetworkProps = leabra.NetworkProps
 
 // NewLayer returns new layer of default pbwm.Layer type
 func (nt *Network) NewLayer() emer.Layer {
@@ -29,7 +29,7 @@ func (nt *Network) NewLayer() emer.Layer {
 
 // NewPrjn returns new prjn of default type
 func (nt *Network) NewPrjn() emer.Prjn {
-	return &deep.Prjn{}
+	return &leabra.Prjn{}
 }
 
 // Defaults sets all the default parameters for all layers and projections
@@ -129,7 +129,7 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 	sp = &PFCLayer{}
 	nt.AddLayerInit(sp, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
 	dp = &PFCLayer{}
-	nt.AddLayerInit(dp, name+"D", []int{nY, nX, nNeurY, nNeurX}, deep.Deep)
+	nt.AddLayerInit(dp, name+"D", []int{nY, nX, nNeurY, nNeurX}, deep.CT)
 	sp.SetClass("PFC")
 	dp.SetClass("PFC")
 	sp.Gate.OutGate = out
@@ -137,12 +137,10 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool
 	dp.Dyns.MaintOnly()
 	dp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 
-	one2one := prjn.NewOneToOne()
+	// one2one := prjn.NewOneToOne()
 
-	pj := nt.ConnectLayers(sp, dp, one2one, deep.BurstCtxt)
-	pj.SetClass("PFCToDeep")
-	pj = nt.ConnectLayers(dp, sp, one2one, deep.DeepAttn)
-	pj.SetClass("PFCFmDeep")
+	// pj := nt.ConnectLayers(sp, dp, one2one, leabra.BurstCtxt)
+	// pj.SetClass("PFCToDeep")
 	return
 }
 
@@ -192,10 +190,10 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 // PBWM calls GateSend after Cycle and before DeepBurst
 // Deep version adds call to update DeepBurst at end
 func (nt *Network) CycleImpl(ltime *leabra.Time) {
-	nt.Network.Network.CycleImpl(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
-	nt.GateSend(ltime)                  // GateLayer (GPiThal) computes gating, sends to other layers
-	nt.RecGateAct(ltime)                // Record activation state at time of gating (in ActG neuron var)
-	nt.DeepBurst(ltime)                 // Act -> Burst (during BurstQtr) (see deep for details)
+	nt.Network.CycleImpl(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
+	nt.GateSend(ltime)          // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ltime)        // Record activation state at time of gating (in ActG neuron var)
+	// nt.DeepBurst(ltime)                 // Act -> Burst (during BurstQtr) (see deep for details)
 
 	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }

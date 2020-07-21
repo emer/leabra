@@ -125,7 +125,7 @@ func (qt Quarters) HasNext(qtr int) bool {
 
 // HasPrev returns true if the quarter before given quarter is set.
 // This wraps around from Q1 to Q4.  (qtr = 0..3 = same as Quarters)
-func (qt Quarters) PrevIsBurstQtr(qtr int) bool {
+func (qt Quarters) HasPrev(qtr int) bool {
 	pqt := (qtr - 1)
 	if pqt < 0 {
 		pqt += 4

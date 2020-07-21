@@ -30,7 +30,6 @@ import (
 	"github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/simat"
 	"github.com/emer/etable/split"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	pbwm "github.com/emer/leabra/pbwm1"
 	"github.com/emer/leabra/rl"
@@ -368,7 +367,7 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.InitName(net, "SIR")
-	rew, rp, da := rl.AddRWLayers(&net.Network.Network, "", relpos.Behind, 2)
+	rew, rp, da := rl.AddRWLayers(&net.Network, "", relpos.Behind, 2)
 	snc := da.(*rl.RWDaLayer)
 	snc.SetName("SNc")
 
@@ -542,14 +541,14 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 
 	lays := []string{"Input", "Output"}
 	for _, lnm := range lays {
-		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		pats := en.State(ly.Nm)
 		if pats == nil {
 			continue
 		}
 		ly.ApplyExt(pats)
 		if lnm == "Input" {
-			ly = ss.Net.LayerByName("CtrlInput").(deep.DeepLayer).AsDeep()
+			ly = ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
 			ly.ApplyExt(pats)
 		}
 	}
@@ -567,7 +566,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	if en.Act != Recall { // only reward on recall trials!
 		return
 	}
-	out := ss.Net.LayerByName("Output").(deep.DeepLayer).AsDeep()
+	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
 	mxi := out.Pools[0].Inhib.Act.MaxIdx
 	en.SetReward(mxi)
 	pats := en.State("Reward")
@@ -1038,7 +1037,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	for _, lnm := range ss.TstRecLays {
 		tsr := ss.ValsTsr(lnm)
-		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		ly.UnitValsTensor(tsr, "ActM")
 		dt.SetCellTensor(lnm, row, tsr)
 	}
@@ -1068,7 +1067,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 		{"RewPred", etensor.FLOAT64, nil, nil},
 	}
 	for _, lnm := range ss.TstRecLays {
-		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		sch = append(sch, etable.Column{lnm, etensor.FLOAT64, ly.Shp.Shp, nil})
 	}
 	dt.SetFromSchema(sch, nt)

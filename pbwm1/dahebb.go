@@ -14,7 +14,7 @@ import (
 // DaHebbPrjn does dopamine-modulated Hebbian learning -- i.e., the 3-factor
 // learning rule: Da * Recv.Act * Send.Act
 type DaHebbPrjn struct {
-	deep.Prjn
+	leabra.Prjn
 }
 
 var KiT_DaHebbPrjn = kit.Types.AddType(&DaHebbPrjn{}, deep.PrjnProps)

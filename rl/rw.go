@@ -71,6 +71,8 @@ func (ly *RWDaLayer) Defaults() {
 	ly.Layer.Defaults()
 	if ly.RewLay == "" {
 		ly.RewLay = "Rew"
+	}
+	if ly.RWPredLay == "" {
 		ly.RWPredLay = "RWPred"
 	}
 }

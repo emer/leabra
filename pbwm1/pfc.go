@@ -14,12 +14,15 @@ import (
 
 // PFCGateParams has parameters for PFC gating
 type PFCGateParams struct {
-	OutGate   bool    `desc:"if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating"`
-	OutQ1Only bool    `viewif:"OutGate" def:"true" desc:"for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and BurstQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial"`
-	MntThal   float32 `def:"1" desc:"effective Thal activation to use in computing the Burst activation sent from Super to Deep layers, for continued maintenance beyond the initial Thal signal provided by the BG -- also sets an effective minimum Thal value regardless of the actual gating thal value"`
+	GateQtr   leabra.Quarters `desc:"Quarter(s) occurs"`
+	OutGate   bool            `desc:"if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating"`
+	OutQ1Only bool            `viewif:"OutGate" def:"true" desc:"for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and BurstQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial"`
+	MntThal   float32         `def:"1" desc:"effective Thal activation to use in computing the Burst activation sent from Super to Deep layers, for continued maintenance beyond the initial Thal signal provided by the BG -- also sets an effective minimum Thal value regardless of the actual gating thal value"`
 }
 
 func (gp *PFCGateParams) Defaults() {
+	gp.GateQtr.Set(int(leabra.Q2))
+	gp.GateQtr.Set(int(leabra.Q4))
 	gp.OutQ1Only = true
 	gp.MntThal = 1
 }
@@ -67,13 +70,7 @@ func (ly *PFCLayer) Defaults() {
 	ly.Gate.Defaults()
 	ly.Maint.Defaults()
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
-		ly.DeepBurst.BurstQtr = 0
-		ly.DeepBurst.SetBurstQtr(leabra.Q1)
 		ly.Maint.MaxMaint = 1
-	} else {
-		ly.DeepBurst.BurstQtr = 0
-		ly.DeepBurst.SetBurstQtr(leabra.Q2)
-		ly.DeepBurst.SetBurstQtr(leabra.Q4)
 	}
 	if len(ly.Dyns) > 0 {
 		ly.Maint.UseDyn = true
@@ -88,6 +85,13 @@ func (ly *PFCLayer) GateType() GateTypes {
 	} else {
 		return Maint
 	}
+}
+
+func (ly *PFCLayer) IsSuper() bool {
+	if ly.Nm[len(ly.Nm)-1] == 'D' {
+		return false
+	}
+	return true
 }
 
 // UnitValByIdx returns value of given PBWM-specific variable by variable index
@@ -171,9 +175,9 @@ func (ly *PFCLayer) ClearCtxtPool(pool int) {
 		if nrn.IsOff() {
 			continue
 		}
-		dnr := &ly.DeepNeurs[ni]
-		dnr.Burst = 0
-		dnr.CtxtGe = 0
+		// dnr := &ly.DeepNeurs[ni]
+		// dnr.Burst = 0
+		// dnr.CtxtGe = 0
 	}
 }
 
@@ -199,6 +203,7 @@ func (ly *PFCLayer) AvgMaxGe(ltime *leabra.Time) {
 	ly.AvgMaxGeRaw(ltime) // defined in GateLayer
 }
 
+/*
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 	if !ly.IsSuper() {
@@ -230,6 +235,7 @@ func (ly *PFCLayer) GFmInc(ltime *leabra.Time) {
 	}
 	ly.LeabraLay.(PBWMLayer).AttnGeInc(ltime)
 }
+*/
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
@@ -285,7 +291,7 @@ func (ly *PFCLayer) QuarterFinal(ltime *leabra.Time) {
 // This happens at end of BurstQtr (from QuarterFinal), prior to SendCtxtGe
 // call which happens at Network level after QuarterFinal
 func (ly *PFCLayer) GateStateToDeep(ltime *leabra.Time) {
-	if !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
 		return
 	}
 	pfcd := ly.DeepPFC()
@@ -303,7 +309,7 @@ func (ly *PFCLayer) GateStateToDeep(ltime *leabra.Time) {
 // CtxtGe excitatory conductance on deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer.
 func (ly *PFCLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
 		return
 	}
 	for gi := range ly.GateStates {
@@ -317,18 +323,17 @@ func (ly *PFCLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 
 	// todo: could optimize to not send if not maint
-
-	ly.GateLayer.SendCtxtGe(ltime)
+	// ly.GateLayer.SendCtxtGe(ltime)
 }
 
 // CtxtFmGe integrates new CtxtGe excitatory conductance from projections, and computes
 // overall Ctxt value, only on Deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
 func (ly *PFCLayer) CtxtFmGe(ltime *leabra.Time) {
-	if ly.Typ != deep.Deep || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+	if ly.IsSuper() || !ly.Gate.GateQtr.Has(ltime.Quarter) {
 		return
 	}
-	ly.GateLayer.CtxtFmGe(ltime)
+	// ly.GateLayer.CtxtFmGe(ltime)
 	ly.DeepMaint(ltime)
 }
 
@@ -336,25 +341,25 @@ func (ly *PFCLayer) CtxtFmGe(ltime *leabra.Time) {
 // via CtxtFmGe after CtxtGe is updated and available.
 // quarter check is already called.
 func (ly *PFCLayer) DeepMaint(ltime *leabra.Time) {
-	yP := ly.Shp.Dim(0)
-	xP := ly.Shp.Dim(1)
-	pN := yP * xP
-	xN := ly.Shp.Dim(3)
-	for ni := range ly.DeepNeurs {
+	// yP := ly.Shp.Dim(0)
+	// xP := ly.Shp.Dim(1)
+	// pN := yP * xP
+	// xN := ly.Shp.Dim(3)
+	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		dnr := &ly.DeepNeurs[ni]
+		// dnr := &ly.DeepNeurs[ni]
 		pnr := &ly.PFCNeurs[ni]
 		gs := &ly.GateStates[nrn.SubPool-1]
 		if gs.Cnt <= 1 { // first gating, save first gating value
-			pnr.Maint = dnr.CtxtGe
+			pnr.Maint = nrn.Act // dnr.GtxtGe
 		}
 		if ly.Maint.UseDyn {
-			ui := ni % pN
-			uy := ui / xN
-			dnr.CtxtGe = pnr.Maint * ly.Dyns.Value(uy, float32(gs.Cnt-1))
+			// ui := ni % pN
+			// uy := ui / xN
+			// dnr.CtxtGe = pnr.Maint * ly.Dyns.Value(uy, float32(gs.Cnt-1))
 		}
 	}
 }
@@ -362,28 +367,29 @@ func (ly *PFCLayer) DeepMaint(ltime *leabra.Time) {
 // BurstFmAct updates Burst layer 5 IB bursting value from current Act (superficial activation)
 // Subject to thresholding.
 func (ly *PFCLayer) BurstFmAct(ltime *leabra.Time) {
-	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(ltime.Quarter) {
+	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
 		return
 	}
 	if !ly.IsSuper() { // rest is special for super
-		ly.GateLayer.BurstFmAct(ltime)
+		// ly.GateLayer.BurstFmAct(ltime)
 		return
 	}
-	lpl := &ly.DeepPools[0]
-	actMax := lpl.ActNoAttn.Max
-	actAvg := lpl.ActNoAttn.Avg
-	thr := actAvg + ly.DeepBurst.ThrRel*(actMax-actAvg)
-	thr = math32.Max(thr, ly.DeepBurst.ThrAbs)
+	// lpl := &ly.Pools[0]
+	// actMax := lpl.Inhib.Act.Max
+	// actAvg := lpl.Inhib.Act.Avg
+	// thr := actAvg + ly.DeepBurst.ThrRel*(actMax-actAvg)
+	// thr = math32.Max(thr, ly.DeepBurst.ThrAbs)
+	thr := float32(0.1)
 
-	for ni := range ly.DeepNeurs {
+	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		dnr := &ly.DeepNeurs[ni]
+		// dnr := &ly.DeepNeurs[ni]
 		var burst float32
-		if dnr.ActNoAttn > thr {
-			burst = dnr.ActNoAttn
+		if nrn.Act > thr {
+			burst = nrn.Act
 			// only PFC-specific gated part here:
 			gs := ly.GateStates[int(nrn.SubPool)-1]
 			if gs.Cnt < 0 { // not gated or maintaining
@@ -392,7 +398,7 @@ func (ly *PFCLayer) BurstFmAct(ltime *leabra.Time) {
 				burst *= math32.Max(ly.Gate.MntThal, gs.Act)
 			}
 		}
-		dnr.Burst = burst
+		// dnr.Burst = burst
 	}
 }
 
@@ -418,7 +424,7 @@ func (ly *PFCLayer) RecGateAct(ltime *leabra.Time) {
 
 // DoQuarter2DWt indicates whether to do optional Q2 DWt
 func (ly *PFCLayer) DoQuarter2DWt() bool {
-	if !ly.DeepBurst.On || !ly.DeepBurst.IsBurstQtr(1) {
+	if !ly.Gate.GateQtr.Has(1) {
 		return false
 	}
 	return true

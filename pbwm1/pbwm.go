@@ -5,14 +5,13 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 )
 
 // PBWMLayer defines the essential algorithmic API for PBWM at the layer level.
-// Builds upon the deep.DeepLayer API
+// Builds upon the leabra.LeabraLayer API
 type PBWMLayer interface {
-	deep.DeepLayer
+	leabra.LeabraLayer
 
 	// AsPBWM returns this layer as a pbwm.Layer (base Layer in PBWM)
 	AsPBWM() *Layer
@@ -42,10 +41,4 @@ type PBWMLayer interface {
 
 	// DoQuarter2DWt returns true if this recv layer should have its weights updated
 	DoQuarter2DWt() bool
-}
-
-// PBWMPrjn defines the essential algorithmic API for PBWM at the projection level.
-// Builds upon the deep.DeepPrjn API
-type PBWMPrjn interface {
-	deep.DeepPrjn
 }

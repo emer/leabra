@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/chewxy/math32"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 )
 
@@ -86,7 +85,7 @@ func (tp *TraceParams) LrateMod(gated, d2r, posDa bool) float32 {
 // MatrixTracePrjn does dopamine-modulated, gated trace learning, for Matrix learning
 // in PBWM context
 type MatrixTracePrjn struct {
-	deep.Prjn
+	leabra.Prjn
 	Trace  TraceParams `view:"inline" desc:"special parameters for matrix trace learning"`
 	TrSyns []TraceSyn  `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 }

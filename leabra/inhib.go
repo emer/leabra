@@ -105,7 +105,7 @@ func (aa *ActAvgParams) EffInit() float32 {
 
 // AvgFmAct updates the running-average activation given average activity level in layer
 func (aa *ActAvgParams) AvgFmAct(avg *float32, act float32) {
-	if act == 0 {
+	if act < 0.0001 {
 		return
 	}
 	if aa.UseFirst && *avg == aa.Init {

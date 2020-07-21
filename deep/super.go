@@ -13,17 +13,15 @@ import (
 // BurstParams are parameters determining how the DeepBurst activation is computed
 // from regular activation values.
 type BurstParams struct {
-	On       bool            `desc:"Enable the computation of Burst from superficial activation state -- if this is off, then Burst is 0 and no Burst* projection signals are sent"`
-	BurstQtr leabra.Quarters `viewif:"On" desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
-	ThrRel   float32         `viewif:"On" max:"1" def:"0.1,0.2,0.5" desc:"Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds."`
-	ThrAbs   float32         `viewif:"On" min:"0" max:"1" def:"0.1,0.2,0.5" desc:"Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
+	ThrRel   float32         `max:"1" def:"0.1,0.2,0.5" desc:"Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	ThrAbs   float32         `min:"0" max:"1" def:"0.1,0.2,0.5" desc:"Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds."`
 }
 
 func (db *BurstParams) Update() {
 }
 
 func (db *BurstParams) Defaults() {
-	db.On = true
 	db.BurstQtr.Set(int(leabra.Q4))
 	db.ThrRel = 0.1
 	db.ThrAbs = 0.1
@@ -142,6 +140,25 @@ func (ly *SuperLayer) DecayState(decay float32) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Burst -- computed in CyclePost
 
+// QuarterFinal does updating after end of a quarter
+func (ly *SuperLayer) QuarterFinal(ltime *leabra.Time) {
+	ly.Layer.QuarterFinal(ltime)
+	if ly.Burst.BurstQtr.HasNext(ltime.Quarter) {
+		// if will be updating next quarter, save just prior
+		// this logic works for all cases, but e.g., BurstPrv doesn't update
+		// until end of minus phase for Q4 BurstQtr
+		ly.BurstPrv()
+	}
+}
+
+// BurstPrv saves Burst as BurstPrv
+func (ly *SuperLayer) BurstPrv() {
+	for ni := range ly.SuperNeurs {
+		snr := &ly.SuperNeurs[ni]
+		snr.BurstPrv = snr.Burst
+	}
+}
+
 // CyclePost calls BurstFmAct
 func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
 	ly.Layer.CyclePost(ltime)
@@ -151,7 +168,7 @@ func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
 // BurstFmAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
 func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
-	if !ly.Burst.On || !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
 		return
 	}
 	lpl := &ly.Pools[0]
@@ -181,7 +198,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
 func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.Burst.On || !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -206,22 +223,5 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 				pj.SendCtxtGe(ni, snr.Burst)
 			}
 		}
-	}
-}
-
-// QuarterFinal does updating after end of a quarter
-func (ly *SuperLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.Layer.QuarterFinal(ltime)
-	ly.BurstPrv(ltime)
-}
-
-// BurstPrv saves Burst as BurstPrv
-func (ly *SuperLayer) BurstPrv(ltime *leabra.Time) {
-	if !ly.Burst.On || !ly.Burst.BurstQtr.HasNext(ltime.Quarter) {
-		return
-	}
-	for ni := range ly.SuperNeurs {
-		snr := &ly.SuperNeurs[ni]
-		snr.BurstPrv = snr.Burst
 	}
 }
