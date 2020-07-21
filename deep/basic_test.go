@@ -125,9 +125,9 @@ func TestNetAct(t *testing.T) {
 	TestNet.InitWts()
 	TestNet.InitExt()
 
-	inLay := TestNet.LayerByName("Input").(*Layer)
-	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	outLay := TestNet.LayerByName("Output").(*Layer)
+	inLay := TestNet.LayerByName("Input").(*leabra.Layer)
+	hidLay := TestNet.LayerByName("Hidden").(*leabra.Layer)
+	outLay := TestNet.LayerByName("Output").(*leabra.Layer)
 
 	ltime := leabra.NewTime()
 
@@ -230,9 +230,9 @@ func TestNetAct(t *testing.T) {
 }
 
 func TestNetLearn(t *testing.T) {
-	inLay := TestNet.LayerByName("Input").(*Layer)
-	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	outLay := TestNet.LayerByName("Output").(*Layer)
+	inLay := TestNet.LayerByName("Input").(*leabra.Layer)
+	hidLay := TestNet.LayerByName("Hidden").(*leabra.Layer)
+	outLay := TestNet.LayerByName("Output").(*leabra.Layer)
 
 	printCycs := false
 	printQtrs := false

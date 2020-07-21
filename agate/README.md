@@ -1,3 +1,3 @@
-# PCore: Pallidal Core Basal Ganglia Model
+# AGate: Attentional & adaptive Gating of Action and Thought for Executive function
 
 

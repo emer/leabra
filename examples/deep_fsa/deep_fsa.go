@@ -79,13 +79,11 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
 				}},
-			{Sel: ".BurstTRC", Desc: "standard weight is .3 here for larger distributed reps. no learn",
+			{Sel: "TRCLayer", Desc: "standard weight is .3 here for larger distributed reps. no learn",
 				Params: params.Params{
-					"Prjn.WtInit.Mean": "0.8", // using .8 for localist layer
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.Learn.Learn": "false",
+					"Layer.TRC.DriveScale": "0.8", // using .8 for localist layer
 				}},
-			{Sel: ".BurstCtxt", Desc: "no weight balance on deep context prjns -- makes a diff!",
+			{Sel: "CTCtxtPrjn", Desc: "no weight balance on CT context prjns -- makes a diff!",
 				Params: params.Params{
 					"Prjn.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
 				}},
@@ -93,7 +91,7 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "2.2",
 				}},
-			{Sel: "#InputPToHiddenD", Desc: "critical to make this small so deep context dominates",
+			{Sel: "#InputPToHiddenCT", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05",
 				}},
@@ -276,7 +274,7 @@ func (ss *Sim) ConfigEnv() {
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
 	in, inp := net.AddInputPulv2D("Input", 1, 15)
-	hid, hidd, _ := net.AddSuperDeep2D("Hidden", 8, 8, deep.NoPulv, deep.NoAttnPrjn)
+	hid, hidd, _ := net.AddSuperCT2D("Hidden", 8, 8, deep.NoPulv)
 
 	hidd.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
 
@@ -296,8 +294,8 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	// these additional context projections turn out to be essential!
 	// larger models in general do not require them, though it might be
 	// good to check
-	net.ConnectLayers(hidd, hidd, prjn.NewFull(), deep.BurstCtxt)
-	net.ConnectLayers(in, hidd, prjn.NewFull(), deep.BurstCtxt)
+	net.ConnectCtxtToCT(hidd, hidd, prjn.NewFull())
+	net.ConnectCtxtToCT(in, hidd, prjn.NewFull())
 
 	net.Defaults()
 	ss.SetParams("Network", ss.LogSetParams) // only set Network params
@@ -428,8 +426,8 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	// going to the same layers, but good practice and cheap anyway
 
 	// just using direct access to state here
-	in := ss.Net.LayerByName("Input").(deep.DeepLayer).AsDeep()
-	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
+	in := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
+	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 	clrmsk, setmsk, _ := in.ApplyExtFlags()
 	fsenv := en.(*FSAEnv)
 	ns := fsenv.NNext.Values[0]
@@ -541,8 +539,8 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) {
-	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
-	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
+	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
 	// ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
 	// compute SSE against target as activation of inp outside of trg > .5
@@ -831,7 +829,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
 
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
@@ -913,8 +911,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
-	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
-	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
+	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 	ivt := ss.ValsTsr("Input")
 	trgt := ss.ValsTsr("Target")
 	inp.UnitValsTensor(ivt, "ActM")
@@ -929,8 +927,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inp := ss.Net.LayerByName("InputP").(deep.DeepLayer).AsDeep()
-	trg := ss.Net.LayerByName("Targets").(deep.DeepLayer).AsDeep()
+	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 
 	dt.SetMetaData("name", "TstTrlLog")
 	dt.SetMetaData("desc", "Record of testing per input pattern")
@@ -1068,7 +1066,7 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(deep.DeepLayer).AsDeep()
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
 		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}

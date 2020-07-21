@@ -13,14 +13,14 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[Deep_-4]
+	_ = x[CT_-4]
 	_ = x[TRC_-5]
 	_ = x[LayerTypeN-6]
 }
 
-const _LayerType_name = "Deep_TRC_LayerTypeN"
+const _LayerType_name = "CT_TRC_LayerTypeN"
 
-var _LayerType_index = [...]uint8{0, 5, 9, 19}
+var _LayerType_index = [...]uint8{0, 3, 7, 17}
 
 func (i LayerType) String() string {
 	i -= 4

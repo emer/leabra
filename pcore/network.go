@@ -53,51 +53,6 @@ func (nt *Network) SynVarNames() []string {
 	return SynVarsAll
 }
 
-// AddCINLayer adds a CINLayer, with a single neuron.
-func (nt *Network) AddCINLayer(name string) *CINLayer {
-	return AddCINLayer(&nt.Network, name)
-}
-
-// AddMatrixLayer adds a MatrixLayer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// da gives the DaReceptor type (D1R = Go, D2R = NoGo)
-func (nt *Network) AddMatrixLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
-	return AddMatrixLayer(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, da)
-}
-
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return ConnectToMatrix(&nt.Network, send, recv, pat)
-}
-
-// AddGPLayer adds a GPLayer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddGPeLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPLayer {
-	return AddGPeLayer(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
-}
-
-// AddGPiLayer adds a GPiLayer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddGPiLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPiLayer {
-	return AddGPiLayer(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
-}
-
-// AddSTNLayer adds a subthalamic nucleus Layer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddSTNLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNLayer {
-	return AddSTNLayer(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
-}
-
-// AddVThalLayer adds a ventral thalamus (VA/VL/VM) Layer of given size, with given name.
-// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
-// Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
-func (nt *Network) AddVThalLayer(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *VThalLayer {
-	return AddVThalLayer(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
-}
-
 // AddBG adds MtxGo, No, CIN, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
 // with given optional prefix.
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
@@ -109,7 +64,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Network routines available here for mixing in to other models
+// Network functions available here as standalone functions
+//         for mixing in to other models
 
 // AddCINLayer adds a CINLayer, with a single neuron.
 func AddCINLayer(nt *leabra.Network, name string) *CINLayer {

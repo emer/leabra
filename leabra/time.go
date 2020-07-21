@@ -4,7 +4,10 @@
 
 package leabra
 
-import "github.com/goki/ki/kit"
+import (
+	"github.com/goki/ki/bitflag"
+	"github.com/goki/ki/kit"
+)
 
 // leabra.Time contains all the timing state and parameter information for running a model
 type Time struct {
@@ -75,16 +78,18 @@ func (tm *Time) QuarterCycle() int {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarters
 
-// Quarters are the different alpha trial quarters, as a bitflag, for use in relevant timing
-// parameters where quarters need to be specified
+// Quarters are the different alpha trial quarters, as a bitflag,
+// for use in relevant timing parameters where quarters need to be specified.
+// The Q1..4 defined values are integer *bit positions* -- use Set, Has etc methods
+// to set bits from these bit positions.
 type Quarters int32
 
 //go:generate stringer -type=Quarters
 
 var KiT_Quarters = kit.Enums.AddEnum(QuartersN, kit.BitFlag, nil)
 
-func (ev Quarters) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *Quarters) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+func (qt Quarters) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(qt) }
+func (qt *Quarters) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(qt, b) }
 
 // The quarters
 const (
@@ -95,6 +100,38 @@ const (
 	Q4
 	QuartersN
 )
+
+// Set sets given quarter bit (adds to any existing) (qtr = 0..3 = same as Quarters)
+func (qt *Quarters) Set(qtr int) {
+	bitflag.Set32((*int32)(qt), qtr)
+}
+
+// Clear clears given quarter bit (qtr = 0..3 = same as Quarters)
+func (qt *Quarters) Clear(qtr int) {
+	bitflag.Clear32((*int32)(qt), qtr)
+}
+
+// Has returns true if the given quarter is set (qtr = 0..3 = same as Quarters)
+func (qt Quarters) Has(qtr int) bool {
+	return bitflag.Has32(int32(qt), qtr)
+}
+
+// HasNext returns true if the quarter after given quarter is set.
+// This wraps around from Q4 to Q1.  (qtr = 0..3 = same as Quarters)
+func (qt Quarters) HasNext(qtr int) bool {
+	nqt := (qtr + 1) % 4
+	return qt.Has(nqt)
+}
+
+// HasPrev returns true if the quarter before given quarter is set.
+// This wraps around from Q1 to Q4.  (qtr = 0..3 = same as Quarters)
+func (qt Quarters) PrevIsBurstQtr(qtr int) bool {
+	pqt := (qtr - 1)
+	if pqt < 0 {
+		pqt += 4
+	}
+	return qt.Has(pqt)
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  TimeScales

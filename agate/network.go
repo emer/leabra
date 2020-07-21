@@ -12,7 +12,7 @@ import (
 )
 
 // agate.Network has methods for configuring specialized AGate network components
-// for Attentional / adaptive Gating of Active maintenance for Thought and Executive function.
+// for Attentional & adaptive Gating of Action and Thought for Executive function.
 type Network struct {
 	deep.Network
 }
