@@ -85,7 +85,8 @@ func AddTRCLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 // AddInputPulv2D adds an input and corresponding Pulvinar (P suffix) TRC layer.
 // Pulvinar is placed behind Input.
 func AddInputPulv2D(nt *leabra.Network, name string, shapeY, shapeX int) (input, pulv emer.Layer) {
-	input = nt.AddLayer2D(name, shapeY, shapeX, emer.Input)
+	input = AddSuperLayer2D(nt, name, shapeY, shapeX)
+	input.SetType(emer.Input)
 	pulvi := AddTRCLayer2D(nt, name+"P", shapeY, shapeX)
 	pulv = pulvi
 	pulvi.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
@@ -96,7 +97,8 @@ func AddInputPulv2D(nt *leabra.Network, name string, shapeY, shapeX int) (input,
 // AddInputPulv4D adds an input and corresponding Pulvinar (P suffix) TRC layer
 // Pulvinar is placed Behind Input.
 func AddInputPulv4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (input, pulv emer.Layer) {
-	input = nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Input)
+	input = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+	input.SetType(emer.Input)
 	pulvi := AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	pulv = pulvi
 	pulvi.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
