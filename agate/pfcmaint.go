@@ -15,11 +15,11 @@ import (
 // PFCMaintLayer is the base layer type for BGate framework.
 // Adds a dopamine variable to base Leabra layer type.
 type PFCMaintLayer struct {
-	leabra.PFCMaintLayer
+	leabra.Layer
 	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
-var KiT_PFCMaintLayer = kit.Types.AddType(&PFCMaintLayer{}, leabra.PFCMaintLayerProps)
+var KiT_PFCMaintLayer = kit.Types.AddType(&PFCMaintLayer{}, leabra.LayerProps)
 
 // DAPFCMaintLayer interface:
 
@@ -30,7 +30,7 @@ func (ly *PFCMaintLayer) SetDA(da float32) { ly.DA = da }
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
 func (ly *PFCMaintLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.PFCMaintLayer.UnitVarIdx(varNm)
+	vidx, err := ly.Layer.UnitVarIdx(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -51,7 +51,7 @@ func (ly *PFCMaintLayer) UnitVal1D(varIdx int, idx int) float32 {
 		return math32.NaN()
 	}
 	if varIdx < nn {
-		return ly.PFCMaintLayer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
@@ -63,6 +63,6 @@ func (ly *PFCMaintLayer) UnitVal1D(varIdx int, idx int) float32 {
 }
 
 func (ly *PFCMaintLayer) InitActs() {
-	ly.PFCMaintLayer.InitActs()
+	ly.Layer.InitActs()
 	ly.DA = 0
 }
