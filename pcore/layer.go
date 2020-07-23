@@ -12,7 +12,7 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-// Layer is the base layer type for BGate framework.
+// Layer is the base layer type for PCore framework.
 // Adds a dopamine variable to base Leabra layer type.
 type Layer struct {
 	leabra.Layer
