@@ -5,6 +5,7 @@
 package agate
 
 import (
+	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pcore"
@@ -39,7 +40,7 @@ func (nt *Network) UnitVarNames() []string {
 
 // SynVarNames returns the names of all the variables on the synapses in this network.
 func (nt *Network) SynVarNames() []string {
-	return SynVarsAll
+	return pcore.SynVarsAll
 }
 
 // AddBG adds MtxGo, No, CIN, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
@@ -50,6 +51,17 @@ func (nt *Network) SynVarNames() []string {
 // using standard styles
 func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	return pcore.AddBG(&nt.Network.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX)
+}
+
+////////////////////////////////////////////////////////////////////////
+// Network functions available here as standalone functions
+//         for mixing in to other models
+
+// AddMaintLayer adds a MaintLayer using 4D shape with pools
+func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
+	ly := &MaintLayer{}
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	return ly
 }
 
 /*

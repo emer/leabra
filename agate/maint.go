@@ -15,14 +15,14 @@ import (
 // parameters.  We have to do some things to make it work for rate code neurons..
 type NMDAParams struct {
 	Tau   float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
-	Gbar  float32 `desc:"strength of NMDA current"`
-	ActVm float32 `desc:"extra contribution to Vm associated with action potentials, on average"`
+	Gbar  float32 `def:"1.7" desc:"strength of NMDA current -- 1.7 is just over level sufficient to maintain in face of completely blank input"`
+	ActVm float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
 }
 
 func (np *NMDAParams) Defaults() {
 	np.Tau = 100
-	np.Gbar = 1
-	np.ActVm = 0
+	np.Gbar = 1.7
+	np.ActVm = 0.4
 }
 
 // GFmV returns the NMDA conductance as a function of normalized membrane potential
@@ -47,20 +47,41 @@ var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.NMDA.Defaults()
+	ly.Act.Init.Decay = 0
 }
 
 func (ly *MaintLayer) InitNMDA() {
 	for ni := range ly.MaintNeurs {
 		nrn := &ly.MaintNeurs[ni]
 		nrn.Grec = 0
+		nrn.GrecInc = 0
 		nrn.Gnmda = 0
 		nrn.VmEff = 0
+	}
+}
+
+func (ly *MaintLayer) InitGInc() {
+	ly.Layer.InitGInc()
+	for ni := range ly.MaintNeurs {
+		nrn := &ly.MaintNeurs[ni]
+		nrn.Grec = 0
 	}
 }
 
 func (ly *MaintLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.InitNMDA()
+}
+
+func (ly *MaintLayer) DecayState(decay float32) {
+	ly.Layer.DecayState(decay)
+	for ni := range ly.MaintNeurs {
+		mnr := &ly.MaintNeurs[ni]
+		mnr.Grec -= decay * mnr.Grec
+		mnr.GrecInc -= decay * mnr.GrecInc
+		mnr.Gnmda -= decay * mnr.Gnmda
+		mnr.VmEff -= decay * mnr.VmEff
+	}
 }
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
@@ -120,10 +141,9 @@ func (ly *MaintLayer) GFmIncNeur(ltime *leabra.Time) {
 		mnr.GrecInc = 0
 		mnr.VmEff = nrn.Vm + ly.NMDA.ActVm*nrn.Act
 
-		mnr.Gnmda = ly.NMDA.Gbar * mnr.Grec * ly.NMDA.GFmV(mnr.VmEff)
-		nrn.GeRaw += mnr.Gnmda
+		mnr.Gnmda = ly.NMDA.Gbar*mnr.Grec*ly.NMDA.GFmV(mnr.VmEff) - (mnr.Gnmda / ly.NMDA.Tau)
 
-		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
+		ly.Act.GeFmRaw(nrn, nrn.GeRaw+mnr.Gnmda)
 	}
 }
 
@@ -165,7 +185,7 @@ func (ly *MaintLayer) UnitVal1D(varIdx int, idx int) float32 {
 		return math32.NaN()
 	}
 	nn := len(leabra.NeuronVars)
-	if varIdx <= nn { // DA = nn
+	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {

@@ -174,7 +174,6 @@ func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 func (ac *ActParams) GiFmRaw(nrn *Neuron, giRaw float32) {
 	ac.Dt.GFmRaw(giRaw, &nrn.GiSyn)
 	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
-
 }
 
 // InetFmG computes net current from conductances and Vm
