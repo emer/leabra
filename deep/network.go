@@ -120,7 +120,7 @@ const (
 // AddSuperCT2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn Full projection from Super to CT.
 // Optionally creates a TRC Pulvinar for Super.
-// Deep is placed Behind Super, and Pulvinar behind Deep if created.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
 func AddSuperCT2D(nt *leabra.Network, name string, shapeY, shapeX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	super = AddSuperLayer2D(nt, name, shapeY, shapeX)
 	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
@@ -138,7 +138,7 @@ func AddSuperCT2D(nt *leabra.Network, name string, shapeY, shapeX int, pulvLay b
 // AddSuperCT4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn Full projection from Super to CT.
 // Optionally creates a TRC Pulvinar for Super.
-// Deep is placed Behind Super, and Pulvinar behind Deep if created.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
 func AddSuperCT4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
@@ -171,7 +171,7 @@ func (nt *Network) AddInputPulv4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 // AddSuperCT2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn Full projection from Super to CT.
 // Optionally creates a TRC Pulvinar for Super.
-// Deep is placed Behind Super, and Pulvinar behind Deep if created.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
 func (nt *Network) AddSuperCT2D(name string, shapeY, shapeX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	return AddSuperCT2D(&nt.Network, name, shapeY, shapeX, pulvLay)
 }
@@ -179,7 +179,7 @@ func (nt *Network) AddSuperCT2D(name string, shapeY, shapeX int, pulvLay bool) (
 // AddSuperCT4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn Full projection from Super to CT.
 // Optionally creates a TRC Pulvinar for Super.
-// Deep is placed Behind Super, and Pulvinar behind Deep if created.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
 func (nt *Network) AddSuperCT4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	return AddSuperCT4D(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
 }

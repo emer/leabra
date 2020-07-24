@@ -63,6 +63,11 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
+// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+	return ConnectToMatrix(&nt.Network, send, recv, pat)
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Network functions available here as standalone functions
 //         for mixing in to other models

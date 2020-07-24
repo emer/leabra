@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/emer/leabra/deep"
+	"github.com/emer/leabra/pcore"
 )
 
 var (
@@ -23,10 +24,12 @@ var (
 )
 
 func init() {
-	ln := len(deep.NeuronVarsAll)
-	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
+	dln := len(deep.NeuronVarsAll)
+	pln := len(pcore.NeuronVars)
+	NeuronVarsAll = make([]string, len(NeuronVars)+dln+pln)
 	copy(NeuronVarsAll, deep.NeuronVarsAll)
-	copy(NeuronVarsAll[ln:], NeuronVars)
+	copy(NeuronVarsAll[dln:], pcore.NeuronVars)
+	copy(NeuronVarsAll[dln+pln:], NeuronVars)
 
 	MaintNeuronVarsMap = make(map[string]int, len(MaintNeuronVars))
 	for i, v := range MaintNeuronVars {

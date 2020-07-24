@@ -6,6 +6,8 @@ package agate
 
 import (
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pcore"
@@ -53,15 +55,60 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (m
 	return pcore.AddBG(&nt.Network.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
+// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+	return pcore.ConnectToMatrix(&nt.Network.Network, send, recv, pat)
+}
+
+// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// and OutLayer which is gated by BG.
+// Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
+// Optionally creates a TRC Pulvinar for Super.
+// CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
+func (nt *Network) AddPFC(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, maint, out, pulv emer.Layer) {
+	return AddPFC(&nt.Network.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Network functions available here as standalone functions
 //         for mixing in to other models
 
-// AddMaintLayer adds a MaintLayer using 4D shape with pools
+// AddMaintLayer adds a MaintLayer using 4D shape with pools,
+// and lateral PoolOneToOne connectivity.
 func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
 	ly := &MaintLayer{}
 	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.ConnectLayers(ly, ly, prjn.NewPoolOneToOne(), emer.Lateral)
 	return ly
+}
+
+// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// and OutLayer which is gated by BG.
+// Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
+// Optionally creates a TRC Pulvinar for Super.
+// CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
+func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, maint, out, pulv emer.Layer) {
+	if name == "" {
+		name = "PFC"
+	}
+	super = deep.AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+	ct = deep.AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
+	maint = AddMaintLayer(nt, name+"Mnt", nPoolsY, nPoolsX, nNeurY, nNeurX)
+	out = nt.AddLayer4D(name+"Out", nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Hidden)
+
+	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
+	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: name, YAlign: relpos.Front, Space: 2})
+	maint.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: out.Name(), XAlign: relpos.Left, Space: 2})
+
+	deep.ConnectCtxtToCT(nt, super, ct, prjn.NewPoolOneToOne())
+
+	if pulvLay {
+		pulvi := deep.AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
+		pulv = pulvi
+		pulvi.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: ct.Name(), XAlign: relpos.Left, Space: 2})
+		pulvi.DriverLay = name
+	}
+	return
 }
 
 /*
