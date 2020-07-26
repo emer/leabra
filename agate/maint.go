@@ -6,27 +6,29 @@ package agate
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/emergent/emer"
+	"github.com/emer/leabra/interinhib"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
-// NMDAParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
+// MaintParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
 // parameters.  We have to do some things to make it work for rate code neurons..
-type NMDAParams struct {
-	Tau   float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
-	Gbar  float32 `def:"1.7" desc:"strength of NMDA current -- 1.7 is just over level sufficient to maintain in face of completely blank input"`
-	ActVm float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
+type MaintParams struct {
+	Tau         float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
+	Gbar        float32 `def:"1.7" desc:"strength of NMDA current -- 1.7 is just over level sufficient to maintain in face of completely blank input"`
+	ActVm       float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
+	AlphaMaxCyc int     `desc:"cycle on which to start recording AlphaMax -- allow for transition"`
 }
 
-func (np *NMDAParams) Defaults() {
+func (np *MaintParams) Defaults() {
 	np.Tau = 100
 	np.Gbar = 1.7
 	np.ActVm = 0.4
+	np.AlphaMaxCyc = 30
 }
 
 // GFmV returns the NMDA conductance as a function of normalized membrane potential
-func (np *NMDAParams) GFmV(v float32) float32 {
+func (np *MaintParams) GFmV(v float32) float32 {
 	vbio := v*100 - 100
 	return 1 / (1 + 0.28*math32.Exp(-0.062*vbio))
 }
@@ -35,19 +37,24 @@ func (np *NMDAParams) GFmV(v float32) float32 {
 // MaintLayer
 
 // MaintLayer is a layer with NMDA channels that supports active maintenance
-// in frontal cortex, via layer 3 recurrent circuits.
+// in frontal cortex, via NMDA channels (in an NMDAMaintPrjn).
 type MaintLayer struct {
 	leabra.Layer
-	NMDA       NMDAParams    `view:"inline" desc:"parameters for NMDA channel conductances that sustain active maintenance"`
-	MaintNeurs []MaintNeuron `desc:"slice of extra MaintNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	Maint      MaintParams           `view:"inline" desc:"maintenance parameters, including for NMDA channel conductances that sustain active maintenance"`
+	InterInhib interinhib.InterInhib `desc:"inhibition from output layer"`
+	MaintNeurs []MaintNeuron         `desc:"slice of extra MaintNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
 }
 
 var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.NMDA.Defaults()
+	ly.Maint.Defaults()
+	ly.InterInhib.Defaults()
+	ly.InterInhib.Gi = 0.1
+	ly.InterInhib.Add = true
 	ly.Act.Init.Decay = 0
+	ly.Inhib.Pool.On = true
 }
 
 func (ly *MaintLayer) InitNMDA() {
@@ -57,6 +64,14 @@ func (ly *MaintLayer) InitNMDA() {
 		nrn.GrecInc = 0
 		nrn.Gnmda = 0
 		nrn.VmEff = 0
+	}
+}
+
+// InitAlphaMax initializes the AlphaMax to 0
+func (ly *MaintLayer) InitAlphaMax() {
+	for ni := range ly.MaintNeurs {
+		nrn := &ly.MaintNeurs[ni]
+		nrn.AlphaMax = 0
 	}
 }
 
@@ -71,6 +86,7 @@ func (ly *MaintLayer) InitGInc() {
 func (ly *MaintLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.InitNMDA()
+	ly.InitAlphaMax()
 }
 
 func (ly *MaintLayer) DecayState(decay float32) {
@@ -82,6 +98,14 @@ func (ly *MaintLayer) DecayState(decay float32) {
 		mnr.Gnmda -= decay * mnr.Gnmda
 		mnr.VmEff -= decay * mnr.VmEff
 	}
+}
+
+// AlphaCycInit handles all initialization at start of new input pattern, including computing
+// input scaling from running average activation etc.
+// should already have presented the external input to the network at this point.
+func (ly *MaintLayer) AlphaCycInit() {
+	ly.Layer.AlphaCycInit()
+	ly.InitAlphaMax()
 }
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
@@ -99,7 +123,7 @@ func (ly *MaintLayer) RecvGInc(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		if p.Type() == emer.Lateral { // skip recurrent
+		if p.Type() == NMDAMaint { // skip NMDA
 			continue
 		}
 		p.(leabra.LeabraPrjn).RecvGInc()
@@ -112,7 +136,7 @@ func (ly *MaintLayer) RecvGrecInc(ltime *leabra.Time) {
 		if p.IsOff() {
 			continue
 		}
-		if p.Type() != emer.Lateral { // skip recurrent
+		if p.Type() != NMDAMaint { // skip non-NMDA
 			continue
 		}
 		pj := p.(leabra.LeabraPrjn).AsLeabra()
@@ -139,12 +163,56 @@ func (ly *MaintLayer) GFmIncNeur(ltime *leabra.Time) {
 		mnr := &ly.MaintNeurs[ni]
 		mnr.Grec += mnr.GrecInc
 		mnr.GrecInc = 0
-		mnr.VmEff = nrn.Vm + ly.NMDA.ActVm*nrn.Act
+		mnr.VmEff = nrn.Vm + ly.Maint.ActVm*nrn.Act
 
-		mnr.Gnmda = ly.NMDA.Gbar*mnr.Grec*ly.NMDA.GFmV(mnr.VmEff) - (mnr.Gnmda / ly.NMDA.Tau)
+		mnr.Gnmda = ly.Maint.Gbar*mnr.Grec*ly.Maint.GFmV(mnr.VmEff) - (mnr.Gnmda / ly.Maint.Tau)
 
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw+mnr.Gnmda)
 	}
+}
+
+// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
+	lpl := &ly.Pools[0]
+	ly.Inhib.Layer.Inhib(&lpl.Inhib)
+	ly.InterInhib.Inhib(&ly.Layer) // does inter-layer inhibition
+	ly.PoolInhibFmGeAct(ltime)
+}
+
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// and updates learning running-average activations from that Act.
+// Maint extends to update AlphaMax
+func (ly *MaintLayer) ActFmG(ltime *leabra.Time) {
+	ly.Layer.ActFmG(ltime)
+	if ltime.Cycle > ly.Maint.AlphaMaxCyc {
+		ly.AlphaMaxFmAct(ltime)
+	}
+}
+
+// AlphaMaxFmAct computes AlphaMax from Activation
+func (ly *MaintLayer) AlphaMaxFmAct(ltime *leabra.Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		mnr := &ly.MaintNeurs[ni]
+		mnr.AlphaMax = math32.Max(mnr.AlphaMax, nrn.Act)
+	}
+}
+
+// MaxAlphaMax returns the maximum AlphaMax across the layer
+func (ly *MaintLayer) MaxAlphaMax() float32 {
+	mx := float32(0)
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		mnr := &ly.MaintNeurs[ni]
+		mx = math32.Max(mnr.AlphaMax, mx)
+	}
+	return mx
 }
 
 ///////////////////////////////////////////////////////////////////////////

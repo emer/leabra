@@ -1005,16 +1005,25 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 	}
 }
 
-// InhibiFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 func (ly *Layer) InhibFmGeAct(ltime *Time) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
+	ly.PoolInhibFmGeAct(ltime)
+}
+
+// PoolInhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
+	lpl := &ly.Pools[0]
 	np := len(ly.Pools)
 	if np > 1 {
 		for pi := 1; pi < np; pi++ {
 			pl := &ly.Pools[pi]
 			ly.Inhib.Pool.Inhib(&pl.Inhib)
 			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+			if !ly.Inhib.Layer.On { // keep layer level updated for inter-layer inhib
+				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+			}
 			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 				nrn := &ly.Neurons[ni]
 				if nrn.IsOff() {

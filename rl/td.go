@@ -138,6 +138,7 @@ var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()
+	ly.Act.Clamp.Range.Set(-100, 100)
 	if ly.RewInteg == "" {
 		ly.RewInteg = "RewInteg"
 	}

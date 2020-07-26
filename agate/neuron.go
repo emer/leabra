@@ -14,7 +14,7 @@ import (
 
 var (
 	// NeuronVars are extra neuron variables for agate, on top of pcore
-	NeuronVars = []string{"Grec", "GrecInc", "Gnmda", "VmEff"}
+	NeuronVars = []string{"Grec", "GrecInc", "Gnmda", "VmEff", "AlphaMax"}
 
 	// NeuronVarsAll is the agate collection of all neuron-level vars
 	NeuronVarsAll []string
@@ -38,18 +38,19 @@ func init() {
 }
 
 //////////////////////////////////////////////////////////////////////
-// STN neurons
+// Maint neurons
 
 // MaintNeuron holds the extra neuron (unit) level variables for STN computation.
 type MaintNeuron struct {
-	Grec    float32 `desc:"recurrent-only (self) conductance"`
-	GrecInc float32 `desc:"increment for recurrent-only (self) conductance"`
-	Gnmda   float32 `desc:"NMDA conductance, total -- added directly to Ge as it has the same reversal potential."`
-	VmEff   float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
+	Grec     float32 `desc:"recurrent-only (self) conductance"`
+	GrecInc  float32 `desc:"increment for recurrent-only (self) conductance"`
+	Gnmda    float32 `desc:"NMDA conductance, total -- added directly to Ge as it has the same reversal potential."`
+	VmEff    float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
+	AlphaMax float32 `desc:"Maximum activation over Alpha cycle period"`
 }
 
 var (
-	MaintNeuronVars    = []string{"Grec", "GrecInc", "Gnmda", "VmEff"}
+	MaintNeuronVars    = []string{"Grec", "GrecInc", "Gnmda", "VmEff", "AlphaMax"}
 	MaintNeuronVarsMap map[string]int
 )
 

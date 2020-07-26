@@ -74,18 +74,33 @@ func (nt *Network) AddPFC(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pul
 //         for mixing in to other models
 
 // AddMaintLayer adds a MaintLayer using 4D shape with pools,
-// and lateral PoolOneToOne connectivity.
+// and lateral NMDAMaint PoolOneToOne connectivity.
 func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
 	ly := &MaintLayer{}
 	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
-	nt.ConnectLayers(ly, ly, prjn.NewPoolOneToOne(), emer.Lateral)
+	ConnectNMDA(nt, ly, ly, prjn.NewPoolOneToOne())
 	return ly
+}
+
+// AddOutLayer adds a OutLayer using 4D shape with pools,
+// and lateral PoolOneToOne connectivity.
+func AddOutLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *OutLayer {
+	ly := &OutLayer{}
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	return ly
+}
+
+// ConnectNMDA adds a NMDAMaintPrjn between given layers
+func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+	return nt.ConnectLayersPrjn(send, recv, pat, NMDAMaint, &NMDAMaintPrjn{})
 }
 
 // AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
 // and OutLayer which is gated by BG.
 // Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
 // Optionally creates a TRC Pulvinar for Super.
+// Standard Deep CTCtxtPrjn PoolOneToOne Super -> CT projection, and
+// 1to1 projections Super -> Maint and Maint -> Out class PFCFixed are created by default.
 // CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
 func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, maint, out, pulv emer.Layer) {
 	if name == "" {
@@ -93,14 +108,24 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	}
 	super = deep.AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = deep.AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
-	maint = AddMaintLayer(nt, name+"Mnt", nPoolsY, nPoolsX, nNeurY, nNeurX)
-	out = nt.AddLayer4D(name+"Out", nPoolsY, nPoolsX, nNeurY, nNeurX, emer.Hidden)
+	mainti := AddMaintLayer(nt, name+"Mnt", nPoolsY, nPoolsX, nNeurY, nNeurX)
+	maint = mainti
+	outi := AddOutLayer(nt, name+"Out", nPoolsY, nPoolsX, nNeurY, nNeurX)
+	out = outi
 
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: name, YAlign: relpos.Front, Space: 2})
 	maint.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: out.Name(), XAlign: relpos.Left, Space: 2})
 
+	one2one := prjn.NewOneToOne()
 	deep.ConnectCtxtToCT(nt, super, ct, prjn.NewPoolOneToOne())
+
+	pj := nt.ConnectLayers(super, maint, one2one, emer.Forward)
+	pj.SetClass("PFCFixed")
+	pj = nt.ConnectLayers(maint, out, one2one, emer.Forward)
+	pj.SetClass("PFCFixed")
+	outi.Out.MaintLay = maint.Name()
+	mainti.InterInhib.Lays.Add(out.Name())
 
 	if pulvLay {
 		pulvi := deep.AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
@@ -110,66 +135,3 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	}
 	return
 }
-
-/*
-
-// AddPFCLayer adds a PFCLayer, super and deep, of given size, with given name.
-// nY, nX = number of pools in Y, X dimensions, and each pool has nNeurY, nNeurX neurons.
-// out is true for output-gating layer. Both have the class "PFC" set.
-// deep receives one-to-one projections of class "PFCToDeep" from super, and sends "PFCFmDeep",
-// and is positioned behind it.
-func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool) (sp, dp *PFCLayer) {
-	sp = &PFCLayer{}
-	nt.AddLayerInit(sp, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
-	dp = &PFCLayer{}
-	nt.AddLayerInit(dp, name+"D", []int{nY, nX, nNeurY, nNeurX}, deep.Deep)
-	sp.SetClass("PFC")
-	dp.SetClass("PFC")
-	sp.Gate.OutGate = out
-	dp.Gate.OutGate = out
-	dp.Dyns.MaintOnly()
-	dp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	pj := nt.ConnectLayers(sp, dp, prjn.NewOneToOne(), deep.BurstCtxt)
-	pj.SetClass("PFCToDeep")
-	pj = nt.ConnectLayers(dp, sp, prjn.NewOneToOne(), deep.DeepAttn)
-	pj.SetClass("PFCFmDeep")
-	return
-}
-
-// AddPFC adds paired PFCmnt, PFCout and associated Deep layers,
-// with given optional prefix.
-// nY = number of pools in Y dimension, nMaint, nOut are pools in X dimension,
-// and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
-// are made within super / deep (see AddPFCLayer) and between PFCmntD -> PFCout.
-func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
-	if prefix == "" {
-		prefix = "PFC"
-	}
-	if nMaint > 0 {
-		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"mnt", nY, nMaint, nNeurY, nNeurX, false)
-	}
-	if nOut > 0 {
-		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"out", nY, nOut, nNeurY, nNeurX, true)
-	}
-	if pfcOut != nil && pfcMnt != nil {
-		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
-		pj.SetClass("PFCMntDToOut")
-	}
-	return
-}
-
-// AddPBWM adds a DorsalBG an PFC with given params
-func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
-	mtxGo, mtxNoGo, gpe, gpi = nt.AddDorsalBG(prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
-	pfcMnt, pfcMntD, pfcOut, pfcOutD = nt.AddPFC(prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX)
-	if pfcMnt != nil {
-		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
-	}
-	gpl := gpi.(*GPiThalLayer)
-	gpl.SendToMatrixPFC(prefix) // sends gating to all these layers
-	gpl.SendGateShape()
-	return
-}
-
-*/

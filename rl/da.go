@@ -74,6 +74,11 @@ type ClampDaLayer struct {
 
 var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, leabra.LayerProps)
 
+func (ly *ClampDaLayer) Defaults() {
+	ly.Layer.Defaults()
+	ly.Act.Clamp.Range.Set(-1, 1)
+}
+
 // DALayer interface:
 
 func (ly *ClampDaLayer) GetDA() float32   { return ly.DA }

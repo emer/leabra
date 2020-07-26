@@ -11,7 +11,7 @@ type Inhib struct {
 	FFi    float32         `desc:"computed feedforward inhibition"`
 	FBi    float32         `desc:"computed feedback inhibition (total)"`
 	Gi     float32         `desc:"overall value of the inhibition -- this is what is added into the unit Gi inhibition level (along with any synaptic unit-driven inhibition)"`
-	GiOrig float32         `desc:"original value of the inhibition (before any  group effects set in)"`
+	GiOrig float32         `desc:"original value of the inhibition (before pool or other effects)"`
 	LayGi  float32         `desc:"for pools, this is the layer-level inhibition that is MAX'd with the pool-level inhibition to produce the net inhibition"`
 	Ge     minmax.AvgMax32 `desc:"average and max Ge excitatory conductance values, which drive FF inhibition"`
 	Act    minmax.AvgMax32 `desc:"average and max Act activation values, which drive FB inhibition"`

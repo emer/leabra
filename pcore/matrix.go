@@ -30,11 +30,11 @@ func (mp *MatrixParams) Defaults() {
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type MatrixLayer struct {
 	Layer
-	DaR         DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix      MatrixParams `view:"inline" desc:"matrix parameters"`
-	DALrn       float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
-	ACh         float32      `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
-	AlphaMaxAct []float32    `desc:"per-neuron maximum activation value during alpha cycle"`
+	DaR       DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+	Matrix    MatrixParams `view:"inline" desc:"matrix parameters"`
+	DALrn     float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+	ACh       float32      `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
+	AlphaMaxs []float32    `desc:"per-neuron maximum activation value during alpha cycle"`
 }
 
 var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
@@ -119,7 +119,7 @@ func (ly *MatrixLayer) Build() error {
 		return err
 	}
 	nn := len(ly.Neurons)
-	ly.AlphaMaxAct = make([]float32, nn)
+	ly.AlphaMaxs = make([]float32, nn)
 	return nil
 }
 
@@ -137,10 +137,10 @@ func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
 	return da
 }
 
-// InitMaxAct initializes the AlphaMaxAct to 0
-func (ly *MatrixLayer) InitMaxAct() {
-	for pi := range ly.AlphaMaxAct {
-		ly.AlphaMaxAct[pi] = 0
+// InitAlphaMax initializes the AlphaMax to 0
+func (ly *MatrixLayer) InitAlphaMax() {
+	for pi := range ly.AlphaMaxs {
+		ly.AlphaMaxs[pi] = 0
 	}
 }
 
@@ -149,7 +149,7 @@ func (ly *MatrixLayer) InitActs() {
 	ly.DA = 0
 	ly.DALrn = 0
 	ly.ACh = 0
-	ly.InitMaxAct()
+	ly.InitAlphaMax()
 }
 
 // AlphaCycInit handles all initialization at start of new input pattern, including computing
@@ -157,21 +157,26 @@ func (ly *MatrixLayer) InitActs() {
 // should already have presented the external input to the network at this point.
 func (ly *MatrixLayer) AlphaCycInit() {
 	ly.Layer.AlphaCycInit()
-	ly.InitMaxAct()
+	ly.InitAlphaMax()
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
-// Matrix extends to call DALrnFmDA and updates AlphaMaxAct -> ActLrn
+// Matrix extends to call DALrnFmDA and updates AlphaMax -> ActLrn
 func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
 	ly.DALrn = ly.DALrnFmDA(ly.DA)
 	ly.Layer.ActFmG(ltime)
+	ly.AlphaMaxFmAct(ltime)
+}
+
+// AlphaMaxFmAct computes AlphaMax from Activation
+func (ly *MatrixLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		max := &ly.AlphaMaxAct[ni]
+		max := &ly.AlphaMaxs[ni]
 		*max = math32.Max(*max, nrn.Act)
 		nrn.ActLrn = *max
 	}
@@ -229,13 +234,13 @@ func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
 // and subsequent activity, and is based biologically on synaptic tags.
 // Trace is reset at time of reward based on ACh level from CINs.
 type MatrixTraceParams struct {
-	CurTrlDA bool    `def:"false" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
+	CurTrlDA bool    `def:"true" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
 	Decay    float32 `def:"2" min:"0" desc:"multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
 	Deriv    bool    `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
 }
 
 func (tp *MatrixTraceParams) Defaults() {
-	tp.CurTrlDA = false
+	tp.CurTrlDA = true
 	tp.Deriv = true
 	tp.Decay = 2
 }

@@ -154,7 +154,10 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	stns = AddSTNLayer(nt, prefix+"STNs", nPoolsY, nPoolsX, 1, 1)
 	mtxGo = AddMatrixLayer(nt, prefix+"MtxGo", nPoolsY, nPoolsX, nNeurY, nNeurX, D1R)
 	mtxNo = AddMatrixLayer(nt, prefix+"MtxNo", nPoolsY, nPoolsX, nNeurY, nNeurX, D2R)
-	cin = AddCINLayer(nt, prefix+"CIN")
+	cini := AddCINLayer(nt, prefix+"CIN")
+	cin = cini
+
+	cini.SendACh.Add(mtxGo.Name(), mtxNo.Name())
 
 	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: 2})
 
