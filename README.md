@@ -63,7 +63,7 @@ Cambridge, MA: MIT Press. [Computational Explorations..]([https://psych.colorado
 
 The name is pronounced like "Libra" and is intended to connote the *balance* of various different factors in an attempt to approach the "golden middle" ground between biological realism and computational efficiency and the ability to simulate complex cognitive function.
 
-The version of Leabra implemented here corresponds to version 8.5 of [C++ emergent](https://grey.colorado.edu/emergent/index.php/Main_Page).
+The version of Leabra implemented here corresponds to version 8.5 of [C++ emergent (cemer)](https://github.com/emer/cemer).
 
 The basic activation dynamics of Leabra are based on standard electrophysiological principles of real neurons, and in discrete spiking mode we implement exactly the AdEx (adapting exponential) model of Gerstner and colleagues [Scholarpedia article on AdEx](https://www.scholarpedia.org/article/Adaptive_exponential_integrate-and-fire_model).  The basic `leabra` package implements the rate code mode (which runs faster and allows for smaller networks), which provides a very close approximation to the AdEx model behavior, in terms of a graded activation signal matching the actual instantaneous rate of spiking across a population of AdEx neurons.  We generally conceive of a single rate-code neuron as representing a microcolumn of roughly 100 spiking pyramidal neurons in the neocortex.  Conversion factors from biological units from AdEx to normalized units used in Leabra are in this [google sheet](https://docs.google.com/spreadsheets/d/1jn-NcXY4-y3pOw6inFOgPYlaQodrGIjcsAWkiD9f1FQ/edit?usp=sharing).
 
@@ -83,17 +83,11 @@ There are various extensions to the algorithm that implement special neural mech
 You can copy the mediawiki source of the following section into a file, and run [pandoc](https://pandoc.org/) on it to convert to LaTeX (or other formats) for inclusion in a paper.  As this wiki page is always kept updated, it is best to regenerate from this source -- very easy:
 
 ```bash
-wget "https://grey.colorado.edu/emergent/index.php/Leabra?action=raw" -o appendix.mw
-pandoc appendix.mw -f mediawiki -t latex -o appendix.tex
-</pre>
-The \href to LeabraNetinScaling will have to be manually edited, and there is a \tightlist macro that is defined as:
-<pre>
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+curl "https://raw.githubusercontent.com/emer/leabra/master/README.md" -o appendix.md
+pandoc appendix.md -f gfm -t latex -o appendix.tex
 ```
 
-which you need to include in the header of your .tex file.
-
+You can then edit the resulting .tex file to only include the parts you want, etc.
 
 # Leabra Algorithm Equations
 
@@ -101,13 +95,14 @@ The pseudocode for Leabra is given here, showing exactly how the pieces of the a
 
 There are also other implementations of Leabra available:
 * [leabra7](https://github.com/PrincetonUniversity/leabra7) Python implementation of the version 7 of Leabra, by Daniel Greenidge and Ken Norman at Princeton.
-* [Matlab](https://grey.colorado.edu/cgi-bin/viewvc.cgi/emergent/trunk/Matlab/) (also available in the C++ emergent source tree) -- a complete implementation of these equations in Matlab, coded by Sergio Verduzco-Flores.
+* [Matlab](https://github.com/emer/cemer/blob/master/Matlab/) (link into the cemer C++ emergent source tree) -- a complete implementation of these equations in Matlab, coded by Sergio Verduzco-Flores.
 * [Python](https://github.com/benureau/leabra) implementation by Fabien Benureau.
 * [R](https://github.com/johannes-titz/leabRa) implementation by Johannes Titz.
 
 This repository contains specialized additions to the core algorithm described here:
 * [deep](https://github.com/emer/leabra/blob/master/deep) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
-* [pbwm](https://github.com/emer/leabra/blob/master/pbwm) has the prefrontal-cortex basal ganglia working memory model (PBWM) and associated learning mechanisms such as TD (temporal differences).
+* [pbwm](https://github.com/emer/leabra/blob/master/rl) has basic reinforcement learning models such as Rescorla-Wagner and TD (temporal differences).
+* [pbwm](https://github.com/emer/leabra/blob/master/pbwm1) has the prefrontal-cortex basal ganglia working memory model (PBWM).
 * [hip](https://github.com/emer/leabra/blob/master/hip) has the hippocampus specific learning mechanisms.
 
 ## Timing
