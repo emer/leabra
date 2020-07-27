@@ -105,6 +105,12 @@ func (pj *Prjn) SynVarIdx(varNm string) (int, error) {
 	return SynapseVarByName(varNm)
 }
 
+// SynVarNum returns the number of synapse-level variables
+// for this prjn.  This is needed for extending indexes in derived types.
+func (pj *Prjn) SynVarNum() int {
+	return len(SynapseVars)
+}
+
 // SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
@@ -113,7 +119,7 @@ func (pj *Prjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if synIdx < 0 || synIdx >= len(pj.Syns) {
 		return math32.NaN()
 	}
-	if varIdx < 0 || varIdx >= len(SynapseVars) {
+	if varIdx < 0 || varIdx >= pj.SynVarNum() {
 		return math32.NaN()
 	}
 	sy := &pj.Syns[synIdx]

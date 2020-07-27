@@ -15,7 +15,7 @@ import (
 // Layer is the base layer type for PCore framework.
 // Adds a dopamine variable to base Leabra layer type.
 type Layer struct {
-	leabra.Layer
+	AlphaMaxLayer
 	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
@@ -30,14 +30,14 @@ func (ly *Layer) SetDA(da float32) { ly.DA = da }
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
 func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+	vidx, err := ly.AlphaMaxLayer.UnitVarIdx(varNm)
 	if err == nil {
 		return vidx, err
 	}
 	if varNm != "DA" {
-		return -1, fmt.Errorf("pcore.NeuronVars: variable named: %s not found", varNm)
+		return -1, fmt.Errorf("pcore.Layer: variable named: %s not found", varNm)
 	}
-	nn := len(leabra.NeuronVars)
+	nn := ly.AlphaMaxLayer.UnitVarNum()
 	return nn, nil
 }
 
@@ -46,20 +46,23 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
-	nn := len(leabra.NeuronVars)
-	if varIdx < 0 || varIdx > nn {
+	nn := ly.AlphaMaxLayer.UnitVarNum()
+	if varIdx < 0 || varIdx > nn { // nn = DA
 		return math32.NaN()
 	}
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.AlphaMaxLayer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
-	if varIdx != nn {
-		return math32.NaN()
-	}
 	return ly.DA
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *Layer) UnitVarNum() int {
+	return ly.AlphaMaxLayer.UnitVarNum() + 1
 }
 
 func (ly *Layer) InitActs() {

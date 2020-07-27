@@ -6,6 +6,7 @@ package pcore
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/chewxy/math32"
@@ -17,11 +18,17 @@ import (
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
+	ThalLay   string  `desc:"name of VThal layer -- needed to get overall gating output action"`
+	ThalThr   float32 `desc:"threshold for thal max activation (in pool) to be gated"`
 	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 	DipGain   float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 }
 
 func (mp *MatrixParams) Defaults() {
+	if mp.ThalLay == "" {
+		mp.ThalLay = "VThal"
+	}
+	mp.ThalThr = 0.7
 	mp.BurstGain = 1
 	mp.DipGain = 1
 }
@@ -30,11 +37,10 @@ func (mp *MatrixParams) Defaults() {
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type MatrixLayer struct {
 	Layer
-	DaR       DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix    MatrixParams `view:"inline" desc:"matrix parameters"`
-	DALrn     float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
-	ACh       float32      `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
-	AlphaMaxs []float32    `desc:"per-neuron maximum activation value during alpha cycle"`
+	DaR    DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
+	DALrn  float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+	ACh    float32      `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
 }
 
 var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
@@ -110,22 +116,34 @@ func (ly *MatrixLayer) Defaults() {
 func (ly *MatrixLayer) GetACh() float32    { return ly.ACh }
 func (ly *MatrixLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections
-// you MUST have properly configured the Inhib.Pool.On setting by this point
-// to properly allocate Pools for the unit groups if necessary.
-func (ly *MatrixLayer) Build() error {
-	err := ly.Layer.Build()
+func (ly *MatrixLayer) ThalLayer() (*VThalLayer, error) {
+	tly, err := ly.Network.LayerByNameTry(ly.Matrix.ThalLay)
 	if err != nil {
-		return err
+		log.Printf("MatrixLayer %s ThalLayer: %v\n", ly.Name(), err)
+		return nil, err
 	}
-	nn := len(ly.Neurons)
-	ly.AlphaMaxs = make([]float32, nn)
-	return nil
+	return tly.(*VThalLayer), nil
 }
 
-// DALrnFmDA returns effective learning dopamine value from given raw DA value
+func (ly *MatrixLayer) InitActs() {
+	ly.Layer.InitActs()
+	ly.DA = 0
+	ly.DALrn = 0
+	ly.ACh = 0
+}
+
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// and updates learning running-average activations from that Act.
+// Matrix extends to call DALrnFmDA and updates AlphaMax -> ActLrn
+func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
+	ly.Layer.ActFmG(ltime)
+	ly.DAActLrn(ltime)
+}
+
+// DAActLrnFmDA returns effective learning dopamine value from given raw DA value
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
-func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
+func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
+	da := ly.DA
 	if da > 0 {
 		da *= ly.Matrix.BurstGain
 	} else {
@@ -134,51 +152,26 @@ func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
 	if ly.DaR == D2R {
 		da *= -1
 	}
-	return da
-}
-
-// InitAlphaMax initializes the AlphaMax to 0
-func (ly *MatrixLayer) InitAlphaMax() {
-	for pi := range ly.AlphaMaxs {
-		ly.AlphaMaxs[pi] = 0
+	ly.DALrn = da
+	if ltime.Cycle < ly.AlphaMaxCyc {
+		return
 	}
-}
-
-func (ly *MatrixLayer) InitActs() {
-	ly.Layer.InitActs()
-	ly.DA = 0
-	ly.DALrn = 0
-	ly.ACh = 0
-	ly.InitAlphaMax()
-}
-
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-// should already have presented the external input to the network at this point.
-func (ly *MatrixLayer) AlphaCycInit() {
-	ly.Layer.AlphaCycInit()
-	ly.InitAlphaMax()
-}
-
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
-// and updates learning running-average activations from that Act.
-// Matrix extends to call DALrnFmDA and updates AlphaMax -> ActLrn
-func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
-	ly.DALrn = ly.DALrnFmDA(ly.DA)
-	ly.Layer.ActFmG(ltime)
-	ly.AlphaMaxFmAct(ltime)
-}
-
-// AlphaMaxFmAct computes AlphaMax from Activation
-func (ly *MatrixLayer) AlphaMaxFmAct(ltime *leabra.Time) {
+	tly, err := ly.ThalLayer()
+	if err != nil {
+		return
+	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		max := &ly.AlphaMaxs[ni]
-		*max = math32.Max(*max, nrn.Act)
-		nrn.ActLrn = *max
+		amax := ly.AlphaMaxs[ni]
+		tact := tly.AlphaMaxs[nrn.SubPool-1]
+		if tact > ly.Matrix.ThalThr {
+			nrn.ActLrn = amax
+		} else {
+			nrn.ActLrn = -amax
+		}
 	}
 }
 
@@ -327,7 +320,8 @@ func (pj *MatrixPrjn) DWt() {
 
 			tr := trsy.Tr
 
-			ntr := pj.Trace.LrnFactor(rn.ActLrn) * sn.ActLrn
+			// ntr := pj.Trace.LrnFactor(rn.ActLrn) * sn.ActLrn
+			ntr := rn.ActLrn * sn.ActLrn
 			dwt := float32(0)
 
 			if pj.Trace.CurTrlDA {

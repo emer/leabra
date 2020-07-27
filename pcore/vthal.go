@@ -12,7 +12,7 @@ import (
 )
 
 // VThalLayer represents the Ventral thalamus: VA / VM / VL,
-// which receives BG gating   the form of inhibitory projection from GPi.
+// which receives BG gating in the form of inhibitory projection from GPi.
 type VThalLayer struct {
 	Layer
 }

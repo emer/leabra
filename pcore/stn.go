@@ -219,8 +219,8 @@ func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	nn := len(leabra.NeuronVars)
-	return nn + 1 + vidx, err // +1 = da -- need a better global var for this
+	nn := ly.Layer.UnitVarNum()
+	return nn + vidx, err
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
@@ -231,17 +231,23 @@ func (ly *STNLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if varIdx < 0 {
 		return math32.NaN()
 	}
-	nn := len(leabra.NeuronVars)
-	if varIdx <= nn { // DA = nn
+	nn := ly.Layer.UnitVarNum()
+	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
-	varIdx -= nn + 1
-	if varIdx >= len(STNNeuronVars) {
+	varIdx -= nn
+	if varIdx > len(STNNeuronVars) {
 		return math32.NaN()
 	}
 	snr := &ly.STNNeurs[idx]
 	return snr.VarByIndex(varIdx)
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *STNLayer) UnitVarNum() int {
+	return ly.Layer.UnitVarNum() + len(STNNeuronVars)
 }

@@ -112,6 +112,12 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	return NeuronVarByName(varNm)
 }
 
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *Layer) UnitVarNum() int {
+	return len(NeuronVars)
+}
+
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
@@ -120,7 +126,7 @@ func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
-	if varIdx < 0 || varIdx >= len(NeuronVars) {
+	if varIdx < 0 || varIdx >= ly.UnitVarNum() {
 		return math32.NaN()
 	}
 	nrn := &ly.Neurons[idx]

@@ -92,9 +92,9 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 		return vidx, err
 	}
 	if varNm != "ACh" {
-		return -1, fmt.Errorf("pcore.NeuronVars: variable named: %s not found", varNm)
+		return -1, fmt.Errorf("pcore.CINLayer: variable named: %s not found", varNm)
 	}
-	nn := len(leabra.NeuronVars)
+	nn := ly.Layer.UnitVarNum()
 	return nn, nil
 }
 
@@ -103,7 +103,7 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
-	nn := len(leabra.NeuronVars)
+	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = ACh
 		return math32.NaN()
 	}
@@ -113,8 +113,11 @@ func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
-	if varIdx > nn {
-		return math32.NaN()
-	}
 	return ly.ACh
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *CINLayer) UnitVarNum() int {
+	return ly.Layer.UnitVarNum() + 1
 }

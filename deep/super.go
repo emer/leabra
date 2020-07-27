@@ -33,7 +33,7 @@ type SuperNeuron struct {
 	BurstPrv float32 `desc:"previous bursting activation -- used for context-based learning"`
 }
 
-func (sn *SuperNeuron) ValByIdx(idx int) float32 {
+func (sn *SuperNeuron) VarByIdx(idx int) float32 {
 	switch NeurVars(idx) {
 	case BurstVar:
 		return sn.Burst
@@ -42,6 +42,10 @@ func (sn *SuperNeuron) ValByIdx(idx int) float32 {
 	}
 	return math32.NaN()
 }
+
+var (
+	SuperNeuronVars = []string{"Burst", "BurstPrv"}
+)
 
 // SuperLayer is the DeepLeabra superficial layer, based on basic rate-coded leabra.Layer.
 // Computes the Burst activation from regular activations.
@@ -83,7 +87,7 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 	if err != nil {
 		return vidx, err
 	}
-	vidx += len(leabra.NeuronVars)
+	vidx += ly.Layer.UnitVarNum()
 	return vidx, err
 }
 
@@ -92,19 +96,28 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
+	if varIdx < 0 {
+		return math32.NaN()
+	}
+	nn := ly.Layer.UnitVarNum()
+	if varIdx < nn {
+		return ly.Layer.UnitVal1D(varIdx, idx)
+	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
-	if varIdx < 0 || varIdx >= len(NeuronVarsAll) {
+	varIdx -= nn
+	if varIdx >= len(SuperNeuronVars) {
 		return math32.NaN()
 	}
-	nn := len(leabra.NeuronVars)
-	if varIdx < nn {
-		nrn := &ly.Neurons[idx]
-		return nrn.VarByIndex(varIdx)
-	}
-	varIdx -= nn
-	return ly.SuperNeurs[idx].ValByIdx(varIdx)
+	snr := &ly.SuperNeurs[idx]
+	return snr.VarByIdx(varIdx)
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *SuperLayer) UnitVarNum() int {
+	return ly.Layer.UnitVarNum() + len(SuperNeuronVars)
 }
 
 // Build constructs the layer state, including calling Build on the projections.
