@@ -62,7 +62,7 @@ func (ly *VThalLayer) Defaults() {
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
 		if strings.HasSuffix(pj.Send.Name(), "GPi") { // GPiToVThal
-			pj.WtScale.Abs = 2.0
+			pj.WtScale.Abs = 2.5 // 2.5 needed for agate model..
 		}
 	}
 

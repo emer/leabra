@@ -152,8 +152,10 @@ func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
 	ly.DAActLrn(ltime)
 }
 
-// DAActLrnFmDA returns effective learning dopamine value from given raw DA value
+// DAActLrn sets effective learning dopamine value from given raw DA value,
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
+// Also sets ActLrn based on whether corresponding VThal stripe fired
+// above ThalThr -- flips sign of learning for stripe firing vs. not.
 func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 	da := ly.DA
 	if da > 0 {
