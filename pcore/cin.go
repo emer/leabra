@@ -6,49 +6,37 @@ package pcore
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/chewxy/math32"
+	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/rl"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
-// CINLayer (cholinergic interneuron) reads reward signals from a named source layer
-// and sends the absolute value of that activity as the positively-rectified
+// CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
+// and sends the Max absolute value of that activity as the positively-rectified
 // non-prediction-discounted reward signal computed by CINs, and sent as
 // an acetylcholine (ACh) signal.
+// To handle positive-only reward signals, need to include both a reward prediction
+// and reward outcome layer.
 type CINLayer struct {
 	leabra.Layer
-	RewLay  string     `desc:"name of Reward-representing layer from which this computes ACh as absolute value"`
-	SendACh rl.SendACh `desc:"list of layers to send acetylcholine to"`
-	ACh     float32    `desc:"acetylcholine value for this layer"`
+	RewLays emer.LayNames `desc:"Reward-representing layer(s) from which this computes ACh as Max absolute value"`
+	SendACh rl.SendACh    `desc:"list of layers to send acetylcholine to"`
+	ACh     float32       `desc:"acetylcholine value for this layer"`
 }
 
 var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
 func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
-	if ly.RewLay == "" {
-		ly.RewLay = "Rew"
-	}
 }
 
 // AChLayer interface:
 
 func (ly *CINLayer) GetACh() float32    { return ly.ACh }
 func (ly *CINLayer) SetACh(ach float32) { ly.ACh = ach }
-
-// RewLayer returns the reward layer based on name
-func (ly *CINLayer) RewLayer() (*leabra.Layer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
-	if err != nil {
-		log.Printf("CINLayer %s, RewLay: %v\n", ly.Name(), err)
-		return nil, err
-	}
-	return tly.(leabra.LeabraLayer).AsLeabra(), nil
-}
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *CINLayer) Build() error {
@@ -57,23 +45,33 @@ func (ly *CINLayer) Build() error {
 		return err
 	}
 	err = ly.SendACh.Validate(ly.Network, ly.Name()+" SendTo list")
-	_, err = ly.RewLayer()
+	err = ly.RewLays.Validate(ly.Network, ly.Name()+" RewLays list")
 	return err
 }
 
-func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
-	rly, _ := ly.RewLayer()
-	if rly == nil {
-		return
+// MaxAbsRew returns the maximum absolute value of reward layer activations
+func (ly *CINLayer) MaxAbsRew() float32 {
+	mx := float32(0)
+	for _, nm := range ly.RewLays {
+		lyi := ly.Network.LayerByName(nm)
+		if lyi == nil {
+			continue
+		}
+		ly := lyi.(leabra.LeabraLayer).AsLeabra()
+		act := math32.Abs(ly.Pools[0].Inhib.Act.Max)
+		mx = math32.Max(mx, act)
 	}
-	rnrn := &(rly.Neurons[0])
-	ract := rnrn.Act
+	return mx
+}
+
+func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
+	ract := ly.MaxAbsRew()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.Act = mat32.Abs(ract)
+		nrn.Act = ract
 	}
 }
 
