@@ -6,7 +6,7 @@ package leabra
 
 import (
 	"fmt"
-	"reflect"
+	"unsafe"
 )
 
 // leabra.Synapse holds state for the synaptic connection between neurons
@@ -17,6 +17,10 @@ type Synapse struct {
 	Norm   float32 `desc:"DWt normalization factor -- reset to max of abs value of DWt, decays slowly down over time -- serves as an estimate of variance in weight changes over time"`
 	Moment float32 `desc:"momentum -- time-integrated DWt changes, to accumulate a consistent direction of weight change and cancel out dithering contradictory changes"`
 	Scale  float32 `desc:"scaling parameter for this connection: effective weight value is scaled by this factor -- useful for topographic connectivity patterns e.g., to enforce more distant connections to always be lower in magnitude than closer connections.  Value defaults to 1 (cannot be exactly 0 -- otherwise is automatically reset to 1 -- use a very small number to approximate 0).  Typically set by using the prjn.Pattern Weights() values where appropriate"`
+}
+
+func (sy *Synapse) VarNames() []string {
+	return SynapseVars
 }
 
 var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale"}
@@ -35,10 +39,6 @@ func init() {
 	}
 }
 
-func (sy *Synapse) VarNames() []string {
-	return SynapseVars
-}
-
 // SynapseVarByName returns the index of the variable in the Synapse, or error
 func SynapseVarByName(varNm string) (int, error) {
 	i, ok := SynapseVarsMap[varNm]
@@ -50,9 +50,8 @@ func SynapseVarByName(varNm string) (int, error) {
 
 // VarByIndex returns variable using index (0 = first variable in SynapseVars list)
 func (sy *Synapse) VarByIndex(idx int) float32 {
-	// todo: would be ideal to avoid having to use reflect here..
-	v := reflect.ValueOf(*sy)
-	return v.Field(idx).Interface().(float32)
+	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(sy)) + uintptr(4*idx)))
+	return *fv
 }
 
 // VarByName returns variable by name, or error
@@ -65,9 +64,8 @@ func (sy *Synapse) VarByName(varNm string) (float32, error) {
 }
 
 func (sy *Synapse) SetVarByIndex(idx int, val float32) {
-	// todo: would be ideal to avoid having to use reflect here..
-	v := reflect.ValueOf(sy)
-	v.Elem().Field(idx).SetFloat(float64(val))
+	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(sy)) + uintptr(4*idx)))
+	*fv = val
 }
 
 // SetVarByName sets synapse variable to given value

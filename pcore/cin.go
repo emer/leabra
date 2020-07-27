@@ -22,6 +22,7 @@ import (
 // and reward outcome layer.
 type CINLayer struct {
 	leabra.Layer
+	RewThr  float32       `desc:"threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior"`
 	RewLays emer.LayNames `desc:"Reward-representing layer(s) from which this computes ACh as Max absolute value"`
 	SendACh rl.SendACh    `desc:"list of layers to send acetylcholine to"`
 	ACh     float32       `desc:"acetylcholine value for this layer"`
@@ -31,6 +32,7 @@ var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
 func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
+	ly.RewThr = 0.1
 }
 
 // AChLayer interface:
@@ -66,6 +68,11 @@ func (ly *CINLayer) MaxAbsRew() float32 {
 
 func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 	ract := ly.MaxAbsRew()
+	if ly.RewThr > 0 {
+		if ract > ly.RewThr {
+			ract = 1
+		}
+	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

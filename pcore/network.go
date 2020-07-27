@@ -59,8 +59,9 @@ func (nt *Network) SynVarNames() []string {
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
 // using standard styles
-func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
-	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX)
+// space is the spacing between layers (2 typical)
+func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, space float32) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
+	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
 // ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
@@ -137,8 +138,9 @@ func AddVThalLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
-// using standard styles
-func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
+// using standard styles.
+// space is the spacing between layers (2 typical)
+func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, space float32) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
 	gpi = AddGPiLayer(nt, prefix+"GPi", nPoolsY, nPoolsX, 1, 1)
 	vthal = AddVThalLayer(nt, prefix+"VThal", nPoolsY, nPoolsX, 1, 1)
 	gpeOuti := AddGPeLayer(nt, prefix+"GPeOut", nPoolsY, nPoolsX, 1, 1)
@@ -159,17 +161,17 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 
 	cini.SendACh.Add(mtxGo.Name(), mtxNo.Name())
 
-	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: 2})
+	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: space})
 
 	gpeOut.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpi.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
-	gpeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeOut.Name(), YAlign: relpos.Front, Space: 2})
-	gpeTA.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeIn.Name(), YAlign: relpos.Front, Space: 2})
-	stnp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name(), YAlign: relpos.Front, Space: 2})
-	stns.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: stnp.Name(), YAlign: relpos.Front, Space: 2})
+	gpeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeOut.Name(), YAlign: relpos.Front, Space: space})
+	gpeTA.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeIn.Name(), YAlign: relpos.Front, Space: space})
+	stnp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name(), YAlign: relpos.Front, Space: space})
+	stns.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: stnp.Name(), YAlign: relpos.Front, Space: space})
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
-	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
-	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: 2})
+	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: space})
+	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: space})
 
 	one2one := prjn.NewPoolOneToOne()
 	full := prjn.NewFull()

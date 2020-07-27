@@ -156,9 +156,27 @@ func (ly *MaintLayer) GFmIncNeur(ltime *leabra.Time) {
 // InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
 	lpl := &ly.Pools[0]
+	mxact := ly.InterInhibMaxAct(ltime)
+	lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.InterInhib.Inhib(&ly.AlphaMaxLayer.Layer) // does inter-layer inhibition
 	ly.PoolInhibFmGeAct(ltime)
+}
+
+// InterInhibMaxAct returns the AlphaMax activation for source layers
+func (ly *MaintLayer) InterInhibMaxAct(ltime *leabra.Time) float32 {
+	mxact := float32(0)
+	for _, lnm := range ly.InterInhib.Lays {
+		oli := ly.Network.LayerByName(lnm)
+		if oli == nil {
+			continue
+		}
+		ol, ok := oli.(*OutLayer)
+		if ok {
+			mxact = ol.MaxAlphaMax()
+		}
+		// todo: anything else?
+	}
+	return mxact
 }
 
 ///////////////////////////////////////////////////////////////////////////

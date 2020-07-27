@@ -50,9 +50,10 @@ func (nt *Network) SynVarNames() []string {
 // Assumes that a 4D structure will be used, with Pools representing separable gating domains.
 // Only Matrix has more than 1 unit per Pool by default.
 // Appropriate PoolOneToOne connections are made between layers,
-// using standard styles
-func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
-	return pcore.AddBG(&nt.Network.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX)
+// using standard styles.
+// space is the spacing between layers (2 typical)
+func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, space float32) (mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal leabra.LeabraLayer) {
+	return pcore.AddBG(&nt.Network.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
 // ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer

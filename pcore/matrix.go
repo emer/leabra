@@ -19,7 +19,8 @@ import (
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
 	ThalLay   string  `desc:"name of VThal layer -- needed to get overall gating output action"`
-	ThalThr   float32 `desc:"threshold for thal max activation (in pool) to be gated"`
+	ThalThr   float32 `def:"0.2" desc:"threshold for thal max activation (in pool) to be gated -- typically .2 or so to accurately reflect PFC output gating"`
+	Deriv     bool    `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
 	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 	DipGain   float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 }
@@ -28,9 +29,20 @@ func (mp *MatrixParams) Defaults() {
 	if mp.ThalLay == "" {
 		mp.ThalLay = "VThal"
 	}
-	mp.ThalThr = 0.7
+	mp.ThalThr = 0.2
+	mp.Deriv = true
 	mp.BurstGain = 1
 	mp.DipGain = 1
+}
+
+// LrnFactor returns multiplicative factor for level of msn activation.  If Deriv
+// is 2 * act * (1-act) -- the factor of 2 compensates for otherwise reduction in
+// learning from these factors.  Otherwise is just act.
+func (mp *MatrixParams) LrnFactor(act float32) float32 {
+	if !mp.Deriv {
+		return act
+	}
+	return 2 * act * (1 - act)
 }
 
 // MatrixLayer represents the dorsal matrisome MSN's that are the main
@@ -165,7 +177,7 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		amax := ly.AlphaMaxs[ni]
+		amax := ly.Matrix.LrnFactor(ly.AlphaMaxs[ni])
 		tact := tly.AlphaMaxs[nrn.SubPool-1]
 		if tact > ly.Matrix.ThalThr {
 			nrn.ActLrn = amax
@@ -229,23 +241,11 @@ func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
 type MatrixTraceParams struct {
 	CurTrlDA bool    `def:"true" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
 	Decay    float32 `def:"2" min:"0" desc:"multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
-	Deriv    bool    `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
 }
 
 func (tp *MatrixTraceParams) Defaults() {
 	tp.CurTrlDA = true
-	tp.Deriv = true
 	tp.Decay = 2
-}
-
-// LrnFactor returns multiplicative factor for level of msn activation.  If Deriv
-// is 2 * act * (1-act) -- the factor of 2 compensates for otherwise reduction in
-// learning from these factors.  Otherwise is just act.
-func (tp *MatrixTraceParams) LrnFactor(act float32) float32 {
-	if !tp.Deriv {
-		return act
-	}
-	return 2 * act * (1 - act)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -320,7 +320,6 @@ func (pj *MatrixPrjn) DWt() {
 
 			tr := trsy.Tr
 
-			// ntr := pj.Trace.LrnFactor(rn.ActLrn) * sn.ActLrn
 			ntr := rn.ActLrn * sn.ActLrn
 			dwt := float32(0)
 
@@ -381,7 +380,7 @@ func (pj *MatrixPrjn) SynVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	nn := len(leabra.SynapseVars)
+	nn := pj.Prjn.SynVarNum()
 	switch varNm {
 	case "NTr":
 		return nn, nil
@@ -399,7 +398,7 @@ func (pj *MatrixPrjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if varIdx < 0 || varIdx >= len(SynVarsAll) {
 		return math32.NaN()
 	}
-	nn := len(leabra.SynapseVars)
+	nn := pj.Prjn.SynVarNum()
 	if varIdx < nn {
 		return pj.Prjn.SynVal1D(varIdx, synIdx)
 	}
@@ -409,4 +408,10 @@ func (pj *MatrixPrjn) SynVal1D(varIdx int, synIdx int) float32 {
 	varIdx -= nn
 	sy := &pj.TrSyns[synIdx]
 	return sy.VarByIndex(varIdx)
+}
+
+// SynVarNum returns the number of synapse-level variables
+// for this prjn.  This is needed for extending indexes in derived types.
+func (pj *MatrixPrjn) SynVarNum() int {
+	return pj.Prjn.SynVarNum() + len(TraceSynVars)
 }
