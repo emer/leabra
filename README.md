@@ -59,7 +59,7 @@ There are several changes from the original C++ emergent implementation for how 
 
 Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) learning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](https://github.com/CompCogNeuro/ed4) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
 the Mind by Simulating the Brain*, O'Reilly and Munakata, 2000,
-Cambridge, MA: MIT Press. [Computational Explorations..](https://psych.colorado.edu/~oreilly/comp_ex_cog_neuro.html)
+Cambridge, MA: MIT Press. [Computational Explorations..](http://psych.colorado.edu/~oreilly/comp_ex_cog_neuro.html)
 
 The name is pronounced like "Libra" and is intended to connote the *balance* of various different factors in an attempt to approach the "golden middle" ground between biological realism and computational efficiency and the ability to simulate complex cognitive function.
 

@@ -1,7 +1,6 @@
 // Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
 // eqplot plots an equation updating over time in a etable.Table and Plot2D.
 // This is a good starting point for any plotting to explore specific equations.
 // This example plots a double exponential (biexponential) model of synaptic currents.
@@ -39,17 +38,16 @@ const LogPrec = 4
 
 // Sim holds the params, table, etc
 type Sim struct {
-	RiseTau   float64       `desc:"rise time constant"`
-	DecayTau  float64       `desc:"decay time constant -- must NOT be same as RiseTau"`
-	GsXInit   float64       `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
-	MaxTime   float64       `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
-	TauFact   float64       `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
-	TimeSteps int           `desc:"total number of time steps to take"`
-	TimeInc   float64       `desc:"time increment per step"`
-	Table     *etable.Table `view:"no-inline" desc:"table for plot"`
-	Plot      *eplot.Plot2D `view:"-" desc:"the plot"`
-	Win       *gi.Window    `view:"-" desc:"main GUI window"`
-	ToolBar   *gi.ToolBar   `view:"-" desc:"the master toolbar"`
+	NMDAv    float64       `def:"0.062" desc:"multiplier on NMDA as function of voltage"`
+	NMDAd    float64       `def:"3.57" desc:"denominator of NMDA function"`
+	NMDAerev float64       `def:"0" desc:"NMDA reversal / driving potential"`
+	Vstart   float64       `def:"-90" desc:"starting voltage"`
+	Vend     float64       `def:"0" desc:"ending voltage"`
+	Vstep    float64       `def:"1" desc:"voltage increment"`
+	Table    *etable.Table `view:"no-inline" desc:"table for plot"`
+	Plot     *eplot.Plot2D `view:"-" desc:"the plot"`
+	Win      *gi.Window    `view:"-" desc:"main GUI window"`
+	ToolBar  *gi.ToolBar   `view:"-" desc:"the master toolbar"`
 }
 
 // TheSim is the overall state for this simulation
@@ -57,45 +55,39 @@ var TheSim Sim
 
 // Config configures all the elements using the standard functions
 func (ss *Sim) Config() {
-	ss.RiseTau = 10
-	ss.DecayTau = 100
-	ss.GsXInit = 1
-	ss.TimeSteps = 1000
-	ss.TimeInc = .001
+	ss.NMDAv = 0.062
+	ss.NMDAd = 3.57
+	ss.NMDAerev = 0
+	ss.Vstart = -90
+	ss.Vend = 0
+	ss.Vstep = 1
 	ss.Update()
 	ss.Table = &etable.Table{}
 	ss.ConfigTable(ss.Table)
 }
 
-// Equation for biexponential synapse from here:
-// https://brian2.readthedocs.io/en/stable/user/converting_from_integrated_form.html
-
 // Update updates computed values
 func (ss *Sim) Update() {
-	ss.TauFact = math.Pow(ss.DecayTau/ss.RiseTau, ss.RiseTau/(ss.DecayTau-ss.RiseTau))
-	ss.MaxTime = ss.TimeInc * ((ss.RiseTau * ss.DecayTau) / (ss.DecayTau - ss.RiseTau)) * math.Log(ss.DecayTau/ss.RiseTau)
-	ss.MaxTime /= ss.TimeInc
 }
+
+// Equation here:
+// https://brian2.readthedocs.io/en/stable/examples/frompapers.Brunel_Wang_2001.html
 
 // Run runs the equation.
 func (ss *Sim) Run() {
 	ss.Update()
 	dt := ss.Table
-	dt.SetNumRows(ss.TimeSteps)
-	time := 0.0
-	gs := 0.0
-	x := ss.GsXInit
-	for t := 0; t < ss.TimeSteps; t++ {
-		// record starting state first, then update
-		dt.SetCellFloat("Time", t, time)
-		dt.SetCellFloat("Gs", t, gs)
-		dt.SetCellFloat("GsX", t, x)
 
-		dGs := (ss.TauFact*x - gs) / ss.RiseTau
-		dX := -x / ss.DecayTau
-		gs += dGs
-		x += dX
-		time += ss.TimeInc
+	nv := int((ss.Vend - ss.Vstart) / ss.Vstep)
+	dt.SetNumRows(nv)
+	v := 0.0
+	g := 0.0
+	for vi := 0; vi < nv; vi++ {
+		v = ss.Vstart + float64(vi)*ss.Vstep
+		g = (ss.NMDAerev - v) / (1 + 1*math.Exp(-ss.NMDAv*v)/ss.NMDAd)
+
+		dt.SetCellFloat("V", vi, v)
+		dt.SetCellFloat("g_NMDA", vi, g)
 	}
 	ss.Plot.Update()
 }
@@ -106,21 +98,19 @@ func (ss *Sim) ConfigTable(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	sch := etable.Schema{
-		{"Time", etensor.FLOAT64, nil, nil},
-		{"Gs", etensor.FLOAT64, nil, nil},
-		{"GsX", etensor.FLOAT64, nil, nil},
+		{"V", etensor.FLOAT64, nil, nil},
+		{"g_NMDA", etensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
 func (ss *Sim) ConfigPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	plt.Params.Title = "Function Plot"
-	plt.Params.XAxisCol = "Time"
+	plt.Params.XAxisCol = "V"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Time", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Gs", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("GsX", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("V", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("g_NMDA", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
 	return plt
 }
 

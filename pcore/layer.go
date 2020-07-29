@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/chewxy/math32"
+	"github.com/emer/leabra/glong"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -15,7 +16,7 @@ import (
 // Layer is the base layer type for PCore framework.
 // Adds a dopamine variable to base Leabra layer type.
 type Layer struct {
-	AlphaMaxLayer
+	glong.AlphaMaxLayer
 	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 

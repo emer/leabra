@@ -9,6 +9,7 @@ import (
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/deep"
+	"github.com/emer/leabra/glong"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pcore"
 	"github.com/goki/ki/kit"
@@ -79,7 +80,7 @@ func (nt *Network) AddPFC(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pul
 func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
 	ly := &MaintLayer{}
 	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
-	ConnectNMDA(nt, ly, ly, prjn.NewPoolOneToOne())
+	glong.ConnectNMDA(nt, ly, ly, prjn.NewPoolOneToOne())
 	return ly
 }
 
@@ -89,11 +90,6 @@ func AddOutLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeu
 	ly := &OutLayer{}
 	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
 	return ly
-}
-
-// ConnectNMDA adds a NMDAMaintPrjn between given layers
-func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, NMDAMaint, &NMDAMaintPrjn{})
 }
 
 // AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,

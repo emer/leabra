@@ -63,7 +63,7 @@ func (ly *OutLayer) ResetMaint(ltime *leabra.Time) {
 	if maxact > ly.Out.ResetThr {
 		mlay, err := ly.MaintLay()
 		if err == nil {
-			mlay.InitNMDA() // note: will continue to reset..
+			mlay.InitGlong() // note: will continue to reset..
 		}
 	}
 }
