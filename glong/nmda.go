@@ -28,10 +28,21 @@ func (np *NMDAParams) Defaults() {
 	np.Gbar = 1.7
 }
 
+// VmEff returns the effective Vm value including backpropagating action potentials from ActVm
+func (np *NMDAParams) VmEff(vm, act float32) float32 {
+	return vm + np.ActVm*act
+}
+
 // GFmV returns the NMDA conductance as a function of normalized membrane potential
 func (np *NMDAParams) GFmV(v float32) float32 {
 	vbio := v*100 - 100
 	return 1 / (1 + 0.28*math32.Exp(-0.062*vbio))
+}
+
+// Gnmda returns the overall NMDA conductance from GnmdaP, VmEff, and current Gnmda
+func (np *NMDAParams) Gnmda(gNmdaP, gNmda, vmEff float32) float32 {
+	return np.Gbar*gNmdaP*np.GFmV(vmEff) - (gNmda / np.Tau)
+	// g = g + (ng - g) - g/tau = ng - g/tau
 }
 
 ///////////////////////////////////////////////////////////////////////////

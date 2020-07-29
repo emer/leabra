@@ -96,8 +96,7 @@ func (ss *Sim) Config() {
 // Update updates computed values
 func (ss *Sim) Update() {
 	ss.TauFact = math.Pow(ss.DecayTau/ss.RiseTau, ss.RiseTau/(ss.DecayTau-ss.RiseTau))
-	ss.MaxTime = ss.TimeInc * ((ss.RiseTau * ss.DecayTau) / (ss.DecayTau - ss.RiseTau)) * math.Log(ss.DecayTau/ss.RiseTau)
-	ss.MaxTime /= ss.TimeInc
+	ss.MaxTime = ((ss.RiseTau * ss.DecayTau) / (ss.DecayTau - ss.RiseTau)) * math.Log(ss.DecayTau/ss.RiseTau)
 }
 
 // VGRun runs the V-G equation.

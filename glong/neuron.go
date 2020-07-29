@@ -13,7 +13,7 @@ import (
 
 var (
 	// NeuronVars are extra neuron variables for glong
-	NeuronVars = []string{"AlphaMax", "VmEff", "GnmdaP", "GnmdaPInc", "Gnmda", "Ggabab"}
+	NeuronVars = []string{"AlphaMax", "VmEff", "GnmdaP", "GnmdaPInc", "Gnmda", "GgabaB", "GgabaBD"}
 
 	// NeuronVarsAll is the agate collection of all neuron-level vars
 	NeuronVarsAll []string
@@ -43,7 +43,8 @@ type Neuron struct {
 	Gnmda     float32 `desc:"NMDA conductance, total -- added directly to Ge as it has the same reversal potential."`
 	GnmdaP    float32 `desc:"raw NMDA conductance from projection(s)"`
 	GnmdaPInc float32 `desc:"increment for prjn NMDA conductance"`
-	Ggabab    float32 `desc:"GABA-B conductance, total -- added to Gk for GIRK, with .1 reversal potential."`
+	GgabaB    float32 `desc:"GABA-B conductance, total -- added to Gk for GIRK, with .1 reversal potential."`
+	GgabaBD   float32 `desc:"GABA-B decay factor"`
 }
 
 func (nrn *Neuron) VarNames() []string {

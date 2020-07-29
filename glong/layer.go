@@ -43,7 +43,7 @@ func (ly *Layer) InitGlong() {
 		nrn.GnmdaP = 0
 		nrn.GnmdaPInc = 0
 		nrn.Gnmda = 0
-		nrn.Ggabab = 0
+		nrn.GgabaB = 0
 	}
 }
 
@@ -76,8 +76,13 @@ func (ly *Layer) DecayState(decay float32) {
 		gnr.GnmdaP -= decay * gnr.GnmdaP
 		gnr.GnmdaPInc -= decay * gnr.GnmdaPInc
 		gnr.Gnmda -= decay * gnr.Gnmda
-		gnr.Ggabab -= decay * gnr.Ggabab
+		gnr.GgabaB -= decay * gnr.GgabaB
 	}
+}
+
+func (ly *Layer) AlphaCycInit() {
+	ly.Layer.AlphaCycInit()
+	ly.InitAlphaMax()
 }
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
@@ -133,14 +138,62 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 
 		gnr := &ly.GlNeurs[ni]
-		gnr.VmEff = nrn.Vm + ly.NMDA.ActVm*nrn.Act
+		gnr.VmEff = ly.NMDA.VmEff(nrn.Vm, nrn.Act)
 
 		gnr.GnmdaP += gnr.GnmdaPInc
 		gnr.GnmdaPInc = 0
 
-		gnr.Gnmda = ly.NMDA.Gbar*gnr.GnmdaP*ly.NMDA.GFmV(gnr.VmEff) - (gnr.Gnmda / ly.NMDA.Tau)
+		gnr.Gnmda = ly.NMDA.Gnmda(gnr.GnmdaP, gnr.Gnmda, gnr.VmEff)
 
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw+gnr.Gnmda)
+	}
+}
+
+// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *Layer) InhibFmGeAct(ltime *leabra.Time) {
+	lpl := &ly.Pools[0]
+	ly.Inhib.Layer.Inhib(&lpl.Inhib)
+	ly.PoolInhibFmGeAct(ltime)
+}
+
+// PoolInhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *Layer) PoolInhibFmGeAct(ltime *leabra.Time) {
+	lpl := &ly.Pools[0]
+	np := len(ly.Pools)
+	if np > 1 {
+		for pi := 1; pi < np; pi++ {
+			pl := &ly.Pools[pi]
+			ly.Inhib.Pool.Inhib(&pl.Inhib)
+			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+			if !ly.Inhib.Layer.On { // keep layer level updated for inter-layer inhib
+				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+			}
+			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+				nrn := &ly.Neurons[ni]
+				if nrn.IsOff() {
+					continue
+				}
+				ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
+				nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
+				// above is standard, below is GabaB
+				gnr := &ly.GlNeurs[ni]
+				gnr.GgabaB, gnr.GgabaBD = ly.GABAB.GgabaB(gnr.GgabaB, gnr.GgabaBD, nrn.Gi, gnr.VmEff)
+				nrn.Gk = gnr.GgabaB + ly.GABAB.Gbar*ly.GABAB.Gbase
+			}
+		}
+	} else {
+		for ni := lpl.StIdx; ni < lpl.EdIdx; ni++ {
+			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
+			ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
+			nrn.Gi = lpl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
+			// above is standard, below is GabaB
+			gnr := &ly.GlNeurs[ni]
+			gnr.GgabaB, gnr.GgabaBD = ly.GABAB.GgabaB(gnr.GgabaB, gnr.GgabaBD, nrn.Gi, gnr.VmEff)
+			nrn.Gk = gnr.GgabaB + ly.GABAB.Gbar*ly.GABAB.Gbase
+		}
 	}
 }
 

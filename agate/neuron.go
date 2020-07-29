@@ -11,9 +11,6 @@ import (
 )
 
 var (
-	// NeuronVars are extra neuron variables for agate, on top of pcore
-	// NeuronVars = []string{"Grec", "GrecInc", "Gnmda", "VmEff"}
-
 	// NeuronVarsAll is the agate collection of all neuron-level vars
 	NeuronVarsAll []string
 
