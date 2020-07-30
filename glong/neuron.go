@@ -13,7 +13,7 @@ import (
 
 var (
 	// NeuronVars are extra neuron variables for glong
-	NeuronVars = []string{"AlphaMax", "VmEff", "GnmdaP", "GnmdaPInc", "Gnmda", "GgabaB", "GgabaBD"}
+	NeuronVars = []string{"AlphaMax", "VmEff", "Gnmda", "NMDA", "NMDASyn", "NMDAInc", "GgabaB", "GABAB", "GABABx"}
 
 	// NeuronVarsAll is the agate collection of all neuron-level vars
 	NeuronVarsAll []string
@@ -38,13 +38,15 @@ func init() {
 
 // Neuron holds the extra neuron (unit) level variables for STN computation.
 type Neuron struct {
-	AlphaMax  float32 `desc:"Maximum activation over Alpha cycle period"`
-	VmEff     float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
-	Gnmda     float32 `desc:"NMDA conductance, total -- added directly to Ge as it has the same reversal potential."`
-	GnmdaP    float32 `desc:"raw NMDA conductance from projection(s)"`
-	GnmdaPInc float32 `desc:"increment for prjn NMDA conductance"`
-	GgabaB    float32 `desc:"GABA-B conductance, total -- added to Gk for GIRK, with .1 reversal potential."`
-	GgabaBD   float32 `desc:"GABA-B decay factor"`
+	AlphaMax float32 `desc:"Maximum activation over Alpha cycle period"`
+	VmEff    float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
+	Gnmda    float32 `desc:"net NMDA conductance, after Vm gating and Gbar -- added directly to Ge as it has the same reversal potential."`
+	NMDA     float32 `desc:"NMDA channel activation -- underlying time-integrated value with decay"`
+	NMDASyn  float32 `desc:"current synaptic NMDA activation directly from projection(s)"`
+	NMDAInc  float32 `desc:"increment for synaptic NMDA conductance"`
+	GgabaB   float32 `desc:"net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential."`
+	GABAB    float32 `desc:"GABA-B / GIRK activation -- time-integrated value with rise and decay time constants"`
+	GABABx   float32 `desc:"GABA-B / GIRK internal drive variable -- gets the raw activation and decays"`
 }
 
 func (nrn *Neuron) VarNames() []string {

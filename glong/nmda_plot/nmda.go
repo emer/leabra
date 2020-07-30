@@ -38,16 +38,21 @@ const LogPrec = 4
 
 // Sim holds the params, table, etc
 type Sim struct {
-	NMDAv    float64       `def:"0.062" desc:"multiplier on NMDA as function of voltage"`
-	NMDAd    float64       `def:"3.57" desc:"denominator of NMDA function"`
-	NMDAerev float64       `def:"0" desc:"NMDA reversal / driving potential"`
-	Vstart   float64       `def:"-90" desc:"starting voltage"`
-	Vend     float64       `def:"0" desc:"ending voltage"`
-	Vstep    float64       `def:"1" desc:"voltage increment"`
-	Table    *etable.Table `view:"no-inline" desc:"table for plot"`
-	Plot     *eplot.Plot2D `view:"-" desc:"the plot"`
-	Win      *gi.Window    `view:"-" desc:"main GUI window"`
-	ToolBar  *gi.ToolBar   `view:"-" desc:"the master toolbar"`
+	NMDAv     float64       `def:"0.062" desc:"multiplier on NMDA as function of voltage"`
+	NMDAd     float64       `def:"3.57" desc:"denominator of NMDA function"`
+	NMDAerev  float64       `def:"0" desc:"NMDA reversal / driving potential"`
+	Vstart    float64       `def:"-90" desc:"starting voltage"`
+	Vend      float64       `def:"0" desc:"ending voltage"`
+	Vstep     float64       `def:"1" desc:"voltage increment"`
+	Tau       float64       `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
+	TimeSteps int           `desc:"number of time steps"`
+	Gin       float64       `desc:"NMDA g current input at every time step"`
+	Table     *etable.Table `view:"no-inline" desc:"table for plot"`
+	Plot      *eplot.Plot2D `view:"-" desc:"the plot"`
+	TimeTable *etable.Table `view:"no-inline" desc:"table for plot"`
+	TimePlot  *eplot.Plot2D `view:"-" desc:"the plot"`
+	Win       *gi.Window    `view:"-" desc:"main GUI window"`
+	ToolBar   *gi.ToolBar   `view:"-" desc:"the master toolbar"`
 }
 
 // TheSim is the overall state for this simulation
@@ -61,9 +66,14 @@ func (ss *Sim) Config() {
 	ss.Vstart = -90
 	ss.Vend = 0
 	ss.Vstep = 1
+	ss.Tau = 100
+	ss.TimeSteps = 1000
+	ss.Gin = .5
 	ss.Update()
 	ss.Table = &etable.Table{}
 	ss.ConfigTable(ss.Table)
+	ss.TimeTable = &etable.Table{}
+	ss.ConfigTimeTable(ss.TimeTable)
 }
 
 // Update updates computed values
@@ -105,11 +115,56 @@ func (ss *Sim) ConfigTable(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Function Plot"
+	plt.Params.Title = "NMDA V-G Function Plot"
 	plt.Params.XAxisCol = "V"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("V", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("g_NMDA", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	return plt
+}
+
+/////////////////////////////////////////////////////////////////
+
+// TimeRun runs the equation over time.
+func (ss *Sim) TimeRun() {
+	ss.Update()
+	dt := ss.TimeTable
+
+	dt.SetNumRows(ss.TimeSteps)
+	g := 0.0
+	for ti := 0; ti < ss.TimeSteps; ti++ {
+		t := float64(ti) * .001
+		if ti < ss.TimeSteps/2 {
+			g = g + ss.Gin - g/ss.Tau
+		} else {
+			g = g - g/ss.Tau
+		}
+
+		dt.SetCellFloat("Time", ti, t)
+		dt.SetCellFloat("g_NMDA", ti, g)
+	}
+	ss.TimePlot.Update()
+}
+
+func (ss *Sim) ConfigTimeTable(dt *etable.Table) {
+	dt.SetMetaData("name", "EqPlotTable")
+	dt.SetMetaData("read-only", "true")
+	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
+
+	sch := etable.Schema{
+		{"Time", etensor.FLOAT64, nil, nil},
+		{"g_NMDA", etensor.FLOAT64, nil, nil},
+	}
+	dt.SetFromSchema(sch, 0)
+}
+
+func (ss *Sim) ConfigTimePlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+	plt.Params.Title = "Time Function Plot"
+	plt.Params.XAxisCol = "Time"
+	plt.SetTable(dt)
+	// order of params: on, fixMin, min, fixMax, max
+	plt.SetColParams("Time", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("g_NMDA", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
 	return plt
 }
@@ -148,10 +203,18 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "Plot").(*eplot.Plot2D)
 	ss.Plot = ss.ConfigPlot(plt, ss.Table)
 
+	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TimePlot").(*eplot.Plot2D)
+	ss.TimePlot = ss.ConfigTimePlot(plt, ss.TimeTable)
+
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(gi.ActOpts{Label: "Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(gi.ActOpts{Label: "V-G Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Run()
+		vp.SetNeedsFullRender()
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "Time Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.TimeRun()
 		vp.SetNeedsFullRender()
 	})
 

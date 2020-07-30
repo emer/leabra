@@ -40,10 +40,13 @@ func (ly *Layer) InitGlong() {
 		nrn := &ly.GlNeurs[ni]
 		nrn.AlphaMax = 0
 		nrn.VmEff = 0
-		nrn.GnmdaP = 0
-		nrn.GnmdaPInc = 0
 		nrn.Gnmda = 0
+		nrn.NMDA = 0
+		nrn.NMDASyn = 0
+		nrn.NMDAInc = 0
 		nrn.GgabaB = 0
+		nrn.GABAB = 0
+		nrn.GABABx = 0
 	}
 }
 
@@ -59,7 +62,8 @@ func (ly *Layer) InitGInc() {
 	ly.Layer.InitGInc()
 	for ni := range ly.GlNeurs {
 		nrn := &ly.GlNeurs[ni]
-		nrn.GnmdaP = 0
+		nrn.NMDASyn = 0
+		nrn.NMDAInc = 0
 	}
 }
 
@@ -73,10 +77,13 @@ func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.GlNeurs {
 		gnr := &ly.GlNeurs[ni]
 		gnr.VmEff -= decay * gnr.VmEff
-		gnr.GnmdaP -= decay * gnr.GnmdaP
-		gnr.GnmdaPInc -= decay * gnr.GnmdaPInc
 		gnr.Gnmda -= decay * gnr.Gnmda
+		gnr.NMDA -= decay * gnr.NMDA
+		gnr.NMDASyn -= decay * gnr.NMDASyn
+		gnr.NMDAInc -= decay * gnr.NMDAInc
 		gnr.GgabaB -= decay * gnr.GgabaB
+		gnr.GABAB -= decay * gnr.GABAB
+		gnr.GABABx -= decay * gnr.GABABx
 	}
 }
 
@@ -119,7 +126,7 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 		pj := p.(leabra.LeabraPrjn).AsLeabra()
 		for ri := range ly.GlNeurs {
 			rn := &ly.GlNeurs[ri]
-			rn.GnmdaPInc += pj.GInc[ri]
+			rn.NMDAInc += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	}
@@ -140,10 +147,11 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 		gnr := &ly.GlNeurs[ni]
 		gnr.VmEff = ly.NMDA.VmEff(nrn.Vm, nrn.Act)
 
-		gnr.GnmdaP += gnr.GnmdaPInc
-		gnr.GnmdaPInc = 0
+		gnr.NMDASyn += gnr.NMDAInc
+		gnr.NMDAInc = 0
 
-		gnr.Gnmda = ly.NMDA.Gnmda(gnr.GnmdaP, gnr.Gnmda, gnr.VmEff)
+		gnr.NMDA = ly.NMDA.NMDA(gnr.NMDA, gnr.NMDASyn)
+		gnr.Gnmda = ly.NMDA.Gnmda(gnr.NMDA, gnr.VmEff)
 
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw+gnr.Gnmda)
 	}
@@ -177,8 +185,9 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *leabra.Time) {
 				nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 				// above is standard, below is GabaB
 				gnr := &ly.GlNeurs[ni]
-				gnr.GgabaB, gnr.GgabaBD = ly.GABAB.GgabaB(gnr.GgabaB, gnr.GgabaBD, nrn.Gi, gnr.VmEff)
-				nrn.Gk = gnr.GgabaB + ly.GABAB.Gbar*ly.GABAB.Gbase
+				gnr.GABAB, gnr.GABABx = ly.GABAB.GABAB(gnr.GABAB, gnr.GABABx, nrn.Gi)
+				gnr.GgabaB = ly.GABAB.GgabaB(gnr.GABAB, gnr.VmEff)
+				nrn.Gk = gnr.GgabaB
 			}
 		}
 	} else {
@@ -191,8 +200,9 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *leabra.Time) {
 			nrn.Gi = lpl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 			// above is standard, below is GabaB
 			gnr := &ly.GlNeurs[ni]
-			gnr.GgabaB, gnr.GgabaBD = ly.GABAB.GgabaB(gnr.GgabaB, gnr.GgabaBD, nrn.Gi, gnr.VmEff)
-			nrn.Gk = gnr.GgabaB + ly.GABAB.Gbar*ly.GABAB.Gbase
+			gnr.GABAB, gnr.GABABx = ly.GABAB.GABAB(gnr.GABAB, gnr.GABABx, nrn.Gi)
+			gnr.GgabaB = ly.GABAB.GgabaB(gnr.GABAB, gnr.VmEff)
+			nrn.Gk = gnr.GgabaB
 		}
 	}
 }

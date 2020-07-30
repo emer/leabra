@@ -15,7 +15,7 @@ type GABABParams struct {
 	DecayTau float32 `def:"50" desc:"decay time for bi-exponential time dynamics of GABA-B"`
 	Gbar     float32 `def:"0.2" desc:"overall strength multiplier of GABA-B current"`
 	Gbase    float32 `def:"0.2" desc:"baseline level of GABA-B channels open independent of inhibitory input (is added to spiking-produced conductance)"`
-	Smult    float32 `def:"10" desc:"multiplier for converting Gi from FFFB to GABA spikes"`
+	Smult    float32 `def:"15" desc:"multiplier for converting Gi from FFFB to GABA spikes"`
 	MaxTime  float32 `inactive:"+" desc:"time offset when peak conductance occurs, in msec, computed from RiseTau and DecayTau"`
 	TauFact  float32 `view:"-" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
 }
@@ -25,7 +25,7 @@ func (gp *GABABParams) Defaults() {
 	gp.DecayTau = 50
 	gp.Gbar = 0.2
 	gp.Gbase = 0.2
-	gp.Smult = 10
+	gp.Smult = 15
 	gp.Update()
 }
 
@@ -47,19 +47,24 @@ func (gp *GABABParams) GFmS(s float32) float32 {
 	return 1 / (1 + math32.Exp(-(ss-7.1)/1.4))
 }
 
-// BiExp computes bi-exponential update, returns dG and dD deltas to add to g and gD
-func (gp *GABABParams) BiExp(g, gD float32) (dG, dD float32) {
-	dG = (gp.TauFact*gD - g) / gp.RiseTau
-	dD = -gD / gp.DecayTau
+// BiExp computes bi-exponential update, returns dG and dX deltas to add to g and x
+func (gp *GABABParams) BiExp(g, x float32) (dG, dX float32) {
+	dG = (gp.TauFact*x - g) / gp.RiseTau
+	dX = -x / gp.DecayTau
 	return
 }
 
-// GgabaB returns the updated GABA-B conductance g and decay of g (d)
-// based on Vm (VmEff), Gi (GABA spiking) and current GgabaB, GgabaBD.
-func (gp *GABABParams) GgabaB(gGabaB, gGabaBD, gi, vm float32) (g, d float32) {
-	ng := gp.Gbar * gp.GFmS(gi) * gp.GFmV(vm)
-	dG, dD := gp.BiExp(gGabaB, gGabaBD)
-	d += dD
-	g = ng + dG
+// GABAB returns the updated GABA-B / GIRK activation and underlying x value
+// based on current values and gi inhibitory conductance (proxy for GABA spikes)
+func (gp *GABABParams) GABAB(gabaB, gabaBx, gi float32) (g, x float32) {
+	dG, dX := gp.BiExp(gabaB, gabaBx)
+	x = gabaBx + gp.GFmS(gi) + dX // gets new input
+	g = gabaB + dG
 	return
+}
+
+// GgabaB returns the overall net GABAB / GIRK conductance including
+// Gbar, Gbase, and voltage-gating
+func (gp *GABABParams) GgabaB(gabaB, vm float32) float32 {
+	return gp.Gbar * gp.GFmV(vm) * (gabaB + gp.Gbase)
 }

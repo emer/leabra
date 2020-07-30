@@ -18,14 +18,14 @@ type NMDAParams struct {
 	ActVm       float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
 	AlphaMaxCyc int     `desc:"cycle upon which to start updating AlphaMax value"`
 	Tau         float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
-	Gbar        float32 `desc:"strength of NMDA current -- 1.7 is just over level sufficient to maintain in face of completely blank input"`
+	Gbar        float32 `desc:"strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input"`
 }
 
 func (np *NMDAParams) Defaults() {
 	np.ActVm = 0.4
 	np.AlphaMaxCyc = 30
 	np.Tau = 100
-	np.Gbar = 1.7
+	np.Gbar = 0.02
 }
 
 // VmEff returns the effective Vm value including backpropagating action potentials from ActVm
@@ -39,10 +39,14 @@ func (np *NMDAParams) GFmV(v float32) float32 {
 	return 1 / (1 + 0.28*math32.Exp(-0.062*vbio))
 }
 
-// Gnmda returns the overall NMDA conductance from GnmdaP, VmEff, and current Gnmda
-func (np *NMDAParams) Gnmda(gNmdaP, gNmda, vmEff float32) float32 {
-	return np.Gbar*gNmdaP*np.GFmV(vmEff) - (gNmda / np.Tau)
-	// g = g + (ng - g) - g/tau = ng - g/tau
+// NMDA returns the updated NMDA activation from current NMDA and NMDASyn input
+func (np *NMDAParams) NMDA(nmda, nmdaSyn float32) float32 {
+	return nmda + nmdaSyn - (nmda / np.Tau)
+}
+
+// Gnmda returns the NMDA net conductance from nmda activation and vm
+func (np *NMDAParams) Gnmda(nmda, vm float32) float32 {
+	return np.Gbar * np.GFmV(vm) * nmda
 }
 
 ///////////////////////////////////////////////////////////////////////////

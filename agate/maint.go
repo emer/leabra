@@ -26,7 +26,7 @@ var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.NMDA.Gbar = 1.7
+	ly.NMDA.Gbar = 0.02
 	ly.InterInhib.Defaults()
 	ly.InterInhib.Gi = 0.1
 	ly.InterInhib.Add = true
@@ -40,7 +40,7 @@ func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
 	mxact := ly.InterInhibMaxAct(ltime)
 	lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime)
+	ly.PoolInhibFmGeAct(ltime) // this one does GABA-B
 }
 
 // InterInhibMaxAct returns the AlphaMax activation for source layers
