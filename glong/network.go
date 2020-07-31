@@ -36,6 +36,16 @@ func (nt *Network) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
+// NewLayer returns new layer of glong.Layer type -- this is default type for this network
+func (nt *Network) NewLayer() emer.Layer {
+	return &Layer{}
+}
+
+// ConnectNMDA adds a NMDAPrjn between given layers
+func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+	return ConnectNMDA(&nt.Network, send, recv, pat)
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Network functions available here as standalone functions
 //         for mixing in to other models

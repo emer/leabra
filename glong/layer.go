@@ -157,51 +157,18 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 	}
 }
 
-// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) InhibFmGeAct(ltime *leabra.Time) {
-	lpl := &ly.Pools[0]
-	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime)
-}
-
-// PoolInhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) PoolInhibFmGeAct(ltime *leabra.Time) {
-	lpl := &ly.Pools[0]
-	np := len(ly.Pools)
-	if np > 1 {
-		for pi := 1; pi < np; pi++ {
-			pl := &ly.Pools[pi]
-			ly.Inhib.Pool.Inhib(&pl.Inhib)
-			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
-			if !ly.Inhib.Layer.On { // keep layer level updated for inter-layer inhib
-				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
-			}
-			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
-				nrn := &ly.Neurons[ni]
-				if nrn.IsOff() {
-					continue
-				}
-				ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
-				nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
-				// above is standard, below is GabaB
-				gnr := &ly.GlNeurs[ni]
-				gnr.GABAB, gnr.GABABx = ly.GABAB.GABAB(gnr.GABAB, gnr.GABABx, nrn.Gi)
-				gnr.GgabaB = ly.GABAB.GgabaB(gnr.GABAB, gnr.VmEff)
-				nrn.Gk = gnr.GgabaB
-			}
+func (ly *Layer) GABABFmGi(ltime *leabra.Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
 		}
-	} else {
-		for ni := lpl.StIdx; ni < lpl.EdIdx; ni++ {
-			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
-				continue
-			}
-			ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
-			nrn.Gi = lpl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
-			// above is standard, below is GabaB
-			gnr := &ly.GlNeurs[ni]
-			gnr.GABAB, gnr.GABABx = ly.GABAB.GABAB(gnr.GABAB, gnr.GABABx, nrn.Gi)
-			gnr.GgabaB = ly.GABAB.GgabaB(gnr.GABAB, gnr.VmEff)
+		gnr := &ly.GlNeurs[ni]
+		gnr.GABAB, gnr.GABABx = ly.GABAB.GABAB(gnr.GABAB, gnr.GABABx, nrn.Gi)
+		gnr.GgabaB = ly.GABAB.GgabaB(gnr.GABAB, gnr.VmEff)
+		if ly.Act.KNa.On {
+			nrn.Gk += gnr.GgabaB // Gk was set by KNa
+		} else {
 			nrn.Gk = gnr.GgabaB
 		}
 	}
@@ -209,6 +176,7 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *leabra.Time) {
 
 func (ly *Layer) ActFmG(ltime *leabra.Time) {
 	ly.Layer.ActFmG(ltime)
+	ly.GABABFmGi(ltime)
 	if ltime.Cycle >= ly.NMDA.AlphaMaxCyc {
 		ly.AlphaMaxFmAct(ltime)
 	}

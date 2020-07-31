@@ -22,27 +22,6 @@ var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
 var NetworkProps = leabra.NetworkProps
 
-// NewLayer returns new layer of default leabra.Layer type
-func (nt *Network) NewLayer() emer.Layer {
-	return &leabra.Layer{}
-}
-
-// NewPrjn returns new prjn of default leabra.Prjn type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &leabra.Prjn{}
-}
-
-// Defaults sets all the default parameters for all layers and projections
-func (nt *Network) Defaults() {
-	nt.Network.Defaults()
-}
-
-// UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
-func (nt *Network) UpdateParams() {
-	nt.Network.UpdateParams()
-}
-
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {
 	return NeuronVarsAll

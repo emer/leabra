@@ -59,7 +59,7 @@ where v is the normalized Vm value from the Leabra rate code equations -- `vbio`
 
 See the `nmda_plot` directory for a program that plots this function, which looks like this (in terms of net conductance also taking into account the driving potential, which adds an `(E - v)` term in the numerator).
 
-![GABA-B V-G](gabab_plot/fig_sanders_et_al_13_kir_v_g.png)
+![GABA-B V-G](nmda_plot/fig_brunelwang01.png)
 
 **V-G plot for NMDA** from Brunel & Wang (2001)
 
