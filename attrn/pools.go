@@ -7,30 +7,38 @@ package attrn
 import (
 	"log"
 
+	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/evec"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////
 //   EPools
 
-// EPoolParams are how to gather excitation across pools
-type EPoolParams struct {
+// EPool are how to gather excitation across pools
+type EPool struct {
 	LayNm string  `desc:"layer name"`
 	Wt    float32 `desc:"general scaling factor for how much excitation from this pool"`
 }
 
-func (pp *EPoolParams) Defaults() {
-	pp.Wt = 1
+func (ep *EPool) Defaults() {
+	ep.Wt = 1
 }
 
 // EPools is a list of pools
-type EPools []*EPoolParams
+type EPools []*EPool
+
+// Add adds a new epool connection
+func (ep *EPools) Add(laynm string, wt float32) *EPool {
+	np := &EPool{LayNm: laynm, Wt: wt}
+	*ep = append(*ep, np)
+	return np
+}
 
 // Validate ensures that LayNames layers are valid.
 // ctxt is string for error message to provide context.
-func (pp *EPools) Validate(net Network, ctxt string) error {
+func (ep *EPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
-	for _, p := range *pp {
+	for _, p := range *ep {
 		_, err := net.LayerByNameTry(p.LayNm)
 		if err != nil {
 			log.Printf("%s EPools.Validate: %v\n", ctxt, err)
@@ -43,8 +51,8 @@ func (pp *EPools) Validate(net Network, ctxt string) error {
 ///////////////////////////////////////////////////////////////////////////////////
 //   IPools
 
-// IPoolParams are how to gather inhibition across pools
-type IPoolParams struct {
+// IPool are how to gather inhibition across pools
+type IPool struct {
 	LayNm  string     `desc:"layer name"`
 	Wt     float32    `desc:"general scaling factor for how much overall inhibition from this pool contributes, in a non-pool-specific manner"`
 	PoolWt float32    `desc:"scaling factor for how much corresponding pools contribute in a pool-spcific manner, using offsets and averaging across pools as needed to match geometry"`
@@ -52,18 +60,25 @@ type IPoolParams struct {
 	ROff   evec.Vec2i `desc:"offset into our own receiving layer"`
 }
 
-func (pp *IPoolParams) Defaults() {
-	pp.Wt = 1
+func (ip *IPool) Defaults() {
+	ip.Wt = 1
 }
 
 // IPools is a list of pools
-type IPools []*IPoolParams
+type IPools []*IPool
+
+// Add adds a new ipool connection
+func (ip *IPools) Add(laynm string, wt float32) *IPool {
+	np := &IPool{LayNm: laynm, Wt: wt}
+	*ip = append(*ip, np)
+	return np
+}
 
 // Validate ensures that LayNames layers are valid.
 // ctxt is string for error message to provide context.
-func (pp *IPools) Validate(net Network, ctxt string) error {
+func (ip *IPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
-	for _, p := range *pp {
+	for _, p := range *ip {
 		_, err := net.LayerByNameTry(p.LayNm)
 		if err != nil {
 			log.Printf("%s IPools.Validate: %v\n", ctxt, err)

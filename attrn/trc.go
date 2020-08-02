@@ -26,19 +26,74 @@ func (ly *TRNLayer) Defaults() {
 	ly.Layer.Defaults()
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
+// GFmInc gets activity from pools instead of projections
 func (ly *TRNLayer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	ly.GFmIncNeur(ltime)
+	ly.GeFmEPools()
+}
+
+// GeFmEPools receives Ge excitation from EPools Act.Avg activity
+func (ly *TRNLayer) GeFmEPools() {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		nrn.GeRaw = 0
+	}
+	for _, ep := range ly.EPools {
+		oli := ly.Network.LayerByName(ep.LayNm)
+		if oli == nil {
+			continue
+		}
+		ol := oli.(leabra.LeabraLayer).AsLeabra()
+		for ni := range ly.Neurons { // our neurons map to their pools
+			nrn := &ly.Neurons[ni]
+			opl := ol.Pools[1+ni]
+			nrn.GeRaw += ep.Wt * opl.Inhib.Act.Avg
+			ly.Act.GeFmRaw(nrn, nrn.GeRaw)
+		}
+	}
+}
+
+// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *TRNLayer) InhibFmGeAct(ltime *leabra.Time) {
+	lpl := &ly.Pools[0]
+	// todo: spread the inhibition..
+	// mxact := ly.InterInhibMaxAct(ltime)
+	// lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
+	ly.Inhib.Layer.Inhib(&lpl.Inhib)
+	ly.PoolInhibFmGeAct(ltime) // this one does GABA-B
+}
+
+// GiFmIPools receives Ge excitation from IPools Act.Avg activity
+// func (ly *TRNLayer) GiFmIPools() {
+// 	for ni := range ly.Neurons {
+// 		nrn := &ly.Neurons[ni]
+// 		nrn.GeRaw = 0
+// 	}
+// 	for _, ep := range ly.EPools {
+// 		oli := ly.Network.LayerByName(ep.LayNm)
+// 		if oli == nil {
+// 			continue
+// 		}
+// 		ol := oli.(leabra.LeabraLayer).AsLeabra()
+// 		for ni := range ly.Neurons { // our neurons map to their pools
+// 			nrn := &ly.Neurons[ni]
+// 			opl := ol.Pools[1+ni]
+// 			nrn.GeRaw += ep.Wt * opl.Inhib.Act.Avg
+// 			ly.Act.GeFmRaw(nrn, nrn.GeRaw)
+// 		}
+// 	}
+// }
+
+func (ly *TRNLayer) CyclePost(ltime *leabra.Time) {
+	ly.SendAttn()
 }
 
 // SendAttn sends a normalized version of this layer's activity as attentional modulator
 // to corresponding AttnLayers listed in SendTo
-func (ly *TRNLayer) SendAttn(net emer.Network) {
+func (ly *TRNLayer) SendAttn() {
 	lpl := &ly.Pools[0]
 	amax := lpl.Inhib.Act.Max
 	for _, lnm := range ly.SendTo {
-		oli := net.LayerByName(lnm)
+		oli := ly.Network.LayerByName(lnm)
 		if oli == nil {
 			continue
 		}
@@ -50,23 +105,6 @@ func (ly *TRNLayer) SendAttn(net emer.Network) {
 			nrn := &ly.Neurons[ni]
 			attn := nrn.Act / amax
 			ol.SetAttn(ni, attn)
-		}
-	}
-	return gi
-}
-
-// EFmPools receives excitation from pools
-func (ly *TRNLayer) EFmPools(net emer.Network) {
-	for _, ep := range ly.EPools {
-		oli := net.LayerByName(ep.LayNm)
-		if oli == nil {
-			continue
-		}
-		ol := oli.(leabra.LeabraLayer).AsLeabra()
-		for ni := range ly.Neurons { // our neurons map to their pools
-			nrn := &ly.Neurons[ni]
-			opl := ol.Pools[1+ni]
-			nrn.GeRaw += ep.Wt * opl.Inhib.Act.Avg
 		}
 	}
 }
