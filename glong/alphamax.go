@@ -107,7 +107,7 @@ func (ly *AlphaMaxLayer) UnitVarIdx(varNm string) (int, error) {
 		return vidx, err
 	}
 	if varNm != "AlphaMax" {
-		return -1, fmt.Errorf("pcore.AlphaMaxLayers: variable named: %s not found", varNm)
+		return -1, fmt.Errorf("glong.AlphaMaxLayers: variable named: %s not found", varNm)
 	}
 	nn := ly.Layer.UnitVarNum()
 	return nn, nil
