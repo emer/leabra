@@ -49,19 +49,6 @@ func (ev *ExEnv) Validate() error {
 	return nil
 }
 
-func (ev *ExEnv) Counters() []env.TimeScales {
-	return []env.TimeScales{env.Run, env.Epoch, env.Trial}
-}
-
-func (ev *ExEnv) States() env.Elements {
-	els := env.Elements{
-		{"Input", []int{ev.Size, ev.Size}, []string{"Y", "X"}},
-		{"X", []int{ev.Size}, []string{"X"}},
-		{"Y", []int{ev.Size}, []string{"Y"}},
-	}
-	return els
-}
-
 func (ev *ExEnv) State(element string) etensor.Tensor {
 	switch element {
 	case "Input":
@@ -71,10 +58,6 @@ func (ev *ExEnv) State(element string) etensor.Tensor {
 	case "Y":
 		return &ev.Y
 	}
-	return nil
-}
-
-func (ev *ExEnv) Actions() env.Elements {
 	return nil
 }
 

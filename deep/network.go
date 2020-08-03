@@ -8,6 +8,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
+	"github.com/emer/leabra/attrn"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -153,6 +154,24 @@ func AddSuperCT4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNe
 	return
 }
 
+// AddSuperCTAttn adds a 4D superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and a TRN attentional layer.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
+func AddSuperCTAttn(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, trn, pulv emer.Layer) {
+	super, ct, pulv = AddSuperCT4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
+	trni := attrn.AddTRNLayer(nt, name+"T", nPoolsY, nPoolsX)
+	trn = trni
+	trni.EPools.Add(name+"CT", 1)
+	if pulvLay {
+		trni.EPools.Add(name+"P", .2)
+		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "P", XAlign: relpos.Left, Space: 2})
+	} else {
+		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
+	}
+	trni.SendTo.Add(name)
+	return
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Network versions of Add Layer methods
 
@@ -182,6 +201,13 @@ func (nt *Network) AddSuperCT2D(name string, shapeY, shapeX int, pulvLay bool) (
 // CT is placed Behind Super, and Pulvinar behind CT if created.
 func (nt *Network) AddSuperCT4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	return AddSuperCT4D(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
+}
+
+// AddSuperCTAttn adds a 4D superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and a TRN attentional layer.
+// CT is placed Behind Super, and Pulvinar behind CT if created.
+func (nt *Network) AddSuperCTAttn(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, trn, pulv emer.Layer) {
+	return AddSuperCTAttn(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
 }
 
 // ConnectCtxtToCT adds a CTCtxtPrjn from given sending layer to a CT layer

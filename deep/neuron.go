@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	NeuronVars    = []string{"Burst", "BurstPrv", "CtxtGe"}
+	NeuronVars    = []string{"Attn", "Burst", "BurstPrv", "CtxtGe"}
 	NeuronVarsMap map[string]int
 	NeuronVarsAll []string
 )

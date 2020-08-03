@@ -38,17 +38,17 @@ func (ap *AttnParams) Update() {
 
 // GeMod returns attention-modulated value of Ge
 func (ap *AttnParams) GeMod(ge, attn float32) float32 {
-	return ap.GeMin + ap.GeRng*ge
+	return ge * (ap.GeMin + ap.GeRng*attn)
 }
 
 // ActMod returns attention-modulated value of Act
 func (ap *AttnParams) ActMod(act, attn float32) float32 {
-	return ap.ActMin + ap.ActRng*act
+	return act * (ap.ActMin + ap.ActRng*attn)
 }
 
 // LrnMod returns attention-modulated value of Lrn
 func (ap *AttnParams) LrnMod(lrn, attn float32) float32 {
-	return ap.LrnMin + ap.LrnRng*lrn
+	return lrn * (ap.LrnMin + ap.LrnRng*attn)
 }
 
 ///////////////////////////////////////////////////////////////////////////

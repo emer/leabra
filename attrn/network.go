@@ -13,42 +13,37 @@ import (
 // Network functions available here as standalone functions
 //         for mixing in to other models
 
-// AddAttnLayer adds an attrn.AttnLayer -- the nPools correspond to pool dimensions
-// of modulated layer.
-func AddAttnLayer(nt *leabra.Network, name string, nPoolY, nPoolX int) *AttnLayer {
+// AddAttnLayer adds an attrn.AttnLayer, which must be a 4D, with pools (pool-level attention).
+func AddAttnLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeursY, nNeursX int) *AttnLayer {
 	ly := &AttnLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolY, nPoolX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeursY, nNeursX}, emer.Hidden)
 	return ly
 }
 
-// AddTRNLayer adds an attrn.TRNLayer -- the nPools correspond to pool dimensions
+// AddTRNLayer adds an attrn.TRNLayer -- the nPoolss correspond to pool dimensions
 // of modulated layer.
-func AddTRNLayer(nt *leabra.Network, name string, nPoolY, nPoolX int) *TRNLayer {
+func AddTRNLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX int) *TRNLayer {
 	ly := &TRNLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolY, nPoolX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX}, emer.Hidden)
 	return ly
 }
 
-// AddAttnForLayer adds AttnLayer and TRNLayer attention layers
-// for given source layer to be modulated (typically a deep.Super layer).
-// Source Layer must have a 4D shape -- uses the pool-level dimensions
-// to set 2D dimensions for Attn layers, and connects the layers with
-// default parameters.
+// AddAttnTRNLayer adds AttnLayer and corresponding TRNLayer, with "T" suffix.
+// Uses the pool-level dimensions to set 2D dimensions for TRN layer,
+// and connects the layers with default parameters.
 // The TRN layer will automatically look for "CT" and "P" layer names
 // and receive EPool inputs from those.
-func AddAttnForLayer(nt *leabra.Network, srcLay *leabra.Layer) (*AttnLayer, *TRNLayer) {
-	nPoolY := srcLay.Shp.Dim(0)
-	nPoolX := srcLay.Shp.Dim(1)
-	attn := AddAttnLayer(nt, srcLay.Nm+"A", nPoolY, nPoolX)
-	trn := AddTRNLayer(nt, srcLay.Nm+"T", nPoolY, nPoolX)
-	_, err := nt.LayerByNameTry(srcLay.Nm + "CT")
+func AddAttnTRNLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeursY, nNeursX int) (*AttnLayer, *TRNLayer) {
+	attn := AddAttnLayer(nt, name, nPoolsY, nPoolsX, nNeursY, nNeursX)
+	trn := AddTRNLayer(nt, name+"T", nPoolsY, nPoolsX)
+	_, err := nt.LayerByNameTry(name + "CT")
 	if err == nil {
-		trn.EPools.Add(srcLay.Nm+"CT", 1)
+		trn.EPools.Add(name+"CT", 1)
 	}
-	_, err = nt.LayerByNameTry(srcLay.Nm + "P")
+	_, err = nt.LayerByNameTry(name + "P")
 	if err == nil {
-		trn.EPools.Add(srcLay.Nm+"P", .2)
+		trn.EPools.Add(name+"P", .2)
 	}
-	trn.SendTo.Add(srcLay.Nm)
+	trn.SendTo.Add(name)
 	return attn, trn
 }
