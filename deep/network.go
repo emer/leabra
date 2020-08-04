@@ -137,14 +137,14 @@ func AddSuperCT2D(nt *leabra.Network, name string, shapeY, shapeX int, pulvLay b
 }
 
 // AddSuperCT4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
-// with CTCtxtPrjn Full projection from Super to CT.
+// with CTCtxtPrjn PoolOneToOne projection from Super to CT.
 // Optionally creates a TRC Pulvinar for Super.
 // CT is placed Behind Super, and Pulvinar behind CT if created.
 func AddSuperCT4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, pulv emer.Layer) {
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	ConnectCtxtToCT(nt, super, ct, prjn.NewFull())
+	ConnectCtxtToCT(nt, super, ct, prjn.NewPoolOneToOne())
 	if pulvLay {
 		pulvi := AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 		pulv = pulvi

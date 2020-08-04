@@ -67,7 +67,7 @@ type AttnSetLayer interface {
 type AttnLayer struct {
 	leabra.Layer
 	Attn  AttnParams `desc:"how Attention modulates Ge, Act and Lrn"`
-	Attns []float32  `desc:"per-pool attention modulation factors (normalized 0..1 range"`
+	Attns []float32  `desc:"per-pool attention modulation factors (normalized 0..1 range) -- note: index starts at 1 for pools"`
 }
 
 var KiT_AttnLayer = kit.Types.AddType(&AttnLayer{}, leabra.LayerProps)
@@ -89,9 +89,10 @@ func (ly *AttnLayer) InitActs() {
 	ly.InitAttn()
 }
 
-// SetAttn sets the attention value for given pool index
+// SetAttn sets the attention value for given pool index.
+// The pool index is in range 0..n-1 pools, not including the 0 = layer level pool
 func (ly *AttnLayer) SetAttn(pidx int, attn float32) {
-	ly.Attns[pidx] = attn
+	ly.Attns[pidx+1] = attn
 }
 
 // RecvGIncPrjn increments the receiver's GeInc or GiInc from that of all the projections.

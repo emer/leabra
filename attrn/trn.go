@@ -47,8 +47,12 @@ func (ly *TRNLayer) GeFmEPools() {
 			nrn := &ly.Neurons[ni]
 			opl := ol.Pools[1+ni]
 			nrn.GeRaw += ep.Wt * opl.Inhib.Act.Avg
-			ly.Act.GeFmRaw(nrn, nrn.GeRaw)
 		}
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
+		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 	}
 }
 

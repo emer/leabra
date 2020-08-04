@@ -1026,9 +1026,10 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 		for pi := 1; pi < np; pi++ {
 			pl := &ly.Pools[pi]
 			ly.Inhib.Pool.Inhib(&pl.Inhib)
-			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
-			if !ly.Inhib.Layer.On { // keep layer level updated for inter-layer inhib
-				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+			if ly.Inhib.Layer.On {
+				pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
+			} else {
+				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
 			}
 			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 				nrn := &ly.Neurons[ni]
