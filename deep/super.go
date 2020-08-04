@@ -28,26 +28,6 @@ func (db *BurstParams) Defaults() {
 	db.ThrAbs = 0.1
 }
 
-// SuperNeuron has the neuron values for SuperLayer
-type SuperNeuron struct {
-	Burst    float32 `desc:"5IB bursting activation value, computed by thresholding regular activation"`
-	BurstPrv float32 `desc:"previous bursting activation -- used for context-based learning"`
-}
-
-func (sn *SuperNeuron) VarByIdx(idx int) float32 {
-	switch NeurVars(idx) {
-	case BurstVar:
-		return sn.Burst
-	case BurstPrvVar:
-		return sn.BurstPrv
-	}
-	return math32.NaN()
-}
-
-var (
-	SuperNeuronVars = []string{"Burst", "BurstPrv"}
-)
-
 // SuperLayer is the DeepLeabra superficial layer, based on basic rate-coded leabra.Layer.
 // Computes the Burst activation from regular activations.
 type SuperLayer struct {
@@ -84,7 +64,7 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarByName(varNm)
+	vidx, err = SuperNeuronVarIdxByName(varNm)
 	if err != nil {
 		return vidx, err
 	}

@@ -30,7 +30,6 @@ func (ly *ModLayer) GFmInc(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.GRawFmInc(nrn)
 		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ltime.PlusPhase)
 		ly.Act.GeFmRaw(nrn, geRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)

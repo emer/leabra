@@ -51,14 +51,15 @@ func (pj *GPiThalPrjn) RecvGInc() {
 	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			rn.GiInc += pj.GInc[ri]
+			rn.GiRaw += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	} else {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			pj.GeRaw[ri] += pj.GInc[ri]
-			rn.GeInc += pj.GInc[ri]
+			ginc := pj.GInc[ri]
+			pj.GeRaw[ri] += ginc
+			rn.GeRaw += ginc
 			pj.GInc[ri] = 0
 		}
 	}
@@ -321,7 +322,6 @@ func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.GRawFmInc(nrn) // for inhib, just in case
 		goRaw := goPrjn.GeRaw[ni]
 		nogoRaw := nogoPrjn.GeRaw[ni]
 		nrn.GeRaw = ly.Gate.GeRaw(goRaw, nogoRaw)

@@ -34,8 +34,7 @@ func TestActUpdt(t *testing.T) {
 	ac.InitActs(nrn)
 
 	for i := range geinc {
-		nrn.GeInc = geinc[i]
-		ac.GRawFmInc(nrn)
+		nrn.GeRaw += geinc[i]
 		ac.GeFmRaw(nrn, nrn.GeRaw)
 		ac.GiFmRaw(nrn, nrn.GiRaw)
 		ac.VmFmG(nrn)

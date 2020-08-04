@@ -13,12 +13,19 @@ import (
 
 var (
 	// NeuronVars are extra neuron variables for glong
-	NeuronVars = []string{"AlphaMax", "VmEff", "Gnmda", "NMDA", "NMDASyn", "NMDAInc", "GgabaB", "GABAB", "GABABx"}
+	NeuronVars = []string{"AlphaMax", "VmEff", "Gnmda", "NMDA", "NMDASyn", "GgabaB", "GABAB", "GABABx"}
 
-	// NeuronVarsAll is the agate collection of all neuron-level vars
+	// NeuronVarsAll is the glong collection of all neuron-level vars
 	NeuronVarsAll []string
 
 	NeuronVarsMap map[string]int
+
+	// NeuronVarProps are integrated neuron var props including leabra
+	NeuronVarProps = map[string]string{
+		"NMDA":   `auto-scale:"+"`,
+		"GABAB":  `auto-scale:"+"`,
+		"GABABx": `auto-scale:"+"`,
+	}
 )
 
 func init() {
@@ -31,19 +38,18 @@ func init() {
 	for i, v := range NeuronVars {
 		NeuronVarsMap[v] = i
 	}
+	for v, p := range leabra.NeuronVarProps {
+		NeuronVarProps[v] = p
+	}
 }
 
-//////////////////////////////////////////////////////////////////////
-// Maint neurons
-
-// Neuron holds the extra neuron (unit) level variables for STN computation.
+// Neuron holds the extra neuron (unit) level variables for glong computation.
 type Neuron struct {
 	AlphaMax float32 `desc:"Maximum activation over Alpha cycle period"`
 	VmEff    float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
 	Gnmda    float32 `desc:"net NMDA conductance, after Vm gating and Gbar -- added directly to Ge as it has the same reversal potential."`
 	NMDA     float32 `desc:"NMDA channel activation -- underlying time-integrated value with decay"`
-	NMDASyn  float32 `desc:"current synaptic NMDA activation directly from projection(s)"`
-	NMDAInc  float32 `desc:"increment for synaptic NMDA conductance"`
+	NMDASyn  float32 `desc:"synaptic NMDA activation directly from projection(s)"`
 	GgabaB   float32 `desc:"net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential."`
 	GABAB    float32 `desc:"GABA-B / GIRK activation -- time-integrated value with rise and decay time constants"`
 	GABABx   float32 `desc:"GABA-B / GIRK internal drive variable -- gets the raw activation and decays"`
@@ -53,8 +59,8 @@ func (nrn *Neuron) VarNames() []string {
 	return NeuronVars
 }
 
-// NeuronVarByName returns the index of the variable in the Neuron, or error
-func NeuronVarByName(varNm string) (int, error) {
+// NeuronVarIdxByName returns the index of the variable in the Neuron, or error
+func NeuronVarIdxByName(varNm string) (int, error) {
 	i, ok := NeuronVarsMap[varNm]
 	if !ok {
 		return 0, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
@@ -70,7 +76,7 @@ func (nrn *Neuron) VarByIndex(idx int) float32 {
 
 // VarByName returns variable by name, or error
 func (nrn *Neuron) VarByName(varNm string) (float32, error) {
-	i, err := NeuronVarByName(varNm)
+	i, err := NeuronVarIdxByName(varNm)
 	if err != nil {
 		return 0, err
 	}

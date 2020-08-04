@@ -31,7 +31,7 @@ type Prjn struct {
 
 	// misc state variables below:
 	GScale float32         `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
-	GInc   []float32       `desc:"local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeInc or GiInc on neuron depending on projection type -- this will be thread-safe"`
+	GInc   []float32       `desc:"local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe"`
 	WbRecv []WtBalRecvPrjn `desc:"weight balance state variables for this projection, one per recv neuron"`
 }
 
@@ -478,19 +478,19 @@ func (pj *Prjn) SendGDelta(si int, delta float32) {
 	}
 }
 
-// RecvGInc increments the receiver's GeInc or GiInc from that of all the projections.
+// RecvGInc increments the receiver's GeRaw or GiRaw from that of all the projections.
 func (pj *Prjn) RecvGInc() {
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
 	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			rn.GiInc += pj.GInc[ri]
+			rn.GiRaw += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	} else {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			rn.GeInc += pj.GInc[ri]
+			rn.GeRaw += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	}

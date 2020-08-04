@@ -59,8 +59,8 @@ func (nrn *STNNeuron) VarNames() []string {
 	return STNNeuronVars
 }
 
-// STNNeuronVarByName returns the index of the variable in the STNNeuron, or error
-func STNNeuronVarByName(varNm string) (int, error) {
+// STNNeuronVarIdxByName returns the index of the variable in the STNNeuron, or error
+func STNNeuronVarIdxByName(varNm string) (int, error) {
 	i, ok := STNNeuronVarsMap[varNm]
 	if !ok {
 		return 0, fmt.Errorf("STNNeuron VarByName: variable name: %v not valid", varNm)
@@ -76,7 +76,7 @@ func (nrn *STNNeuron) VarByIndex(idx int) float32 {
 
 // VarByName returns variable by name, or error
 func (nrn *STNNeuron) VarByName(varNm string) (float32, error) {
-	i, err := STNNeuronVarByName(varNm)
+	i, err := STNNeuronVarIdxByName(varNm)
 	if err != nil {
 		return 0, err
 	}

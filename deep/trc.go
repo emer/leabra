@@ -130,8 +130,6 @@ func (ly *TRCLayer) GFmInc(ltime *leabra.Time) {
 		}
 		drvGe := ly.TRC.DriveGe(drvAct)
 
-		ly.Act.GRawFmInc(nrn) // integrate other input
-
 		drvInhib := math32.Min(1, drvMax/ly.TRC.MaxInhib)
 		geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
 		ly.Act.GeFmRaw(nrn, geRaw)

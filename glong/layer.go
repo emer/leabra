@@ -43,7 +43,6 @@ func (ly *Layer) InitGlong() {
 		nrn.Gnmda = 0
 		nrn.NMDA = 0
 		nrn.NMDASyn = 0
-		nrn.NMDAInc = 0
 		nrn.GgabaB = 0
 		nrn.GABAB = 0
 		nrn.GABABx = 0
@@ -63,7 +62,6 @@ func (ly *Layer) InitGInc() {
 	for ni := range ly.GlNeurs {
 		nrn := &ly.GlNeurs[ni]
 		nrn.NMDASyn = 0
-		nrn.NMDAInc = 0
 	}
 }
 
@@ -80,7 +78,6 @@ func (ly *Layer) DecayState(decay float32) {
 		gnr.Gnmda -= decay * gnr.Gnmda
 		gnr.NMDA -= decay * gnr.NMDA
 		gnr.NMDASyn -= decay * gnr.NMDASyn
-		gnr.NMDAInc -= decay * gnr.NMDAInc
 		gnr.GgabaB -= decay * gnr.GgabaB
 		gnr.GABAB -= decay * gnr.GABAB
 		gnr.GABABx -= decay * gnr.GABABx
@@ -126,29 +123,24 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 		pj := p.(leabra.LeabraPrjn).AsLeabra()
 		for ri := range ly.GlNeurs {
 			rn := &ly.GlNeurs[ri]
-			rn.NMDAInc += pj.GInc[ri]
+			rn.NMDASyn += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	}
 }
 
-// GFmIncNeur is the neuron-level code for GFmInc that integrates G*Inc into G*Raw
-// and finally overall Ge, Gi values
+// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// from their G*Raw accumulators.
 func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		// note: each step broken out here so other variants can add extra terms to Raw
-		ly.Act.GRawFmInc(nrn)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 
 		gnr := &ly.GlNeurs[ni]
 		gnr.VmEff = ly.NMDA.VmEff(nrn.Vm, nrn.Act)
-
-		gnr.NMDASyn += gnr.NMDAInc
-		gnr.NMDAInc = 0
 
 		gnr.NMDA = ly.NMDA.NMDA(gnr.NMDA, gnr.NMDASyn)
 		gnr.Gnmda = ly.NMDA.Gnmda(gnr.NMDA, gnr.VmEff)
@@ -241,7 +233,7 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarByName(varNm)
+	vidx, err = NeuronVarIdxByName(varNm)
 	if err != nil {
 		return -1, err
 	}

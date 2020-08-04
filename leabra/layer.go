@@ -109,7 +109,7 @@ func (ly *Layer) UnitVarProps() map[string]string {
 // according to *this layer's* UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
 func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	return NeuronVarByName(varNm)
+	return NeuronVarIdxByName(varNm)
 }
 
 // UnitVarNum returns the number of Neuron-level variables
@@ -479,7 +479,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 		return
 	}
 	vidx := 0
-	vidx, err = NeuronVarByName(varNm)
+	vidx, err = NeuronVarIdxByName(varNm)
 	if err != nil {
 		return
 	}
@@ -983,8 +983,8 @@ func (ly *Layer) RecvGInc(ltime *Time) {
 	}
 }
 
-// GFmIncNeur is the neuron-level code for GFmInc that integrates G*Inc into G*Raw
-// and finally overall Ge, Gi values
+// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// from their G*Raw accumulators.
 func (ly *Layer) GFmIncNeur(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -992,7 +992,6 @@ func (ly *Layer) GFmIncNeur(ltime *Time) {
 			continue
 		}
 		// note: each step broken out here so other variants can add extra terms to Raw
-		ly.Act.GRawFmInc(nrn)
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 	}

@@ -6,30 +6,28 @@ package deep
 
 import (
 	"fmt"
+	"unsafe"
 
 	"github.com/emer/leabra/leabra"
 )
 
-type NeurVars int32
-
-const (
-	BurstVar NeurVars = iota
-
-	BurstPrvVar
-
-	CtxtGeVar
-)
-
 var (
-	NeuronVars    = []string{"Attn", "Burst", "BurstPrv", "CtxtGe"}
-	NeuronVarsMap map[string]int
+	// NeuronVars are for full list across all deep Layer types, including GeFwd and Attn from attrn
+	NeuronVars = []string{"GeFwd", "Attn", "Burst", "BurstPrv", "CtxtGe"}
+
+	// SuperNeuronVars are for SuperLayer directly
+	SuperNeuronVars = []string{"Burst", "BurstPrv"}
+
+	SuperNeuronVarsMap map[string]int
+
+	// NeuronVarsAll is full integrated list across inherited layers and NeuronVars
 	NeuronVarsAll []string
 )
 
 func init() {
-	NeuronVarsMap = make(map[string]int, len(NeuronVars))
-	for i, v := range NeuronVars {
-		NeuronVarsMap[v] = i
+	SuperNeuronVarsMap = make(map[string]int, len(SuperNeuronVars))
+	for i, v := range SuperNeuronVars {
+		SuperNeuronVarsMap[v] = i
 	}
 	ln := len(leabra.NeuronVars)
 	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
@@ -37,11 +35,22 @@ func init() {
 	copy(NeuronVarsAll[ln:], NeuronVars)
 }
 
-// NeuronVarByName returns the index of the variable in the Neuron, or error
-func NeuronVarByName(varNm string) (int, error) {
-	i, ok := NeuronVarsMap[varNm]
+// SuperNeuron has the neuron values for SuperLayer
+type SuperNeuron struct {
+	Burst    float32 `desc:"5IB bursting activation value, computed by thresholding regular activation"`
+	BurstPrv float32 `desc:"previous bursting activation -- used for context-based learning"`
+}
+
+// SuperNeuronVarIdxByName returns the index of the variable in the SuperNeuron, or error
+func SuperNeuronVarIdxByName(varNm string) (int, error) {
+	i, ok := SuperNeuronVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
+		return 0, fmt.Errorf("SuperNeuron VarIdxByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
+}
+
+func (sn *SuperNeuron) VarByIdx(idx int) float32 {
+	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(sn)) + uintptr(4*idx)))
+	return *fv
 }

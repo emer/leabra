@@ -86,14 +86,14 @@ func (pj *NMDAPrjn) PrjnTypeName() string {
 //////////////////////////////////////////////////////////////////////////////////////
 //  PrjnType
 
-// PrjnType has the AGate extensions to the emer.PrjnType types, for gui
+// PrjnType has the GLong extensions to the emer.PrjnType types, for gui
 type PrjnType emer.PrjnType
 
 //go:generate stringer -type=PrjnType
 
 var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
 
-// The AGate prjn types
+// The GLong prjn types
 const (
 	// NMDAPrjn are projections that have strong NMDA channels supporting maintenance
 	NMDA emer.PrjnType = emer.PrjnType(emer.PrjnTypeN) + iota

@@ -215,7 +215,7 @@ func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = STNNeuronVarByName(varNm)
+	vidx, err = STNNeuronVarIdxByName(varNm)
 	if err != nil {
 		return -1, err
 	}

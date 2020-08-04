@@ -66,8 +66,9 @@ type AttnSetLayer interface {
 // normalized Attn factor, which is set externally by e.g., TRCAttnLayer.
 type AttnLayer struct {
 	leabra.Layer
-	Attn  AttnParams `desc:"how Attention modulates Ge, Act and Lrn"`
-	Attns []float32  `desc:"per-pool attention modulation factors (normalized 0..1 range) -- note: index starts at 1 for pools"`
+	Attn   AttnParams `desc:"how Attention modulates Ge, Act and Lrn"`
+	Attns  []float32  `desc:"per-pool attention modulation factors (normalized 0..1 range) -- note that index starts at 1 for pools"`
+	GeFwds []float32  `desc:"per-neuron feedforward conductance from emer.Forward projections -- these are what is subject to attentional modulation, representing the role of layer 4"`
 }
 
 var KiT_AttnLayer = kit.Types.AddType(&AttnLayer{}, leabra.LayerProps)
@@ -84,6 +85,13 @@ func (ly *AttnLayer) InitAttn() {
 	}
 }
 
+func (ly *AttnLayer) InitGInc() {
+	ly.Layer.InitGInc()
+	for ni := range ly.GeFwds {
+		ly.GeFwds[ni] = 0
+	}
+}
+
 func (ly *AttnLayer) InitActs() {
 	ly.Layer.InitActs()
 	ly.InitAttn()
@@ -92,17 +100,19 @@ func (ly *AttnLayer) InitActs() {
 // SetAttn sets the attention value for given pool index.
 // The pool index is in range 0..n-1 pools, not including the 0 = layer level pool
 func (ly *AttnLayer) SetAttn(pidx int, attn float32) {
+	if len(ly.Attns) == 1 {
+		ly.Attns[0] = attn
+	}
 	ly.Attns[pidx+1] = attn
 }
 
-// RecvGIncPrjn increments the receiver's GeInc or GiInc from that of all the projections.
-// Includes Ge Attentional modulation.
+// RecvGIncPrjn increments the receiver's GeRaw or GiRaw from that of all the projections.
+// Increments GeFwd separate from rest of GeRaw.
 func (ly *AttnLayer) RecvGIncPrjn(pj *leabra.Prjn, ltime *leabra.Time) {
 	if ly.Attn.GeMin < 1 && pj.Typ == emer.Forward {
 		for ri := range ly.Neurons {
-			rn := &ly.Neurons[ri]
-			ge := ly.Attn.GeMod(pj.GInc[ri], ly.Attns[rn.SubPool])
-			rn.GeInc += ge
+			gfw := &ly.GeFwds[ri]
+			*gfw += pj.GInc[ri]
 			pj.GInc[ri] = 0
 		}
 	} else {
@@ -116,6 +126,21 @@ func (ly *AttnLayer) RecvGInc(ltime *leabra.Time) {
 			continue
 		}
 		ly.RecvGIncPrjn(p.(leabra.LeabraPrjn).AsLeabra(), ltime)
+	}
+}
+
+// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// from their G*Raw accumulators.
+func (ly *AttnLayer) GFmIncNeur(ltime *leabra.Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		attn := ly.Attns[nrn.SubPool]
+		geRaw := nrn.GeRaw + ly.Attn.GeMod(ly.GeFwds[ni], attn)
+		ly.Act.GeFmRaw(nrn, geRaw)
+		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
 	}
 }
 
@@ -152,6 +177,7 @@ func (ly *AttnLayer) Build() error {
 		return err
 	}
 	ly.Attns = make([]float32, len(ly.Pools))
+	ly.GeFwds = make([]float32, len(ly.Neurons))
 	return nil
 }
 
@@ -163,11 +189,14 @@ func (ly *AttnLayer) UnitVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	if varNm != "Attn" {
-		return -1, fmt.Errorf("attrn.AttnLayer: variable named: %s not found", varNm)
-	}
 	nn := ly.Layer.UnitVarNum()
-	return nn, nil
+	switch varNm {
+	case "GeFwd":
+		return nn, nil
+	case "Attn":
+		return nn + 1, nil
+	}
+	return -1, fmt.Errorf("attrn.AttnLayer: variable named: %s not found", varNm)
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
@@ -176,7 +205,7 @@ func (ly *AttnLayer) UnitVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *AttnLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < 0 || varIdx > nn { // nn = AlphaMax
+	if varIdx < 0 || varIdx >= nn+2 { // 2 = num extra
 		return math32.NaN()
 	}
 	if varIdx < nn {
@@ -185,6 +214,10 @@ func (ly *AttnLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
+	varIdx -= nn
+	if varIdx == 0 {
+		return ly.GeFwds[idx]
+	}
 	nrn := &ly.Neurons[idx]
 	return ly.Attns[nrn.SubPool]
 }
@@ -192,5 +225,5 @@ func (ly *AttnLayer) UnitVal1D(varIdx int, idx int) float32 {
 // UnitVarNum returns the number of Neuron-level variables
 // for this layer.  This is needed for extending indexes in derived types.
 func (ly *AttnLayer) UnitVarNum() int {
-	return ly.Layer.UnitVarNum() + 1
+	return ly.Layer.UnitVarNum() + 2
 }

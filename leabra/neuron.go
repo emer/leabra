@@ -57,9 +57,7 @@ type Neuron struct {
 	GiSelf   float32 `desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`
 	ActSent  float32 `desc:"last activation value sent (only send when diff is over threshold)"`
 	GeRaw    float32 `desc:"raw excitatory conductance (net input) received from sending units (send delta's are added to this value)"`
-	GeInc    float32 `desc:"delta increment in GeRaw sent using SendGeDelta"`
 	GiRaw    float32 `desc:"raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)"`
-	GiInc    float32 `desc:"delta increment in GiRaw sent using SendGeDelta"`
 	GknaFast float32 `desc:"conductance of sodium-gated potassium channel (KNa) fast dynamics (M-type) -- produces accommodation / adaptation of firing"`
 	GknaMed  float32 `desc:"conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing"`
 	GknaSlow float32 `desc:"conductance of sodium-gated potassium channel (KNa) slow dynamics (Slack) -- produces accommodation / adaptation of firing"`
@@ -69,7 +67,7 @@ type Neuron struct {
 	ISIAvg float32 `desc:"average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization."`
 }
 
-var NeuronVars = []string{"Act", "ActLrn", "Ge", "Gi", "Gk", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActQ0", "ActQ1", "ActQ2", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GeInc", "GiRaw", "GiInc", "GknaFast", "GknaMed", "GknaSlow", "Spike", "ISI", "ISIAvg"}
+var NeuronVars = []string{"Act", "ActLrn", "Ge", "Gi", "Gk", "Inet", "Vm", "Targ", "Ext", "AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActQ0", "ActQ1", "ActQ2", "ActM", "ActP", "ActDif", "ActDel", "ActAvg", "Noise", "GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "Spike", "ISI", "ISIAvg"}
 
 var NeuronVarsMap map[string]int
 
@@ -90,8 +88,8 @@ func (nrn *Neuron) VarNames() []string {
 	return NeuronVars
 }
 
-// NeuronVarByName returns the index of the variable in the Neuron, or error
-func NeuronVarByName(varNm string) (int, error) {
+// NeuronVarIdxByName returns the index of the variable in the Neuron, or error
+func NeuronVarIdxByName(varNm string) (int, error) {
 	i, ok := NeuronVarsMap[varNm]
 	if !ok {
 		return -1, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
@@ -107,7 +105,7 @@ func (nrn *Neuron) VarByIndex(idx int) float32 {
 
 // VarByName returns variable by name, or error
 func (nrn *Neuron) VarByName(varNm string) (float32, error) {
-	i, err := NeuronVarByName(varNm)
+	i, err := NeuronVarIdxByName(varNm)
 	if err != nil {
 		return math32.NaN(), err
 	}
@@ -166,25 +164,3 @@ const (
 
 	NeurFlagsN
 )
-
-/*
-more specialized flags in C++ emergent -- only add in specialized cases where needed, although
-there could be conflicts potentially, so may want to just go ahead and add here..
-  enum LeabraUnitFlags {        // #BITS extra flags on top of ext flags for leabra
-    SUPER       = 0x00000100,   // superficial layer neocortical cell -- has deep.on role = SUPER
-    DEEP        = 0x00000200,   // deep layer neocortical cell -- has deep.on role = DEEP
-    TRC         = 0x00000400,   // thalamic relay cell (Pulvinar) cell -- has deep.on role = TRC
-
-    D1R         = 0x00001000,   // has predominantly D1 receptors
-    D2R         = 0x00002000,   // has predominantly D2 receptors
-    ACQUISITION = 0x00004000,   // involved in Acquisition
-    EXTINCTION  = 0x00008000,   // involved in Extinction
-    APPETITIVE  = 0x00010000,   // appetitive (positive valence) coding
-    AVERSIVE    = 0x00020000,   // aversive (negative valence) coding
-    PATCH       = 0x00040000,   // patch-like structure (striosomes)
-    MATRIX      = 0x00080000,   // matrix-like structure
-    DORSAL      = 0x00100000,   // dorsal
-    VENTRAL     = 0x00200000,   // ventral
-  };
-
-*/

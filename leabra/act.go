@@ -77,9 +77,7 @@ func (ac *ActParams) Update() {
 func (ac *ActParams) InitGInc(nrn *Neuron) {
 	nrn.ActSent = 0
 	nrn.GeRaw = 0
-	nrn.GeInc = 0
 	nrn.GiRaw = 0
-	nrn.GiInc = 0
 }
 
 // DecayState decays the activation state toward initial values in proportion to given decay parameter
@@ -138,15 +136,6 @@ func (ac *ActParams) InitActQs(nrn *Neuron) {
 
 ///////////////////////////////////////////////////////////////////////
 //  Cycle
-
-// GRawFmInc integrates G conductance from Inc delta-increment sent.
-func (ac *ActParams) GRawFmInc(nrn *Neuron) {
-	nrn.GeRaw += nrn.GeInc
-	nrn.GeInc = 0
-
-	nrn.GiRaw += nrn.GiInc
-	nrn.GiInc = 0
-}
 
 // GeFmRaw integrates Ge excitatory conductance from GeRaw value
 // (can add other terms to geRaw prior to calling this)

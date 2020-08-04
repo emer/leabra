@@ -60,8 +60,6 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.GRawFmInc(nrn) // std integ other inputs
-
 		geRaw := nrn.GeRaw + ly.CtxtGes[ni]
 		ly.Act.GeFmRaw(nrn, geRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)

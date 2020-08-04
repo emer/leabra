@@ -41,6 +41,11 @@ func (nt *Network) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
+// UnitVarProps returns properties for variables
+func (nt *Network) UnitVarProps() map[string]string {
+	return glong.NeuronVarProps
+}
+
 // SynVarNames returns the names of all the variables on the synapses in this network.
 func (nt *Network) SynVarNames() []string {
 	return pcore.SynVarsAll

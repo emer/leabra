@@ -19,7 +19,7 @@ import (
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
 	ThalLay   string  `desc:"name of VThal layer -- needed to get overall gating output action"`
-	ThalThr   float32 `def:"0.2" desc:"threshold for thal max activation (in pool) to be gated -- typically .2 or so to accurately reflect PFC output gating"`
+	ThalThr   float32 `def:"0.25" desc:"threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior"`
 	Deriv     bool    `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
 	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 	DipGain   float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
@@ -29,7 +29,7 @@ func (mp *MatrixParams) Defaults() {
 	if mp.ThalLay == "" {
 		mp.ThalLay = "VThal"
 	}
-	mp.ThalThr = 0.2
+	mp.ThalThr = 0.25
 	mp.Deriv = true
 	mp.BurstGain = 1
 	mp.DipGain = 1

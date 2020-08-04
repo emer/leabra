@@ -36,6 +36,11 @@ func (nt *Network) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
+// UnitVarProps returns properties for variables
+func (nt *Network) UnitVarProps() map[string]string {
+	return NeuronVarProps
+}
+
 // NewLayer returns new layer of glong.Layer type -- this is default type for this network
 func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}

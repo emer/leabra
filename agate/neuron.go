@@ -11,11 +11,8 @@ import (
 )
 
 var (
-	// NeuronVarsAll is the agate collection of all neuron-level vars
+	// NeuronVarsAll is the agate collection of all neuron-level vars (deep, glong, pcore)
 	NeuronVarsAll []string
-
-	// SynVarsAll is the agate collection of all synapse-level vars (includes TraceSynVars)
-	SynVarsAll []string
 )
 
 func init() {
