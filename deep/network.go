@@ -159,12 +159,13 @@ func AddSuperCT4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNe
 // CT is placed Behind Super, and Pulvinar behind CT if created.
 func AddSuperCTAttn(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, trn, pulv emer.Layer) {
 	super, ct, pulv = AddSuperCT4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
-	trni := attrn.AddTRNLayer(nt, name+"T", nPoolsY, nPoolsX)
+	trni := attrn.AddTRNLayer(nt, name+"AT", nPoolsY, nPoolsX)
 	trn = trni
-	trni.EPools.Add(name+"CT", 1)
+	trni.EPools.Add(name+"CT", 2)
 	if pulvLay {
 		trni.EPools.Add(name+"P", .2)
 		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "P", XAlign: relpos.Left, Space: 2})
+		trni.SendTo.Add(name + "P")
 	} else {
 		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	}

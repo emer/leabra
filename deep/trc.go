@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/chewxy/math32"
+	"github.com/emer/leabra/attrn"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -59,16 +60,17 @@ func (tp *TRCParams) DriveGe(act float32) float32 {
 // directly copied from a named DriverLay layer (not using a projection).
 // The DriverLay MUST have the same shape as this TRC layer, including Pools!
 type TRCLayer struct {
-	leabra.Layer           // access as .Layer
-	TRC          TRCParams `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron"`
-	DriverLay    string    `desc:"name of SuperLayer that sends 5IB Burst driver inputs to this layer"`
+	attrn.AttnLayer           // access as .AttnLayer
+	TRC             TRCParams `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron"`
+	DriverLay       string    `desc:"name of SuperLayer that sends 5IB Burst driver inputs to this layer"`
 }
 
 var KiT_TRCLayer = kit.Types.AddType(&TRCLayer{}, LayerProps)
 
 func (ly *TRCLayer) Defaults() {
-	ly.Layer.Defaults()
+	ly.AttnLayer.Defaults()
 	ly.Act.Init.Decay = 0 // deep doesn't decay!
+	ly.Attn.ActMin = 0.5
 	ly.TRC.Defaults()
 	ly.Typ = TRC
 }
@@ -76,7 +78,7 @@ func (ly *TRCLayer) Defaults() {
 // UpdateParams updates all params given any changes that might have been made to individual values
 // including those in the receiving projections of this layer
 func (ly *TRCLayer) UpdateParams() {
-	ly.Layer.UpdateParams()
+	ly.AttnLayer.UpdateParams()
 	ly.TRC.Update()
 }
 
