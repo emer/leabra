@@ -6,7 +6,6 @@ package deep
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/leabra/attrn"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -31,15 +30,15 @@ func (db *BurstParams) Defaults() {
 // SuperLayer is the DeepLeabra superficial layer, based on basic rate-coded leabra.Layer.
 // Computes the Burst activation from regular activations.
 type SuperLayer struct {
-	attrn.AttnLayer               // access as .AttnLayer
-	Burst           BurstParams   `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
-	SuperNeurs      []SuperNeuron `desc:"slice of super neuron values -- same size as Neurons"`
+	TopoInhibLayer               // access as .TopoInhibLayer
+	Burst          BurstParams   `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
+	SuperNeurs     []SuperNeuron `desc:"slice of super neuron values -- same size as Neurons"`
 }
 
 var KiT_SuperLayer = kit.Types.AddType(&SuperLayer{}, LayerProps)
 
 func (ly *SuperLayer) Defaults() {
-	ly.AttnLayer.Defaults()
+	ly.TopoInhibLayer.Defaults()
 	ly.Act.Init.Decay = 0 // deep doesn't decay!
 	ly.Burst.Defaults()
 }
@@ -47,7 +46,7 @@ func (ly *SuperLayer) Defaults() {
 // UpdateParams updates all params given any changes that might have been made to individual values
 // including those in the receiving projections of this layer
 func (ly *SuperLayer) UpdateParams() {
-	ly.AttnLayer.UpdateParams()
+	ly.TopoInhibLayer.UpdateParams()
 	ly.Burst.Update()
 }
 
@@ -60,7 +59,7 @@ func (ly *SuperLayer) UnitVarNames() []string {
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
 func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.AttnLayer.UnitVarIdx(varNm)
+	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -68,7 +67,7 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 	if err != nil {
 		return vidx, err
 	}
-	vidx += ly.AttnLayer.UnitVarNum()
+	vidx += ly.TopoInhibLayer.UnitVarNum()
 	return vidx, err
 }
 
@@ -80,9 +79,9 @@ func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if varIdx < 0 {
 		return math32.NaN()
 	}
-	nn := ly.AttnLayer.UnitVarNum()
+	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIdx < nn {
-		return ly.AttnLayer.UnitVal1D(varIdx, idx)
+		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
@@ -98,12 +97,12 @@ func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
 // UnitVarNum returns the number of Neuron-level variables
 // for this layer.  This is needed for extending indexes in derived types.
 func (ly *SuperLayer) UnitVarNum() int {
-	return ly.AttnLayer.UnitVarNum() + len(SuperNeuronVars)
+	return ly.TopoInhibLayer.UnitVarNum() + len(SuperNeuronVars)
 }
 
 // Build constructs the layer state, including calling Build on the projections.
 func (ly *SuperLayer) Build() error {
-	err := ly.AttnLayer.Build()
+	err := ly.TopoInhibLayer.Build()
 	if err != nil {
 		return err
 	}
@@ -115,7 +114,7 @@ func (ly *SuperLayer) Build() error {
 //  Init methods
 
 func (ly *SuperLayer) InitActs() {
-	ly.AttnLayer.InitActs()
+	ly.TopoInhibLayer.InitActs()
 	for ni := range ly.SuperNeurs {
 		snr := &ly.SuperNeurs[ni]
 		snr.Burst = 0
@@ -124,7 +123,7 @@ func (ly *SuperLayer) InitActs() {
 }
 
 func (ly *SuperLayer) DecayState(decay float32) {
-	ly.AttnLayer.DecayState(decay)
+	ly.TopoInhibLayer.DecayState(decay)
 	for ni := range ly.SuperNeurs {
 		snr := &ly.SuperNeurs[ni]
 		snr.Burst -= decay * (snr.Burst - ly.Act.Init.Act)
@@ -136,7 +135,7 @@ func (ly *SuperLayer) DecayState(decay float32) {
 
 // QuarterFinal does updating after end of a quarter
 func (ly *SuperLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.AttnLayer.QuarterFinal(ltime)
+	ly.TopoInhibLayer.QuarterFinal(ltime)
 	if ly.Burst.BurstQtr.HasNext(ltime.Quarter) {
 		// if will be updating next quarter, save just prior
 		// this logic works for all cases, but e.g., BurstPrv doesn't update
@@ -155,7 +154,7 @@ func (ly *SuperLayer) BurstPrv() {
 
 // CyclePost calls BurstFmAct
 func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
-	ly.AttnLayer.CyclePost(ltime)
+	ly.TopoInhibLayer.CyclePost(ltime)
 	ly.BurstFmAct(ltime)
 }
 

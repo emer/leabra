@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	// NeuronVars are for full list across all deep Layer types, including GeFwd and Attn from attrn
-	NeuronVars = []string{"GeFwd", "Attn", "Burst", "BurstPrv", "CtxtGe"}
+	// NeuronVars are for full list across all deep Layer types
+	NeuronVars = []string{"Burst", "BurstPrv", "CtxtGe"}
 
 	// SuperNeuronVars are for SuperLayer directly
 	SuperNeuronVars = []string{"Burst", "BurstPrv"}

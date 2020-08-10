@@ -71,9 +71,15 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":  "1.8",
-					"Layer.Learn.AvgL.Gain": "1.5", // key to lower relative to 2.5
-					"Layer.Act.Gbar.L":      "0.1", // lower leak = better
+					"Layer.Inhib.Layer.Gi":     "1.8",
+					"Layer.Learn.AvgL.Gain":    "1.5",  // key to lower relative to 2.5
+					"Layer.Act.Gbar.L":         "0.1",  // lower leak = better
+					"Layer.Inhib.ActAvg.Fixed": "true", // simpler to have everything fixed, for replicability
+					"Layer.Act.Init.Decay":     "0",    // essential to have all layers no decay
+				}},
+			{Sel: ".Hidden", Desc: "fix avg act",
+				Params: params.Params{
+					"Layer.Inhib.ActAvg.Fixed": "true",
 				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
@@ -89,9 +95,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "2.2",
+					"Layer.Inhib.Layer.Gi":    "2.2",
+					"Layer.Inhib.ActAvg.Init": "0.15", // works better
 				}},
-			{Sel: "#InputPToHiddenCT", Desc: "critical to make this small so deep context dominates",
+			{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05",
 				}},
@@ -222,7 +229,7 @@ func (ss *Sim) New() {
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 500
-	ss.LayStatNms = []string{"InputP", "Hidden"}
+	ss.LayStatNms = []string{"HiddenP", "Hidden"}
 	if InputNameMap == nil {
 		InputNameMap = make(map[string]int, len(InputNames))
 		for i, nm := range InputNames {
@@ -273,29 +280,32 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
-	in, inp := net.AddInputPulv2D("Input", 1, 15)
-	hid, hidd, _ := net.AddSuperCT2D("Hidden", 8, 8, deep.NoPulv)
+	in := net.AddLayer2D("Input", 1, 15, emer.Input)
+	hid, hidct, hidp := net.AddDeep2D("Hidden", 8, 8)
 
-	hidd.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
+	hidp.Shape().SetShape([]int{1, 15}, nil, nil)
+
+	hidct.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
+	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
 
 	trg := net.AddLayer2D("Targets", 1, 15, emer.Input) // just for visualization
-	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "InputP", XAlign: relpos.Left, Space: 2})
+	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
 	in.SetClass("Input")
-	inp.SetClass("Input")
+	hidp.SetClass("Input")
 	trg.SetClass("Input")
 
-	net.ConnectLayers(in, hid, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hidd, inp, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(inp, hidd, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(inp, hid, prjn.NewFull(), emer.Back)
+	hidp.(*deep.TRCLayer).Drivers.Add("Input")
+
+	full := prjn.NewFull()
+	net.ConnectLayers(in, hid, full, emer.Forward)
 
 	// for this small localist model with longer-term dependencies,
 	// these additional context projections turn out to be essential!
 	// larger models in general do not require them, though it might be
 	// good to check
-	net.ConnectCtxtToCT(hidd, hidd, prjn.NewFull())
-	net.ConnectCtxtToCT(in, hidd, prjn.NewFull())
+	net.ConnectCtxtToCT(hidct, hidct, full)
+	net.ConnectCtxtToCT(in, hidct, full)
 
 	net.Defaults()
 	ss.SetParams("Network", ss.LogSetParams) // only set Network params
@@ -539,7 +549,7 @@ func (ss *Sim) InitStats() {
 // different time-scales over which stats could be accumulated etc.
 // You can also aggregate directly from log data, as is done for testing stats
 func (ss *Sim) TrialStats(accum bool) {
-	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
 	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
 	// ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
@@ -911,7 +921,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
 	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
 
-	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
 	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 	ivt := ss.ValsTsr("Input")
 	trgt := ss.ValsTsr("Target")
@@ -927,7 +937,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	inp := ss.Net.LayerByName("InputP").(leabra.LeabraLayer).AsLeabra()
+	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
 	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
 
 	dt.SetMetaData("name", "TstTrlLog")

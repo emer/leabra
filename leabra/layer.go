@@ -1015,39 +1015,37 @@ func (ly *Layer) InhibFmGeAct(ltime *Time) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
 	ly.PoolInhibFmGeAct(ltime)
+	ly.InhibFmPool(ltime)
 }
 
 // PoolInhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
-	lpl := &ly.Pools[0]
 	np := len(ly.Pools)
-	if np > 1 {
-		for pi := 1; pi < np; pi++ {
-			pl := &ly.Pools[pi]
-			ly.Inhib.Pool.Inhib(&pl.Inhib)
-			if ly.Inhib.Layer.On {
-				pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
-			} else {
-				lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
-			}
-			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
-				nrn := &ly.Neurons[ni]
-				if nrn.IsOff() {
-					continue
-				}
-				ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
-				nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
-			}
+	if np == 1 {
+		return
+	}
+	lpl := &ly.Pools[0]
+	for pi := 1; pi < np; pi++ {
+		pl := &ly.Pools[pi]
+		ly.Inhib.Pool.Inhib(&pl.Inhib)
+		if ly.Inhib.Layer.On {
+			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
+		} else {
+			lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
 		}
-	} else {
-		for ni := lpl.StIdx; ni < lpl.EdIdx; ni++ {
-			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
-				continue
-			}
-			ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
-			nrn.Gi = lpl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
+	}
+}
+
+// InhibFmPool computes inhibition Gi from Pool-level aggregated inhibition, including self and syn
+func (ly *Layer) InhibFmPool(ltime *Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
 		}
+		pl := &ly.Pools[nrn.SubPool]
+		ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
+		nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 	}
 }
 

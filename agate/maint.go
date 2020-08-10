@@ -40,7 +40,8 @@ func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
 	mxact := ly.InterInhibMaxAct(ltime)
 	lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime) // this one does GABA-B
+	ly.PoolInhibFmGeAct(ltime)
+	ly.InhibFmPool(ltime)
 }
 
 // InterInhibMaxAct returns the AlphaMax activation for source layers
