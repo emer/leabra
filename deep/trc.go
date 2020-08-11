@@ -158,7 +158,7 @@ func (ly *TRCLayer) SetDriverOffs() error {
 		off += y * x
 	}
 	if off > mn {
-		err = fmt.Errorf("TRCLayer %s: size of drivers: %d is greater than units: %d", off, mn)
+		err = fmt.Errorf("TRCLayer %s: size of drivers: %d is greater than units: %d", ly.Name(), off, mn)
 		log.Println(err)
 	}
 	return err
