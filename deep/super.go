@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/chewxy/math32"
-	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -28,21 +27,20 @@ func (db *BurstParams) Defaults() {
 	db.ThrAbs = 0.1
 }
 
-// TRCAttnParams determine how the TRCLayer activation modulates SuperLayer feedforward
-// excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated).
+// TRCAttnParams determine how the TRCLayer activation modulates SuperLayer activations
 type TRCAttnParams struct {
 	On     bool    `desc:"is attentional modulation active?"`
-	Mod    float32 `desc:"additional netin as function of attention"`
+	Min    float32 `desc:"minimum act multiplier if attention is 0"`
 	TRCLay string  `desc:"name of TRC layer -- defaults to layer name + P"`
 }
 
 func (at *TRCAttnParams) Defaults() {
-	at.Mod = 0.2
+	at.Min = 0.8
 }
 
-// ModVal returns the attn-modulated value: attn adds to the current value in proportion to attn
+// ModVal returns the attn-modulated value
 func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
-	return val + at.Mod*attn*val
+	return val * (at.Min + (1-at.Min)*attn)
 }
 
 // SuperLayer is the DeepLeabra superficial layer, based on basic rate-coded leabra.Layer.
@@ -84,14 +82,6 @@ func (ly *SuperLayer) InitActs() {
 	}
 }
 
-func (ly *SuperLayer) InitGInc() {
-	ly.Layer.InitGInc()
-	for ni := range ly.SuperNeurs {
-		snr := &ly.SuperNeurs[ni]
-		snr.GeFwd = 0
-	}
-}
-
 func (ly *SuperLayer) DecayState(decay float32) {
 	ly.TopoInhibLayer.DecayState(decay)
 	for ni := range ly.SuperNeurs {
@@ -114,34 +104,6 @@ func (ly *SuperLayer) TRCLayer() (*leabra.Layer, error) {
 	return tly.(leabra.LeabraLayer).AsLeabra(), nil
 }
 
-// RecvGIncPrjn increments the receiver's GeRaw or GiRaw from that of all the projections.
-// Increments GeFwd separate from rest of GeRaw.
-func (ly *SuperLayer) RecvGIncPrjn(pj *leabra.Prjn, ltime *leabra.Time) {
-	if pj.Typ == emer.Forward {
-		for ri := range ly.Neurons {
-			snr := &ly.SuperNeurs[ri]
-			snr.GeFwd += pj.GInc[ri]
-			pj.GInc[ri] = 0
-		}
-	} else {
-		pj.LeabraPrj.RecvGInc()
-	}
-}
-
-// RecvGInc rewritten to use the above layer-level method instead of going straight to the Prjn
-func (ly *SuperLayer) RecvGInc(ltime *leabra.Time) {
-	if !ly.Attn.On {
-		ly.TopoInhibLayer.RecvGInc(ltime)
-		return
-	}
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
-			continue
-		}
-		ly.RecvGIncPrjn(p.(leabra.LeabraPrjn).AsLeabra(), ltime)
-	}
-}
-
 // MaxPoolActAvg returns the max Inhib.Act.Avg value across pools
 func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	laymax := float32(0)
@@ -153,21 +115,19 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	return laymax
 }
 
-// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
-// from their G*Raw accumulators.
-func (ly *SuperLayer) GFmIncNeur(ltime *leabra.Time) {
+func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
+	ly.TopoInhibLayer.ActFmG(ltime)
 	if !ly.Attn.On {
-		ly.TopoInhibLayer.GFmIncNeur(ltime)
 		return
 	}
 	trc, err := ly.TRCLayer()
 	if err != nil { // shouldn't happen
-		ly.TopoInhibLayer.GFmIncNeur(ltime)
 		return
 	}
 	laymax := MaxPoolActAvg(trc)
-	if laymax <= 0 {
-		laymax = 1
+	thresh := ly.Inhib.ActAvg.Init * .1 // don't apply attn when activation very weak
+	if laymax <= thresh {
+		return
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -177,17 +137,8 @@ func (ly *SuperLayer) GFmIncNeur(ltime *leabra.Time) {
 		snr := &ly.SuperNeurs[ni]
 		gpavg := trc.Pools[nrn.SubPool].Inhib.Act.Avg // note: requires same shape, validated
 		snr.Attn = gpavg / laymax
-		modFwd := ly.Attn.ModVal(snr.GeFwd, snr.Attn)
-		geRaw := nrn.GeRaw + modFwd
-		ly.Act.GeFmRaw(nrn, geRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		nrn.Act = ly.Attn.ModVal(nrn.Act, snr.Attn)
 	}
-}
-
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *SuperLayer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	ly.GFmIncNeur(ltime)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

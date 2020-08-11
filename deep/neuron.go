@@ -13,10 +13,10 @@ import (
 
 var (
 	// NeuronVars are for full list across all deep Layer types
-	NeuronVars = []string{"Burst", "BurstPrv", "Attn", "GeFwd", "CtxtGe"}
+	NeuronVars = []string{"Burst", "BurstPrv", "Attn", "CtxtGe"}
 
 	// SuperNeuronVars are for SuperLayer directly
-	SuperNeuronVars = []string{"Burst", "BurstPrv", "Attn", "GeFwd"}
+	SuperNeuronVars = []string{"Burst", "BurstPrv", "Attn"}
 
 	SuperNeuronVarsMap map[string]int
 
@@ -40,7 +40,6 @@ type SuperNeuron struct {
 	Burst    float32 `desc:"5IB bursting activation value, computed by thresholding regular activation"`
 	BurstPrv float32 `desc:"previous bursting activation -- used for context-based learning"`
 	Attn     float32 `desc:"attentional signal from TRC layer"`
-	GeFwd    float32 `desc:"conductance from forward projections"`
 }
 
 // SuperNeuronVarIdxByName returns the index of the variable in the SuperNeuron, or error
