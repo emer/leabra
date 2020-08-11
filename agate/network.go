@@ -133,7 +133,7 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 		pulvi := deep.AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 		pulv = pulvi
 		pulvi.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: ct.Name(), XAlign: relpos.Left, Space: 2})
-		pulvi.DriverLay = name
+		// pulvi.DriverLay = name
 	}
 	return
 }
