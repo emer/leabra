@@ -72,11 +72,11 @@ See [pbwm](https://github.com/emer/leabra/blob/master/pbwm) for info about Prefr
 
 # References
 
-Elman, J. L. (1990). Finding structure in time. Cognitive Science, 14(2), 179–211.
+* Elman, J. L. (1990). Finding structure in time. Cognitive Science, 14(2), 179–211.
 
-O’Reilly, R. C., Russin, J. L., Zolfaghar, M., & Rohrlich, J. (2020). Deep Predictive Learning in Neocortex and Pulvinar. ArXiv:2006.14800 [q-Bio]. http://arxiv.org/abs/2006.14800
+* O’Reilly, R. C., Russin, J. L., Zolfaghar, M., & Rohrlich, J. (2020). Deep Predictive Learning in Neocortex and Pulvinar. ArXiv:2006.14800 [q-Bio]. http://arxiv.org/abs/2006.14800
 
-Sherman, S. M., & Guillery, R. W. (2006). Exploring the Thalamus and Its Role in Cortical Function. MIT Press. http://www.scholarpedia.org/article/Thalamus
+* Sherman, S. M., & Guillery, R. W. (2006). Exploring the Thalamus and Its Role in Cortical Function. MIT Press. http://www.scholarpedia.org/article/Thalamus
 
-Shipp, S. (2003). The functional logic of cortico-pulvinar connections. Philosophical Transactions of the Royal Society of London B, 358(1438), 1605–1624. http://www.ncbi.nlm.nih.gov/pubmed/14561322
+* Shipp, S. (2003). The functional logic of cortico-pulvinar connections. Philosophical Transactions of the Royal Society of London B, 358(1438), 1605–1624. http://www.ncbi.nlm.nih.gov/pubmed/14561322
 

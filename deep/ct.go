@@ -26,7 +26,8 @@ var KiT_CTLayer = kit.Types.AddType(&CTLayer{}, LayerProps)
 
 func (ly *CTLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
-	ly.Act.Init.Decay = 0 // deep doesn't decay!
+	ly.Act.Init.Decay = 0            // deep doesn't decay!
+	ly.Inhib.ActAvg.UseFirst = false // first activations can be very far off
 	ly.BurstQtr.Set(int(leabra.Q4))
 	ly.Typ = CT
 }

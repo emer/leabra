@@ -110,7 +110,7 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 // AddDeep4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn PoolOneToOne projection from Super to CT, and TRC Pulvinar for Super (P suffix).
 // TRC projects back to Super and CT layers, also PoolOneToOne.
-// CT is placed Behind Super, and Pulvinar behind CT if created.
+// CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (super, ct, trc emer.Layer) {
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
@@ -127,26 +127,29 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	return
 }
 
-/*
-// AddDeepAttn adds a 4D superficial (SuperLayer) and corresponding CT (CT suffix) layer
-// with CTCtxtPrjn Full projection from Super to CT, and a TRN attentional layer.
-// CT is placed Behind Super, and Pulvinar behind CT if created.
-func AddDeepAttn(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, trn, pulv emer.Layer) {
-	super, ct, pulv = AddDeep4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
-	trni := attrn.AddTRNLayer(nt, name+"AT", nPoolsY, nPoolsX)
-	trn = trni
-	trni.EPools.Add(name+"CT", 2)
-	if pulvLay {
-		trni.EPools.Add(name+"P", .2)
-		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "P", XAlign: relpos.Left, Space: 2})
-		trni.SendTo.Add(name + "P")
-	} else {
-		trni.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
-	}
-	trni.SendTo.Add(name)
+// AddDeepNoTRC2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+func AddDeepNoTRC2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct emer.Layer) {
+	super = AddSuperLayer2D(nt, name, shapeY, shapeX)
+	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
+	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
+	full := prjn.NewFull()
+	ConnectCtxtToCT(nt, super, ct, full)
 	return
 }
-*/
+
+// AddDeepNoTRC4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn PoolOneToOne projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+func AddDeepNoTRC4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (super, ct emer.Layer) {
+	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
+	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
+	pone2one := prjn.NewPoolOneToOne()
+	ConnectCtxtToCT(nt, super, ct, pone2one)
+	return
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Network versions of Add Layer methods
@@ -167,14 +170,19 @@ func (nt *Network) AddDeep4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) 
 	return AddDeep4D(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
-/*
-// AddDeepAttn adds a 4D superficial (SuperLayer) and corresponding CT (CT suffix) layer
-// with CTCtxtPrjn Full projection from Super to CT, and a TRN attentional layer.
-// CT is placed Behind Super, and Pulvinar behind CT if created.
-func (nt *Network) AddDeepAttn(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, trn, pulv emer.Layer) {
-	return AddDeepAttn(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
+// AddDeepNoTRC2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+func (nt *Network) AddDeepNoTRC2D(name string, shapeY, shapeX int) (super, ct emer.Layer) {
+	return AddDeepNoTRC2D(&nt.Network, name, shapeY, shapeX)
 }
-*/
+
+// AddDeepNoTRC4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn PoolOneToOne projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+func (nt *Network) AddDeepNoTRC4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (super, ct emer.Layer) {
+	return AddDeepNoTRC4D(&nt.Network, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+}
 
 // ConnectCtxtToCT adds a CTCtxtPrjn from given sending layer to a CT layer
 func (nt *Network) ConnectCtxtToCT(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {

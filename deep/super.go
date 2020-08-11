@@ -5,20 +5,21 @@
 package deep
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/chewxy/math32"
+	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
-// BurstParams are parameters determining how the DeepBurst activation is computed
-// from regular activation values.
+// BurstParams determine how the 5IB Burst activation is computed from
+// standard Act activation values in SuperLayer -- thresholded.
 type BurstParams struct {
 	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
 	ThrRel   float32         `max:"1" def:"0.1,0.2,0.5" desc:"Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds."`
 	ThrAbs   float32         `min:"0" max:"1" def:"0.1,0.2,0.5" desc:"Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds."`
-}
-
-func (db *BurstParams) Update() {
 }
 
 func (db *BurstParams) Defaults() {
@@ -27,11 +28,29 @@ func (db *BurstParams) Defaults() {
 	db.ThrAbs = 0.1
 }
 
+// TRCAttnParams determine how the TRCLayer activation modulates SuperLayer feedforward
+// excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated).
+type TRCAttnParams struct {
+	On     bool    `desc:"is attentional modulation active?"`
+	Mod    float32 `desc:"additional netin as function of attention"`
+	TRCLay string  `desc:"name of TRC layer -- defaults to layer name + P"`
+}
+
+func (at *TRCAttnParams) Defaults() {
+	at.Mod = 0.2
+}
+
+// ModVal returns the attn-modulated value: attn adds to the current value in proportion to attn
+func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
+	return val + at.Mod*attn*val
+}
+
 // SuperLayer is the DeepLeabra superficial layer, based on basic rate-coded leabra.Layer.
 // Computes the Burst activation from regular activations.
 type SuperLayer struct {
 	TopoInhibLayer               // access as .TopoInhibLayer
 	Burst          BurstParams   `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
+	Attn           TRCAttnParams `view:"inline" desc:"determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer."`
 	SuperNeurs     []SuperNeuron `desc:"slice of super neuron values -- same size as Neurons"`
 }
 
@@ -41,73 +60,16 @@ func (ly *SuperLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
 	ly.Act.Init.Decay = 0 // deep doesn't decay!
 	ly.Burst.Defaults()
+	ly.Attn.Defaults()
+	if ly.Attn.TRCLay == "" {
+		ly.Attn.TRCLay = ly.Nm + "P"
+	}
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
 // including those in the receiving projections of this layer
 func (ly *SuperLayer) UpdateParams() {
 	ly.TopoInhibLayer.UpdateParams()
-	ly.Burst.Update()
-}
-
-// UnitVarNames returns a list of variable names available on the units in this layer
-func (ly *SuperLayer) UnitVarNames() []string {
-	return NeuronVarsAll
-}
-
-// UnitVarIdx returns the index of given variable within the Neuron,
-// according to UnitVarNames() list (using a map to lookup index),
-// or -1 and error message if not found.
-func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
-	if err == nil {
-		return vidx, err
-	}
-	vidx, err = SuperNeuronVarIdxByName(varNm)
-	if err != nil {
-		return vidx, err
-	}
-	vidx += ly.TopoInhibLayer.UnitVarNum()
-	return vidx, err
-}
-
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
-// returns NaN on invalid index.
-// This is the core unit var access method used by other methods,
-// so it is the only one that needs to be updated for derived layer types.
-func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 {
-		return math32.NaN()
-	}
-	nn := ly.TopoInhibLayer.UnitVarNum()
-	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
-	}
-	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
-	}
-	varIdx -= nn
-	if varIdx >= len(SuperNeuronVars) {
-		return math32.NaN()
-	}
-	snr := &ly.SuperNeurs[idx]
-	return snr.VarByIdx(varIdx)
-}
-
-// UnitVarNum returns the number of Neuron-level variables
-// for this layer.  This is needed for extending indexes in derived types.
-func (ly *SuperLayer) UnitVarNum() int {
-	return ly.TopoInhibLayer.UnitVarNum() + len(SuperNeuronVars)
-}
-
-// Build constructs the layer state, including calling Build on the projections.
-func (ly *SuperLayer) Build() error {
-	err := ly.TopoInhibLayer.Build()
-	if err != nil {
-		return err
-	}
-	ly.SuperNeurs = make([]SuperNeuron, len(ly.Neurons))
-	return nil
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -122,12 +84,110 @@ func (ly *SuperLayer) InitActs() {
 	}
 }
 
+func (ly *SuperLayer) InitGInc() {
+	ly.Layer.InitGInc()
+	for ni := range ly.SuperNeurs {
+		snr := &ly.SuperNeurs[ni]
+		snr.GeFwd = 0
+	}
+}
+
 func (ly *SuperLayer) DecayState(decay float32) {
 	ly.TopoInhibLayer.DecayState(decay)
 	for ni := range ly.SuperNeurs {
 		snr := &ly.SuperNeurs[ni]
 		snr.Burst -= decay * (snr.Burst - ly.Act.Init.Act)
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  TRC-Based Attention
+
+// TRCLayer returns the TRC layer for attentional modulation
+func (ly *SuperLayer) TRCLayer() (*leabra.Layer, error) {
+	tly, err := ly.Network.LayerByNameTry(ly.Attn.TRCLay)
+	if err != nil {
+		err = fmt.Errorf("SuperLayer %s: TRC Layer: %v", ly.Name(), err)
+		log.Println(err)
+		return nil, err
+	}
+	return tly.(leabra.LeabraLayer).AsLeabra(), nil
+}
+
+// RecvGIncPrjn increments the receiver's GeRaw or GiRaw from that of all the projections.
+// Increments GeFwd separate from rest of GeRaw.
+func (ly *SuperLayer) RecvGIncPrjn(pj *leabra.Prjn, ltime *leabra.Time) {
+	if pj.Typ == emer.Forward {
+		for ri := range ly.Neurons {
+			snr := &ly.SuperNeurs[ri]
+			snr.GeFwd += pj.GInc[ri]
+			pj.GInc[ri] = 0
+		}
+	} else {
+		pj.LeabraPrj.RecvGInc()
+	}
+}
+
+// RecvGInc rewritten to use the above layer-level method instead of going straight to the Prjn
+func (ly *SuperLayer) RecvGInc(ltime *leabra.Time) {
+	if !ly.Attn.On {
+		ly.TopoInhibLayer.RecvGInc(ltime)
+		return
+	}
+	for _, p := range ly.RcvPrjns {
+		if p.IsOff() {
+			continue
+		}
+		ly.RecvGIncPrjn(p.(leabra.LeabraPrjn).AsLeabra(), ltime)
+	}
+}
+
+// MaxPoolActAvg returns the max Inhib.Act.Avg value across pools
+func MaxPoolActAvg(ly *leabra.Layer) float32 {
+	laymax := float32(0)
+	np := len(ly.Pools)
+	for pi := 1; pi < np; pi++ {
+		pl := &ly.Pools[pi]
+		laymax = math32.Max(laymax, pl.Inhib.Act.Avg)
+	}
+	return laymax
+}
+
+// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// from their G*Raw accumulators.
+func (ly *SuperLayer) GFmIncNeur(ltime *leabra.Time) {
+	if !ly.Attn.On {
+		ly.TopoInhibLayer.GFmIncNeur(ltime)
+		return
+	}
+	trc, err := ly.TRCLayer()
+	if err != nil { // shouldn't happen
+		ly.TopoInhibLayer.GFmIncNeur(ltime)
+		return
+	}
+	laymax := MaxPoolActAvg(trc)
+	if laymax <= 0 {
+		laymax = 1
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		snr := &ly.SuperNeurs[ni]
+		gpavg := trc.Pools[nrn.SubPool].Inhib.Act.Avg // note: requires same shape, validated
+		snr.Attn = gpavg / laymax
+		modFwd := ly.Attn.ModVal(snr.GeFwd, snr.Attn)
+		geRaw := nrn.GeRaw + modFwd
+		ly.Act.GeFmRaw(nrn, geRaw)
+		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+	}
+}
+
+// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *SuperLayer) GFmInc(ltime *leabra.Time) {
+	ly.RecvGInc(ltime)
+	ly.GFmIncNeur(ltime)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -217,4 +277,85 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 			}
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Unit Vars
+
+func (ly *SuperLayer) ValidateTRCLayer() error {
+	trc, err := ly.TRCLayer()
+	if err != nil {
+		ly.Attn.On = false
+		return err
+	}
+	if !(trc.Shp.Dim(0) == ly.Shp.Dim(0) && trc.Shp.Dim(1) == ly.Shp.Dim(1)) {
+		ly.Attn.On = false
+		err = fmt.Errorf("TRC Layer must have the same group-level shape as this layer")
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+// Build constructs the layer state, including calling Build on the projections.
+func (ly *SuperLayer) Build() error {
+	err := ly.TopoInhibLayer.Build()
+	if err != nil {
+		return err
+	}
+	ly.SuperNeurs = make([]SuperNeuron, len(ly.Neurons))
+	if ly.Attn.On {
+		err = ly.ValidateTRCLayer()
+	}
+	return err
+}
+
+// UnitVarNames returns a list of variable names available on the units in this layer
+func (ly *SuperLayer) UnitVarNames() []string {
+	return NeuronVarsAll
+}
+
+// UnitVarIdx returns the index of given variable within the Neuron,
+// according to UnitVarNames() list (using a map to lookup index),
+// or -1 and error message if not found.
+func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
+	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
+	if err == nil {
+		return vidx, err
+	}
+	vidx, err = SuperNeuronVarIdxByName(varNm)
+	if err != nil {
+		return vidx, err
+	}
+	vidx += ly.TopoInhibLayer.UnitVarNum()
+	return vidx, err
+}
+
+// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// returns NaN on invalid index.
+// This is the core unit var access method used by other methods,
+// so it is the only one that needs to be updated for derived layer types.
+func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
+	if varIdx < 0 {
+		return math32.NaN()
+	}
+	nn := ly.TopoInhibLayer.UnitVarNum()
+	if varIdx < nn {
+		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
+	}
+	if idx < 0 || idx >= len(ly.Neurons) {
+		return math32.NaN()
+	}
+	varIdx -= nn
+	if varIdx >= len(SuperNeuronVars) {
+		return math32.NaN()
+	}
+	snr := &ly.SuperNeurs[idx]
+	return snr.VarByIdx(varIdx)
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *SuperLayer) UnitVarNum() int {
+	return ly.TopoInhibLayer.UnitVarNum() + len(SuperNeuronVars)
 }

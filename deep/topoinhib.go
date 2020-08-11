@@ -52,7 +52,6 @@ var KiT_TopoInhibLayer = kit.Types.AddType(&TopoInhibLayer{}, LayerProps)
 func (ly *TopoInhibLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.TopoInhib.Defaults()
-	ly.Typ = TRC
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values

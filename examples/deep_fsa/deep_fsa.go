@@ -283,19 +283,18 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	in := net.AddLayer2D("Input", 1, 15, emer.Input)
 	hid, hidct, hidp := net.AddDeep2D("Hidden", 8, 8)
 
-	hidp.Shape().SetShape([]int{1, 15}, nil, nil)
-
-	hidct.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
-	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
+	hidp.Shape().CopyShape(in.Shape())
+	hidp.(*deep.TRCLayer).Drivers.Add("Input")
 
 	trg := net.AddLayer2D("Targets", 1, 15, emer.Input) // just for visualization
-	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
 	in.SetClass("Input")
 	hidp.SetClass("Input")
 	trg.SetClass("Input")
 
-	hidp.(*deep.TRCLayer).Drivers.Add("Input")
+	hidct.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
+	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
+	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
 	full := prjn.NewFull()
 	net.ConnectLayers(in, hid, full, emer.Forward)
