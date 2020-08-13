@@ -6,7 +6,7 @@ package deep
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/emergent/evec"
+	"github.com/emer/emergent/efuns"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
@@ -37,7 +37,7 @@ func (ti *TopoInhib) Update() {
 	}
 	sig := float32(ti.Width) * ti.Sigma
 	for i := range ti.Wts {
-		ti.Wts[i] = ti.Gi * evec.Gauss1DNoNorm(float32(i+1), sig)
+		ti.Wts[i] = ti.Gi * efuns.Gauss1DNoNorm(float32(i+1), sig)
 	}
 }
 
