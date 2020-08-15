@@ -139,12 +139,15 @@ func (nt *Network) InitWts() {
 		ly.(LeabraLayer).InitWts()
 	}
 	// separate pass to enforce symmetry
+	// st := time.Now()
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
 			continue
 		}
 		ly.(LeabraLayer).InitWtSym()
 	}
+	// dur := time.Now().Sub(st)
+	// fmt.Printf("sym: %v\n", dur)
 }
 
 // InitActs fully initializes activation state -- not automatically called

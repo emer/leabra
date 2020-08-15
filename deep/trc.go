@@ -17,18 +17,19 @@ import (
 // Driver describes the source of driver inputs from cortex into TRC (pulvinar)
 type Driver struct {
 	Driver string `desc:"driver layer"`
-	Off    int    `desc:"offset into TRC pool"`
+	Off    int    `inactive:"-" desc:"offset into TRC pool"`
 }
 
 // Drivers are a list of drivers
 type Drivers []*Driver
 
-// Add adds a new driver
-func (dr *Drivers) Add(laynm string) *Driver {
-	d := &Driver{}
-	d.Driver = laynm
-	*dr = append(*dr, d)
-	return d
+// Add adds new driver(s)
+func (dr *Drivers) Add(laynms ...string) {
+	for _, laynm := range laynms {
+		d := &Driver{}
+		d.Driver = laynm
+		*dr = append(*dr, d)
+	}
 }
 
 // TRCParams provides parameters for how the plus-phase (outcome) state of thalamic relay cell
@@ -117,6 +118,11 @@ func (ly *TRCLayer) Class() string {
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // Drivers
+
+func (ly *TRCLayer) InitWts() {
+	ly.TopoInhibLayer.InitWts()
+	ly.SetDriverOffs()
+}
 
 // UnitsSize returns the dimension of the units, either within a pool for 4D, or layer for 2D
 func UnitsSize(ly *leabra.Layer) (x, y int) {

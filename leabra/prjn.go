@@ -427,26 +427,59 @@ func (pj *Prjn) InitWts() {
 func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 	rpj := rpjp.AsLeabra()
 	slay := pj.Send.(LeabraLayer).AsLeabra()
-	ns := len(slay.Neurons)
-	for si := 0; si < ns; si++ {
-		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
-		for ci := 0; ci < nc; ci++ {
+	ns := int32(len(slay.Neurons))
+	for si := int32(0); si < ns; si++ {
+		nc := pj.SConN[si]
+		st := pj.SConIdxSt[si]
+		for ci := int32(0); ci < nc; ci++ {
 			sy := &pj.Syns[st+ci]
 			ri := pj.SConIdx[st+ci]
 			// now we need to find the reciprocal synapse on rpj!
 			// look in ri for sending connections
 			rsi := ri
-			rsnc := int(rpj.SConN[rsi])
-			rsst := int(rpj.SConIdxSt[rsi])
-			for rci := 0; rci < rsnc; rci++ {
-				rri := int(rpj.SConIdx[rsst+rci])
-				if rri == si {
-					rsy := &rpj.Syns[rsst+rci]
-					rsy.Wt = sy.Wt
-					rsy.LWt = sy.LWt
-					rsy.Scale = sy.Scale
-					// note: if we support SymFmTop then can have option to go other way
+			rsnc := rpj.SConN[rsi]
+			rsst := rpj.SConIdxSt[rsi]
+			rist := rpj.SConIdx[rsst]        // starting index in recv prjn
+			ried := rpj.SConIdx[rsst+rsnc-1] // ending index
+			if si < rist || si > ried {      // fast reject -- prjns are always in order!
+				continue
+			}
+			// start at index proportional to si relative to rist
+			up := int32(float32(rsnc) * float32(si-rist) / float32(ried-rist))
+			dn := up - 1
+
+			for {
+				doing := false
+				if up < rsnc {
+					doing = true
+					rrii := rsst + up
+					rri := rpj.SConIdx[rrii]
+					if rri == si {
+						rsy := &rpj.Syns[rrii]
+						rsy.Wt = sy.Wt
+						rsy.LWt = sy.LWt
+						rsy.Scale = sy.Scale
+						// note: if we support SymFmTop then can have option to go other way
+						break
+					}
+					up++
+				}
+				if dn >= 0 {
+					doing = true
+					rrii := rsst + dn
+					rri := rpj.SConIdx[rrii]
+					if rri == si {
+						rsy := &rpj.Syns[rrii]
+						rsy.Wt = sy.Wt
+						rsy.LWt = sy.LWt
+						rsy.Scale = sy.Scale
+						// note: if we support SymFmTop then can have option to go other way
+						break
+					}
+					dn--
+				}
+				if !doing {
+					break
 				}
 			}
 		}
