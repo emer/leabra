@@ -445,7 +445,10 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 				continue
 			}
 			// start at index proportional to si relative to rist
-			up := int32(float32(rsnc) * float32(si-rist) / float32(ried-rist))
+			up := int32(0)
+			if ried > rist {
+				up = int32(float32(rsnc) * float32(si-rist) / float32(ried-rist))
+			}
 			dn := up - 1
 
 			for {
