@@ -6,6 +6,8 @@ package leabra
 
 import (
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/prjn"
+	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 )
@@ -148,6 +150,32 @@ func (nt *Network) InitWts() {
 	}
 	// dur := time.Now().Sub(st)
 	// fmt.Printf("sym: %v\n", dur)
+}
+
+// InitScalesFmPoolTile initializes synapse-specific scale parameters from
+// prjn.PoolTile projection TopoWts methods.
+func (nt *Network) InitScalesFmPoolTile() {
+	scales := &etensor.Float32{}
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		rpjn := ly.RecvPrjns()
+		for _, p := range *rpjn {
+			if p.IsOff() {
+				continue
+			}
+			pat := p.Pattern()
+			ptile, ok := pat.(*prjn.PoolTile)
+			if !ok {
+				continue
+			}
+			pj := p.(LeabraPrjn).AsLeabra()
+			slay := p.SendLay()
+			ptile.TopoWts(slay.Shape(), ly.Shape(), scales)
+			pj.SetScalesRPool(scales)
+		}
+	}
 }
 
 // InitActs fully initializes activation state -- not automatically called
