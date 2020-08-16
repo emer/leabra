@@ -103,7 +103,7 @@ There are also other changes in this method that remove the manual epoch-level c
 
 ## CmdArgs
 
-At the end, CmdArgs sets the `UseMPI` flag based on the `-mpi` arg, and has quite a bit of MPI-specific logic in it, which we don't reproduce here.
+At the end, CmdArgs sets the `UseMPI` flag based on the `-mpi` arg, and has quite a bit of MPI-specific logic in it, which we don't reproduce here -- see `ra25.go` code and look for mpi.
 
 We use `mpi.Printf` instead of `fmt.Printf` to have it only print on the root node, so you don't get a bunch of duplicated messages.
 
