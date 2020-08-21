@@ -42,11 +42,11 @@ import (
 )
 
 func main() {
-	TheSim.New()
-	TheSim.Config()
+	TheSim.New() // note: not running Config here -- done in CmdArgs for mpi / nogui
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
+		TheSim.Config()      // for GUI case, config then run..
 		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
 			guirun()
 		})
@@ -1570,7 +1570,9 @@ func (ss *Sim) CmdArgs() {
 		ss.MPIInit()
 	}
 
-	ss.Init() // key for Init to be after MPIInit
+	// key for Config and Init to be after MPIInit
+	ss.Config()
+	ss.Init()
 
 	if note != "" {
 		mpi.Printf("note: %s\n", note)

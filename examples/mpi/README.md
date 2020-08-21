@@ -40,6 +40,24 @@ Here are the main diffs that transform the ra25.go example into this mpi version
 
 * Most of the changes are the bottom of the file.
 
+## main() Config() call
+
+At the top of the file, it can be important to configure `TheSim` *after* mpi has been initialized, if there are things that are done differently there -- thus, you should move the `TheSim.Config()` call into `CmdArgs`:
+
+```go
+func main() {
+	TheSim.New() // note: not running Config here -- done in CmdArgs for mpi / nogui
+	if len(os.Args) > 1 {
+		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	} else {
+		TheSim.Config()      // for GUI case, config then run..
+		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
+			guirun()
+		})
+	}
+}
+```
+
 ## Sim struct
 
 There are some other things added but they are just more of what is already there -- these are the uniquely MPI parts, at end of Sim struct type:
