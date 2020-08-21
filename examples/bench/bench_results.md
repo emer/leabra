@@ -14,6 +14,56 @@ Results are total time for 1, 2, 4 threads, on my macbook.
 * GINOR:  35.334  24.768   17.794
 ```
 
+## Go v1.15, 8/21/2020, leabra v1.1.5
+
+Basically the same results as below, except a secs or so faster due to faster macbook pro. Layer.Act.Gbar.L = 0.2 instead of new default of 0.1 makes a *huge* difference!  
+
+```
+* SMALL:   1.27   3.53   3.64
+* MEDIUM:  1.61   2.31   2.09
+* LARGE:   9.56   7.48   5.44
+* HUGE:   19.17   13.3   9.62
+* GINOR:  23.61   17.94   13.24
+```
+
+```
+$ ./bench -epochs 5 -pats 20 -units 625 -threads=1
+Took  9.845 secs for 5 epochs, avg per epc:  1.969
+TimerReport: BenchNet, NThreads: 1
+    Function Name Total Secs    Pct
+    ActFmG        1.824        18.59
+    AvgMaxAct     0.09018       0.919
+    AvgMaxGe      0.08463       0.8624
+    CyclePost     0.002069      0.02108
+    DWt           2.11         21.51
+    GFmInc        0.3974        4.05
+    InhibFmGeAct  0.107         1.091
+    QuarterFinal  0.004373      0.04457
+    SendGDelta    3.117        31.77
+    WtBalFmWt     1.285e-05     0.0001309
+    WtFmDWt       2.075        21.15
+    Total         9.813
+```
+
+```
+$ ./bench -epochs 5 -pats 10 -units 1024 -threads=1
+Took  19.34 secs for 5 epochs, avg per epc:  3.868
+TimerReport: BenchNet, NThreads: 1
+    Function Name Total Secs    Pct
+    ActFmG        1.639        8.483
+    AvgMaxAct     0.07904      0.4091
+    AvgMaxGe      0.07551      0.3909
+    CyclePost     0.001287     0.006663
+    DWt           3.669       18.99
+    GFmInc        0.3667       1.898
+    InhibFmGeAct  0.09876      0.5112
+    QuarterFinal  0.004008     0.02075
+    SendGDelta   10.21        52.87
+    WtBalFmWt     1.2e-05      6.211e-05
+    WtFmDWt       3.172       16.42
+    Total        19.32
+```
+
 ## Go emergent 6/2019 after a few bugfixes, etc: significantly faster!
 
 ```
@@ -68,17 +118,17 @@ C++: `emergent -nogui -ni -p leabra_bench.proj epochs=5 pats=20 units=625 n_thre
 
 ```
 BenchNet_5lay timing report:
-function  	time     percent 
+function      time     percent 
 Net_Input     8.91    43.1
-Net_InInteg	   0.71     3.43
+Net_InInteg       0.71     3.43
 Activation    1.95     9.43
 Weight_Change 4.3     20.8
-Weight_Updt	   2.85    13.8
-Net_InStats	   0.177    0.855
+Weight_Updt       2.85    13.8
+Net_InStats       0.177    0.855
 Inhibition    0.00332  0.016
 Act_post      1.63     7.87
-Cycle_Stats	   0.162    0.781
-    total:	   20.7
+Cycle_Stats       0.162    0.781
+    total:       20.7
 ```
 
 Go: `./bench -epochs 5 -pats 20 -units 625 -threads=1`

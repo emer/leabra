@@ -44,6 +44,7 @@ var ParamSets = params.Sets{
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
+					"Layer.Act.Gbar.L":     "0.2", // original value -- makes HUGE diff on perf!
 				}},
 			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
 				Params: params.Params{

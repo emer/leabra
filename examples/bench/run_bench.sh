@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# typically run with -threads=N arg as follows:
+# $./run_bench.sh -threads=2
+
 exe=./bench
 
 echo " "

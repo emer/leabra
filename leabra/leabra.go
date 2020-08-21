@@ -52,7 +52,8 @@ type LeabraNetwork interface {
 	// QuarterFinalImpl does updating after end of a quarter
 	QuarterFinalImpl(ltime *Time)
 
-	// DWtImpl computes the weight change (learning) based on current running-average activation values
+	// DWtImpl computes the weight change (learning) based on current
+	// running-average activation values
 	DWtImpl()
 
 	// WtFmDWtImpl updates the weights from delta-weight changes.
