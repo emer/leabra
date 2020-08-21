@@ -1211,6 +1211,28 @@ func (ly *Layer) LrateMult(mult float32) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Threading / Reports
+
+// CostEst returns the estimated computational cost associated with this layer,
+// separated by neuron-level and synapse-level, in arbitrary units where
+// cost per synapse is 1.  Neuron-level computation is more expensive but
+// there are typically many fewer neurons, so in larger networks, synaptic
+// costs tend to dominate.  Neuron cost is estimated from TimerReport output
+// for large networks.
+func (ly *Layer) CostEst() (neur, syn, tot int) {
+	perNeur := 295 // cost per neuron, relative to synapse which is 1
+	neur = len(ly.Neurons) * perNeur
+	syn = 0
+	for _, pji := range ly.SndPrjns {
+		pj := pji.(LeabraPrjn).AsLeabra()
+		ns := len(pj.Syns)
+		syn += ns
+	}
+	tot = neur + syn
+	return
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Stats
 
 // note: use float64 for stats as that is best for logging
