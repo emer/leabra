@@ -573,6 +573,11 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 	}
 
 	fmt.Fprintf(&b, "Deviation: %s \t Idx: %d\n", (datasize.ByteSize)(minDev).HumanReadable(), minDevIdx)
+
+	nt.StopThreads()
+	nt.BuildThreads()
+	nt.StartThreads()
+
 	return b.String()
 }
 
