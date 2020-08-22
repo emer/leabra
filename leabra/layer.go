@@ -1220,7 +1220,7 @@ func (ly *Layer) LrateMult(mult float32) {
 // costs tend to dominate.  Neuron cost is estimated from TimerReport output
 // for large networks.
 func (ly *Layer) CostEst() (neur, syn, tot int) {
-	perNeur := 295 // cost per neuron, relative to synapse which is 1
+	perNeur := 300 // cost per neuron, relative to synapse which is 1
 	neur = len(ly.Neurons) * perNeur
 	syn = 0
 	for _, pji := range ly.SndPrjns {

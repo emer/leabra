@@ -35,6 +35,8 @@ func (dr *Drivers) Add(laynms ...string) {
 // TRCParams provides parameters for how the plus-phase (outcome) state of thalamic relay cell
 // (e.g., Pulvinar) neurons is computed from the corresponding driver neuron Burst activation.
 type TRCParams struct {
+	NoTopo     bool            `desc:"Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools"`
+	AvgMix     float32         `desc:"proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling"`
 	BurstQtr   leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines"`
 	DriveScale float32         `def:"0.3" min:"0.0" desc:"multiplier on driver input strength, multiplies activation of driver layer"`
 	MaxInhib   float32         `def:"0.6" min:"0.01" desc:"Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning."`
@@ -68,6 +70,12 @@ func (tp *TRCParams) DriveGe(act float32) float32 {
 	} else {
 		return tp.DriveScale * act
 	}
+}
+
+// GeFmMaxAvg returns the drive Ge value as function of max and average
+func (tp *TRCParams) GeFmMaxAvg(max, avg float32) float32 {
+	deff := (1-tp.AvgMix)*max + tp.AvgMix*avg
+	return tp.DriveGe(deff)
 }
 
 // TRCLayer is the thalamic relay cell layer for DeepLeabra.
@@ -171,15 +179,22 @@ func (ly *TRCLayer) SetDriverOffs() error {
 }
 
 func DriveAct(dni int, dly *leabra.Layer, sly *SuperLayer, issuper bool) float32 {
+	act := float32(0)
 	if issuper {
-		return sly.SuperNeurs[dni].Burst
+		act = sly.SuperNeurs[dni].Burst
+	} else {
+		act = dly.Neurons[dni].Act
 	}
-	return dly.Neurons[dni].Act
+	lmax := dly.Pools[0].Inhib.Act.Max
+	if lmax > 0.1 {
+		return act / lmax
+	}
+	return act
 }
 
-// SetDriverNeuron sets the driver activation for given Neuron, based on given activation
-// value from driver layer (Burst or Act)
-func (ly *TRCLayer) SetDriverNeuron(tni int, drvAct, drvInhib float32) {
+// SetDriverNeuron sets the driver activation for given Neuron,
+// based on given Ge driving value (use DriveFmMaxAvg) from driver layer (Burst or Act)
+func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 	if tni >= len(ly.Neurons) {
 		return
 	}
@@ -187,7 +202,6 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvAct, drvInhib float32) {
 	if nrn.IsOff() {
 		return
 	}
-	drvGe := ly.TRC.DriveGe(drvAct)
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
 	ly.Act.GeFmRaw(nrn, geRaw)
 	ly.Act.GiFmRaw(nrn, nrn.GiRaw)
@@ -213,7 +227,7 @@ func (ly *TRCLayer) SetDriverActs() {
 				for dni := range dly.Neurons {
 					tni := drv.Off + dni
 					drvAct := DriveAct(dni, dly, sly, issuper)
-					ly.SetDriverNeuron(tni, drvAct, drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
 				}
 			} else { // copy flat to all pools -- not typical
 				for dni := range dly.Neurons {
@@ -222,7 +236,7 @@ func (ly *TRCLayer) SetDriverActs() {
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
 							pni := (py*pxn+px)*nun + tni
-							ly.SetDriverNeuron(pni, drvAct, drvInhib)
+							ly.SetDriverNeuron(pni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
 						}
 					}
 				}
@@ -235,15 +249,56 @@ func (ly *TRCLayer) SetDriverActs() {
 			if ly.Is2D() {
 				for dni := 0; dni < dnun; dni++ {
 					max := float32(0)
+					avg := float32(0)
+					avgn := 0
 					for py := 0; py < dpyn; py++ {
 						for px := 0; px < dpxn; px++ {
-							pni := (py*dpxn+px)*dnun + dni
+							pi := (py*dpxn + px)
+							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
 							max = math32.Max(max, act)
+							pmax := dly.Pools[1+pi].Inhib.Act.Max
+							if pmax > 0.5 {
+								avg += act
+								avgn++
+							}
 						}
 					}
+					if avgn > 0 {
+						avg /= float32(avgn)
+					}
 					tni := drv.Off + dni
-					ly.SetDriverNeuron(tni, max, drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
+				}
+			} else if ly.TRC.NoTopo { // ly is 4D
+				for dni := 0; dni < dnun; dni++ {
+					max := float32(0)
+					avg := float32(0)
+					avgn := 0
+					for py := 0; py < dpyn; py++ {
+						for px := 0; px < dpxn; px++ {
+							pi := (py*dpxn + px)
+							pni := pi*dnun + dni
+							act := DriveAct(pni, dly, sly, issuper)
+							max = math32.Max(max, act)
+							pmax := dly.Pools[1+pi].Inhib.Act.Max
+							if pmax > 0.5 {
+								avg += act
+								avgn++
+							}
+						}
+					}
+					if avgn > 0 {
+						avg /= float32(avgn)
+					}
+					drvGe := ly.TRC.GeFmMaxAvg(max, avg)
+					tni := drv.Off + dni
+					for py := 0; py < pyn; py++ {
+						for px := 0; px < pxn; px++ {
+							pni := (py*pxn+px)*nun + tni
+							ly.SetDriverNeuron(pni, drvGe, drvInhib)
+						}
+					}
 				}
 			} else { // ly is 4D
 				pyr := float64(dpyn) / float64(pyn)
@@ -257,15 +312,26 @@ func (ly *TRCLayer) SetDriverActs() {
 						pni := (py*pxn + px) * nun
 						for dni := 0; dni < dnun; dni++ {
 							max := float32(0)
+							avg := float32(0)
+							avgn := 0
 							for dpy := sdpy; dpy < edpy; dpy++ {
 								for dpx := sdpx; dpx < edpx; dpx++ {
-									dpni := (dpy*dpxn+dpx)*dnun + dni
+									pi := (dpy*dpxn + dpx)
+									dpni := pi*dnun + dni
 									act := DriveAct(dpni, dly, sly, issuper)
 									max = math32.Max(max, act)
+									pmax := dly.Pools[1+pi].Inhib.Act.Max
+									if pmax > 0.5 {
+										avg += act
+										avgn++
+									}
 								}
 							}
+							if avgn > 0 {
+								avg /= float32(avgn)
+							}
 							tni := pni + drv.Off + dni
-							ly.SetDriverNeuron(tni, max, drvInhib)
+							ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
 						}
 					}
 				}
