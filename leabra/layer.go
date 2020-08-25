@@ -542,6 +542,8 @@ func (ly *Layer) InitActs() {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Init()
+		pl.ActM.Init()
+		pl.ActP.Init()
 	}
 }
 
