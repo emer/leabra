@@ -89,7 +89,7 @@ func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern
 
 // AddDeep2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn Full projection from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers.
+// TRC projects back to Super and CT layers, type = Back, class = FmPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, trc emer.Layer) {
@@ -102,14 +102,16 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, full, emer.Forward)
-	nt.ConnectLayers(trc, super, full, emer.Back)
-	nt.ConnectLayers(trc, ct, full, emer.Back)
+	pj := nt.ConnectLayers(trc, super, full, emer.Back)
+	pj.SetClass("FmPulv")
+	pj = nt.ConnectLayers(trc, ct, full, emer.Back)
+	pj.SetClass("FmPulv")
 	return
 }
 
 // AddDeep4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPrjn PoolOneToOne projection from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, also PoolOneToOne.
+// TRC projects back to Super and CT layers, also PoolOneToOne, class = FmPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (super, ct, trc emer.Layer) {
@@ -122,8 +124,10 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, pone2one, emer.Forward)
-	nt.ConnectLayers(trc, super, pone2one, emer.Back)
-	nt.ConnectLayers(trc, ct, pone2one, emer.Back)
+	pj := nt.ConnectLayers(trc, super, pone2one, emer.Back)
+	pj.SetClass("FmPulv")
+	pj = nt.ConnectLayers(trc, ct, pone2one, emer.Back)
+	pj.SetClass("FmPulv")
 	return
 }
 
