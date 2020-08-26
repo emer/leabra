@@ -185,8 +185,8 @@ func DriveAct(dni int, dly *leabra.Layer, sly *SuperLayer, issuper bool) float32
 	} else {
 		act = dly.Neurons[dni].Act
 	}
-	lmax := dly.Pools[0].Inhib.Act.Max
-	if lmax > 0.1 {
+	lmax := dly.Pools[0].Inhib.Act.Max // normalize by drive layer max act
+	if lmax > 0.1 {                    // this puts all layers on equal footing for driving..
 		return act / lmax
 	}
 	return act
