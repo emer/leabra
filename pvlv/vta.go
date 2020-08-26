@@ -52,6 +52,12 @@ type VTAState struct {
 	SendVal    float32
 }
 
+func AddVTALayer(nt *Network, name string, val Valence) *VTALayer {
+	ly := &VTALayer{Valence: val}
+	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	return ly
+}
+
 func (ly *VTALayer) Build() error {
 	net := ly.Network
 	ly.RecvFrom = map[string]emer.Layer{}
