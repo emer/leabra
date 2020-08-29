@@ -1,4 +1,4 @@
-// Copyright (c) 2019, The Emergent Authors. All rights reserved.
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -75,7 +75,7 @@ func (mnr *ModNeuron) VarNames() []string {
 func NeuronVarByName(varNm string) (int, error) {
 	i, ok := ModNeuronVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("neuron VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }

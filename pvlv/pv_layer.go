@@ -1,3 +1,7 @@
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package pvlv
 
 import (
@@ -7,6 +11,7 @@ import (
 	"strconv"
 )
 
+// Primary Value input layer. Sends activation directly to its receivers, bypassing the standard mechanisms.
 type PVLayer struct {
 	leabra.Layer
 	Net           *Network
@@ -58,7 +63,7 @@ func (ly *PVLayer) GetMonitorVal(data []string) float64 {
 	unitIdx, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
-		val = GlobalTotalActFn(ly)
+		val = TotalAct(ly)
 	case "Act":
 		val = ly.Neurons[unitIdx].Act
 	case "PoolActAvg":

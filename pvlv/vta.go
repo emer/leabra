@@ -28,14 +28,15 @@ type VTADAGains struct {
 // VTA internal state
 type VTALayer struct {
 	rl.ClampDaLayer
-	SendVal       float32
-	Valence       Valence    `desc:"VTA layer DA valence, positive or negative"`
-	TonicDA       float32    `desc:"set a tonic 'dopamine' (DA) level (offset to add to da values)"`
-	DAGains       VTADAGains `view:"inline" desc:"gains for various VTA inputs"`
-	RecvFrom      map[string]emer.Layer
-	InternalState VTAState `desc:"input values--for debugging only"`
+	SendVal  float32
+	Valence  Valence    `desc:"VTA layer DA valence, positive or negative"`
+	TonicDA  float32    `desc:"set a tonic 'dopamine' (DA) level (offset to add to da values)"`
+	DAGains  VTADAGains `view:"inline" desc:"gains for various VTA inputs"`
+	RecvFrom map[string]emer.Layer
+	//InternalState VTAState `desc:"input values--for debugging only"`
 }
 
+/*
 // monitoring and debugging only. Received values from all inputs
 type VTAState struct {
 	PPTgDAp    float32
@@ -51,6 +52,7 @@ type VTAState struct {
 	NetDA      float32
 	SendVal    float32
 }
+*/
 
 func AddVTALayer(nt *Network, name string, val Valence) *VTALayer {
 	ly := &VTALayer{Valence: val}
@@ -112,30 +114,30 @@ func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 	valType := data[0]
 	unitIdx, _ := strconv.Atoi(data[1])
 	switch valType {
-	case "PPTgDAp":
-		val = ly.InternalState.PPTgDAp
-	case "LHbDA":
-		val = ly.InternalState.LHbDA
-	case "PosPVAct":
-		val = ly.InternalState.PosPVAct
-	case "VSPosPVI":
-		val = ly.InternalState.VSPosPVI
-	case "VSNegPVI":
-		val = ly.InternalState.VSNegPVI
-	case "BurstLHbDA":
-		val = ly.InternalState.BurstLHbDA
-	case "DipLHbDA":
-		val = ly.InternalState.DipLHbDA
-	case "TotBurstDA":
-		val = ly.InternalState.TotBurstDA
-	case "TotDipDA":
-		val = ly.InternalState.TotDipDA
-	case "NetDipDA":
-		val = ly.InternalState.NetDipDA
-	case "NetDA":
-		val = ly.InternalState.NetDA
-	case "SendVal":
-		val = ly.InternalState.SendVal
+	//case "PPTgDAp":
+	//	val = ly.InternalState.PPTgDAp
+	//case "LHbDA":
+	//	val = ly.InternalState.LHbDA
+	//case "PosPVAct":
+	//	val = ly.InternalState.PosPVAct
+	//case "VSPosPVI":
+	//	val = ly.InternalState.VSPosPVI
+	//case "VSNegPVI":
+	//	val = ly.InternalState.VSNegPVI
+	//case "BurstLHbDA":
+	//	val = ly.InternalState.BurstLHbDA
+	//case "DipLHbDA":
+	//	val = ly.InternalState.DipLHbDA
+	//case "TotBurstDA":
+	//	val = ly.InternalState.TotBurstDA
+	//case "TotDipDA":
+	//	val = ly.InternalState.TotDipDA
+	//case "NetDipDA":
+	//	val = ly.InternalState.NetDipDA
+	//case "NetDA":
+	//	val = ly.InternalState.NetDA
+	//case "SendVal":
+	//	val = ly.InternalState.SendVal
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "PoolActAvg":
@@ -249,18 +251,20 @@ func (ly *VTALayer) VTAActP() {
 	nrn.ActDel = 0
 	ly.SendVal = nrn.Ext
 
-	ly.InternalState.PPTgDAp = pptgDAp
-	ly.InternalState.LHbDA = lhbDA
-	ly.InternalState.PosPVAct = posPVAct
-	ly.InternalState.VSPosPVI = vsPosPVI
-	ly.InternalState.VSNegPVI = vsNegPVI
-	ly.InternalState.BurstLHbDA = burstLHbDA
-	ly.InternalState.DipLHbDA = dipLHbDA
-	ly.InternalState.TotBurstDA = totBurstDA
-	ly.InternalState.TotDipDA = totDipDA
-	ly.InternalState.NetDipDA = netDipDA
-	ly.InternalState.NetDA = netDA
-	ly.InternalState.SendVal = ly.SendVal
+	/*
+		ly.InternalState.PPTgDAp = pptgDAp
+		ly.InternalState.LHbDA = lhbDA
+		ly.InternalState.PosPVAct = posPVAct
+		ly.InternalState.VSPosPVI = vsPosPVI
+		ly.InternalState.VSNegPVI = vsNegPVI
+		ly.InternalState.BurstLHbDA = burstLHbDA
+		ly.InternalState.DipLHbDA = dipLHbDA
+		ly.InternalState.TotBurstDA = totBurstDA
+		ly.InternalState.TotDipDA = totDipDA
+		ly.InternalState.NetDipDA = netDipDA
+		ly.InternalState.NetDA = netDA
+		ly.InternalState.SendVal = ly.SendVal
+	*/
 }
 
 // VTAn activation

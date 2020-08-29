@@ -1,3 +1,7 @@
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package pvlv
 
 import (
@@ -56,4 +60,67 @@ func (pj *ModHebbPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 	scale = math32.Max(pj.SetScaleMin, scale)
 	scale = math32.Min(pj.SetScaleMax, scale)
 	return scale
+}
+
+func (pj *ModHebbPrjn) Defaults() {
+	pj.Prjn.Defaults()
+	pj.DALrnThr = 0.0
+	pj.ActDeltaThr = 0.05
+	pj.ActLrnThr = 0.05
+}
+
+// Compute DA-modulated weight changes for amygdala layers
+func (pj *ModHebbPrjn) DWt() {
+	if !pj.Learn.Learn {
+		return
+	}
+	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
+	rlayi := pj.Recv.(IModLayer)
+	rlay := rlayi.AsMod()
+	clRate := pj.Learn.Lrate // * rlay.CosDiff.ModAvgLLrn
+	for si := range slay.Neurons {
+		sn := &slay.Neurons[si]
+		snAct := sn.ActQ0
+		nc := int(pj.SConN[si])
+		st := int(pj.SConIdxSt[si])
+		syns := pj.Syns[st : st+nc]
+		scons := pj.SConIdx[st : st+nc]
+
+		for ci := range syns {
+			sy := &syns[ci]
+			ri := scons[ci]
+			rn := &rlay.Neurons[ri]
+			mn := &rlay.ModNeurs[ri]
+
+			if rn.IsOff() {
+				continue
+			}
+			// filter any tiny spurious da signals on t2 & t4 trials - best for ext guys since
+			// they have zero dalr_base value
+			if math32.Abs(mn.DA) < pj.DALrnThr {
+				mn.DA = 0
+			}
+
+			lRateEff := clRate
+			// learning dependent on non-zero deep_lrn
+			if pj.ActLrnMod {
+				var effActLrn float32
+				if mn.ModLrn > pj.ActLrnThr {
+					effActLrn = 1
+				} else {
+					effActLrn = 0 // kills all learning
+				}
+				lRateEff *= effActLrn
+			}
+
+			rnActDelta := mn.ModAct - rn.ActQ0
+			if math32.Abs(rnActDelta) < pj.ActDeltaThr {
+				rnActDelta = 0
+			}
+			delta := lRateEff * snAct * rnActDelta
+			// dopamine signal further modulates learning
+			daLRate := pj.DALRBase + pj.DALRGain*math32.Abs(mn.DA)
+			sy.DWt += daLRate * delta
+		}
+	}
 }

@@ -1,4 +1,8 @@
-// layers that RECEIVE modulatory projections--(original code from SendDeepMod in cemer)
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// layers that receive modulatory projections--(original code from SendDeepMod in cemer)
 
 package pvlv
 
@@ -48,7 +52,6 @@ type ModPool struct {
 }
 
 type ModParams struct {
-	DebugVal         float32 `desc:"for debugging"`
 	DaOn             bool    `desc:"whether to use dopamine modulation"`
 	DaRType          DaRType `inactive:"+" desc:"dopamine receptor type, D1 or D2"`
 	LrnModAct        bool    `desc:"if true, phasic dopamine values effect learning by modulating net_syn values (Compute_NetinExtras() - and thus unit activations; - CAUTION - very brittle and hard to use due to unintended consequences!"`
@@ -169,7 +172,7 @@ func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 	unitIdx, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
-		val = GlobalTotalActFn(ly)
+		val = TotalAct(ly)
 	case "ModAct":
 		val = ly.ModNeurs[unitIdx].ModAct
 	case "ModLevel":
@@ -285,13 +288,11 @@ func (ly *ModLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.Defaults()
 	return nil
 }
 
 func (ly *ModLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.DebugVal = -1
 	ly.IsPVReceiver = false
 	ly.ModSendThreshold = 0.1
 	ly.Layer.UpdateParams()
@@ -357,7 +358,7 @@ func (ly *ModLayer) ModSendValue(ni int32) float32 {
 	return ly.ModPools[ni].ModSent
 }
 
-func (ly *ModLayer) SendMods(ltime *leabra.Time) {
+func (ly *ModLayer) SendMods(_ *leabra.Time) {
 	for pi := range ly.ModPools {
 		mpl := &ly.ModPools[pi]
 		mpl.ModSent = 0
@@ -379,8 +380,36 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
-		newVal := sender.ModSendValue(nrn.SubPool) * scale
-		mnr.ModNet = newVal // split for debugging TODO: combine to one line
+		mnr.ModNet = sender.ModSendValue(nrn.SubPool) * scale
+	}
+}
+
+func (ly *ModLayer) SetModLevels() {
+	plMax := ly.ModPools[0].ModNetStats.Max
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		mnr := &ly.ModNeurs[ni]
+		if ly.IsModSender { // record what we send!
+			mnr.ModLrn = nrn.Act
+			mnr.ModLevel = nrn.Act
+		} else if mnr.ModNet <= ly.ModNetThreshold { // not enough yet
+			mnr.ModLrn = 0 // default is 0
+			if ly.ActModZero {
+				mnr.ModLevel = 0
+			} else {
+				mnr.ModLevel = 1
+			}
+		} else {
+			if plMax != 0 {
+				mnr.ModLrn = math32.Min(1, mnr.ModNet/plMax)
+			} else {
+				mnr.ModLrn = 0
+			}
+			mnr.ModLevel = 1 // do not modulate!
+		}
 	}
 }
 
@@ -469,7 +498,7 @@ func (ly *ModLayer) SetDA(da float32) {
 
 // end rl.DALayer
 
-func (ly *ModLayer) AvgMaxMod(ltime *leabra.Time) {
+func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 	for pi := range ly.ModPools {
 		mpl := &ly.ModPools[pi]
 		pl := &ly.Pools[pi]
@@ -486,5 +515,30 @@ func (ly *ModLayer) AvgMaxMod(ltime *leabra.Time) {
 		if mpl.ModNetStats.Max == 0 { // HACK!!!
 			mpl.ModNetStats.Max = math32.SmallestNonzeroFloat32
 		}
+	}
+}
+
+func (ly *ModLayer) ActFmG(ltime *leabra.Time) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		mnr := &ly.ModNeurs[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		ly.Act.VmFmG(nrn)
+		ly.Act.ActFmG(nrn)
+		if !ly.IsModSender { // is receiver
+			newAct := nrn.Act * mnr.ModLevel
+			newDel := nrn.Act - newAct
+			nrn.Act = newAct
+			nrn.ActDel -= newDel
+		}
+		mnr.ModAct = nrn.Act // ModAct is used in DWt. Don't want to modulate Act with DA, or things get weird very quickly
+		daVal := ly.DALrnFmDA(mnr.DA)
+		mnr.ModAct *= 1 + daVal
+		if mnr.PVAct > 0.01 { //&& ltime.PlusPhase {
+			mnr.ModAct = mnr.PVAct // this gives results that look more like the CEmer model (rather than setting Act directly from PVAct)
+		}
+		ly.Learn.AvgsFmAct(nrn)
 	}
 }

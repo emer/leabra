@@ -1,3 +1,7 @@
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package pvlv
 
 import (
@@ -9,6 +13,7 @@ import (
 	"github.com/goki/ki/kit"
 )
 
+// Gain constants for LHbRMTg inputs
 type LHbRMTgGains struct {
 	All                float32 `desc:"final overall gain on everything"`
 	VSPatchPosD1       float32 `desc:"patch D1 APPETITIVE pathway - versus pos PV outcomes"`
@@ -26,17 +31,14 @@ type LHbRMTgLayer struct {
 	leabra.Layer
 	RcvFrom       emer.LayNames
 	Gains         LHbRMTgGains `view:"inline"`
-	PatchCur      bool         `desc:"use current trial patch activations -- otherwise use previous trial -- current trial is appropriate for simple discrete trial environments (e.g., with some PBWM models), whereas previous is more approprate for trials with more realistic temporal structure"`
 	PVNegDiscount float32      `desc:"reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes"`
-	RecData       bool         `desc:"record all the separate input values for each component"`
-	DebugVal      float32
 	//InternalState LHBRMTgInternalState // for debugging
 }
 
 var KiT_LHbRMTgLayer = kit.Types.AddType(&LHbRMTgLayer{}, leabra.LayerProps)
 
-// below for debugging
-/*type LHBRMTgInternalState struct {
+/*
+type LHBRMTgInternalState struct {
 	VSPatchPosD1 float32
 	VSPatchPosD2 float32
 	VSPatchNegD1 float32
@@ -66,9 +68,7 @@ func AddLHbRMTgLayer(nt *Network, name string) *LHbRMTgLayer {
 
 func (ly *LHbRMTgLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.PatchCur = true
 	ly.PVNegDiscount = 0.8
-	ly.RecData = true
 	ly.Act.Clamp.Range.Min = -2.0
 	ly.Act.Clamp.Range.Max = 2.0
 	ly.Gains.All = 1.0
@@ -81,7 +81,6 @@ func (ly *LHbRMTgLayer) Defaults() {
 	ly.Gains.VSPatchNegD2 = 1.0
 	ly.Gains.VSMatrixNegD1 = 1.0
 	ly.Gains.VSMatrixNegD2 = 1.0
-	ly.DebugVal = -1
 }
 
 func (ly *LHbRMTgLayer) Build() error {
@@ -98,7 +97,6 @@ func (ly *LHbRMTgLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.Defaults()
 	return err
 }
 
@@ -106,12 +104,11 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 	if ltime.Quarter != 3 {
 		return
 	}
-	totalFn := GlobalTotalActFn
 	var vsPatchPosD1, vsPatchPosD2, vsPatchNegD1, vsPatchNegD2, vsMatrixPosD1, vsMatrixPosD2,
 		vsMatrixNegD1, vsMatrixNegD2, pvPos, pvNeg float32
 	for _, lNm := range ly.RcvFrom {
 		sLy := ly.Network.LayerByName(lNm).(leabra.LeabraLayer).AsLeabra()
-		lyAct := totalFn(sLy)
+		lyAct := TotalAct(sLy)
 		switch lNm {
 		case "VSPatchPosD1":
 			vsPatchPosD1 = lyAct
@@ -134,11 +131,6 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 		case "NegPV":
 			pvNeg = lyAct
 		}
-	}
-
-	if ly.DebugVal > 0 {
-		fmt.Printf("PPD1=%8f, PPD2=%8f, PND1=%8f, PND2=%8f, MPD1=%8f, MPD2=%8f, MND1=%8f, MND2=%8f, PPV=%8f, NPV=%8f\n",
-			vsPatchPosD1, vsPatchPosD2, vsPatchNegD1, vsPatchNegD2, vsMatrixPosD1, vsMatrixPosD2, vsMatrixNegD1, vsMatrixNegD2, pvPos, pvNeg)
 	}
 
 	vsPatchPosNet := ly.Gains.VSPatchPosD1*vsPatchPosD1 - ly.Gains.VSPatchPosD2*vsPatchPosD2 // positive number net excitatory in LHb, i.e., the "dipper"
@@ -170,7 +162,7 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 	netNeg := vsMatrixNegNet
 
 	if pvNeg != 0 {
-		// below can arise when same CS can predict either pos_pv or neg_pv probabilistically
+		// below can arise when same CS can predict either pos_pv or neg_pv probalistically
 		if vsMatrixPosNet < 0 {
 			netNeg = math32.Max(netNeg, math32.Abs(vsMatrixPosNet))
 			netPos = 0 // don't double-count since transferred to net_neg in this case only
@@ -199,10 +191,6 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 		ly.InternalState.NetNeg = netNeg
 	*/
 
-	if ly.DebugVal > 0 {
-		fmt.Printf("%v,%v,%v,%v\n", netPos, netNeg, vsPatchPosNet, vsPatchNegNet)
-	}
-
 	for i := range ly.Neurons {
 		ly.Neurons[i].Act = netLHb
 		ly.Neurons[i].ActLrn = netLHb
@@ -217,25 +205,25 @@ func (ly *LHbRMTgLayer) GetMonitorVal(data []string) float64 {
 	valType := data[0]
 	switch valType {
 	case "TotalAct":
-		val = GlobalTotalActFn(ly)
-		/*
-		       case "VSPatchPosD1": val = ly.InternalState.VSPatchPosD1
-		   	case "VSPatchPosD2": val = ly.InternalState.VSPatchPosD2
-		   	case "VSPatchNegD1": val = ly.InternalState.VSPatchNegD1
-		   	case "VSPatchNegD2": val = ly.InternalState.VSPatchNegD2
-		   	case "VSMatrixPosD1": val = ly.InternalState.VSMatrixPosD1
-		   	case "VSMatrixPosD2": val = ly.InternalState.VSMatrixPosD2
-		   	case "VSMatrixNegD1": val = ly.InternalState.VSMatrixNegD1
-		   	case "VSMatrixNegD2": val = ly.InternalState.VSMatrixNegD2
-		   	case "PosPV": val = ly.InternalState.PosPV
-		   	case "NegPV": val = ly.InternalState.NegPV
-		   	case "VSPatchPosNet": val = ly.InternalState.VSPatchPosNet
-		   	case "VSPatchNegNet": val = ly.InternalState.VSPatchNegNet
-		   	case "VSMatrixPosNet": val = ly.InternalState.VSMatrixPosNet
-		   	case "VSMatrixNegNet": val = ly.InternalState.VSMatrixNegNet
-		   	case "NetPos": val = ly.InternalState.NetPos
-		   	case "NetNeg": val = ly.InternalState.NetNeg
-		*/
+		val = TotalAct(ly)
+	/*
+		case "VSPatchPosD1": val = ly.InternalState.VSPatchPosD1
+		case "VSPatchPosD2": val = ly.InternalState.VSPatchPosD2
+		case "VSPatchNegD1": val = ly.InternalState.VSPatchNegD1
+		case "VSPatchNegD2": val = ly.InternalState.VSPatchNegD2
+		case "VSMatrixPosD1": val = ly.InternalState.VSMatrixPosD1
+		case "VSMatrixPosD2": val = ly.InternalState.VSMatrixPosD2
+		case "VSMatrixNegD1": val = ly.InternalState.VSMatrixNegD1
+		case "VSMatrixNegD2": val = ly.InternalState.VSMatrixNegD2
+		case "PosPV": val = ly.InternalState.PosPV
+		case "NegPV": val = ly.InternalState.NegPV
+		case "VSPatchPosNet": val = ly.InternalState.VSPatchPosNet
+		case "VSPatchNegNet": val = ly.InternalState.VSPatchNegNet
+		case "VSMatrixPosNet": val = ly.InternalState.VSMatrixPosNet
+		case "VSMatrixNegNet": val = ly.InternalState.VSMatrixNegNet
+		case "NetPos": val = ly.InternalState.NetPos
+		case "NetNeg": val = ly.InternalState.NetNeg
+	*/
 	default:
 		val = ly.Neurons[0].Act
 	}

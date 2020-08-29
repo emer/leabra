@@ -1,11 +1,27 @@
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package pvlv
 
 import (
+	"fmt"
+	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 	"strings"
 )
+
+func TotalAct(ly emer.Layer) float32 {
+	lly := ly.(leabra.LeabraLayer).AsLeabra()
+	pl := lly.Pools[0].Inhib.Act
+	res := pl.Avg * float32(pl.N)
+	if math32.IsNaN(res) {
+		fmt.Println("NaN in TotalAct")
+	}
+	return res
+}
 
 type Network struct {
 	leabra.Network
@@ -110,23 +126,16 @@ func (nt *Network) SynVarProps() map[string]string {
 
 // For special layer types
 
+// Add a positive or negative valence VTA layer
 func (nt *Network) AddVTALayer(name string, val Valence) *VTALayer {
-	ly := &VTALayer{Valence: val}
-	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
-	return ly
+	return AddVTALayer(nt, name, val)
 }
 
 // AddMatrixLayer adds a MSNLayer of given size, with given name.
-// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// nY = number of pools in Y dimension, nX is pools in X dimension,
 // and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)
-func (nt *Network) AddMSNLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, cpmt StriatalCompartment, da DaRType) *MSNLayer {
-	tX := nMaint + nOut
-	stri := &MSNLayer{}
-	nt.AddLayerInit(stri, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
-	stri.ModLayer.Init()
-	stri.DaRType = da
-	stri.Compartment = cpmt
-	return stri
+func (nt *Network) AddMSNLayer(name string, nY, nX, nNeurY, nNeurX int, cpmt StriatalCompartment, da DaRType) *MSNLayer {
+	return AddMSNLayer(nt, name, nY, nX, nNeurY, nNeurX, cpmt, da)
 }
 
 // Add a CentroLateral Amygdala layer with specified 2D geometry, acquisition/extinction, valence, and DA receptor type

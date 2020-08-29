@@ -1,3 +1,7 @@
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package pvlv
 
 import (
@@ -9,6 +13,7 @@ import (
 	"github.com/goki/ki/kit"
 )
 
+// The PPTg passes on a positively-rectified version of its input signal.
 type PPTgLayer struct {
 	leabra.Layer
 	Ge              float32
@@ -34,6 +39,7 @@ func (ly *PPTgLayer) Defaults() {
 	ly.Layer.Defaults()
 }
 
+// Add a Pedunculopontine Gyrus layer. Acts as a positive rectifier for its inputs.
 func AddPPTgLayer(nt *Network, name string, nY, nX int) *PPTgLayer {
 	rl := &PPTgLayer{}
 	nt.AddLayerInit(rl, name, []int{nY, nX, 1, 1}, emer.Hidden)
@@ -75,12 +81,12 @@ func (ly *PPTgLayer) GetMonitorVal(data []string) float64 {
 	case "GePrev":
 		val = ly.GePrev
 	case "TotalAct":
-		val = GlobalTotalActFn(ly)
+		val = TotalAct(ly)
 	}
 	return float64(val)
 }
 
-func (ly *PPTgLayer) ActFmG(ltime *leabra.Time) {
+func (ly *PPTgLayer) ActFmG(_ *leabra.Time) {
 	nrn := &ly.Neurons[0]
 	geSave := nrn.Ge
 	nrn.Ge = ly.DNetGain * (nrn.Ge - ly.GePrev)

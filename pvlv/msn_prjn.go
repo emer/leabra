@@ -1,4 +1,4 @@
-// Copyright (c) 2019, The Emergent Authors. All rights reserved.
+// Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -30,10 +30,6 @@ const (
 
 var KiT_DALrnRule = kit.Enums.AddEnum(DALrnRuleN, kit.NotBitFlag, nil)
 
-////go:generate stringer -type=DALrnRule // moved to stringers.go
-
-//var TraceSynVars = []string{"NTr", "Tr"}
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  MSNPrjn
 
@@ -43,9 +39,9 @@ type MSNPrjn struct {
 	LearningRule DALrnRule
 	Trace        MSNTraceParams `view:"inline" desc:"special parameters for striatum trace learning"`
 	TrSyns       []TraceSyn     `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
-	ActVar       string         `desc:"activation variable name"`
+	SLActVar     string         `desc:"sending layer activation variable name"`
+	RLActVar     string         `desc:"receiving layer activation variable name"`
 	MaxVSActMod  float32        `def:"0.7" min:"0" desc:"for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning"`
-	DebugVal     int
 }
 
 type IMSNPrjn interface {
@@ -67,8 +63,6 @@ func (pj *MSNPrjn) Defaults() {
 	pj.Learn.Norm.On = false
 	pj.Learn.Momentum.On = false
 	pj.Learn.WtBal.On = false
-	pj.ActVar = "ActP"
-	pj.DebugVal = -1
 }
 
 func (pj *MSNPrjn) Build() error {
@@ -97,14 +91,12 @@ func (pj *MSNPrjn) DWt() {
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(*MSNLayer)
 	var effLRate float32
-	sActIdx, _ := slay.UnitVarIdx(pj.ActVar)
-	rActIdx, _ := rlay.UnitVarIdx(pj.ActVar)
-	//rlay := rlayi.AsMSNLayer() // note: won't work if derived
 	if rlay.IsOff() {
 		return
 	}
 	for si := range slay.Neurons {
-		snAct := slay.UnitVal1D(sActIdx, si)
+		sn := &slay.Neurons[si]
+		snAct := sn.ActP
 		nc := int(pj.SConN[si])
 		st := int(pj.SConIdxSt[si])
 		syns := pj.Syns[st : st+nc]
@@ -122,19 +114,10 @@ func (pj *MSNPrjn) DWt() {
 				continue
 			}
 
-			// dwt += lRateEff * da * rn.Act * sn.Act
 			da, _ := mn.VarByName("DA")
 			daLrn := rlay.DALrnFmDA(da)
-			// ACh mod should be Q4 only. For now, just not doing it
-			//ach := rlay.UnitValByIdx(ACh, int(ri))
-			//rnAct, _ := mn.VarByName(pj.ActVar)
-			//rnAct := mn.ModAct
-			//rnAct := rn.ActP
-			rnAct := rlay.UnitVal1D(rActIdx, int(ri))
+			rnAct := mn.ModAct
 			effModLevel := mn.ModNet
-			//if effModLevel < 0.1 {
-			//	effModLevel = 0
-			//}
 			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)
 			switch pj.LearningRule {
@@ -143,29 +126,18 @@ func (pj *MSNPrjn) DWt() {
 				effLRate = pj.Learn.Lrate
 				rawDWt = daLrn * tr // multiplied by learning rate below
 
-				//if ach >= pj.Trace.AChResetThr { tr = 0 }
-
 				newNTr := pj.Trace.MSNActLrnFactor(effRnAct) * snAct
 				decay := math32.Abs(newNTr) // decay is function of new trace
 				if decay > 1 {
 					decay = 1
 				}
 				trInc := newNTr - decay*tr
-				oldTr := tr
 				tr += trInc
-				if rlay.DebugVal > 0 && ri == 0 && math32.Abs(rawDWt) > 0.1 { // || newNTr > 1e-9) {
-					fmt.Printf("%v[%v]->%v[%v]: rnAct=%8f, mln=%8f, effRnAct=%8f, snAct=%8f, da=%8f, daLrn=%8f, oldTr=%8f, trInc=%8f, newNTr=%8f, lr=%8f, rawDWt=%8f\n",
-						slay.Name(), si, rlay.Name(), ri, rnAct, effModLevel, effRnAct, snAct, da, daLrn, oldTr, trInc, newNTr, effLRate, rawDWt)
-				}
 				trsy.Tr = tr
 				trsy.NTr = newNTr
 			case DAHebbVS:
 				rawDWt = daLrn * effRnAct * snAct
 				effLRate = pj.Learn.Lrate * mn.ModLrn
-				if rlay.DebugVal > 0 && rawDWt != 0 {
-					fmt.Printf("%v[%v]->%v[%v]: rnAct=%v, mln=%v, effRnAct=%v, snAct=%v, da=%v, delta=%v, lr=%v, prevDWt=%v\n",
-						slay.Name(), si, rlay.Name(), ri, rnAct, effModLevel, effRnAct, snAct, da, rawDWt, pj.Learn.Lrate, sy.DWt)
-				}
 			}
 			sy.DWt += effLRate * rawDWt
 		}
@@ -207,7 +179,7 @@ func (tr *TraceSyn) VarNames() []string {
 func TraceVarByName(varNm string) (int, error) {
 	i, ok := TraceVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("synapse VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }
@@ -223,7 +195,7 @@ func (tr *TraceSyn) VarByIndex(idx int) float32 {
 func SynapseVarByName(varNm string) (int, error) {
 	i, ok := TraceVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("synapse VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }
