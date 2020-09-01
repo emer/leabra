@@ -35,7 +35,7 @@ var KiT_DALrnRule = kit.Enums.AddEnum(DALrnRuleN, kit.NotBitFlag, nil)
 
 // MSNPrjn does dopamine-modulated, for striatum-like layers
 type MSNPrjn struct {
-	ModHebbPrjn
+	leabra.Prjn
 	LearningRule DALrnRule
 	Trace        MSNTraceParams `view:"inline" desc:"special parameters for striatum trace learning"`
 	TrSyns       []TraceSyn     `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
@@ -50,10 +50,6 @@ type IMSNPrjn interface {
 
 func (pj *MSNPrjn) AsMSNPrjn() *MSNPrjn {
 	return pj
-}
-
-func (pj *MSNPrjn) AsModPrjn() *ModHebbPrjn {
-	return &pj.ModHebbPrjn
 }
 
 func (pj *MSNPrjn) Defaults() {
@@ -116,7 +112,8 @@ func (pj *MSNPrjn) DWt() {
 
 			da, _ := mn.VarByName("DA")
 			daLrn := rlay.DALrnFmDA(da)
-			rnAct := mn.ModAct
+			//rnAct := mn.ModAct // ModAct seems more correct than ActP, but doesn't match CEmer results quite as well
+			rnAct := rn.ActP
 			effModLevel := mn.ModNet
 			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)

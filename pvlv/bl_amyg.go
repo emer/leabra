@@ -21,9 +21,9 @@ func (ly *BlAmygLayer) AsBlAmygLayer() *BlAmygLayer {
 }
 
 type BlAmygLayer struct {
-	AmygdalaLayer `desc:"amygdala-specific"`
-	Valence       Valence               `desc:"positive or negative valence"`
-	ILI           interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
+	ModLayer `desc:"modulation state"`
+	Valence  Valence               `desc:"positive or negative valence"`
+	ILI      interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
 }
 
 var KiT_BlAmygLayer = kit.Types.AddType(&BlAmygLayer{}, nil)

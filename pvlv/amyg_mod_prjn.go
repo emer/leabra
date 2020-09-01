@@ -10,11 +10,11 @@ import (
 	"github.com/emer/leabra/leabra"
 )
 
-type IModPrjn interface {
-	AsModPrjn() *ModHebbPrjn
+type IAmygPrjn interface {
+	AsAmygModPrjn() *AmygModPrjn
 }
 
-func (pj *ModHebbPrjn) AsModPrjn() *ModHebbPrjn {
+func (pj *AmygModPrjn) AsAmygModPrjn() *AmygModPrjn {
 	return pj
 }
 
@@ -22,7 +22,7 @@ type ISetScalePrjn interface {
 	InitWtsScale()
 }
 
-type ModHebbPrjn struct {
+type AmygModPrjn struct {
 	leabra.Prjn
 	SetScale    bool    `desc:"only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically-supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)"`
 	SetScaleMin float32 `desc:"minimum scale value for SetScale projections"`
@@ -36,7 +36,7 @@ type ModHebbPrjn struct {
 	ActLrnThr   float32 `desc:"only ru->deep_lrn values > this get to learn - 0.05f seems to work okay"`
 }
 
-func (pj *ModHebbPrjn) InitWts() {
+func (pj *AmygModPrjn) InitWts() {
 	if pj.SetScale {
 		pj.SetScalesFunc(pj.GaussScale)
 		pj.SetWtsFunc(func(_, _ int, _, _ *etensor.Shape) float32 {
@@ -55,14 +55,14 @@ func (pj *ModHebbPrjn) InitWts() {
 
 // GaussScale returns gaussian weight value for given unit indexes in
 // given send and recv layers according to Gaussian Sigma and MaxWt.
-func (pj *ModHebbPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
+func (pj *AmygModPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 	scale := float32(pj.WtInit.Gen(-1))
 	scale = math32.Max(pj.SetScaleMin, scale)
 	scale = math32.Min(pj.SetScaleMax, scale)
 	return scale
 }
 
-func (pj *ModHebbPrjn) Defaults() {
+func (pj *AmygModPrjn) Defaults() {
 	pj.Prjn.Defaults()
 	pj.DALrnThr = 0.0
 	pj.ActDeltaThr = 0.05
@@ -70,7 +70,7 @@ func (pj *ModHebbPrjn) Defaults() {
 }
 
 // Compute DA-modulated weight changes for amygdala layers
-func (pj *ModHebbPrjn) DWt() {
+func (pj *AmygModPrjn) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}

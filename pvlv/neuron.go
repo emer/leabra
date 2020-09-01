@@ -35,7 +35,6 @@ const (
 	ModNet
 	ModLrn
 	PVAct
-	DALrn
 	Cust1
 	ModNeuronVarsN
 )
@@ -50,7 +49,7 @@ var (
 	ModNeuronVars = []string{
 		DA.String(), ACh.String(), SE.String(),
 		ModAct.String(), ModLevel.String(), ModNet.String(), ModLrn.String(),
-		PVAct.String(), DALrn.String(),
+		PVAct.String(),
 	}
 	ModNeuronVarsMap map[string]int
 	ModNeuronVarsAll []string

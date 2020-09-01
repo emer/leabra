@@ -93,14 +93,13 @@ func _() {
 	_ = x[ModNet-5]
 	_ = x[ModLrn-6]
 	_ = x[PVAct-7]
-	_ = x[DALrn-8]
-	_ = x[Cust1-9]
-	_ = x[ModNeuronVarsN-10]
+	_ = x[Cust1-8]
+	_ = x[ModNeuronVarsN-9]
 }
 
-const _ModNeuronVar_name = "DAAChSEModActModLevelModNetModLrnPVActDALrnCust1ModNeuronVarsN"
+const _ModNeuronVar_name = "DAAChSEModActModLevelModNetModLrnPVActCust1ModNeuronVarsN"
 
-var _ModNeuronVar_index = [...]uint8{0, 2, 5, 7, 13, 21, 27, 33, 38, 43, 48, 62}
+var _ModNeuronVar_index = [...]uint8{0, 2, 5, 7, 13, 21, 27, 33, 38, 43, 57}
 
 func (i ModNeuronVar) String() string {
 	if i < 0 || i >= ModNeuronVar(len(_ModNeuronVar_index)-1) {

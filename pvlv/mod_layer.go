@@ -91,7 +91,6 @@ type ModNeuron struct {
 	ModNet     float32 `desc:"modulation input from sender"`
 	ModLrn     float32 `desc:"multiplier for DA modulation of learning rate"`
 	PVAct      float32 `desc:"direct activation from US"`
-	DALrn      float32 `desc:"adjusted DA value for learning"`
 }
 
 var KiT_ModNeuron = kit.Types.AddType(&ModNeuron{}, nil)
@@ -179,6 +178,8 @@ func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 		val = ly.ModNeurs[unitIdx].ModLevel
 	case "ModNet":
 		val = ly.ModNeurs[unitIdx].ModNet
+	case "ModLrn":
+		val = ly.ModNeurs[unitIdx].ModLrn
 	case "PVAct":
 		val = ly.ModNeurs[unitIdx].PVAct
 	case "PoolActAvg":
@@ -189,12 +190,8 @@ func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 		val = ly.ModPools[unitIdx].ModNetStats.Avg
 	case "DA":
 		val = ly.ModNeurs[unitIdx].DA
-	case "ModInc":
-		val = ly.ModNeurs[unitIdx].DA
-	case "ModLrn":
-		val = ly.ModNeurs[unitIdx].DA
 	case "DALrn":
-		val = ly.ModNeurs[unitIdx].DA
+		val = ly.DALrnFmDA(ly.ModNeurs[unitIdx].DA)
 	default:
 		mnr := &ly.ModNeurs[unitIdx]
 		val, err = mnr.VarByName(valType)
@@ -229,8 +226,6 @@ func (ly *ModLayer) UnitValByIdx(vidx ModNeuronVar, idx int) float32 {
 		return ly.ModNeurs[idx].ModLrn
 	case PVAct:
 		return ly.ModNeurs[idx].PVAct
-	case DALrn:
-		return ly.ModNeurs[idx].DALrn
 	default:
 		return math32.NaN()
 	}
@@ -384,7 +379,7 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 	}
 }
 
-func (ly *ModLayer) SetModLevels() {
+func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -518,7 +513,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 	}
 }
 
-func (ly *ModLayer) ActFmG(ltime *leabra.Time) {
+func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]

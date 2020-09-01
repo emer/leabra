@@ -30,7 +30,7 @@ const (
 var KiT_AcqExt = kit.Enums.AddEnum(NAcqExt, kit.NotBitFlag, nil)
 
 type CElAmygLayer struct {
-	AmygdalaLayer
+	ModLayer
 	CElTyp     CElAmygLayerType `desc:"basic parameters determining what type CEl layer this is"`
 	AcqDeepMod bool             `desc:"use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal"`
 }
