@@ -438,6 +438,9 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 			// look in ri for sending connections
 			rsi := ri
 			rsnc := rpj.SConN[rsi]
+			if rsnc == 0 {
+				continue
+			}
 			rsst := rpj.SConIdxSt[rsi]
 			rist := rpj.SConIdx[rsst]        // starting index in recv prjn
 			ried := rpj.SConIdx[rsst+rsnc-1] // ending index
