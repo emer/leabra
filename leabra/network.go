@@ -30,6 +30,10 @@ type Network struct {
 
 var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
+func (nt *Network) AsLeabra() *Network {
+	return nt
+}
+
 // NewLayer returns new layer of proper type
 func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}

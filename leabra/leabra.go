@@ -29,6 +29,11 @@ import (
 type LeabraNetwork interface {
 	emer.Network
 
+	// AsLeabra returns this network as a leabra.Network -- so that the
+	// LeabraNetwork interface does not need to include accessors
+	// to all the basic stuff
+	AsLeabra() *Network
+
 	// AlphaCycInitImpl handles all initialization at start of new input pattern, including computing
 	// input scaling from running average activation etc.
 	AlphaCycInitImpl()
