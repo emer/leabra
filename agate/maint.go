@@ -12,13 +12,22 @@ import (
 	"github.com/goki/ki/kit"
 )
 
-///////////////////////////////////////////////////////////////////////////
-// MaintLayer
+// PulseClearParams are parameters for the synchronous pulse of activation /
+// inhibition that clears NMDA maintenance.
+type PulseClearParams struct {
+	GABAB float32 `desc:"GABAB value activated by the inhibitory pulse"`
+}
 
+func (pc *PulseClearParams) Defaults() {
+	pc.GABAB = 2
+}
+
+///////////////////////////////////////////////////////////////////////////
 // MaintLayer is a layer with NMDA channels that supports active maintenance
 // in frontal cortex, via NMDA channels (in an NMDAMaintPrjn).
 type MaintLayer struct {
 	glong.Layer
+	PulseClear PulseClearParams      `desc:"parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance."`
 	InterInhib interinhib.InterInhib `desc:"inhibition from output layer"`
 }
 
@@ -27,6 +36,7 @@ var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.NMDA.Gbar = 0.02
+	ly.PulseClear.Defaults()
 	ly.InterInhib.Defaults()
 	ly.InterInhib.Gi = 0.1
 	ly.InterInhib.Add = true
@@ -59,4 +69,38 @@ func (ly *MaintLayer) InterInhibMaxAct(ltime *leabra.Time) float32 {
 		// todo: anything else?
 	}
 	return mxact
+}
+
+// PulseClearNMDA simulates a synchronous pulse of activation that
+// clears the NMDA and puts the layer into a refractory state by
+// activating the GABAB currents.
+func (ly *MaintLayer) PulseClearNMDA() {
+	for ni := range ly.GlNeurs {
+		nrn := &ly.Neurons[ni]
+		nrn.Act = ly.Act.Init.Act
+		nrn.ActLrn = nrn.Act
+		nrn.Ge = ly.Act.Init.Ge
+		nrn.GeRaw = 0
+		nrn.Vm = ly.Act.Init.Vm
+
+		gnr := &ly.GlNeurs[ni]
+		gnr.VmEff = nrn.Vm
+		gnr.Gnmda = 0
+		gnr.NMDA = 0
+		gnr.NMDASyn = 0
+		gnr.GABAB = ly.PulseClear.GABAB
+		gnr.GABABx = gnr.GABAB
+	}
+}
+
+// PulseClearer is an interface for Layers that have the
+// PulseClearNMDA method for clearing NMDA and activating
+// GABAB refractory inhibition
+type PulseClearer interface {
+	leabra.LeabraLayer
+
+	// PulseClearNMDA simulates a synchronous pulse of activation that
+	// clears the NMDA and puts the layer into a refractory state by
+	// activating the GABAB currents.
+	PulseClearNMDA()
 }

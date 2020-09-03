@@ -126,7 +126,6 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	pj.SetClass("PFCFixed")
 	pj = nt.ConnectLayers(maint, out, one2one, emer.Forward)
 	pj.SetClass("PFCFixed")
-	outi.Out.MaintLay = maint.Name()
 	mainti.InterInhib.Lays.Add(out.Name())
 
 	if pulvLay {

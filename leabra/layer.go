@@ -1006,6 +1006,9 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 		pl.Inhib.Ge.Init()
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
+			if nrn.IsOff() {
+				continue
+			}
 			pl.Inhib.Ge.UpdateVal(nrn.Ge, ni)
 		}
 		pl.Inhib.Ge.CalcAvg()
@@ -1027,14 +1030,19 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 		return
 	}
 	lpl := &ly.Pools[0]
+	lyInhib := ly.Inhib.Layer.On
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
 		ly.Inhib.Pool.Inhib(&pl.Inhib)
-		if ly.Inhib.Layer.On {
+		if lyInhib {
+			pl.Inhib.LayGi = lpl.Inhib.Gi
 			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
 		} else {
 			lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
 		}
+	}
+	if !lyInhib {
+		lpl.Inhib.GiOrig = lpl.Inhib.Gi // effective GiOrig
 	}
 }
 

@@ -67,7 +67,7 @@ func (fb *Params) FBUpdt(fbi *float32, newFbi float32) {
 // values in relevant inhibitory pool.
 func (fb *Params) Inhib(inh *Inhib) {
 	if !fb.On {
-		inh.Init()
+		inh.Zero()
 		return
 	}
 

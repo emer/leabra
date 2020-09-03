@@ -7,21 +7,19 @@ package agate
 import (
 	"log"
 
+	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
 // OutParams determine the behavior of OutLayer
 type OutParams struct {
-	MaintLay string  `desc:"name of corresponding MaintLayer that is reset when this layer gets activated"`
-	ResetThr float32 `desc:"threshold on activation, above which the MaintLay will be reset"`
+	ResetThr  float32       `desc:"threshold on activation, above which the ClearLays will be reset"`
+	ClearLays emer.LayNames `desc:"name of corresponding layers that are reset when this layer gets activated"`
 }
 
 func (np *OutParams) Defaults() {
 	np.ResetThr = 0.5
-	if np.MaintLay == "" {
-		np.MaintLay = "PFCMnt"
-	}
 }
 
 // OutLayer is a frontal cortex output layer (L5 PM), which typically is interconnected
@@ -38,32 +36,39 @@ func (ly *OutLayer) Defaults() {
 	ly.Out.Defaults()
 }
 
-// MaintLay returns the MaintLay by name
-func (ly *OutLayer) MaintLay() (*MaintLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.Out.MaintLay)
-	if err != nil {
-		log.Printf("OutLayer %s, MaintLay: %v\n", ly.Name(), err)
-		return nil, err
+// ClearLays returns the Layers by name
+func (ly *OutLayer) ClearLays() ([]PulseClearer, error) {
+	var lays []PulseClearer
+	var err error
+	for _, nm := range ly.Out.ClearLays {
+		var tly emer.Layer
+		tly, err = ly.Network.LayerByNameTry(nm)
+		if err != nil {
+			log.Printf("OutLayer %s, ClearLay: %v\n", ly.Name(), err)
+		}
+		lays = append(lays, tly.(PulseClearer))
 	}
-	return tly.(*MaintLayer), nil
+	return lays, err
 }
 
 // CyclePost calls ResetMaint
 func (ly *OutLayer) CyclePost(ltime *leabra.Time) {
 	ly.MaintLayer.CyclePost(ltime)
-	ly.ResetMaint(ltime)
+	ly.PulseClear(ltime)
 }
 
-// ResetMaint resets the maintenance layer if activation is above threshold
-func (ly *OutLayer) ResetMaint(ltime *leabra.Time) {
-	// todo: not sure if should be sub-pool or whole layer?
-
+// PulseClear sends a simulated synchronous pulse of activation / inhibition
+// to clear ClearLays
+func (ly *OutLayer) PulseClear(ltime *leabra.Time) {
+	if ltime.Cycle < ly.NMDA.AlphaMaxCyc {
+		return
+	}
 	pl := ly.Pools[0]
 	maxact := pl.Inhib.Act.Max
 	if maxact > ly.Out.ResetThr {
-		mlay, err := ly.MaintLay()
-		if err == nil {
-			mlay.InitGlong() // note: will continue to reset..
+		lays, _ := ly.ClearLays()
+		for _, cly := range lays {
+			cly.PulseClearNMDA()
 		}
 	}
 }

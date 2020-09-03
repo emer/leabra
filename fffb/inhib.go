@@ -18,13 +18,18 @@ type Inhib struct {
 }
 
 func (fi *Inhib) Init() {
+	fi.Zero()
+	fi.Ge.Init()
+	fi.Act.Init()
+}
+
+// Zero clears inhibition but does not affect Ge, Act averages
+func (fi *Inhib) Zero() {
 	fi.FFi = 0
 	fi.FBi = 0
 	fi.Gi = 0
 	fi.GiOrig = 0
 	fi.LayGi = 0
-	fi.Ge.Init()
-	fi.Act.Init()
 }
 
 // Decay reduces inhibition values by given decay proportion
