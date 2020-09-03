@@ -106,7 +106,7 @@ func (ev *PVLVEnv) Init(ss *Sim) (ok bool) {
 	}
 	ev.AlphaCycle.Init()
 	ev.ContextModel = ELEMENTAL // lives in MiscParams in cemer
-	ev.TrialInstances = data.NewTrialInstanceRecs([]*data.TrialInstance{})
+	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	return ok
 }
 
@@ -144,7 +144,7 @@ func (ev *PVLVEnv) Validate() error {
 // EpochStart
 func (ev *PVLVEnv) EpochStart(ss *Sim) {
 	ev.AlphaCycle.Init()
-	ev.TrialInstances = data.NewTrialInstanceRecs([]*data.TrialInstance{})
+	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	ev.TrialCt.Init()
 	ss.Net.ThrTimerReset()
 	// TODO implement ev.ResetTrialMonData()

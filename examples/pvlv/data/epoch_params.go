@@ -9,7 +9,7 @@ import (
 )
 
 // Epoch : epoch-level state
-// aka Trial
+// aka TrialGroup
 type EpochParams struct {
 	TrialGpName         string    `desc:"name"`
 	PercentOfTotal      float64   `desc:"Percent of all trials for this type"`
@@ -33,63 +33,36 @@ type EpochParams struct {
 
 type EpochParamsMap map[string]EpochParamsList
 
-//type TrialList []*Trial
-//
-//type Trials struct {
-//    Trials TrialList
-//}
-//
-//func (tl *Trials) Length() int {
-//    return len(tl.Trials)
-//}
-//
-//func (tl *Trials) Append(t interface{}) {
-//    tl.Trials = append(tl.Trials, t.(*Trial))
-//}
-//
-//func (tl *Trials) Get(pos int) interface{} {
-//    return interface{}(tl.Trials[pos])
-//}
-//
-//type EnvParamsMap map[string]*TrialList
+type EpochParamsList []*EpochParams
 
-//type EnvParams struct {
-//    Trials Trials
-//    rlist.Indexed
-//} // []*Trial in Records
+type EpochParamsRecs struct {
+	Recs
+}
 
-//func NewEnvParams(trials TrialList) *EnvParams {
-//    tls := Trials{trials}
-//    ret := &EnvParams{Trials: tls, Indexed: *rlist.New(&tls)}
-//    //ret.Indexed.Records = interface{}(trials)
-//    return ret
-//}
+func NewEpochParamsRecs(epl *EpochParamsList) *EpochParamsRecs {
+	if epl == nil {
+		epl = new(EpochParamsList)
+	}
+	recs := &EpochParamsRecs{Recs: *NewRecs(epl)}
+	return recs
+}
 
-//func (til *TrialInstanceList) Append(ti interface{}) {
-//    til.Trials = append(til.Trials, ti.(TrialInstance))
-//	}
+func (epl *EpochParamsList) Length() int {
+	return len(*epl)
+}
 
-//func (ep *EnvParams) AsRecordList() *rlist.Indexed {
-//    return (*rlist.Indexed)(ep)
-//	}
-//
-//type EnvParams struct {
-//    //Indexed
-//    Trials *TrialList
-//    Index       []int
-//    INext       int
-//    NRead       int
-//    Order       rlist.DataLoopOrder
-//}
-//func (ep *EnvParams) New(tgs *TrialList) *EnvParams {
-//    ep.Trials = tgs
-//    ep.Index = util.IntSequence(0, len(*tgs), 1)
-//    ep.INext = -1
-//    ep.NRead = 0
-//    return ep
-//	}
-//	return
-//}
+func (epl *EpochParamsList) Append(ins interface{}) IRecs {
+	ret := append(*epl, ins.(*EpochParams))
+	return &ret
+}
+
+func (epl *EpochParamsList) Get(i int) interface{} {
+	return (*epl)[i]
+}
+
+func (eps *EpochParamsRecs) ReadNext() *EpochParams {
+	return eps.Recs.ReadNext().(*EpochParams)
+}
 
 // imported from PVLVEnv->EnvEpochParams_Group in cemer
 func AllEpochParams() EpochParamsMap {

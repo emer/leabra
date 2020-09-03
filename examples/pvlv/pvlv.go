@@ -1855,12 +1855,12 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 
 func (ss *Sim) GetEnvParams(nm string) (*data.EpochParamsRecs, bool) {
 	groups, ok := ss.MasterEpochParams[nm]
-	ret := data.NewEpochParamsRecs(groups)
+	ret := data.NewEpochParamsRecs(&groups)
 	return ret, ok
 }
 
 func (ev *PVLVEnv) GetEpochTrial(n int) *data.EpochParams {
-	ret := ev.EpochParams.Records[n]
+	ret := ev.EpochParams.Records.Get(n).(*data.EpochParams)
 	return ret
 }
 
