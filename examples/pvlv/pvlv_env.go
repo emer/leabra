@@ -5,16 +5,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	_ "fmt"
-	_ "github.com/alecthomas/assert"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/params"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/examples/pvlv/data"
-	rlist "github.com/emer/leabra/examples/pvlv/recordlist"
 	"github.com/emer/leabra/pvlv"
 	"github.com/goki/ki/kit"
 	"gopkg.in/yaml.v2"
@@ -26,26 +22,26 @@ import (
 )
 
 type PVLVEnv struct {
-	Nm              string              `inactive:"+" desc:"name of this environment"`
-	Dsc             string              `inactive:"+" desc:"description of this environment"`
-	PVLVParams      *params.Params      `desc:"PVLV-specific params"`
-	GlobalStep      int                 `desc:"cycle counter, cleared by Init, otherwise increments on every Cycle"`
-	MultiRunCt      env.Ctr             `inactive:"+" view:"inline" desc:"top-level counter for multi-run sequence"`
-	RunCt           env.Ctr             `inactive:"+" view:"inline" desc:"top-level counter for multi-trial group run"`
-	EpochCt         env.Ctr             `inactive:"+" view:"inline" desc:"epoch within a run"`
-	TrialCt         env.Ctr             `inactive:"+" view:"inline" desc:"trial group within a set of trial groups"`
-	AlphaCycle      env.Ctr             `inactive:"+" view:"inline" desc:"step within a trial"`
-	AlphaTrialName  string              `inactive:"+" desc:"name of current alpha trial step"`
-	USTimeInStr     string              `inactive:"+" desc:"decoded value of USTimeIn"`
-	EpochParamsList *data.EnvParams     `desc:"AKA trial group list. A set of trial groups to be run together"`
-	TrialInstances  *TrialInstanceList  `view:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
-	StdInputData    *etable.Table       `desc:"Completely instantiated input data for a single epoch"`
-	ContextModel    ContextModel        `inactive:"+" desc:"One at a time, conjunctive, or a mix"`
-	SeqRun          bool                `view:"-" desc:"running from a top-level sequence?"`
-	CurRunParams    *data.RunParams     `view:"-" desc:"params for currently executing run, whether from selection or sequence"`
-	TrialsPerEpoch  int                 `inactive:"+"`
-	DataLoopOrder   rlist.DataLoopOrder `inactive:"+"`
-	EpochEnded      bool                `view:"-"`
+	Nm             string                  `inactive:"+" desc:"name of this environment"`
+	Dsc            string                  `inactive:"+" desc:"description of this environment"`
+	PVLVParams     *params.Params          `desc:"PVLV-specific params"`
+	GlobalStep     int                     `desc:"cycle counter, cleared by Init, otherwise increments on every Cycle"`
+	MultiRunCt     env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-run sequence"`
+	RunCt          env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-trial group run"`
+	EpochCt        env.Ctr                 `inactive:"+" view:"inline" desc:"epoch within a run"`
+	TrialCt        env.Ctr                 `inactive:"+" view:"inline" desc:"trial group within a set of trial groups"`
+	AlphaCycle     env.Ctr                 `inactive:"+" view:"inline" desc:"step within a trial"`
+	AlphaTrialName string                  `inactive:"+" desc:"name of current alpha trial step"`
+	USTimeInStr    string                  `inactive:"+" desc:"decoded value of USTimeIn"`
+	EpochParams    *data.EpochParamsRecs   `desc:"AKA trial group list. A set of trial groups to be run together"`
+	TrialInstances *data.TrialInstanceRecs //*TrialInstanceList `view:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
+	StdInputData   *etable.Table           `desc:"Completely instantiated input data for a single epoch"`
+	ContextModel   ContextModel            `inactive:"+" desc:"One at a time, conjunctive, or a mix"`
+	SeqRun         bool                    `view:"-" desc:"running from a top-level sequence?"`
+	CurRunParams   *data.RunParams         `view:"-" desc:"params for currently executing run, whether from selection or sequence"`
+	TrialsPerEpoch int                     `inactive:"+"`
+	DataLoopOrder  data.DataLoopOrder      `inactive:"+"`
+	EpochEnded     bool                    `view:"-"`
 
 	// Input data tensors
 	TsrStimIn    etensor.Float64
@@ -63,143 +59,6 @@ type PVLVEnv struct {
 
 	InputShapes *map[string][]int
 }
-
-// A set of trial groups, sourced from an EnvParams list, instantiated according to the
-// PercentOfTotal field in the source list.
-// this is what we get after calling SetEpochTrialList
-// Still not fully instantiated, US is still a probability
-type TrialInstance struct {
-	TrialName            string
-	ValenceContext       pvlv.Valence
-	USFlag               bool
-	TestFlag             bool
-	MixedUS              bool
-	USProb               float64
-	USMagnitude          float64
-	AlphaTicksPerTrialGp int
-	CS                   string
-	CSTimeStart          int
-	CSTimeEnd            int
-	CS2TimeStart         int
-	CS2TimeEnd           int
-	USTimeStart          int
-	USTimeEnd            int
-	Context              string
-	USType               string
-}
-
-type TrialInstanceList struct {
-	Trials []TrialInstance
-	Index  []int
-	INext  int
-	NRead  int
-	Order  rlist.DataLoopOrder
-}
-
-func (tgl *TrialInstanceList) New(tgs []TrialInstance) *TrialInstanceList {
-	tgl.Trials = tgs
-	tgl.Index = data.IntSequence(0, len(tgs), 1)
-	tgl.INext = -1
-	tgl.NRead = 0
-	return tgl
-}
-func (tgl *TrialInstanceList) Init() *TrialInstanceList {
-	tgl.INext = -1
-	tgl.NRead = 0
-	tgl.Index = []int{}
-	tgl.Trials = []TrialInstance{}
-	return tgl
-}
-func (tgl *TrialInstanceList) SetIndex(ix []int) error {
-	if len(ix) > len(tgl.Trials) {
-		return errors.New("supplied index is longer than data")
-	}
-	tgl.Index = ix
-	tgl.Reset()
-	return nil
-}
-func (tgl *TrialInstanceList) SetOrder(order rlist.DataLoopOrder) {
-	tgl.Order = order
-	if order == rlist.SEQUENTIAL {
-		tgl.Sequential()
-	} else if order == rlist.PERMUTED {
-		tgl.Permute()
-	}
-	tgl.Reset()
-}
-func (tgl *TrialInstanceList) Permute() {
-	tgl.Index = rand.Perm(len(tgl.Trials))
-}
-func (tgl *TrialInstanceList) Sequential() {
-	tgl.Index = data.IntSequence(0, len(tgl.Trials), 1)
-}
-func (tgl *TrialInstanceList) GetIndex() []int {
-	return tgl.Index
-}
-func (tgl *TrialInstanceList) WriteNext(tgi TrialInstance) {
-	tgl.Trials = append(tgl.Trials, tgi)
-	tgl.Index = append(tgl.Index, len(tgl.Trials)-1)
-}
-func (tgl *TrialInstanceList) ReadNext() *TrialInstance {
-	tgl.NRead++
-	if tgl.Order == rlist.RANDOM {
-		return &tgl.Trials[rand.Intn(len(tgl.Trials))]
-	} else {
-		tgl.INext++
-		return &tgl.Trials[tgl.Index[tgl.INext]]
-	}
-}
-func (tgl *TrialInstanceList) Peek() *TrialInstance {
-	if tgl.AtEnd() {
-		return nil
-	}
-	return &tgl.Trials[tgl.Index[tgl.INext+1]]
-}
-func (tgl *TrialInstanceList) AtEnd() bool {
-	return tgl.NRead >= len(tgl.Trials)
-}
-func (tgl *TrialInstanceList) Reset() {
-	tgl.NRead = 0
-	tgl.INext = -1
-}
-func (tgl *TrialInstanceList) SetPos(i int) {
-	tgl.INext = i - 1
-}
-func (tgl *TrialInstanceList) Length() int {
-	return len(tgl.Trials)
-}
-func (tgl *TrialInstanceList) Cur() int {
-	return tgl.INext + 1
-}
-
-// A single step in a trial, fully instantiated, the last intermediate step before writing to
-// StdInputData
-//type TrialTickParams struct {
-//	AlphTrialName      string
-//	TrialGpTimestep    Tick
-//	TrialGpTimestepInt int
-//	ContextIn          Context
-//	ContextIn2         Context
-//	ContextIn3         Context
-//	NContexts          int
-//	StimIn             Stim
-//	StimIn2            Stim
-//	NStims             int
-//	CS1                string
-//	CS2                string
-//	US                 US
-//	PosPV              US
-//	NegPV              US
-//	USTimeIn           PackedUSTimeState
-//	USTimeIn2          PackedUSTimeState
-//	NUSTimes           int
-//	USTimeInStr        string
-//	USTimeIn2Str       string
-//	USTimeInWrong      PackedUSTimeState
-//	USTimeInWrongStr   string
-//	NotUSTimeIn        PackedUSTimeState
-//	TrialInstance *TrialInstance
-//}
 
 func (ev *PVLVEnv) Name() string { return ev.Nm }
 func (ev *PVLVEnv) Desc() string { return ev.Dsc }
@@ -229,9 +88,9 @@ func (ev *PVLVEnv) New(ss *Sim) {
 // Trial fields: trial_gp_name, percent_of_total, ...
 func (ev *PVLVEnv) Init(ss *Sim) (ok bool) {
 	ev.CurRunParams = ss.RunParams
-	ev.EpochParamsList, ok = ss.GetEnvParams(ev.CurRunParams.EnvParamsTable)
+	ev.EpochParams, ok = ss.GetEnvParams(ev.CurRunParams.EnvParamsTable)
 	if !ok {
-		fmt.Printf("EnvParams lookup failed for %v\n", ev.CurRunParams.EnvParamsTable)
+		fmt.Printf("EpochParams lookup failed for %v\n", ev.CurRunParams.EnvParamsTable)
 		return ok
 	}
 	ev.GlobalStep = 0
@@ -247,7 +106,7 @@ func (ev *PVLVEnv) Init(ss *Sim) (ok bool) {
 	}
 	ev.AlphaCycle.Init()
 	ev.ContextModel = ELEMENTAL // lives in MiscParams in cemer
-	ev.TrialInstances = new(TrialInstanceList).Init()
+	ev.TrialInstances = data.NewTrialInstanceRecs([]*data.TrialInstance{})
 	return ok
 }
 
@@ -279,16 +138,13 @@ func (ev *PVLVEnv) Defaults() {
 
 func (ev *PVLVEnv) Validate() error {
 	// TODO implement this
-	//if ev.N <= 0 {
-	//	return fmt.Errorf("BanditEnv: %v N == 0 -- must set with SetN call", ev.TrialName)
-	//}
 	return nil
 }
 
 // EpochStart
 func (ev *PVLVEnv) EpochStart(ss *Sim) {
 	ev.AlphaCycle.Init()
-	ev.TrialInstances = new(TrialInstanceList).Init()
+	ev.TrialInstances = data.NewTrialInstanceRecs([]*data.TrialInstance{})
 	ev.TrialCt.Init()
 	ss.Net.ThrTimerReset()
 	// TODO implement ev.ResetTrialMonData()
@@ -430,14 +286,14 @@ func (ev *PVLVEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
 func (ev *PVLVEnv) SetEpochTrialList(ss *Sim) {
 	pctTotalSum := 0.0
 
-	ev.EpochParamsList.Reset()
-	for !ev.EpochParamsList.AtEnd() {
-		pctTotalSum += ev.EpochParamsList.ReadNext().PercentOfTotal
+	ev.EpochParams.Reset()
+	for !ev.EpochParams.AtEnd() {
+		pctTotalSum += ev.EpochParams.ReadNext().PercentOfTotal
 	}
 
-	ev.EpochParamsList.Reset()
-	for !ev.EpochParamsList.AtEnd() {
-		tg := ev.EpochParamsList.ReadNext()
+	ev.EpochParams.Reset()
+	for !ev.EpochParams.AtEnd() {
+		tg := ev.EpochParams.ReadNext()
 		baseNumber := tg.PercentOfTotal
 		normProb := baseNumber / pctTotalSum
 		tg.PercentOfTotal = normProb
@@ -461,9 +317,10 @@ func (ev *PVLVEnv) SetTableEpochTrialGpListFmDefnTable() {
 	exactNOmits := 0
 	nOmitCount := 0
 
-	ev.EpochParamsList.SetOrder(ev.DataLoopOrder)
-	for !ev.EpochParamsList.AtEnd() {
-		curEpochParams := ev.EpochParamsList.ReadNext()
+	ev.EpochParams.SetOrder(ev.DataLoopOrder)
+	for !ev.EpochParams.AtEnd() {
+		curEpochParams := ev.EpochParams.ReadNext()
+		//var curTrial int
 
 		// using number of eco_trials_per epoch (in lieu of trials_per_epoch)
 		if ev.CurRunParams.UseTrialGp {
@@ -489,7 +346,7 @@ func (ev *PVLVEnv) SetTableEpochTrialGpListFmDefnTable() {
 		for i := 0; i < nRepeats; i++ {
 			// TODO:Should prevent making too many rows, but could still make (one?) too few due to rounding errors
 			if ev.TrialInstances != nil &&
-				(ev.CurRunParams.UseTrialGp && ev.TrialInstances.Length() < ev.CurRunParams.TrialGpsPerEpoch) ||
+				(ev.CurRunParams.UseTrialGp && (ev.TrialInstances).Length() < ev.CurRunParams.TrialGpsPerEpoch) ||
 				(!ev.CurRunParams.UseTrialGp && ev.TrialInstances.Length() < ev.CurRunParams.TrialsPerEpoch) {
 
 				// was SetRow_CurEpoch
@@ -529,7 +386,7 @@ func (ev *PVLVEnv) SetTableEpochTrialGpListFmDefnTable() {
 				} else {
 					testFlag = false
 				}
-				curTrial := TrialInstance{}
+				curTrial := new(data.TrialInstance)
 				curTrial.TrialName = trialGpName
 				curTrial.ValenceContext = curEpochParams.ValenceContext
 				curTrial.TestFlag = testFlag
@@ -552,16 +409,16 @@ func (ev *PVLVEnv) SetTableEpochTrialGpListFmDefnTable() {
 			}
 		}
 	}
-	ev.EpochParamsList.Sequential() // avoid confusion?
+	ev.EpochParams.Sequential() // avoid confusion?
 }
 
-func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
+func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *data.TrialInstance, stimNum int) {
 	prefixUSTimeIn := ""
 
 	// CAUTION! - using percent normalization assumes the multiple CSs (e.g., AX) are always on together,
 	// i.e., the same timesteps; thus, doesn't work for second-order conditioning
-	stimInBase := data.StmNone
-	stimIn2Base := data.StmNone
+	stimInBase := pvlv.StmNone
+	stimIn2Base := pvlv.StmNone
 	nStims := 1
 	nUSTimes := 1
 
@@ -579,13 +436,13 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 	cs2 := ""
 	if strings.Contains(cs, "_") {
 		cs1 = cs[0:1]
-		cs = data.StmNone.String()
-		cs2 = data.StmNone.String()
+		cs = pvlv.StmNone.String()
+		cs2 = pvlv.StmNone.String()
 		nStims = 1
 		// need one for each predictive CS; also, one for each PREDICTED US if same CS (e.g., Z')
 		// predicts two different USs probalistically (i.e., mixed_US == true condition)
 		nUSTimes = 1
-		stimInBase = data.StimMap[cs1]
+		stimInBase = pvlv.StimMap[cs1]
 	} else {
 		cs1 = cs[0:1]
 		cs2 = cs[1:2]
@@ -593,51 +450,51 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 		// need one for each predictive CS; also, one for each PREDICTED US if same CS (e.g., Z')
 		// predicts two different USs probalistically (i.e., mixed_US == true condition)
 		nUSTimes = 2
-		stimInBase = data.StimMap[cs1]
+		stimInBase = pvlv.StimMap[cs1]
 	}
 
 	// Set up Context_In reps
 
 	// initialize to use the basic context_in var to rep the basic case in which CS and Context are isomorphic
-	ctxParts := data.CtxRe.FindStringSubmatch(curTrial.Context)
+	ctxParts := pvlv.CtxRe.FindStringSubmatch(curTrial.Context)
 	ctx1 := ctxParts[1]
 	ctx2 := ctxParts[2]
 	preContext := ctx1 + ctx2
 	postContext := ctxParts[3]
-	contextIn := data.CtxMap[curTrial.Context]
-	contextIn2 := data.CtxNone
-	contextIn3 := data.CtxNone
+	contextIn := pvlv.CtxMap[curTrial.Context]
+	contextIn2 := pvlv.CtxNone
+	contextIn3 := pvlv.CtxNone
 	nContexts := len(preContext)
 	// gets complicated if more than one CS...
 	if len(preContext) > 1 {
 		switch ev.ContextModel {
 		case ELEMENTAL:
 			// first element, e.g., A
-			contextIn = data.CtxMap[ctx1]
+			contextIn = pvlv.CtxMap[ctx1]
 			// second element, e.g., X
-			contextIn2 = data.CtxMap[ctx2]
+			contextIn2 = pvlv.CtxMap[ctx2]
 			// only handles two for now...
 		case CONJUNCTIVE:
 			// use "as is"...
-			contextIn = data.CtxMap[curTrial.Context]
+			contextIn = pvlv.CtxMap[curTrial.Context]
 			nContexts = 1
 		case BOTH:
 			// first element, e.g., A
-			contextIn = data.CtxMap[ctx1]
+			contextIn = pvlv.CtxMap[ctx1]
 			// second element, e.g., X
-			contextIn2 = data.CtxMap[ctx2]
+			contextIn2 = pvlv.CtxMap[ctx2]
 			// conjunctive case, e.g., AX
-			contextIn3 = data.CtxMap[preContext]
+			contextIn3 = pvlv.CtxMap[preContext]
 			nContexts = len(preContext) + 1
 		}
 	}
 	// anything after the "_" indicates different context for extinction, renewal, etc.
 	if len(postContext) > 0 {
-		contextIn = data.CtxMap[ctx1+"_"+postContext]
+		contextIn = pvlv.CtxMap[ctx1+"_"+postContext]
 		if len(ctx2) > 0 {
-			contextIn2 = data.CtxMap[ctx2+"_"+postContext]
+			contextIn2 = pvlv.CtxMap[ctx2+"_"+postContext]
 		}
-		contextIn3 = data.CtxNone
+		contextIn3 = pvlv.CtxNone
 	}
 
 	if ev.StdInputData.Rows != 0 {
@@ -648,17 +505,17 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 	for i := 0; i < curTrial.AlphaTicksPerTrialGp; i++ {
 		i := ev.AlphaCycle.Cur
 		alphaTrialName := curTrial.TrialName + "_t" + strconv.Itoa(i)
-		trialGpTimestep := data.Tick(i)
+		trialGpTimestep := pvlv.Tick(i)
 		trialGpTimestepInt := i
-		stimIn := data.StmNone
-		stimIn2 := data.StmNone
-		posPV := data.PosUSNone
-		negPV := data.NegUSNone
+		stimIn := pvlv.StmNone
+		stimIn2 := pvlv.StmNone
+		posPV := pvlv.PosUSNone
+		negPV := pvlv.NegUSNone
 		usTimeInStr := ""
 		usTimeInWrongStr := ""
-		usTimeIn := data.USTimeNone
-		usTimeInWrong := data.USTimeNone
-		notUSTimeIn := data.USTimeNone
+		usTimeIn := pvlv.USTimeNone
+		usTimeInWrong := pvlv.USTimeNone
+		notUSTimeIn := pvlv.USTimeNone
 		prefixUSTimeIn = cs1 + "_"
 		// set CS input activation values on or off according to timesteps
 		// set first CS - may be the only one
@@ -667,93 +524,93 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 			// TODO: Theoretically, USTime reps shouldn't come on at CS-onset until BAacq and/or
 			// gets active first - for time being, using a priori inputs as a temporary proof-of-concept
 		} else {
-			stimIn = data.StmNone
+			stimIn = pvlv.StmNone
 		}
 		// set CS2 input activation values on or off according to timesteps, if a second CS exists
 		if i >= curTrial.CS2TimeStart && i <= curTrial.CS2TimeEnd {
 			stimIn2 = stimIn2Base
 		} else {
-			stimIn2 = data.StmNone
+			stimIn2 = pvlv.StmNone
 		}
 		// set US and USTime input activation values on or off according to timesteps
 		var us int
 		if i > curTrial.CSTimeStart && (!(i > curTrial.USTimeStart) || !curTrial.USFlag) {
 			if curTrial.ValenceContext == pvlv.POS {
-				us = int(data.PosSMap[curTrial.USType])
-				posPV = data.PosUS(us)
+				us = int(pvlv.PosSMap[curTrial.USType])
+				posPV = pvlv.PosUS(us)
 				usTimeInStr = prefixUSTimeIn + "PosUS" + strconv.Itoa(us) + "_t" +
 					strconv.Itoa(i-curTrial.CSTimeStart-1)
-				usTimeIn = data.PUSTFromString(usTimeInStr)
-				usTimeInWrongStr = data.USTimeNone.String()
+				usTimeIn = pvlv.PUSTFromString(usTimeInStr)
+				usTimeInWrongStr = pvlv.USTimeNone.String()
 				if curTrial.MixedUS {
 					usTimeInWrongStr = prefixUSTimeIn + "NegUS" + strconv.Itoa(us) + "_t" +
 						strconv.Itoa(i-curTrial.CSTimeStart-1)
-					usTimeInWrong = data.PUSTFromString(usTimeInWrongStr)
+					usTimeInWrong = pvlv.PUSTFromString(usTimeInWrongStr)
 				}
 			} else if curTrial.ValenceContext == pvlv.NEG {
-				us = int(data.NegSMap[curTrial.USType])
-				negPV = data.NegUS(us)
+				us = int(pvlv.NegSMap[curTrial.USType])
+				negPV = pvlv.NegUS(us)
 				usTimeInStr = prefixUSTimeIn + "NegUS" + strconv.Itoa(us) + "_t" +
 					strconv.Itoa(i-curTrial.CSTimeStart-1)
-				usTimeIn = data.PUSTFromString(usTimeInStr)
-				usTimeInWrongStr = data.USTimeNone.String()
+				usTimeIn = pvlv.PUSTFromString(usTimeInStr)
+				usTimeInWrongStr = pvlv.USTimeNone.String()
 				if curTrial.MixedUS {
 					usTimeInWrongStr = prefixUSTimeIn + "PosUS" + strconv.Itoa(us) + "_t" +
 						strconv.Itoa(i-curTrial.CSTimeStart-1)
-					usTimeInWrong = data.PUSTFromString(usTimeInWrongStr)
+					usTimeInWrong = pvlv.PUSTFromString(usTimeInWrongStr)
 				}
 			}
 		} else {
-			usTimeIn = data.USTimeNone
-			notUSTimeIn = data.USTimeNone
-			usTimeInStr = data.USTimeNone.String()
+			usTimeIn = pvlv.USTimeNone
+			notUSTimeIn = pvlv.USTimeNone
+			usTimeInStr = pvlv.USTimeNone.String()
 		}
 
 		if i > curTrial.CS2TimeStart && i <= (curTrial.CS2TimeEnd+1) && (!(i > curTrial.USTimeStart) || !curTrial.USFlag) {
 			if curTrial.ValenceContext == pvlv.POS {
-				us = int(data.PosSMap[curTrial.USType])
-				posPV = data.PosUS(us)
-				usTimeInWrongStr = data.USTimeNone.String()
+				us = int(pvlv.PosSMap[curTrial.USType])
+				posPV = pvlv.PosUS(us)
+				usTimeInWrongStr = pvlv.USTimeNone.String()
 				if curTrial.MixedUS {
 					usTimeInWrongStr = prefixUSTimeIn + "NegUS" + strconv.Itoa(us) + "_t" +
 						strconv.Itoa(i-curTrial.CSTimeStart-1)
-					usTimeInWrong = data.USTimeNone.FromString(usTimeInWrongStr)
+					usTimeInWrong = pvlv.USTimeNone.FromString(usTimeInWrongStr)
 				}
 			} else if curTrial.ValenceContext == pvlv.NEG {
-				negPV = data.NegSMap[curTrial.USType]
+				negPV = pvlv.NegSMap[curTrial.USType]
 				us = int(negPV)
-				usTimeInWrongStr = data.USTimeNone.String()
+				usTimeInWrongStr = pvlv.USTimeNone.String()
 				if curTrial.MixedUS {
 					usTimeInWrongStr = prefixUSTimeIn + "PosUS" + strconv.Itoa(us) + "_t" +
 						strconv.Itoa(i-curTrial.CSTimeStart-1)
-					usTimeInWrong = data.USTimeNone.FromString(usTimeInWrongStr)
+					usTimeInWrong = pvlv.USTimeNone.FromString(usTimeInWrongStr)
 				}
 			}
 		} else {
-			notUSTimeIn = data.USTimeNone
+			notUSTimeIn = pvlv.USTimeNone
 		}
 
 		if (i >= curTrial.USTimeStart) && (i <= curTrial.USTimeEnd) && curTrial.USFlag {
 		} else {
-			posPV = data.PosUSNone
-			negPV = data.NegUSNone
+			posPV = pvlv.PosUSNone
+			negPV = pvlv.NegUSNone
 		}
 		if (i > curTrial.USTimeStart) && curTrial.USFlag {
 			if curTrial.ValenceContext == pvlv.POS {
-				us = int(data.PosSMap[curTrial.USType])
+				us = int(pvlv.PosSMap[curTrial.USType])
 				usTimeInStr = "PosUS" + strconv.Itoa(us) + "_t" + strconv.Itoa(i-curTrial.USTimeStart-1)
-				usTimeIn = data.USTimeNone.FromString(usTimeInStr)
-				usTimeInWrongStr = data.USTimeNone.String()
-				usTimeInWrong = data.USTimeNone
+				usTimeIn = pvlv.USTimeNone.FromString(usTimeInStr)
+				usTimeInWrongStr = pvlv.USTimeNone.String()
+				usTimeInWrong = pvlv.USTimeNone
 			} else if curTrial.ValenceContext == pvlv.NEG {
-				us = int(data.NegSMap[curTrial.USType])
+				us = int(pvlv.NegSMap[curTrial.USType])
 				usTimeInStr = "NegUS" + strconv.Itoa(us) + "_t" + strconv.Itoa(i-curTrial.USTimeStart-1)
-				usTimeIn = data.USTimeNone.FromString(usTimeInStr)
-				usTimeInWrongStr = data.USTimeNone.String()
-				usTimeInWrong = data.USTimeNone
+				usTimeIn = pvlv.USTimeNone.FromString(usTimeInStr)
+				usTimeInWrongStr = pvlv.USTimeNone.String()
+				usTimeInWrong = pvlv.USTimeNone
 			}
 		}
-		pvEmpty := data.PosUSNone.Tensor()
+		pvEmpty := pvlv.PosUSNone.Tensor()
 		curTimestepStr := ""
 		curTimeStepInt := 0
 		stimulus := ""
@@ -776,39 +633,39 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 		ev.StdInputData.SetCellString("Stimulus", curTimeStepInt, stimulus)
 		ev.StdInputData.SetCellString("Context", curTimeStepInt, curTrial.Context)
 
-		tsrStim := etensor.NewFloat64(data.StimInShape, nil, nil)
-		tsrCtx := etensor.NewFloat64(data.ContextInShape, nil, nil)
+		tsrStim := etensor.NewFloat64(pvlv.StimInShape, nil, nil)
+		tsrCtx := etensor.NewFloat64(pvlv.ContextInShape, nil, nil)
 		if curTimeStepInt >= curTrial.CSTimeStart && curTimeStepInt <= curTrial.CSTimeEnd {
 			stimDenom = 1.0 + ev.PctNormTotalActStim*float64(nStims-1)
-			if stimIn != data.StmNone {
+			if stimIn != pvlv.StmNone {
 				tsrStim.SetFloat([]int{int(stimIn)}, 1.0/stimDenom)
 			}
-			if stimIn2 != data.StmNone {
+			if stimIn2 != pvlv.StmNone {
 				tsrStim.SetFloat([]int{int(stimIn2)}, 1.0/stimDenom)
 			}
 			ev.StdInputData.SetCellTensor("StimIn", curTimeStepInt, tsrStim)
 
 			ctxtDenom = 1.0 + ev.PctNormTotalActCtx*float64(nContexts-1)
-			if contextIn != data.CtxNone {
+			if contextIn != pvlv.CtxNone {
 				tsrCtx.SetFloat(contextIn.Parts(), 1.0/ctxtDenom)
 			}
-			if contextIn3 != data.CtxNone {
+			if contextIn3 != pvlv.CtxNone {
 				tsrCtx.SetFloat(contextIn3.Parts(), 1.0/ctxtDenom)
 			}
 			ev.StdInputData.SetCellTensor("ContextIn", curTimeStepInt, tsrCtx)
 		}
 		if curTimeStepInt >= curTrial.CS2TimeStart && curTimeStepInt <= curTrial.CS2TimeEnd {
 			stimDenom = 1.0 + ev.PctNormTotalActStim*float64(nStims-1)
-			if stimIn2 != data.StmNone {
+			if stimIn2 != pvlv.StmNone {
 				tsrStim.SetFloat([]int{int(stimIn2)}, 1.0/stimDenom)
 			}
 			ev.StdInputData.SetCellTensor("StimIn", curTimeStepInt, tsrStim)
 
 			ctxtDenom = 1.0 + ev.PctNormTotalActCtx*float64(nContexts-1)
-			if contextIn2 != data.CtxNone {
+			if contextIn2 != pvlv.CtxNone {
 				tsrCtx.SetFloat(contextIn2.Parts(), 1.0/ctxtDenom)
 			}
-			if contextIn3 != data.CtxNone {
+			if contextIn3 != pvlv.CtxNone {
 				tsrCtx.SetFloat(contextIn3.Parts(), 1.0/ctxtDenom)
 			}
 			ev.StdInputData.SetCellTensor("ContextIn", curTimeStepInt, tsrCtx)
@@ -816,13 +673,13 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 
 		if curTrial.USFlag && (curTimeStepInt >= curTrial.USTimeStart && curTimeStepInt <= curTrial.USTimeEnd) {
 			if curTrial.USFlag && curTrial.ValenceContext == pvlv.POS {
-				if posPV != data.PosUSNone {
+				if posPV != pvlv.PosUSNone {
 					ev.StdInputData.SetCellTensor("PosPV", curTimeStepInt, posPV.Tensor())
 				} else {
 					ev.StdInputData.SetCellTensor("PosPV", curTimeStepInt, pvEmpty)
 				}
 			} else if curTrial.USFlag && curTrial.ValenceContext == pvlv.NEG {
-				if negPV != data.NegUSNone {
+				if negPV != pvlv.NegUSNone {
 					ev.StdInputData.SetCellTensor("NegPV", curTimeStepInt, negPV.Tensor())
 				} else {
 					ev.StdInputData.SetCellTensor("NegPV", curTimeStepInt, pvEmpty)
@@ -834,15 +691,15 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *TrialInstance, stimNum int) {
 		}
 
 		usTimeDenom = 1.0 + ev.PctNormTotalActUSTime*float64(nUSTimes-1)
-		tsrUSTime := etensor.NewFloat64(data.USTimeInShape, nil, nil)
-		if usTimeIn != data.USTimeNone {
+		tsrUSTime := etensor.NewFloat64(pvlv.USTimeInShape, nil, nil)
+		if usTimeIn != pvlv.USTimeNone {
 			setVal := usTimeIn.Unpack().Coords()
 			tsrUSTime.SetFloat(setVal, 1.0/usTimeDenom)
 		}
-		if usTimeInWrong != data.USTimeNone {
+		if usTimeInWrong != pvlv.USTimeNone {
 			tsrUSTime.SetFloat(usTimeInWrong.Shape(), 1.0/usTimeDenom)
 		}
-		if notUSTimeIn != data.USTimeNone {
+		if notUSTimeIn != pvlv.USTimeNone {
 			tsrUSTime.SetFloat(notUSTimeIn.Shape(), 1.0/usTimeDenom)
 		}
 		ev.StdInputData.SetCellTensor("USTimeIn", curTimeStepInt, tsrUSTime)

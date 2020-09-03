@@ -6,48 +6,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/emer/leabra/examples/pvlv/data"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// 	    Running the Network, starting bottom-up..
-
-//func (ss *Sim) TrainTrial(ev *PVLVEnv) {
-//	ss.StopNow = false
-//	if ss.NeedsNewRun {
-//		ss.InitRun(ev)
-//	}
-//	ev.Step() // the Env encapsulates and manages all counter state
-//
-//	// Key to query counters FIRST because current state is in NEXT epoch
-//	// if epoch counter has changed
-//	epc, _, chg := ev.Counter(env.EpochCt)
-//	if chg {
-//		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
-//			ss.UpdateView(true)
-//		}
-//		ss.LogTrnEpc(ss.TrnEpcLog)
-//		if epc >= ss.MaxEpcs {
-//			// done with training..
-//			ss.RunEnd()
-//			if ev.Run.Incr() { // we are done!
-//				ss.StopNow = true
-//				return
-//			} else {
-//				ss.NeedsNewRun = true
-//				return
-//			}
-//		}
-//	}
-//	ss.ApplyInputs(ev)
-//	ss.SettleMinus(true)
-//	ss.ApplyInputs(ev)
-//	ss.ApplyPVInputs(ev)
-//	ss.SettlePlus(true)
-//	ss.Net.DWt()
-//	ss.TrialStats(true) // accumulate
-//}
+// 	    Running the network..
 
 type StepGrain int
 
@@ -63,7 +28,6 @@ const (
 	StepGrainN
 )
 
-////go:generate stringer -type=StepGrain -linecomment // moved to stringers.go
 var KiT_StepGrain = kit.Enums.AddEnum(StepGrainN, kit.NotBitFlag, nil)
 
 func (ss *Sim) SettleMinus(ev *PVLVEnv, train bool) {
@@ -167,29 +131,14 @@ func (ss *Sim) TrialStart(_ *PVLVEnv, train bool) {
 	// you might want to do this less frequently to achieve a mini-batch update
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.
-	//lhb, ok := ss.Net.LayMap["LHbRMTg"].(*LHbRMTgLayer)
-	//if !ok {
-	//	fmt.Println("LHB type assertion failed")
-	//} else {}
-	//	fmt.Printf("lhb bef: avgm=%v\n", lhb.Pools[0].ActAvg.ActMAvg)
 	if train {
 		ss.Net.WtFmDWt()
 	}
 	ss.Net.AlphaCycInit()
-	//fmt.Printf("lhb aft: avgm=%v\n", lhb.Pools[0].ActAvg.ActMAvg)
 	ss.Time.AlphaCycStart()
 }
 
 func (ss *Sim) TrialEnd(_ *PVLVEnv, train bool) {
-	//if train {
-	//	ss.Net.DWt()
-	//}
-	//for li := range ss.Net.Layers {
-	//	ly, ok := ss.Net.Layers[li].(*ModLayer)
-	//	if ok {
-	//		ly.ClearModLevels()
-	//	}
-	//}
 	viewUpdt := ss.TrainUpdt
 	if !train {
 		viewUpdt = ss.TestUpdt
@@ -211,7 +160,6 @@ func (ss *Sim) ApplyInputs(ev *PVLVEnv) {
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		pats := ev.State(ly.Nm)
-		//fmt.Println(ly.Nm, pats)
 		if pats == nil {
 			continue
 		}
@@ -224,7 +172,6 @@ func (ss *Sim) ApplyPVInputs(ev *PVLVEnv) {
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		pats := ev.State(ly.Nm)
-		//fmt.Println(ly.Nm, pats.T())
 		if pats == nil {
 			continue
 		}
@@ -236,13 +183,12 @@ func (ss *Sim) ApplyPVInputs(ev *PVLVEnv) {
 // An epoch is a set of trials, whose length is set by the current RunParams record
 func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 	epochDone := false
-	var curTG *TrialInstance
+	var curTG *data.TrialInstance
 	ev.SetEpochTrialList(ss) // sets up one epoch's worth of data
 	ev.TrialCt.Init()
 	//}
 	epochDone = ev.TrialCt.Cur >= ev.TrialCt.Max
 	for !epochDone {
-		//ev.AlphaCycle.Init()
 		if ev.TrialInstances.AtEnd() {
 			panic(fmt.Sprintf("ran off end of TrialInstances list"))
 		}
@@ -256,18 +202,6 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 			ss.UpdateView(ev == &ss.TrainEnv)
 		}
 	}
-	//if ev.IsTrialGpEnd() {
-	//	if ss.TrainUpdt == leabra.Block { ss.UpdateView(ev == &ss.TrainEnv) }
-	//	// TODO CLEAR DEEP ACTS
-	//	if ev.IsEpochEnd() {
-	//		if ev.EpochCt.Cur >= ev.CurRunParams.TrainEpochs || ss.StopStepTest(ev, SingleTrial) {
-	//			ev.TrainEnd(ss)
-	//			return true
-	//		}
-	//		ev.EpochStart(ss)
-	//	}
-	//}
-	//ev.TrialCt.Init()
 	ev.EpochCt.Incr()
 	ev.EpochEnded = true
 	ev.EpochEnd(ss) // run monitoring and analysis, maybe save weights
@@ -280,7 +214,7 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 }
 
 // run through a complete trial, consisting of a number of ticks as specified in the Trial spec
-func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *TrialInstance) (epochDone bool) {
+func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone bool) {
 	var train bool
 	trialDone := false
 	ss.Net.ClearModActs(&ss.Time)
@@ -303,7 +237,6 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *TrialInstance) (epochDone bool
 	if ss.TrainUpdt == leabra.Trial {
 		ss.UpdateView(true)
 	}
-	//if ss.Stepper.StepPoint(int(SGTrial)) { return }
 	return epochDone
 }
 
@@ -316,7 +249,6 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim) {
 	train := !ev.IsTestTrial()
 	ss.TrialStart(ev, train)
 	ev.SetState()
-	//fmt.Println("ev.CurAlphaTrial.AlphTrialName:", ev.CurAlphaTrial.AlphTrialName, ev.AlphaTick)
 	ss.ApplyInputs(ev)
 	ss.SettleMinus(ev, train)
 	if ss.Stepper.StepPoint(int(SettleMinus)) {
@@ -351,10 +283,6 @@ func (ev *PVLVEnv) IsEpochEnd() bool {
 // brought over from cemer. This was named StepStopTest in cemer
 func (ev *PVLVEnv) TrialNameStopTest(_ *Sim) bool {
 	return false
-	//if ss.StopStepTrialNameString == "" {
-	//	return ev.IsEpochEnd()
-	//}
-	//return strings.Contains(ev.CurAlphaTrial.AlphTrialName, ss.StopStepTrialNameString)
 }
 
 // end SingleTrial and functions

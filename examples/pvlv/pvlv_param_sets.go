@@ -637,7 +637,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":  "0.1",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 				}},
-			{Sel: ".CemPosToPPTg", Desc: "CemPos-PPTg project, only input to PPTg",
+			{Sel: ".CemPosToPPTg", Desc: "CemPos-PPTg projection, only input to PPTg",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
 				}},
