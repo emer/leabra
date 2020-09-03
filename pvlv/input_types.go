@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package data
+package pvlv
 
 import (
 	"fmt"
@@ -13,14 +13,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-type InputData interface {
-	Empty() bool
-	FromString(s string) InputData
-	OneHot() int
-	Tensor() etensor.Tensor
-	TensorScaled(scale float32) etensor.Tensor
-}
 
 //var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")
 var CtxRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_?([ABCDEFUVWXYZ]?)")
@@ -67,7 +59,7 @@ var StimMap = map[string]Stim{
 func (stm Stim) Empty() bool {
 	return stm == StmNone
 }
-func (stm Stim) FromString(s string) InputData {
+func (stm Stim) FromString(s string) Inputs {
 	return StimMap[s]
 }
 func (stm Stim) OneHot() int {
@@ -222,7 +214,7 @@ var CtxMap = map[string]Context{
 func (ctx Context) Empty() bool {
 	return ctx == CtxNone
 }
-func (ctx Context) FromString(s string) InputData {
+func (ctx Context) FromString(s string) Inputs {
 	return CtxMap[s]
 }
 func (ctx Context) Int() int {
@@ -272,7 +264,7 @@ var ValMap = map[string]Valence{
 func (val Valence) Empty() bool {
 	return val == ValNone
 }
-func (val Valence) FromString(s string) InputData {
+func (val Valence) FromString(s string) Inputs {
 	return ValMap[s]
 }
 func (val Valence) OneHot() int {
@@ -294,15 +286,30 @@ func (val Valence) Negate() Valence {
 
 var KiT_Valence = kit.Enums.AddEnum(ValenceN, kit.NotBitFlag, nil)
 
-//var Fooey InputData = POS // for testing
+var Fooey Inputs = POS // for testing
 //end Valence
 
 // US, either positive or negative Valence
-type US interface {
-	InputData
+type IUS interface {
 	Val() Valence
 	String() string
 	Int() int
+}
+
+type US int
+
+func (us US) Int() int {
+	return int(us)
+}
+
+func (us US) Val() Valence {
+	var ius interface{} = us
+	switch ius.(IUS).(type) {
+	case PosUS:
+		return POS
+	default:
+		return NEG
+	}
 }
 
 var USInShape = []int{4}
@@ -330,8 +337,8 @@ func TensorScaled(us US, scale float32) etensor.Tensor {
 // end US
 
 // positive and negative subtypes of US
-type PosUS int
-type NegUS int
+type PosUS US
+type NegUS US
 
 const (
 	Water PosUS = iota
@@ -350,8 +357,9 @@ const (
 	NNegUS    = NegUSNone
 )
 
-var _ US = Water // check for interface implementation
-var _ US = Shock
+var USNone = US(PosUSNone)
+var _ IUS = Water // check for interface implementation
+var _ IUS = Shock
 
 var PosSMap = map[string]PosUS{
 	Water.String():    Water,
@@ -366,25 +374,44 @@ var NegSMap = map[string]NegUS{
 	OtherNeg.String(): OtherNeg,
 }
 
-func (pos PosUS) Empty() bool {
+func (pos PosUS) PosUSEmpty() bool {
 	return pos == PosUSNone
 }
-func (neg NegUS) Empty() bool {
+func (neg NegUS) NegUSEmpty() bool {
 	return neg == NegUSNone
 }
 
-func (pos PosUS) FromString(s string) InputData {
+func (us US) Empty() bool {
+	if us.Val() == POS {
+		return NegUS(us).NegUSEmpty()
+	} else {
+		return PosUS(us).PosUSEmpty()
+	}
+}
+
+func (us US) FromString(s string) Inputs {
+	if us.Val() == POS {
+		return US(PosSMap[s])
+	} else {
+		return US(NegSMap[s])
+	}
+}
+
+func (pos PosUS) FromString(s string) PosUS {
 	return PosSMap[s]
 }
-func (neg NegUS) FromString(s string) InputData {
+func (neg NegUS) FromString(s string) NegUS {
 	return NegSMap[s]
 }
 
 func (pos PosUS) OneHot() int {
-	return OneHotUS(pos)
+	return US(pos).OneHot()
 }
 func (neg NegUS) OneHot() int {
-	return OneHotUS(neg)
+	return US(neg).OneHot()
+}
+func (us US) OneHot() int {
+	return OneHotUS(us)
 }
 
 func (pos PosUS) Val() Valence {
@@ -402,17 +429,31 @@ func (neg NegUS) Int() int {
 }
 
 func (pos PosUS) Tensor() etensor.Tensor {
-	return Tensor(pos)
+	return US(pos).Tensor()
 }
 func (neg NegUS) Tensor() etensor.Tensor {
-	return Tensor(neg)
+	return US(neg).Tensor()
+}
+func (us US) Tensor() etensor.Tensor {
+	return Tensor(us)
 }
 
-func (pos PosUS) TensorScaled(scale float32) etensor.Tensor {
-	return TensorScaled(pos, 1.0/scale)
+//func (pos PosUS) TensorScaled(scale float32) etensor.Tensor {
+//	return TensorScaled(pos, 1.0 / scale)
+//}
+//func (neg NegUS) TensorScaled(scale float32) etensor.Tensor {
+//	return TensorScaled(neg, 1.0 / scale)
+//}
+func (us US) TensorScaled(scale float32) etensor.Tensor {
+	return TensorScaled(us, 1.0/scale)
 }
-func (neg NegUS) TensorScaled(scale float32) etensor.Tensor {
-	return TensorScaled(neg, 1.0/scale)
+
+func (us US) String() string {
+	if us.Val() == POS {
+		return PosUS(us).String()
+	} else {
+		return NegUS(us).String()
+	}
 }
 
 var kiTPosUS = kit.Enums.AddEnum(NPosUS+1, kit.NotBitFlag, nil)
@@ -455,7 +496,7 @@ var TickMap = map[string]Tick{
 func (t Tick) Empty() bool {
 	return t == TckNone
 }
-func (t Tick) FromString(s string) InputData {
+func (t Tick) FromString(s string) Inputs {
 	i, _ := strconv.Atoi(strings.TrimPrefix(strings.ToLower(s), "t"))
 	return Tick(i)
 }
@@ -490,7 +531,7 @@ var USTimeInShape = []int{16, 2, 4, 5}
 type USTimeState struct {
 	Stm Stim    `desc:"CS value"`
 	US  US      `desc:"a US value or absent (USNone)"`
-	Val Valence `desc:"PV valence, POS, NEG, or absent (ValNone)"`
+	Val Valence `desc:"PV d, POS, NEG, or absent (ValNone)"`
 	Tck Tick    `desc:"Within-trial timestep"`
 }
 type PackedUSTimeState int64
@@ -527,7 +568,7 @@ func (usts USTimeState) Pack() PackedUSTimeState {
 }
 
 func (ps PackedUSTimeState) Unpack() USTimeState {
-	usts := USTimeState{Stm: StmNone, US: PosUSNone, Val: ValNone, Tck: TckNone}
+	usts := USTimeState{Stm: StmNone, US: USNone, Val: ValNone, Tck: TckNone}
 
 	var stimMask int = (1 << StimN) - 1
 	stmTmp := int(ps) & stimMask
@@ -539,7 +580,7 @@ func (ps PackedUSTimeState) Unpack() USTimeState {
 	var usMask int = ((1 << NPosUS) - 1) << usShift
 	usTmp := (int(ps) & usMask) >> usShift
 	if usTmp != 0 {
-		usts.US = PosUS(int(math.Log2(float64(usTmp))))
+		usts.US = US(int(math.Log2(float64(usTmp))))
 	}
 
 	valShift := usShift + int(NPosUS)
@@ -583,7 +624,7 @@ func (ps PackedUSTimeState) TensorScaled(scale float32) etensor.Tensor {
 }
 
 func (usts USTimeState) String() string {
-	for _, part := range []InputData{usts.Val, usts.US, usts.Tck} {
+	for _, part := range []Inputs{usts.Val, usts.US, usts.Tck} {
 		if part.Empty() {
 			return USTimeNone.String()
 		}
@@ -709,11 +750,12 @@ func USTFromString(uss string) USTimeState {
 	}
 	ius, _ := strconv.Atoi(matches[3])
 	var us US
-	if val == POS {
-		us = PosUS(ius)
-	} else {
-		us = NegUS(ius)
-	}
+	us = US(ius)
+	//if val == POS {
+	//	us = US(PosUS(ius))
+	//} else {
+	//	us = US(NegUS(ius))
+	//}
 	itick, _ := strconv.Atoi(matches[4])
 	tick := Tick(itick)
 	ret := USTimeState{stim, us, val, tick}
@@ -754,7 +796,7 @@ func (usts USTimeState) OneHot(scale float32) etensor.Tensor {
 	return tsr
 }
 
-//go:generate stringer -linecomment -output=inputs_strings.go -type=Stim,PosUS,NegUS,Valence,Context,Tick
+//go:generate stringer -linecomment -output=inputs_strings.go -type=Stim,PosUS,NegUS,Context,Tick
 
 //func main() {
 //	//uss := []US{Nausea, Food, Water, Mate, OtherPos, OtherNeg, Shock}

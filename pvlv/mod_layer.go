@@ -141,27 +141,10 @@ const (
 	DaRTypeN
 )
 
-////go:generate stringer -type=DaRType // moved to stringers.go
-
 var KiT_DaRType = kit.Enums.AddEnum(DaRTypeN, kit.NotBitFlag, nil)
 
 func (ev DaRType) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
 func (ev *DaRType) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
-
-// Valence
-type Valence int
-
-const (
-	ValNone Valence = iota // NoValence
-	POS
-	NEG
-	ValenceN
-)
-
-var ValMap = map[string]Valence{
-	POS.String(): POS,
-	NEG.String(): NEG,
-}
 
 // Retrieve a value for a trace of some quantity, possibly more than just a variable
 func (ly *ModLayer) GetMonitorVal(data []string) float64 {
@@ -239,7 +222,7 @@ func (ly *ModLayer) UnitVarIdx(varNm string) (int, error) {
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarByName(varNm)
+	vidx, err = NeuronVarIdxByName(varNm)
 	if err != nil {
 		return vidx, err
 	}
