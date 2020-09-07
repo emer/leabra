@@ -337,9 +337,9 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
 	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.TrialName.Cur)
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.TrialName)
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.TrialName.Cur)
 	}
 }
 
@@ -481,7 +481,7 @@ func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
-		fmt.Printf("Saving Weights to: %v\n", fnm)
+		fmt.Printf("Saving Weights to: %s\n", fnm)
 		ss.Net.SaveWtsJSON(gi.FileName(fnm))
 	}
 }
@@ -1195,8 +1195,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1200
 
-	// gi.WinEventTrace = true
-
 	gi.SetAppName("ra25")
 	gi.SetAppAbout(`This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
@@ -1333,7 +1331,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 					} else {
 						if !ss.IsRunning {
 							ss.IsRunning = true
-							fmt.Printf("testing index: %v\n", idxs[0])
+							fmt.Printf("testing index: %d\n", idxs[0])
 							ss.TestItem(idxs[0])
 							ss.IsRunning = false
 							vp.SetNeedsFullRender()
@@ -1493,7 +1491,7 @@ func (ss *Sim) CmdArgs() {
 			log.Println(err)
 			ss.TrnEpcFile = nil
 		} else {
-			fmt.Printf("Saving epoch log to: %v\n", fnm)
+			fmt.Printf("Saving epoch log to: %s\n", fnm)
 			defer ss.TrnEpcFile.Close()
 		}
 	}
@@ -1505,7 +1503,7 @@ func (ss *Sim) CmdArgs() {
 			log.Println(err)
 			ss.RunFile = nil
 		} else {
-			fmt.Printf("Saving run log to: %v\n", fnm)
+			fmt.Printf("Saving run log to: %s\n", fnm)
 			defer ss.RunFile.Close()
 		}
 	}

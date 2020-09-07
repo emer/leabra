@@ -31,7 +31,7 @@ import (
 	"github.com/emer/etable/simat"
 	"github.com/emer/etable/split"
 	"github.com/emer/leabra/leabra"
-	pbwm "github.com/emer/leabra/pbwm1"
+	"github.com/emer/leabra/pbwm"
 	"github.com/emer/leabra/rl"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"

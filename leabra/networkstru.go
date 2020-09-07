@@ -336,6 +336,17 @@ func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern
 	return
 }
 
+// BidirConnectLayersPy establishes bidirectional projections between two layers,
+// with low = lower layer that sends a Forward projection to the high layer,
+// and receives a Back projection in the opposite direction.
+// Does not yet actually connect the units within the layers -- that
+// requires Build.
+// Py = python version with no return vals.
+func (nt *NetworkStru) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Pattern) {
+	nt.ConnectLayers(low, high, pat, emer.Forward)
+	nt.ConnectLayers(high, low, pat, emer.Back)
+}
+
 // LateralConnectLayer establishes a self-projection within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
