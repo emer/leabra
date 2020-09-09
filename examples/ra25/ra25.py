@@ -351,11 +351,7 @@ class Sim(object):
     def Init(ss):
         """
         Init restarts the run, and initializes everything, including network weights
-
-        # re-config env just in case a different set of patterns was
         and resets the epoch log table
-
-        # selected or patterns have been modified etc
         """
         rand.Seed(ss.RndSeed)
         ss.ConfigEnv()
@@ -547,7 +543,7 @@ class Sim(object):
         You can also aggregate directly from log data, as is done for testing stats
         """
         out = leabra.Layer(ss.Net.LayerByName("Output"))
-        ss.TrlCosDiff = out.CosDiff.Cos
+        ss.TrlCosDiff = float(out.CosDiff.Cos)
         ss.TrlSSE = out.SSE(0.5) # 0.5 = per-unit tolerance -- right side of .5
         ss.TrlAvgSSE = ss.TrlSSE / len(out.Neurons)
         if ss.TrlSSE > 0:
@@ -686,7 +682,6 @@ class Sim(object):
         if setMsg = true then we output a message for each param that was set.
         """
         if sheet == "":
-
             ss.Params.ValidateSheets(go.Slice_string(["Network", "Sim"]))
         ss.SetParamsSet("Base", sheet, setMsg)
         if ss.ParamSet != "" and ss.ParamSet != "Base":
@@ -716,11 +711,11 @@ class Sim(object):
         dt = ss.Pats
         dt.SetMetaData("name", "TrainPats")
         dt.SetMetaData("desc", "Training patterns")
-        sc = etable.Schema()
-        sc.append(etable.Column("Name", etensor.STRING, nilInts, nilStrs))
-        sc.append(etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
-        sc.append(etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
-        dt.SetFromSchema(sc, 25)
+        sch = etable.Schema()
+        sch.append(etable.Column("Name", etensor.STRING, nilInts, nilStrs))
+        sch.append(etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
+        sch.append(etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
+        dt.SetFromSchema(sch, 25)
 
         patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
         patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
@@ -780,13 +775,13 @@ class Sim(object):
         dt.SetNumRows(row + 1)
 
         epc = ss.TrainEnv.Epoch.Prv
-        nt = len(ss.TrainEnv.Order)
+        nt = float(len(ss.TrainEnv.Order))
 
         ss.EpcSSE = ss.SumSSE / nt
         ss.SumSSE = 0
         ss.EpcAvgSSE = ss.SumAvgSSE / nt
         ss.SumAvgSSE = 0
-        ss.EpcPctErr = ss.SumErr / nt
+        ss.EpcPctErr = float(ss.SumErr) / nt
         ss.SumErr = 0
         ss.EpcPctCor = 1 - ss.EpcPctErr
         ss.EpcCosDiff = ss.SumCosDiff / nt
@@ -802,11 +797,11 @@ class Sim(object):
         #     ss.EpcPerTrlMSec = 0
         # else:
         #     iv = time.Now().Sub(ss.LastEpcTime)
-        #     ss.EpcPerTrlMSec = iv / (nt * float64(time.Millisecond))
+        #     ss.EpcPerTrlMSec = float(iv) / (nt * float(time.Millisecond))
         # ss.LastEpcTime = time.Now()
 
-        dt.SetCellFloat("Run", row, ss.TrainEnv.Run.Cur)
-        dt.SetCellFloat("Epoch", row, epc)
+        dt.SetCellFloat("Run", row, float(ss.TrainEnv.Run.Cur))
+        dt.SetCellFloat("Epoch", row, float(epc))
         dt.SetCellFloat("SSE", row, ss.EpcSSE)
         dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
         dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
@@ -816,7 +811,7 @@ class Sim(object):
 
         for lnm in ss.LayStatNms:
             ly = leabra.Layer(ss.Net.LayerByName(lnm))
-            dt.SetCellFloat(ly.Nm+"_ActAvg", row, ly.Pool(0).ActAvg.ActPAvgEff)
+            dt.SetCellFloat(ly.Nm+"_ActAvg", row, float(ly.Pool(0).ActAvg.ActPAvgEff))
 
         if ss.TrnEpcPlot != 0:
             ss.TrnEpcPlot.GoUpdate()
@@ -831,18 +826,18 @@ class Sim(object):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sc = etable.Schema()
-        sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PerTrlMSec", etensor.FLOAT64, nilInts, nilStrs))
+        sch = etable.Schema()
+        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PerTrlMSec", etensor.FLOAT64, nilInts, nilStrs))
         for lnm in ss.LayStatNms:
-            sc.append(etable.Column(lnm + "_ActAvg", etensor.FLOAT64, nilInts, nilStrs))
-        dt.SetFromSchema(sc, 0)
+            sch.append(etable.Column(lnm + "_ActAvg", etensor.FLOAT64, nilInts, nilStrs))
+        dt.SetFromSchema(sch, 0)
 
     def ConfigTrnEpcPlot(ss, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Epoch Plot"
@@ -877,9 +872,9 @@ class Sim(object):
         if dt.Rows <= row:
             dt.SetNumRows(row + 1)
 
-        dt.SetCellFloat("Run", row, ss.TrainEnv.Run.Cur)
-        dt.SetCellFloat("Epoch", row, epc)
-        dt.SetCellFloat("Trial", row, trl)
+        dt.SetCellFloat("Run", row, float(ss.TrainEnv.Run.Cur))
+        dt.SetCellFloat("Epoch", row, float(epc))
+        dt.SetCellFloat("Trial", row, float(trl))
         dt.SetCellString("TrialName", row, ss.TestEnv.TrialName.Cur)
         dt.SetCellFloat("Err", row, ss.TrlErr)
         dt.SetCellFloat("SSE", row, ss.TrlSSE)
@@ -888,7 +883,7 @@ class Sim(object):
 
         for lnm in ss.LayStatNms:
             ly = leabra.Layer(ss.Net.LayerByName(lnm))
-            dt.SetCellFloat(ly.Nm+" ActM.Avg", row, ly.Pool(0).ActM.Avg)
+            dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float(ly.Pool(0).ActM.Avg))
         ivt = ss.ValsTsr("Input")
         ovt = ss.ValsTsr("Output")
         inp.UnitValsTensor(ivt, "Act")
@@ -911,23 +906,23 @@ class Sim(object):
         dt.SetMetaData("precision", str(LogPrec))
 
         nt = ss.TestEnv.Table.Len() # number in view
-        sc = etable.Schema()
-        sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("Trial", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("TrialName", etensor.STRING, nilInts, nilStrs))
-        sc.append(etable.Column("Err", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        sch = etable.Schema()
+        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Trial", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("TrialName", etensor.STRING, nilInts, nilStrs))
+        sch.append(etable.Column("Err", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
         
         for lnm in ss.LayStatNms :
-            sc.append(etable.Column(lnm + " ActM.Avg", etensor.FLOAT64, nilInts, nilStrs))
+            sch.append(etable.Column(lnm + " ActM.Avg", etensor.FLOAT64, nilInts, nilStrs))
             
-        sc.append(etable.Column("InAct", etensor.FLOAT64, inp.Shp.Shp, nilStrs))
-        sc.append(etable.Column("OutActM", etensor.FLOAT64, out.Shp.Shp, nilStrs))
-        sc.append(etable.Column("OutActP", etensor.FLOAT64, out.Shp.Shp, nilStrs))
-        dt.SetFromSchema(sc, nt)
+        sch.append(etable.Column("InAct", etensor.FLOAT64, inp.Shp.Shp, nilStrs))
+        sch.append(etable.Column("OutActM", etensor.FLOAT64, out.Shp.Shp, nilStrs))
+        sch.append(etable.Column("OutActP", etensor.FLOAT64, out.Shp.Shp, nilStrs))
+        dt.SetFromSchema(sch, nt)
 
     def ConfigTstTrlPlot(ss, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Test Trial Plot"
@@ -961,8 +956,8 @@ class Sim(object):
 
         # note: this shows how to use agg methods to compute summary data from another
         # data table, instead of incrementing on the Sim
-        dt.SetCellFloat("Run", row, ss.TrainEnv.Run.Cur)
-        dt.SetCellFloat("Epoch", row, epc)
+        dt.SetCellFloat("Run", row, float(ss.TrainEnv.Run.Cur))
+        dt.SetCellFloat("Epoch", row, float(epc))
         dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
         dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
         dt.SetCellFloat("PctErr", row, agg.Mean(tix, "Err")[0])
@@ -993,15 +988,15 @@ class Sim(object):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sc = etable.Schema()
-        sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
-        dt.SetFromSchema(sc, 0)
+        sch = etable.Schema()
+        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        dt.SetFromSchema(sch, 0)
 
     def ConfigTstEpcPlot(ss, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Testing Epoch Plot"
@@ -1025,11 +1020,11 @@ class Sim(object):
         if dt.Rows <= cyc:
             dt.SetNumRows(cyc + 1)
 
-        dt.SetCellFloat("Cycle", cyc, cyc)
+        dt.SetCellFloat("Cycle", cyc, float(cyc))
         for lnm in ss.LayStatNms:
             ly = leabra.Layer(ss.Net.LayerByName(lnm))
-            dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc,  ly.Pool(0).Inhib.Ge.Avg)
-            dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, ly.Pool(0).Inhib.Act.Avg)
+            dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc,  float(ly.Pool(0).Inhib.Ge.Avg))
+            dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float(ly.Pool(0).Inhib.Act.Avg))
 
         if ss.TstCycPlot != 0 and cyc%10 == 0: # too slow to do every cyc
             # note: essential to use Go version of update when called from another goroutine
@@ -1042,13 +1037,13 @@ class Sim(object):
         dt.SetMetaData("precision", str(LogPrec))
 
         np = 100 # max cycles
-        sc = etable.Schema()
-        sc.append(etable.Column("Cycle", etensor.INT64, nilInts, nilStrs))
+        sch = etable.Schema()
+        sch.append(etable.Column("Cycle", etensor.INT64, nilInts, nilStrs))
         
         for lnm in ss.LayStatNms:
-            sc.append(etable.Column(lnm + " Ge.Avg", etensor.FLOAT64, nilInts, nilStrs))
-            sc.append(etable.Column(lnm + " Act.Avg", etensor.FLOAT64, nilInts, nilStrs))
-        dt.SetFromSchema(sc, np)
+            sch.append(etable.Column(lnm + " Ge.Avg", etensor.FLOAT64, nilInts, nilStrs))
+            sch.append(etable.Column(lnm + " Act.Avg", etensor.FLOAT64, nilInts, nilStrs))
+        dt.SetFromSchema(sch, np)
 
     def ConfigTstCycPlot(ss, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Test Cycle Plot"
@@ -1079,9 +1074,9 @@ class Sim(object):
 
         params = ss.RunName() # includes tag
 
-        dt.SetCellFloat("Run", row, run)
+        dt.SetCellFloat("Run", row, float(run))
         dt.SetCellString("Params", row, params)
-        dt.SetCellFloat("FirstZero", row, ss.FirstZero)
+        dt.SetCellFloat("FirstZero", row, float(ss.FirstZero))
         dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
         dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
         dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
@@ -1108,16 +1103,16 @@ class Sim(object):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sc = etable.Schema()
-        sc.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sc.append(etable.Column("Params", etensor.STRING, nilInts, nilStrs))
-        sc.append(etable.Column("FirstZero", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sc.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
-        dt.SetFromSchema(sc, 0)
+        sch = etable.Schema()
+        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Params", etensor.STRING, nilInts, nilStrs))
+        sch.append(etable.Column("FirstZero", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        dt.SetFromSchema(sch, 0)
 
     def ConfigRunPlot(ss, plt, dt):
         plt.Params.Title = "Leabra Random Associator 25 Run Plot"
@@ -1198,7 +1193,7 @@ class Sim(object):
         tv.AddTab(plt, "RunPlot")
         ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
 
-        split.SetSplitsList(go.Slice_float32([.3, .7]))
+        split.SetSplitsList(go.Slice_float32([.2, .8]))
 
         recv = win.This()
         
@@ -1233,15 +1228,15 @@ class Sim(object):
         tbar.AddAction(gi.ActOpts(Label="README", Icon="file-markdown", Tooltip="Opens your browser on the README file that contains instructions for how to run this model."), recv, ReadmeCB)
 
         # main menu
-        # appnm = gi.AppName()
-        # mmen = win.MainMenu
-        # mmen.ConfigMenus(go.Slice_string(appnm, "File", "Edit", "Window"))
-# 
-        # amen = gi.Action(win.MainMenu.ChildByName(appnm, 0))
-        # amen.Menu.AddAppMenu(win)
-# 
-        # emen = gi.Action(win.MainMenu.ChildByName("Edit", 1))
-        # emen.Menu.AddCopyCutPaste(win)
+        appnm = gi.AppName()
+        mmen = win.MainMenu
+        mmen.ConfigMenus(go.Slice_string([appnm, "File", "Edit", "Window"]))
+
+        amen = gi.Action(win.MainMenu.ChildByName(appnm, 0))
+        amen.Menu.AddAppMenu(win)
+
+        emen = gi.Action(win.MainMenu.ChildByName("Edit", 1))
+        emen.Menu.AddCopyCutPaste(win)
 
         # note: Command in shortcuts is automatically translated into Control for
         # Linux, Windows or Meta for MacOS
@@ -1327,11 +1322,14 @@ def main(argv):
             TheSim.RunFile = efile.Create(fnm)
             
         TheSim.Train()
+        sys.exit(0)
     else:
         TheSim.ConfigGui()
         print("Note: run pyleabra -i ra25.py to run in interactive mode, or just pyleabra, then 'import ra25'")
         print("for non-gui background running, here are the args:")
         usage()
-        
+        import code
+        code.interact(local=locals())
+
 main(sys.argv[1:])
 

@@ -26,7 +26,7 @@ install: install-pkg install-exe
 # unfortunately this means that all sub-packages need to be explicitly listed.
 gen:
 	gopy exe -name=leabra -vm=python3 -no-warn -exclude=driver,oswin -main="runtime.LockOSThread(); gimain.Main(func() {  GoPyMainRun() })" math/rand github.com/goki/ki/ki github.com/goki/mat32  github.com/goki/gi/units github.com/goki/gi/gi github.com/goki/gi/svg github.com/goki/gi/giv github.com/goki/gi/gi3d github.com/goki/gi/gimain github.com/emer/etable github.com/emer/emergent github.com/emer/leabra/chans github.com/emer/leabra/fffb github.com/emer/leabra/knadapt github.com/emer/leabra/nxx1 github.com/emer/leabra/leabra github.com/emer/leabra/spike github.com/emer/leabra/deep github.com/emer/leabra/hip github.com/emer/leabra/rl github.com/emer/leabra/pbwm github.com/emer/leabra/glong github.com/emer/leabra/pcore github.com/emer/leabra/agate github.com/emer/vision
-
+	
 build:
 	$(MAKE) -C leabra build
 
