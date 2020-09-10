@@ -3,6 +3,7 @@
 # license that can be found in the LICENSE file.
 
 from leabra import go, gi, giv, etable, etview, params
+from enum import Enum
 
 import pandas as pd
 
@@ -37,7 +38,6 @@ def SetIntValCB(recv, send, sig, data):
     # print("spin name:", nm)
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    flds = cv.Class.__dict__
     setattr(cv.Class, nms[1], vw.Value)
 
 def EditGoObjCB(recv, send, sig, data):
@@ -45,7 +45,6 @@ def EditGoObjCB(recv, send, sig, data):
     nm = vw.Name()
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    flds = cv.Class.__dict__
     fld = getattr(cv.Class, nms[1])
     title = nms[1]
     if isinstance(fld, etable.Table):
@@ -60,7 +59,6 @@ def EditObjCB(recv, send, sig, data):
     nm = vw.Name()
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    flds = cv.Class.__dict__
     fld = getattr(cv.Class, nms[1])
     print("editing object: todo: need a ClassViewDialog")
     # dlg = giv.StructViewDialog(vw.Vp, fld.opv.Interface(), DlgOpts{Title: tynm, Prompt: desc, TmpSave: vv.TmpSave}, recv, dlgFunc)    
@@ -72,7 +70,6 @@ def SetStrValCB(recv, send, sig, data):
     nm = vw.Name()
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    flds = cv.Class.__dict__
     setattr(cv.Class, nms[1], vw.Text())
 
 def SetBoolValCB(recv, send, sig, data):
@@ -83,9 +80,29 @@ def SetBoolValCB(recv, send, sig, data):
     # print("cb name:", nm)
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    flds = cv.Class.__dict__
     setattr(cv.Class, nms[1], vw.IsChecked() != 0)
 
+##############
+# Enums
+
+def ItemsFromEnum(cb, enm):
+    nms = []
+    for en in type(enm):
+        nms.append(en.name)
+    cb.ItemsFromStringList(go.Slice_string(nms), False, 0)
+    cb.SetCurVal(enm.name)
+    
+def SetEnumCB(recv, send, sig, data):
+    vw = gi.ComboBox(handle=send)
+    nm = vw.Name()
+    nms = nm.split(':')
+    idx = vw.CurIndex
+    cv = classviews[nms[0]]
+    flds = cv.Class.__dict__
+    typ = type(flds[nms[1]])
+    vl = typ(idx)
+    setattr(cv.Class, nms[1], vl)
+    
 class ClassView(object):
     """
     PyGiClassView provides giv.StructView like editor for python class objects under GoGi.
@@ -154,6 +171,16 @@ class ClassView(object):
                 if self.HasTagValue(tags, "inactive", "+"):
                     vw.SetInactive()
                 self.Views[nm] = vw
+            elif isinstance(val, Enum):
+                vw = gi.ComboBox(self.Frame.AddNewChild(gi.KiT_ComboBox(), self.Name + ":" + nm))
+                vw.SetText(nm)
+                vw.SetPropStr("padding", "2px")
+                vw.SetPropStr("margin", "2px")
+                ItemsFromEnum(vw, val)
+                vw.ComboSig.Connect(self.Frame, SetEnumCB)
+                if self.HasTagValue(tags, "inactive", "+"):
+                    vw.SetInactive()
+                self.Views[nm] = vw
             elif isinstance(val, go.GoClass):
                 vw = gi.Action(self.Frame.AddNewChild(gi.KiT_Action(), self.Name + ":" + nm))
                 if hasattr(val, "Label"):
@@ -203,6 +230,9 @@ class ClassView(object):
                 if isinstance(val, bool):
                     svw = gi.CheckBox(vw)
                     svw.SetChecked(val)
+                elif isinstance(val, Enum):
+                    svw = gi.ComboBox(vw)
+                    svw.SetCurVal(val.name)
                 elif isinstance(val, go.GoClass):
                     pass
                 elif isinstance(val, pd.DataFrame):
