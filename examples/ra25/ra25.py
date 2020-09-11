@@ -42,12 +42,6 @@ from datetime import datetime, timezone
 # this will become Sim later.. 
 TheSim = 1
 
-# use this for e.g., etable.Column construction args where nil would be passed
-nilInts = go.Slice_int()
-
-# use this for e.g., etable.Column construction args where nil would be passed
-nilStrs = go.Slice_string()
-
 # LogPrec is precision for saving float values in logs
 LogPrec = 4
 
@@ -712,7 +706,7 @@ class Sim(object):
         dt.SetMetaData("name", "TrainPats")
         dt.SetMetaData("desc", "Training patterns")
         sch = etable.Schema()
-        sch.append(etable.Column("Name", etensor.STRING, nilInts, nilStrs))
+        sch.append(etable.Column("Name", etensor.STRING, go.nil, go.nil))
         sch.append(etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
         sch.append(etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
         dt.SetFromSchema(sch, 25)
@@ -827,16 +821,16 @@ class Sim(object):
         dt.SetMetaData("precision", str(LogPrec))
 
         sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PerTrlMSec", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PerTrlMSec", etensor.FLOAT64, go.nil, go.nil))
         for lnm in ss.LayStatNms:
-            sch.append(etable.Column(lnm + "_ActAvg", etensor.FLOAT64, nilInts, nilStrs))
+            sch.append(etable.Column(lnm + "_ActAvg", etensor.FLOAT64, go.nil, go.nil))
         dt.SetFromSchema(sch, 0)
 
     def ConfigTrnEpcPlot(ss, plt, dt):
@@ -907,21 +901,21 @@ class Sim(object):
 
         nt = ss.TestEnv.Table.Len() # number in view
         sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("Trial", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("TrialName", etensor.STRING, nilInts, nilStrs))
-        sch.append(etable.Column("Err", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("Trial", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("TrialName", etensor.STRING, go.nil, go.nil))
+        sch.append(etable.Column("Err", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
         
         for lnm in ss.LayStatNms :
-            sch.append(etable.Column(lnm + " ActM.Avg", etensor.FLOAT64, nilInts, nilStrs))
+            sch.append(etable.Column(lnm + " ActM.Avg", etensor.FLOAT64, go.nil, go.nil))
             
-        sch.append(etable.Column("InAct", etensor.FLOAT64, inp.Shp.Shp, nilStrs))
-        sch.append(etable.Column("OutActM", etensor.FLOAT64, out.Shp.Shp, nilStrs))
-        sch.append(etable.Column("OutActP", etensor.FLOAT64, out.Shp.Shp, nilStrs))
+        sch.append(etable.Column("InAct", etensor.FLOAT64, inp.Shp.Shp, go.nil))
+        sch.append(etable.Column("OutActM", etensor.FLOAT64, out.Shp.Shp, go.nil))
+        sch.append(etable.Column("OutActP", etensor.FLOAT64, out.Shp.Shp, go.nil))
         dt.SetFromSchema(sch, nt)
 
     def ConfigTstTrlPlot(ss, plt, dt):
@@ -989,13 +983,13 @@ class Sim(object):
         dt.SetMetaData("precision", str(LogPrec))
 
         sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("Epoch", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
         dt.SetFromSchema(sch, 0)
 
     def ConfigTstEpcPlot(ss, plt, dt):
@@ -1038,11 +1032,11 @@ class Sim(object):
 
         np = 100 # max cycles
         sch = etable.Schema()
-        sch.append(etable.Column("Cycle", etensor.INT64, nilInts, nilStrs))
+        sch.append(etable.Column("Cycle", etensor.INT64, go.nil, go.nil))
         
         for lnm in ss.LayStatNms:
-            sch.append(etable.Column(lnm + " Ge.Avg", etensor.FLOAT64, nilInts, nilStrs))
-            sch.append(etable.Column(lnm + " Act.Avg", etensor.FLOAT64, nilInts, nilStrs))
+            sch.append(etable.Column(lnm + " Ge.Avg", etensor.FLOAT64, go.nil, go.nil))
+            sch.append(etable.Column(lnm + " Act.Avg", etensor.FLOAT64, go.nil, go.nil))
         dt.SetFromSchema(sch, np)
 
     def ConfigTstCycPlot(ss, plt, dt):
@@ -1104,14 +1098,14 @@ class Sim(object):
         dt.SetMetaData("precision", str(LogPrec))
 
         sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, nilInts, nilStrs))
-        sch.append(etable.Column("Params", etensor.STRING, nilInts, nilStrs))
-        sch.append(etable.Column("FirstZero", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, nilInts, nilStrs))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, nilInts, nilStrs))
+        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
+        sch.append(etable.Column("Params", etensor.STRING, go.nil, go.nil))
+        sch.append(etable.Column("FirstZero", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
+        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
         dt.SetFromSchema(sch, 0)
 
     def ConfigRunPlot(ss, plt, dt):
@@ -1155,7 +1149,7 @@ class Sim(object):
         split.Dim = mat32.X
         split.SetStretchMax()
 
-        ss.ClassView = epygiv.ClassView("ra25sv", ss.Tags)
+        ss.ClassView = epygiv.ClassView("sv", ss.Tags)
         ss.ClassView.AddFrame(split)
         ss.ClassView.SetClass(ss)
 
