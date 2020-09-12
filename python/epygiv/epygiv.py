@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from leabra import go, gi, giv, etable, etview, params
+from leabra import go, gi, giv, etable, etview, params, simat, eplot, etensor
 from enum import Enum
 
 import pandas as pd
@@ -49,7 +49,15 @@ def EditGoObjCB(recv, send, sig, data):
     title = nms[1]
     if isinstance(fld, etable.Table):
         dlg = etview.TableViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(fld, eplot.Plot2D):
+        dlg = etview.Plot2DDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(fld, etensor.Tensor):
+        dlg = etview.TensorGridDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(fld, simat.SimMat):
+        dlg = etview.SimMatGridDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
     elif isinstance(fld, params.Sets):
+        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(fld, go.Slice_string):
         dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
     else:
         dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)

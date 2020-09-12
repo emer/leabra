@@ -26,6 +26,12 @@ func (sk *ActParams) Update() {
 	sk.Spike.Update()
 }
 
+// CopyFromAct copies ActParams from source (e.g., rate-code params)
+func (sk *ActParams) CopyFromAct(act *leabra.ActParams) {
+	sk.ActParams = *act
+	sk.Update()
+}
+
 func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
 	updtVm := true
 	if sk.Spike.Tr > 0 && nrn.ISI >= 0 && nrn.ISI < float32(sk.Spike.Tr) {
