@@ -78,11 +78,13 @@ const LogPrec = 4
 
 type Sim struct { // trying to duplicate the cemer version as closely as possible
 	ActivateParams bool               `desc:"whether to activate selected param sets at start of train -- otherwise just uses current values as-is"`
+	SeqParamsName  string             `inactive:"+" desc:"Name of the current run sequence. Use menu above to set"`
 	SeqParams      *data.RunSeqParams `desc:"For sequences of runs (i.e., this is above the RunParams level)"`
-	SeqParamsName  string             `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
-	RunParams      *data.RunParams    `desc:"for running Train directly"`
-	Tag            string             `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Params         params.Sets        `view:"no-inline" desc:"pvlv-specific network parameters"`
+	//SeqParamsSelect  *gi.ComboBox             `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
+	RunParamsName  string          `inactive:"+" desc:"name of current RunParams"`
+	RunParams      *data.RunParams `desc:"for running Train directly"`
+	Tag            string          `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Params         params.Sets     `view:"no-inline" desc:"pvlv-specific network parameters"`
 	ParamSet       string
 	StableParams   params.Set `view:"no-inline" desc:"shouldn't need to change these'"`
 	MiscParams     params.Set `view:"no-inline" desc:"misc params -- network specs"`
@@ -166,6 +168,7 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	LogSetParams bool                        `view:"-" desc:"if true, print message for all params that are set"`
 	LastEpcTime  leabra.Time                 `view:"-" desc:"timer for last epoch"`
 	Interactive  bool                        `view:"-" desc:"true iff running through the GUI"`
+	StructView   *giv.StructView             `view:"-" desc: tructure view for this struct`
 
 	// master lists of various kinds of parameters
 	MasterRunParams    data.RunParamsMap   `view:"no-inline" desc:"master list of RunParams records"`
@@ -612,25 +615,29 @@ func (ss *Sim) ConfigTrialTypeDataPlot(plt *eplot.Plot2D, dt *etable.Table) *epl
 	for _, colName := range dt.ColNames {
 		var colOnOff, colFixMin, colFixMax bool
 		var colMin, colMax float64
+		colFixMin = eplot.FixMin
+		colMin = -2
+		colFixMax = eplot.FixMax
+		colMax = 2
 		switch colName {
-		case "VTAp_act":
+		case "VTAp_act", "CElAcqPosD1_US0_act", "VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act", "LHbRMTg_act":
 			colOnOff = eplot.On
-			colFixMin = eplot.FixMin
-			colMin = -2
-			colFixMax = eplot.FixMax
-			colMax = 2
-		case "CElAcqPosD1_US0_act", "VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act", "LHbRMTg_act":
-			colOnOff = eplot.On
-			colFixMin = eplot.FloatMin
-			colMin = 0
-			colFixMax = eplot.FloatMax
-			colMax = 0
+			//colFixMin = eplot.FixMin
+			//colMin = -1.5
+			//colFixMax = eplot.FixMax
+			//colMax = 1.5
+		//case "CElAcqPosD1_US0_act", "VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act", "LHbRMTg_act":
+		//	colOnOff = eplot.On
+		//	colFixMin = eplot.FloatMin
+		//	colMin = 0
+		//	colFixMax = eplot.FloatMax
+		//	colMax = 0
 		default:
 			colOnOff = eplot.Off
-			colFixMin = eplot.FloatMin
-			colMin = 0
-			colFixMax = eplot.FloatMax
-			colMax = 0
+			//colFixMin = eplot.FloatMin
+			//colMin = 0
+			//colFixMax = eplot.FloatMax
+			//colMax = 0
 		}
 		plt.SetColParams(colName, colOnOff, colFixMin, colMin, colFixMax, colMax)
 	}
@@ -741,6 +748,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	sv := giv.AddNewStructView(split, "sv")
 	sv.SetStruct(ss)
+	ss.StructView = sv
 
 	tv := gi.AddNewTabView(split, "tv")
 
@@ -750,6 +758,26 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 	ss.ConfigNetView(nv)
+
+	cb := gi.AddNewComboBox(tbar, "SeqParams")
+	seqKeys := []string{}
+	for key, _ := range ss.MasterRunSeqParams {
+		//fmt.Printf("key=%v, val=%v\n", key, val)
+		seqKeys = append(seqKeys, key)
+	}
+	sort.Strings(seqKeys)
+	cb.ItemsFromStringList(seqKeys, false, 50)
+	cb.ComboSig.Connect(mfr.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.SeqParamsName = data.(string)
+		err := ss.SetRunSeqParams()
+		if err != nil {
+			fmt.Printf("error setting run sequence: %v\n", err)
+		}
+		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
+	})
+	cb.SetCurVal(ss.SeqParamsName)
+	//cb.MakeItemsMenu()
+	//ss.SeqParamsSelect = cb
 
 	eplot.PlotColorNames = []string{
 		"black", "SkyBlue", "red", "ForestGreen", "lawngreen", "purple", "orange", "brown", "chartreuse", "navy",
@@ -1177,7 +1205,7 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "SIR Epoch Plot"
+	plt.Params.Title = "Epoch Plot"
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
@@ -1429,6 +1457,7 @@ func (ss *Sim) SetRunSeqParams() error {
 				return err
 			} else {
 				ss.RunParams = newRunParams
+				ss.RunParamsName = ss.RunParams.Nm
 				return nil
 			}
 		}
@@ -1482,6 +1511,10 @@ func (ss *Sim) TrainMultiRun() bool {
 	activateStep := func(i int, runParams *data.RunParams) {
 		ev.CurRunParams = runParams
 		ss.RunParams = ev.CurRunParams
+		ss.RunParamsName = ss.RunParams.Nm
+		_ = ss.InitRun(ev)
+		ss.Win.Viewport.SetNeedsFullRender()
+		ss.StructView.FullRender2DTree()
 	}
 	for i, seqStep := range seqSteps {
 		activateStep(i, seqStep)
