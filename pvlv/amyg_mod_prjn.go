@@ -19,7 +19,7 @@ func (pj *AmygModPrjn) AsAmygModPrjn() *AmygModPrjn {
 }
 
 type ISetScalePrjn interface {
-	InitWtsScale()
+	InitWts()
 }
 
 type AmygModPrjn struct {
@@ -35,6 +35,9 @@ type AmygModPrjn struct {
 	ActLrnMod   bool    `desc:"if true, recv unit deep_lrn value modulates learning"`
 	ActLrnThr   float32 `desc:"only ru->deep_lrn values > this get to learn - 0.05f seems to work okay"`
 }
+
+var _ IAmygPrjn = (*AmygModPrjn)(nil)
+var _ ISetScalePrjn = (*AmygModPrjn)(nil)
 
 func (pj *AmygModPrjn) InitWts() {
 	if pj.SetScale {

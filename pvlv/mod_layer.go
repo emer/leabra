@@ -43,6 +43,8 @@ type ModLayer struct {
 	Modulators   `desc:"layer-level neuromodulator levels"`
 }
 
+var _ IModLayer = (*ModLayer)(nil)
+
 var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, nil)
 
 type ModPool struct {
