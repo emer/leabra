@@ -32,6 +32,127 @@ def ApplyParams(cls, sheet, setMsg):
 # classviews is a dictionary of classviews -- needed for callbacks
 classviews = {}
 
+def HasTagValue(tags, tag, value):
+    """ returns true if given tag has given value """
+    if not tag in tags:
+        return False
+    tv = tags[tag]
+    return tv == value
+
+def GoObjView(val, nm, frame, ctxt, tags):
+    """
+    returns a gi.Widget representing the given value, with given name.
+    frame = gi.Frame or layout to add widgets to -- also callback recv
+    ctxt = context for this object (e.g., name of owning struct)
+    """
+    vw = 0
+    fnm = ctxt + ":" + nm
+    if isinstance(val, bool):
+        vw = gi.AddNewCheckBox(frame, fnm)
+        vw.SetChecked(val)
+        vw.ButtonSig.Connect(frame, SetBoolValCB)
+    elif isinstance(val, Enum):
+        vw = gi.AddNewComboBox(frame, fnm)
+        vw.SetText(nm)
+        vw.SetPropStr("padding", "2px")
+        vw.SetPropStr("margin", "2px")
+        ItemsFromEnum(vw, val)
+        vw.ComboSig.Connect(frame, SetEnumCB)
+    elif isinstance(val, go.GoClass):
+        vw = gi.AddNewAction(frame, fnm)
+        if hasattr(val, "Label"):
+            vw.SetText(val.Label())
+        else:
+            vw.SetText(nm)
+        vw.SetPropStr("padding", "2px")
+        vw.SetPropStr("margin", "2px")
+        vw.SetPropStr("border-radius", "4px")
+        vw.ActionSig.Connect(frame, EditGoObjCB)
+    elif isinstance(val, pd.DataFrame):
+        vw = gi.AddNewAction(frame, fnm)
+        vw.SetText(nm)
+        vw.SetPropStr("padding", "2px")
+        vw.SetPropStr("margin", "2px")
+        vw.SetPropStr("border-radius", "4px")
+        vw.ActionSig.Connect(frame, EditObjCB)
+    elif isinstance(val, ClassViewObj):
+        vw = gi.AddNewAction(frame, fnm)
+        vw.SetText(nm)
+        vw.SetPropStr("padding", "2px")
+        vw.SetPropStr("margin", "2px")
+        vw.SetPropStr("border-radius", "4px")
+        vw.ActionSig.Connect(frame, EditObjCB)
+    elif isinstance(val, (int, float)):
+        vw = gi.AddNewSpinBox(frame, fnm)
+        vw.SetValue(val)
+        vw.SpinBoxSig.Connect(frame, SetIntValCB)
+    else:
+        vw = gi.AddNewTextField(frame, fnm)
+        vw.SetText(str(val))
+        vw.SetPropStr("min-width", "10em")
+        vw.TextFieldSig.Connect(frame, SetStrValCB)
+    if HasTagValue(tags, "inactive", "+"):
+        vw.SetInactive()
+    return vw
+
+def GoObjUpdtView(val, vw, nm):
+    """
+    updates the given view widget for given value
+    """
+    if isinstance(val, bool):
+        if isinstance(vw, gi.CheckBox):
+            svw = gi.CheckBox(vw)
+            svw.SetChecked(val)
+        else:
+            print("epygiv; bool value: %s doesn't have CheckBox widget" % nm)
+    elif isinstance(val, Enum):
+        if isinstance(vw, gi.ComboBox):
+            svw = gi.ComboBox(vw)
+            svw.SetCurVal(val.name)
+        else:
+            print("epygiv; Enum value: %s doesn't have ComboBox widget" % nm)
+    elif isinstance(val, go.GoClass):
+        pass
+    elif isinstance(val, pd.DataFrame):
+        pass
+    elif isinstance(val, ClassViewObj):
+        pass
+    elif isinstance(val, (int, float)):
+        if isinstance(vw, gi.SpinBox):
+            svw = gi.SpinBox(vw)
+            svw.SetValue(val)
+        else:
+            print("epygiv; numerical value: %s doesn't have SpinBox widget" % nm)
+    else:
+        if isinstance(vw, gi.TextField):
+            tvw = gi.TextField(vw)
+            tvw.SetText(str(val))
+        else:
+            print("epygiv; object %s = %s doesn't have expected TextField widget" % (nm, val))
+    
+def GoObjDialog(vp, obj, title):
+    """
+    opens a dialog for given Go object, returns dialog
+    """
+    if obj == 0:
+        return
+    
+    if isinstance(obj, etable.Table):
+        dlg = etview.TableViewDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(obj, eplot.Plot2D):
+        dlg = etview.Plot2DDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(obj, etensor.Tensor):
+        dlg = etview.TensorGridDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(obj, simat.SimMat):
+        dlg = etview.SimMatGridDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(obj, params.Sets):
+        dlg = giv.SliceViewDialogNoStyle(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    elif isinstance(obj, go.Slice_string):
+        dlg = giv.SliceViewDialogNoStyle(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    else:
+        dlg = giv.StructViewDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
+    return dlg
+
 def SetIntValCB(recv, send, sig, data):
     vw = gi.SpinBox(handle=send)
     nm = vw.Name()
@@ -47,20 +168,8 @@ def EditGoObjCB(recv, send, sig, data):
     cv = classviews[nms[0]]
     fld = getattr(cv.Class, nms[1])
     title = nms[1]
-    if isinstance(fld, etable.Table):
-        dlg = etview.TableViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(fld, eplot.Plot2D):
-        dlg = etview.Plot2DDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(fld, etensor.Tensor):
-        dlg = etview.TensorGridDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(fld, simat.SimMat):
-        dlg = etview.SimMatGridDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(fld, params.Sets):
-        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(fld, go.Slice_string):
-        dlg = giv.SliceViewDialogNoStyle(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
-    else:
-        dlg = giv.StructViewDialog(vw.Viewport, fld, giv.DlgOpts(Title=title), go.nil, go.nil)
+    # print("nm: %s  cv: %s  fld: %s" % (nm, cv, fld))
+    return GoObjDialog(vw.Viewport, fld, title)
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)
@@ -68,8 +177,9 @@ def EditObjCB(recv, send, sig, data):
     nms = nm.split(':')
     cv = classviews[nms[0]]
     fld = getattr(cv.Class, nms[1])
-    print("editing object: todo: need a ClassViewDialog")
-    # dlg = giv.StructViewDialog(vw.Vp, fld.opv.Interface(), DlgOpts{Title: tynm, Prompt: desc, TmpSave: vv.TmpSave}, recv, dlgFunc)    
+    tags = cv.FieldTags(nms[1])
+    nnm = nm.replace(":", "_")
+    return ClassViewDialog(vw.Viewport, fld, nnm, tags, giv.DlgOpts(Title=nnm))
 
 def SetStrValCB(recv, send, sig, data):
     if sig != gi.TextFieldDone:
@@ -148,13 +258,6 @@ class ClassView(object):
                     print("ClassView: error in tag formatting for field:", nm, 'should be name:"value", is:', t)
         return tdict
 
-    def HasTagValue(self, tags, tag, value):
-        """ returns true if given tag has given value """
-        if not tag in tags:
-            return False
-        tv = tags[tag]
-        return tv == value
-        
     def Config(self):
         self.Frame.SetStretchMaxWidth()
         self.Frame.SetStretchMaxHeight()
@@ -168,65 +271,12 @@ class ClassView(object):
         self.Views = {}
         for nm, val in flds.items():
             tags = self.FieldTags(nm)
-            if self.HasTagValue(tags, "view", "-"):
+            if HasTagValue(tags, "view", "-"):
                 continue
             lbl = gi.Label(self.Frame.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
             lbl.SetText(nm)
-            if isinstance(val, bool):
-                vw = gi.CheckBox(self.Frame.AddNewChild(gi.KiT_CheckBox(), self.Name + ":" + nm))
-                vw.SetChecked(val)
-                vw.ButtonSig.Connect(self.Frame, SetBoolValCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
-            elif isinstance(val, Enum):
-                vw = gi.ComboBox(self.Frame.AddNewChild(gi.KiT_ComboBox(), self.Name + ":" + nm))
-                vw.SetText(nm)
-                vw.SetPropStr("padding", "2px")
-                vw.SetPropStr("margin", "2px")
-                ItemsFromEnum(vw, val)
-                vw.ComboSig.Connect(self.Frame, SetEnumCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
-            elif isinstance(val, go.GoClass):
-                vw = gi.Action(self.Frame.AddNewChild(gi.KiT_Action(), self.Name + ":" + nm))
-                if hasattr(val, "Label"):
-                    vw.SetText(val.Label())
-                else:
-                    vw.SetText(nm)
-                vw.SetPropStr("padding", "2px")
-                vw.SetPropStr("margin", "2px")
-                vw.SetPropStr("border-radius", "4px")
-                vw.ActionSig.Connect(self.Frame, EditGoObjCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
-            elif isinstance(val, pd.DataFrame):
-                vw = gi.Action(self.Frame.AddNewChild(gi.KiT_Action(), self.Name + ":" + nm))
-                vw.SetText(nm)
-                vw.SetPropStr("padding", "2px")
-                vw.SetPropStr("margin", "2px")
-                vw.SetPropStr("border-radius", "4px")
-                vw.ActionSig.Connect(self.Frame, EditObjCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
-            elif isinstance(val, (int, float)):
-                vw = gi.SpinBox(self.Frame.AddNewChild(gi.KiT_SpinBox(), self.Name + ":" + nm))
-                vw.SetValue(val)
-                vw.SpinBoxSig.Connect(self.Frame, SetIntValCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
-            else:
-                vw = gi.TextField(self.Frame.AddNewChild(gi.KiT_TextField(), self.Name + ":" + nm))
-                vw.SetText(str(val))
-                vw.SetPropStr("min-width", "10em")
-                vw.TextFieldSig.Connect(self.Frame, SetStrValCB)
-                if self.HasTagValue(tags, "inactive", "+"):
-                    vw.SetInactive()
-                self.Views[nm] = vw
+            vw = GoObjView(val, nm, self.Frame, self.Name, tags)
+            self.Views[nm] = vw
         self.Frame.UpdateEnd(updt)
         
     def Update(self):
@@ -235,21 +285,38 @@ class ClassView(object):
             if nm in self.Views:
                 vw = self.Views[nm]
                 # print("updating:", nm, "view:", vw)
-                if isinstance(val, bool):
-                    svw = gi.CheckBox(vw)
-                    svw.SetChecked(val)
-                elif isinstance(val, Enum):
-                    svw = gi.ComboBox(vw)
-                    svw.SetCurVal(val.name)
-                elif isinstance(val, go.GoClass):
-                    pass
-                elif isinstance(val, pd.DataFrame):
-                    pass
-                elif isinstance(val, (int, float)):
-                    svw = gi.SpinBox(vw)
-                    svw.SetValue(val)
-                else:
-                    tvw = gi.TextField(vw)
-                    tvw.SetText(str(val))
+                GoObjUpdtView(val, vw, nm)
 
+def ClassViewDialog(vp, obj, name, tags, opts):
+    """
+    ClassViewDialog returns a dialog with ClassView editor for python
+    class objects under GoGi.
+    opts must be a giv.DlgOpts instance
+    """
+    dlg = gi.NewStdDialog(opts.ToGiOpts(), opts.Ok, opts.Cancel)
+    frame = dlg.Frame()
+    prIdx = dlg.PromptWidgetIdx(frame)
 
+    cv = ClassView(name, tags)
+    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIdx+1, "cv-frame"))
+    cv.SetClass(obj)
+    
+    # sv.Viewport = dlg.Embed(gi.KiT_Viewport2D).(*gi.Viewport2D)
+    # if opts.Inactive {
+    #     sv.SetInactive()
+    # }
+
+    dlg.UpdateEndNoSig(True)
+    dlg.Open(0, 0, vp, go.nil)
+    return dlg
+
+    
+class ClassViewObj(object):
+    """
+    this is the base class for any user-defined class that should be displayed
+    with its own separate ClassView dialog
+    """
+    def __init__(self):
+        pass
+
+    
