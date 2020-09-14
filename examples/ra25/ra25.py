@@ -142,7 +142,7 @@ def UpdtFuncRunning(act):
 #####################################################    
 #     Sim
 
-class Sim(object):
+class Sim(epygiv.ClassViewObj):
     """
     Sim encapsulates the entire simulation model, and we define all the
     functionality as methods on this struct.  This structure keeps all relevant
@@ -151,111 +151,130 @@ class Sim(object):
     for the fields which provide hints to how things should be displayed).
     """
     def __init__(ss):
-        ss.Net = leabra.Network()
-        ss.Pats     = etable.Table()
-        ss.TrnEpcLog   = etable.Table()
-        ss.TstEpcLog   = etable.Table()
-        ss.TstTrlLog   = etable.Table()
-        ss.TstErrLog   = etable.Table()
-        ss.TstErrStats = etable.Table()
-        ss.TstCycLog   = etable.Table()
-        ss.RunLog      = etable.Table()
-        ss.RunStats    = etable.Table()
-        ss.Params     = params.Sets()
-        ss.ParamSet = ""
-        ss.Tag      = ""
-        ss.MaxRuns  = 10
-        ss.MaxEpcs  = 50
-        ss.NZeroStop = 5
-        ss.TrainEnv = env.FixedTable()
-        ss.TestEnv  = env.FixedTable()
-        ss.Time     = leabra.Time()
-        ss.ViewOn   = True
-        ss.TrainUpdt = leabra.AlphaCycle
-        ss.TestUpdt = leabra.Cycle
+        super(Sim, ss).__init__()  # must call before calling SetTags on anything
+        ss.Net          = leabra.Network()
+        ss.SetTags("Net", 'view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"')
+        ss.Pats         = etable.Table()
+        ss.SetTags("Pats", 'view:"no-inline" desc:"the training patterns to use"')
+        ss.TrnEpcLog    = etable.Table()
+        ss.SetTags("TrnEpLog", 'view:"no-inline" desc:"training epoch-level log data"')
+        ss.TstEpcLog    = etable.Table()
+        ss.SetTags("TstEpcLog", 'view:"no-inline" desc:"testing epoch-level log data"')
+        ss.TstTrlLog    = etable.Table()
+        ss.SetTags("TstTrlLog", 'view:"no-inline" desc:"testing trial-level log data"')
+        ss.TstErrLog    = etable.Table()
+        ss.SetTags("TstErrLog", 'view:"no-inline" desc:"log of all test trials where errors were made"')
+        ss.TstErrStats  = etable.Table()
+        ss.SetTags("TstErrStats", 'view:"no-inline" desc:"stats on test trials where errors were made"')
+        ss.TstCycLog    = etable.Table()
+        ss.SetTags("TstCycLog", 'view:"no-inline" desc:"testing cycle-level log data"')
+        ss.RunLog       = etable.Table()
+        ss.SetTags("RunLog", 'view:"no-inline" desc:"summary log of each run"')
+        ss.RunStats     = etable.Table()
+        ss.SetTags("RunStats", 'view:"no-inline" desc:"aggregate stats on all runs"')
+        ss.Params       = params.Sets()
+        ss.SetTags("Params", 'view:"no-inline" desc:"full collection of param sets"')
+        ss.ParamSet     = ""
+        ss.SetTags("ParamSet", 'desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don\'t put spaces in ParamSet names!)"')
+        ss.Tag          = ""
+        ss.SetTags("Tag", 'desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"')
+        ss.MaxRuns      = 10
+        ss.SetTags("MaxRuns", 'desc:"maximum number of model runs to perform"')
+        ss.MaxEpcs      = 50
+        ss.SetTags("MaxEpcs", 'desc:"maximum number of epochs to run per model run"')
+        ss.NZeroStop    = 5
+        ss.SetTags("NZeroStop", 'desc:"if a positive number, training will stop after this many epochs with zero SSE"')
+        ss.TrainEnv     = env.FixedTable()
+        ss.SetTags("TrainEnv", 'desc:"Training environment -- contains everything about iterating over input / output patterns over training"')
+        ss.TestEnv      = env.FixedTable()
+        ss.SetTags("TestEnv", 'desc:"Testing environment -- manages iterating over testing"')
+        ss.Time         = leabra.Time()
+        ss.SetTags("Time", 'desc:"leabra timing parameters and state"')
+        ss.ViewOn       = True
+        ss.SetTags("ViewOn", 'desc:"whether to update the network view while running"')
+        ss.TrainUpdt    = leabra.AlphaCycle
+        ss.SetTags("TrainUpdt", 'desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"')
+        ss.TestUpdt     = leabra.Cycle
+        ss.SetTags("TestUpdt", 'desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"')
         ss.TestInterval = 5
-        ss.LayStatNms  = go.Slice_string(["Hidden1", "Hidden2", "Output"])
-        
-        # statistics
-        ss.TrlErr     = 0.0
-        ss.TrlSSE     = 0.0
-        ss.TrlAvgSSE  = 0.0
-        ss.TrlCosDiff = 0.0
-        ss.EpcSSE     = 0.0
-        ss.EpcAvgSSE  = 0.0
-        ss.EpcPctErr  = 0.0
-        ss.EpcPctCor  = 0.0
-        ss.EpcCosDiff = 0.0
-        ss.FirstZero  = -1
-        ss.NZero      = 0
-        
-        # internal state - view:"-"
-        ss.SumErr     = 0.0
-        ss.SumSSE     = 0.0
-        ss.SumAvgSSE  = 0.0
-        ss.SumCosDiff = 0.0
-        ss.CntErr     = 0.0
-        ss.Win        = 0
-        ss.vp         = 0
-        ss.ToolBar    = 0
-        ss.NetView    = 0
-        ss.TrnEpcPlot = 0
-        ss.TstEpcPlot = 0
-        ss.TstTrlPlot = 0
-        ss.TstCycPlot = 0
-        ss.RunPlot    = 0
-        ss.TrnEpcFile = 0
-        ss.RunFile    = 0
-        ss.SaveWts    = False
+        ss.SetTags("TestInterval", 'desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"')
+        ss.LayStatNms   = go.Slice_string(["Hidden1", "Hidden2", "Output"])
+        ss.SetTags("LayStatNms", 'desc:"names of layers to collect more detailed stats on (avg act, etc)"')
+
+        ss.TrlErr        = 0.0
+        ss.SetTags("TrlErr", 'inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"')# statistics: note use float64 as that is best for etable.Table
+        ss.TrlSSE        = 0.0
+        ss.SetTags("TrlSSE", 'inactive:"+" desc:"current trial\'s sum squared error"')
+        ss.TrlAvgSSE     = 0.0
+        ss.SetTags("TrlAvgSSE", 'inactive:"+" desc:"current trial\'s average sum squared error"')
+        ss.TrlCosDiff    = 0.0
+        ss.SetTags("TrlCosDiff", 'inactive:"+" desc:"current trial\'s cosine difference"')
+        ss.EpcSSE        = 0.0
+        ss.SetTags("EpcSSE", 'inactive:"+" desc:"last epoch\'s total sum squared error"')
+        ss.EpcAvgSSE     = 0.0
+        ss.SetTags("EpcAvgSSE", 'inactive:"+" desc:"last epoch\'s average sum squared error (average over trials, and over units within layer)"')
+        ss.EpcPctErr     = 0.0
+        ss.SetTags("EpcPctErr", 'inactive:"+" desc:"last epoch\'s average TrlErr"')
+        ss.EpcPctCor     = 0.0
+        ss.SetTags("EpcPctCor", 'inactive:"+" desc:"1 - last epoch\'s average TrlErr"')
+        ss.EpcCosDiff    = 0.0
+        ss.SetTags("EpcCosDiff", 'inactive:"+" desc:"last epoch\'s average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"')
+        ss.EpcPerTrlMSec = 0.0
+        ss.SetTags("EpcPerTrlMSec", 'inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"')
+        ss.FirstZero     = -1
+        ss.SetTags("FirstZero", 'inactive:"+" desc:"epoch at when SSE first went to zero"')
+        ss.NZero         = 0
+        ss.SetTags("NZero", 'inactive:"+" desc:"number of epochs in a row with zero SSE"')
+
+        ss.SumErr       = 0.0
+        ss.SetTags("SumErr", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')# internal state - view:"-"
+        ss.SumSSE       = 0.0
+        ss.SetTags("SumSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        ss.SumAvgSSE    = 0.0
+        ss.SetTags("SumAvgSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        ss.SumCosDiff   = 0.0
+        ss.SetTags("SumCosDiff", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        ss.Win          = 0
+        ss.SetTags("Win", 'view:"-" desc:"main GUI window"')
+        ss.NetView      = 0
+        ss.SetTags("NetView", 'view:"-" desc:"the network viewer"')
+        ss.ToolBar      = 0
+        ss.SetTags("ToolBar", 'view:"-" desc:"the master toolbar"')
+        ss.TrnEpcPlot   = 0
+        ss.SetTags("TrnEpcPlot", 'view:"-" desc:"the training epoch plot"')
+        ss.TstEpcPlot   = 0
+        ss.SetTags("TstEpcPlot", 'view:"-" desc:"the testing epoch plot"')
+        ss.TstTrlPlot   = 0
+        ss.SetTags("TstTrlPlot", 'view:"-" desc:"the test-trial plot"')
+        ss.TstCycPlot   = 0
+        ss.SetTags("TstCycPlot", 'view:"-" desc:"the test-cycle plot"')
+        ss.RunPlot      = 0
+        ss.SetTags("RunPlot", 'view:"-" desc:"the run plot"')
+        ss.TrnEpcFile   = 0 
+        ss.SetTags("TrnEpcFile", 'view:"-" desc:"log file"')
+        ss.RunFile      = 0
+        ss.SetTags("RunFile", 'view:"-" desc:"log file"')
+        ss.ValsTsrs     = {}
+        ss.SetTags("ValsTsrs", 'view:"-" desc:"for holding layer values"')
+        ss.SaveWts      = False
+        ss.SetTags("SaveWts", 'view:"-" desc:"for command-line run only, auto-save final weights after each run"')
         ss.NoGui        = False
+        ss.SetTags("NoGui", 'view:"-" desc:"if true, runing in no GUI mode"')
         ss.LogSetParams = False
+        ss.SetTags("LogSetParams", 'view:"-" desc:"if true, print message for all params that are set"')
         ss.IsRunning    = False
-        ss.StopNow    = False
-        ss.NeedsNewRun = False
-        ss.RndSeed    = 0
-        ss.ValsTsrs   = {}
-       
-        # ClassView tags for controlling display of fields
-        ss.Tags = {
-            'TrlErr': 'inactive:"+"',
-            'TrlSSE': 'inactive:"+"',
-            'TrlAvgSSE': 'inactive:"+"',
-            'TrlCosDiff': 'inactive:"+"',
-            'EpcSSE': 'inactive:"+"',
-            'EpcAvgSSE': 'inactive:"+"',
-            'EpcPctErr': 'inactive:"+"',
-            'EpcPctCor': 'inactive:"+"',
-            'EpcCosDiff': 'inactive:"+"',
-            'FirstZero': 'inactive:"+"',
-            'NZero': 'inactive:"+"',
-            'SumErr': 'view:"-"',
-            'SumSSE': 'view:"-"',
-            'SumAvgSSE': 'view:"-"',
-            'SumCosDiff': 'view:"-"',
-            'CntErr': 'view:"-"',
-            'Win': 'view:"-"',
-            'vp': 'view:"-"',
-            'ToolBar': 'view:"-"',
-            'NetView': 'view:"-"',
-            'TrnEpcPlot': 'view:"-"',
-            'TstEpcPlot': 'view:"-"',
-            'TstTrlPlot': 'view:"-"',
-            'TstCycPlot': 'view:"-"',
-            'RunPlot': 'view:"-"',
-            'TrnEpcFile': 'view:"-"',
-            'RunFile': 'view:"-"',
-            'SaveWts': 'view:"-"',
-            'NoGui': 'view:"-"',
-            'LogSetParams': 'view:"-"',
-            'IsRunning': 'view:"-"',
-            'StopNow': 'view:"-"',
-            'RndSeed': 'view:"-"',
-            'NeedsNewRun': 'view:"-"',
-            'ValsTsrs': 'view:"-"',
-            'ClassView': 'view:"-"',
-            'Tags': 'view:"-"',
-        }
-    
+        ss.SetTags("IsRunning", 'view:"-" desc:"true if sim is running"')
+        ss.StopNow      = False
+        ss.SetTags("StopNow", 'view:"-" desc:"flag to stop running"')
+        ss.NeedsNewRun  = False
+        ss.SetTags("NeedsNewRun", 'view:"-" desc:"flag to initialize NewRun if last one finished"')
+        ss.RndSeed      = 1
+        ss.SetTags("RndSeed", 'view:"-" desc:"the current random seed"')
+        ss.LastEpcTime  = 0 
+        ss.SetTags("LastEpcTime", 'view:"-" desc:"timer for last epoch"')
+        ss.vp  = 0 
+        ss.SetTags("vp", 'view:"-" desc:"viewport"')
+
     def InitParams(ss):
         """
         Sets the default set of parameters -- Base is always applied, and others can be optionally
@@ -601,7 +620,7 @@ class Sim(object):
             if ss.ToolBar != 0:
                 ss.ToolBar.UpdateActions()
             vp.SetNeedsFullRender()
-            ss.ClassView.Update()
+            ss.UpdateClassView()
 
     def SaveWeights(ss, filename):
         """
@@ -1149,9 +1168,9 @@ class Sim(object):
         split.Dim = mat32.X
         split.SetStretchMax()
 
-        ss.ClassView = epygiv.ClassView("sv", ss.Tags)
-        ss.ClassView.AddFrame(split)
-        ss.ClassView.SetClass(ss)
+        cv = ss.NewClassView("sv")
+        cv.AddFrame(split)
+        cv.Config()
 
         tv = gi.AddNewTabView(split, "tv")
 
