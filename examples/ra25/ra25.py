@@ -21,7 +21,7 @@
 
 # labra25ra runs a simple random-associator 5x5 = 25 four-layer leabra network
 
-from leabra import go, leabra, emer, relpos, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv, epygiv, mat32
+from leabra import go, leabra, emer, relpos, eplot, env, agg, patgen, prjn, etable, efile, split, etensor, params, netview, rand, erand, gi, giv, pygiv, pyparams, mat32
 
 import importlib as il  #il.reload(ra25) -- doesn't seem to work for reasons unknown
 import io, sys, getopt
@@ -142,7 +142,7 @@ def UpdtFuncRunning(act):
 #####################################################    
 #     Sim
 
-class Sim(epygiv.ClassViewObj):
+class Sim(pygiv.ClassViewObj):
     """
     Sim encapsulates the entire simulation model, and we define all the
     functionality as methods on this struct.  This structure keeps all relevant
@@ -718,7 +718,7 @@ class Sim(epygiv.ClassViewObj):
         if sheet == "" or sheet == "Sim":
             if "Sim" in pset.Sheets:
                 simp= pset.SheetByNameTry("Sim")
-                epygiv.ApplyParams(ss, simp, setMsg)
+                pyparams.ApplyParams(ss, simp, setMsg)
 
     def ConfigPats(ss):
         dt = ss.Pats

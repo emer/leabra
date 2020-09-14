@@ -34,6 +34,7 @@ install-pkg:
 	# this does a local install of the package, building the sdist and then directly installing it
 	# copy epygiv.py to leabra so it will be installed along with rest
 	cp pygiv/pygiv.py leabra/
+	cp pygiv/pyparams.py leabra/
 	rm -rf dist build */*.egg-info *.egg-info
 	$(PYTHON) setup.py sdist
 	$(PIP) install dist/*.tar.gz

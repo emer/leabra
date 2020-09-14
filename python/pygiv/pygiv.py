@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from leabra import go, gi, giv, etable, etview, params, simat, eplot, etensor
+from leabra import go, gi, giv
 from enum import Enum
 
+# todo: represent pandas with equivalent datatable?
 import pandas as pd
 
 class ClassViewObj(object):
@@ -136,30 +137,6 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     dlg.Open(0, 0, vp, go.nil)
     return dlg
 
-    
-
-# ApplyParams applies params.Sheet to cls
-def ApplyParams(cls, sheet, setMsg):
-    flds = cls.__dict__
-    for sl in sheet:
-        sel = params.Sel(handle=sl)
-        for nm, val in sel.Params:
-            flnm = nm.split('.')[1]
-            # print("name: %s, value: %s\n" % (flnm, val))
-            if flnm in flds:
-                cur = getattr(cls, flnm)
-                if isinstance(cur, int):
-                    setattr(cls, flnm, int(val))
-                elif isinstance(cur, float):
-                    setattr(cls, flnm, float(val))
-                else:
-                    setattr(cls, flnm, val)
-                if setMsg:
-                    print("Field named: %s set to value: %s\n" % (flnm, val))
-            else:
-                print("ApplyParams error: field: %s not found in class\n" % flnm)
-                
-
 # classviews is a dictionary of classviews -- needed for callbacks
 classviews = {}
 
@@ -250,29 +227,6 @@ def PyObjUpdtView(val, vw, nm):
         else:
             print("epygiv; object %s = %s doesn't have expected TextField widget" % (nm, val))
     
-def GoObjDialog(vp, obj, title):
-    """
-    opens a dialog for given Go object, returns dialog
-    """
-    if obj == 0:
-        return
-    
-    if isinstance(obj, etable.Table):
-        dlg = etview.TableViewDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(obj, eplot.Plot2D):
-        dlg = etview.Plot2DDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(obj, etensor.Tensor):
-        dlg = etview.TensorGridDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(obj, simat.SimMat):
-        dlg = etview.SimMatGridDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(obj, params.Sets):
-        dlg = giv.SliceViewDialogNoStyle(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    elif isinstance(obj, go.Slice_string):
-        dlg = giv.SliceViewDialogNoStyle(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    else:
-        dlg = giv.StructViewDialog(vp, obj, giv.DlgOpts(Title=title), go.nil, go.nil)
-    return dlg
-
 def SetIntValCB(recv, send, sig, data):
     vw = gi.SpinBox(handle=send)
     nm = vw.Name()
@@ -280,16 +234,6 @@ def SetIntValCB(recv, send, sig, data):
     nms = nm.split(':')
     cv = classviews[nms[0]]
     setattr(cv.Class, nms[1], vw.Value)
-
-def EditGoObjCB(recv, send, sig, data):
-    vw = gi.Action(handle=send)
-    nm = vw.Name()
-    nms = nm.split(':')
-    cv = classviews[nms[0]]
-    fld = getattr(cv.Class, nms[1])
-    title = nms[1]
-    # print("nm: %s  cv: %s  fld: %s" % (nm, cv, fld))
-    return GoObjDialog(vw.Viewport, fld, title)
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)
