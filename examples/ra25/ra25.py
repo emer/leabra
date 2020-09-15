@@ -150,130 +150,134 @@ class Sim(pygiv.ClassViewObj):
     as arguments to methods, and provides the core GUI interface (note the view tags
     for the fields which provide hints to how things should be displayed).
     """
-    def __init__(ss):
-        super(Sim, ss).__init__()  # must call before calling SetTags on anything
-        ss.Net          = leabra.Network()
-        ss.SetTags("Net", 'view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"')
-        ss.Pats         = etable.Table()
-        ss.SetTags("Pats", 'view:"no-inline" desc:"the training patterns to use"')
-        ss.TrnEpcLog    = etable.Table()
-        ss.SetTags("TrnEpLog", 'view:"no-inline" desc:"training epoch-level log data"')
-        ss.TstEpcLog    = etable.Table()
-        ss.SetTags("TstEpcLog", 'view:"no-inline" desc:"testing epoch-level log data"')
-        ss.TstTrlLog    = etable.Table()
-        ss.SetTags("TstTrlLog", 'view:"no-inline" desc:"testing trial-level log data"')
-        ss.TstErrLog    = etable.Table()
-        ss.SetTags("TstErrLog", 'view:"no-inline" desc:"log of all test trials where errors were made"')
-        ss.TstErrStats  = etable.Table()
-        ss.SetTags("TstErrStats", 'view:"no-inline" desc:"stats on test trials where errors were made"')
-        ss.TstCycLog    = etable.Table()
-        ss.SetTags("TstCycLog", 'view:"no-inline" desc:"testing cycle-level log data"')
-        ss.RunLog       = etable.Table()
-        ss.SetTags("RunLog", 'view:"no-inline" desc:"summary log of each run"')
-        ss.RunStats     = etable.Table()
-        ss.SetTags("RunStats", 'view:"no-inline" desc:"aggregate stats on all runs"')
-        ss.Params       = params.Sets()
-        ss.SetTags("Params", 'view:"no-inline" desc:"full collection of param sets"')
-        ss.ParamSet     = ""
-        ss.SetTags("ParamSet", 'desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don\'t put spaces in ParamSet names!)"')
-        ss.Tag          = ""
-        ss.SetTags("Tag", 'desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"')
-        ss.MaxRuns      = 10
-        ss.SetTags("MaxRuns", 'desc:"maximum number of model runs to perform"')
-        ss.MaxEpcs      = 50
-        ss.SetTags("MaxEpcs", 'desc:"maximum number of epochs to run per model run"')
-        ss.NZeroStop    = 5
-        ss.SetTags("NZeroStop", 'desc:"if a positive number, training will stop after this many epochs with zero SSE"')
-        ss.TrainEnv     = env.FixedTable()
-        ss.SetTags("TrainEnv", 'desc:"Training environment -- contains everything about iterating over input / output patterns over training"')
-        ss.TestEnv      = env.FixedTable()
-        ss.SetTags("TestEnv", 'desc:"Testing environment -- manages iterating over testing"')
-        ss.Time         = leabra.Time()
-        ss.SetTags("Time", 'desc:"leabra timing parameters and state"')
-        ss.ViewOn       = True
-        ss.SetTags("ViewOn", 'desc:"whether to update the network view while running"')
-        ss.TrainUpdt    = leabra.AlphaCycle
-        ss.SetTags("TrainUpdt", 'desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"')
-        ss.TestUpdt     = leabra.Cycle
-        ss.SetTags("TestUpdt", 'desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"')
-        ss.TestInterval = 5
-        ss.SetTags("TestInterval", 'desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"')
-        ss.LayStatNms   = go.Slice_string(["Hidden1", "Hidden2", "Output"])
-        ss.SetTags("LayStatNms", 'desc:"names of layers to collect more detailed stats on (avg act, etc)"')
 
-        ss.TrlErr        = 0.0
-        ss.SetTags("TrlErr", 'inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"')# statistics: note use float64 as that is best for etable.Table
-        ss.TrlSSE        = 0.0
-        ss.SetTags("TrlSSE", 'inactive:"+" desc:"current trial\'s sum squared error"')
-        ss.TrlAvgSSE     = 0.0
-        ss.SetTags("TrlAvgSSE", 'inactive:"+" desc:"current trial\'s average sum squared error"')
-        ss.TrlCosDiff    = 0.0
-        ss.SetTags("TrlCosDiff", 'inactive:"+" desc:"current trial\'s cosine difference"')
-        ss.EpcSSE        = 0.0
-        ss.SetTags("EpcSSE", 'inactive:"+" desc:"last epoch\'s total sum squared error"')
-        ss.EpcAvgSSE     = 0.0
-        ss.SetTags("EpcAvgSSE", 'inactive:"+" desc:"last epoch\'s average sum squared error (average over trials, and over units within layer)"')
-        ss.EpcPctErr     = 0.0
-        ss.SetTags("EpcPctErr", 'inactive:"+" desc:"last epoch\'s average TrlErr"')
-        ss.EpcPctCor     = 0.0
-        ss.SetTags("EpcPctCor", 'inactive:"+" desc:"1 - last epoch\'s average TrlErr"')
-        ss.EpcCosDiff    = 0.0
-        ss.SetTags("EpcCosDiff", 'inactive:"+" desc:"last epoch\'s average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"')
-        ss.EpcPerTrlMSec = 0.0
-        ss.SetTags("EpcPerTrlMSec", 'inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"')
-        ss.FirstZero     = -1
-        ss.SetTags("FirstZero", 'inactive:"+" desc:"epoch at when SSE first went to zero"')
-        ss.NZero         = 0
-        ss.SetTags("NZero", 'inactive:"+" desc:"number of epochs in a row with zero SSE"')
+    def __init__(self):
+        super(Sim, self).__init__()
+        self.Net = leabra.Network()
+        self.SetTags("Net", 'view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"')
+        self.Pats = etable.Table()
+        self.SetTags("Pats", 'view:"no-inline" desc:"the training patterns to use"')
+        self.TrnEpcLog = etable.Table()
+        self.SetTags("TrnEpcLog", 'view:"no-inline" desc:"training epoch-level log data"')
+        self.TstEpcLog = etable.Table()
+        self.SetTags("TstEpcLog", 'view:"no-inline" desc:"testing epoch-level log data"')
+        self.TstTrlLog = etable.Table()
+        self.SetTags("TstTrlLog", 'view:"no-inline" desc:"testing trial-level log data"')
+        self.TstErrLog = etable.Table()
+        self.SetTags("TstErrLog", 'view:"no-inline" desc:"log of all test trials where errors were made"')
+        self.TstErrStats = etable.Table()
+        self.SetTags("TstErrStats", 'view:"no-inline" desc:"stats on test trials where errors were made"')
+        self.TstCycLog = etable.Table()
+        self.SetTags("TstCycLog", 'view:"no-inline" desc:"testing cycle-level log data"')
+        self.RunLog = etable.Table()
+        self.SetTags("RunLog", 'view:"no-inline" desc:"summary log of each run"')
+        self.RunStats = etable.Table()
+        self.SetTags("RunStats", 'view:"no-inline" desc:"aggregate stats on all runs"')
+        self.Params = params.Sets()
+        self.SetTags("Params", 'view:"no-inline" desc:"full collection of param sets"')
+        self.ParamSet = str()
+        self.SetTags("ParamSet", 'desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don\'t put spaces in ParamSet names!)"')
+        self.Tag = str()
+        self.SetTags("Tag", 'desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"')
+        self.MaxRuns = int(10)
+        self.SetTags("MaxRuns", 'desc:"maximum number of model runs to perform"')
+        self.MaxEpcs = int(50)
+        self.SetTags("MaxEpcs", 'desc:"maximum number of epochs to run per model run"')
+        self.NZeroStop = int(5)
+        self.SetTags("NZeroStop", 'desc:"if a positive number, training will stop after this many epochs with zero SSE"')
+        self.TrainEnv = env.FixedTable()
+        self.SetTags("TrainEnv", 'desc:"Training environment -- contains everything about iterating over input / output patterns over training"')
+        self.TestEnv = env.FixedTable()
+        self.SetTags("TestEnv", 'desc:"Testing environment -- manages iterating over testing"')
+        self.Time = leabra.Time()
+        self.SetTags("Time", 'desc:"leabra timing parameters and state"')
+        self.ViewOn = True
+        self.SetTags("ViewOn", 'desc:"whether to update the network view while running"')
+        self.TrainUpdt = leabra.TimeScales.AlphaCycle
+        self.SetTags("TrainUpdt", 'desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"')
+        self.TestUpdt = leabra.TimeScales.Cycle
+        self.SetTags("TestUpdt", 'desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"')
+        self.TestInterval = int(5)
+        self.SetTags("TestInterval", 'desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"')
+        self.LayStatNms = go.Slice_string(["Hidden1", "Hidden2", "Output"])
+        self.SetTags("LayStatNms", 'desc:"names of layers to collect more detailed stats on (avg act, etc)"')
 
-        ss.SumErr       = 0.0
-        ss.SetTags("SumErr", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')# internal state - view:"-"
-        ss.SumSSE       = 0.0
-        ss.SetTags("SumSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
-        ss.SumAvgSSE    = 0.0
-        ss.SetTags("SumAvgSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
-        ss.SumCosDiff   = 0.0
-        ss.SetTags("SumCosDiff", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
-        ss.Win          = 0
-        ss.SetTags("Win", 'view:"-" desc:"main GUI window"')
-        ss.NetView      = 0
-        ss.SetTags("NetView", 'view:"-" desc:"the network viewer"')
-        ss.ToolBar      = 0
-        ss.SetTags("ToolBar", 'view:"-" desc:"the master toolbar"')
-        ss.TrnEpcPlot   = 0
-        ss.SetTags("TrnEpcPlot", 'view:"-" desc:"the training epoch plot"')
-        ss.TstEpcPlot   = 0
-        ss.SetTags("TstEpcPlot", 'view:"-" desc:"the testing epoch plot"')
-        ss.TstTrlPlot   = 0
-        ss.SetTags("TstTrlPlot", 'view:"-" desc:"the test-trial plot"')
-        ss.TstCycPlot   = 0
-        ss.SetTags("TstCycPlot", 'view:"-" desc:"the test-cycle plot"')
-        ss.RunPlot      = 0
-        ss.SetTags("RunPlot", 'view:"-" desc:"the run plot"')
-        ss.TrnEpcFile   = 0 
-        ss.SetTags("TrnEpcFile", 'view:"-" desc:"log file"')
-        ss.RunFile      = 0
-        ss.SetTags("RunFile", 'view:"-" desc:"log file"')
-        ss.ValsTsrs     = {}
-        ss.SetTags("ValsTsrs", 'view:"-" desc:"for holding layer values"')
-        ss.SaveWts      = False
-        ss.SetTags("SaveWts", 'view:"-" desc:"for command-line run only, auto-save final weights after each run"')
-        ss.NoGui        = False
-        ss.SetTags("NoGui", 'view:"-" desc:"if true, runing in no GUI mode"')
-        ss.LogSetParams = False
-        ss.SetTags("LogSetParams", 'view:"-" desc:"if true, print message for all params that are set"')
-        ss.IsRunning    = False
-        ss.SetTags("IsRunning", 'view:"-" desc:"true if sim is running"')
-        ss.StopNow      = False
-        ss.SetTags("StopNow", 'view:"-" desc:"flag to stop running"')
-        ss.NeedsNewRun  = False
-        ss.SetTags("NeedsNewRun", 'view:"-" desc:"flag to initialize NewRun if last one finished"')
-        ss.RndSeed      = 1
-        ss.SetTags("RndSeed", 'view:"-" desc:"the current random seed"')
-        ss.LastEpcTime  = 0 
-        ss.SetTags("LastEpcTime", 'view:"-" desc:"timer for last epoch"')
-        ss.vp  = 0 
-        ss.SetTags("vp", 'view:"-" desc:"viewport"')
+        # statistics: note use float64 as that is best for etable.Table
+        self.TrlErr = float()
+        self.SetTags("TrlErr", 'inactive:"+" desc:"1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)"')
+        self.TrlSSE = float()
+        self.SetTags("TrlSSE", 'inactive:"+" desc:"current trial\'s sum squared error"')
+        self.TrlAvgSSE = float()
+        self.SetTags("TrlAvgSSE", 'inactive:"+" desc:"current trial\'s average sum squared error"')
+        self.TrlCosDiff = float()
+        self.SetTags("TrlCosDiff", 'inactive:"+" desc:"current trial\'s cosine difference"')
+        self.EpcSSE = float()
+        self.SetTags("EpcSSE", 'inactive:"+" desc:"last epoch\'s total sum squared error"')
+        self.EpcAvgSSE = float()
+        self.SetTags("EpcAvgSSE", 'inactive:"+" desc:"last epoch\'s average sum squared error (average over trials, and over units within layer)"')
+        self.EpcPctErr = float()
+        self.SetTags("EpcPctErr", 'inactive:"+" desc:"last epoch\'s average TrlErr"')
+        self.EpcPctCor = float()
+        self.SetTags("EpcPctCor", 'inactive:"+" desc:"1 - last epoch\'s average TrlErr"')
+        self.EpcCosDiff = float()
+        self.SetTags("EpcCosDiff", 'inactive:"+" desc:"last epoch\'s average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"')
+        self.EpcPerTrlMSec = float()
+        self.SetTags("EpcPerTrlMSec", 'inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"')
+        self.FirstZero = int()
+        self.SetTags("FirstZero", 'inactive:"+" desc:"epoch at when SSE first went to zero"')
+        self.NZero = int()
+        self.SetTags("NZero", 'inactive:"+" desc:"number of epochs in a row with zero SSE"')
+
+        # internal state - view:"-"
+        self.SumErr = float()
+        self.SetTags("SumErr", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        self.SumSSE = float()
+        self.SetTags("SumSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        self.SumAvgSSE = float()
+        self.SetTags("SumAvgSSE", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+        self.SumCosDiff = float()
+        self.SetTags("SumCosDiff", 'view:"-" inactive:"+" desc:"sum to increment as we go through epoch"')
+
+        self.Win = 0
+        self.SetTags("Win", 'view:"-" desc:"main GUI window"')
+        self.NetView = 0
+        self.SetTags("NetView", 'view:"-" desc:"the network viewer"')
+        self.ToolBar = 0
+        self.SetTags("ToolBar", 'view:"-" desc:"the master toolbar"')
+        self.TrnEpcPlot = 0
+        self.SetTags("TrnEpcPlot", 'view:"-" desc:"the training epoch plot"')
+        self.TstEpcPlot = 0
+        self.SetTags("TstEpcPlot", 'view:"-" desc:"the testing epoch plot"')
+        self.TstTrlPlot = 0
+        self.SetTags("TstTrlPlot", 'view:"-" desc:"the test-trial plot"')
+        self.TstCycPlot = 0
+        self.SetTags("TstCycPlot", 'view:"-" desc:"the test-cycle plot"')
+        self.RunPlot = 0
+        self.SetTags("RunPlot", 'view:"-" desc:"the run plot"')
+        self.TrnEpcFile = 0
+        self.SetTags("TrnEpcFile", 'view:"-" desc:"log file"')
+        self.RunFile = 0
+        self.SetTags("RunFile", 'view:"-" desc:"log file"')
+        self.ValsTsrs = {}
+        self.SetTags("ValsTsrs", 'view:"-" desc:"for holding layer values"')
+        self.SaveWts = False
+        self.SetTags("SaveWts", 'view:"-" desc:"for command-line run only, auto-save final weights after each run"')
+        self.NoGui = False
+        self.SetTags("NoGui", 'view:"-" desc:"if true, runing in no GUI mode"')
+        self.LogSetParams = False
+        self.SetTags("LogSetParams", 'view:"-" desc:"if true, print message for all params that are set"')
+        self.IsRunning = False
+        self.SetTags("IsRunning", 'view:"-" desc:"true if sim is running"')
+        self.StopNow = False
+        self.SetTags("StopNow", 'view:"-" desc:"flag to stop running"')
+        self.NeedsNewRun = False
+        self.SetTags("NeedsNewRun", 'view:"-" desc:"flag to initialize NewRun if last one finished"')
+        self.RndSeed = int(1)
+        self.SetTags("RndSeed", 'view:"-" desc:"the current random seed"')
+        self.LastEpcTime = int()
+        self.SetTags("LastEpcTime", 'view:"-" desc:"timer for last epoch"')
+        self.vp  = 0 
+        self.SetTags("vp", 'view:"-" desc:"viewport"')
 
     def InitParams(ss):
         """
@@ -409,9 +413,9 @@ class Sim(pygiv.ClassViewObj):
 
         if ss.Win != 0:
             ss.Win.PollEvents() # this is essential for GUI responsiveness while running
-        viewUpdt = ss.TrainUpdt
+        viewUpdt = ss.TrainUpdt.value
         if not train:
-            viewUpdt = ss.TestUpdt
+            viewUpdt = ss.TestUpdt.value
 
         # update prior weight changes at start, so any DWt values remain visible at end
         # you might want to do this less frequently to achieve a mini-batch update
@@ -483,7 +487,7 @@ class Sim(pygiv.ClassViewObj):
 
         if chg:
             ss.LogTrnEpc(ss.TrnEpcLog)
-            if ss.ViewOn and ss.TrainUpdt > leabra.AlphaCycle:
+            if ss.ViewOn and ss.TrainUpdt.value > leabra.AlphaCycle:
                 ss.UpdateView(True)
             if ss.TestInterval > 0 and epc%ss.TestInterval == 0: # note: epc is *next* so won't trigger first time
                 ss.TestAll()
@@ -637,7 +641,7 @@ class Sim(pygiv.ClassViewObj):
 
         chg = env.CounterChg(ss.TestEnv, env.Epoch)
         if chg:
-            if ss.ViewOn and ss.TestUpdt > leabra.AlphaCycle:
+            if ss.ViewOn and ss.TestUpdt.value > leabra.AlphaCycle:
                 ss.UpdateView(False)
             ss.LogTstEpc(ss.TstEpcLog)
             if returnOnChg:
@@ -724,10 +728,11 @@ class Sim(pygiv.ClassViewObj):
         dt = ss.Pats
         dt.SetMetaData("name", "TrainPats")
         dt.SetMetaData("desc", "Training patterns")
-        sch = etable.Schema()
-        sch.append(etable.Column("Name", etensor.STRING, go.nil, go.nil))
-        sch.append(etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
-        sch.append(etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])))
+        sch = etable.Schema(
+            [etable.Column("Name", etensor.STRING, go.nil, go.nil),
+            etable.Column("Input", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"])),
+            etable.Column("Output", etensor.FLOAT32, go.Slice_int([5, 5]), go.Slice_string(["Y", "X"]))]
+        )
         dt.SetFromSchema(sch, 25)
 
         patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
@@ -839,15 +844,16 @@ class Sim(pygiv.ClassViewObj):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PerTrlMSec", etensor.FLOAT64, go.nil, go.nil))
+        sch = etable.Schema(
+            [etable.Column("Run", etensor.INT64, go.nil, go.nil),
+            etable.Column("Epoch", etensor.INT64, go.nil, go.nil),
+            etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PerTrlMSec", etensor.FLOAT64, go.nil, go.nil)]
+        )
         for lnm in ss.LayStatNms:
             sch.append(etable.Column(lnm + "_ActAvg", etensor.FLOAT64, go.nil, go.nil))
         dt.SetFromSchema(sch, 0)
@@ -919,16 +925,16 @@ class Sim(pygiv.ClassViewObj):
         dt.SetMetaData("precision", str(LogPrec))
 
         nt = ss.TestEnv.Table.Len() # number in view
-        sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("Trial", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("TrialName", etensor.STRING, go.nil, go.nil))
-        sch.append(etable.Column("Err", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
-        
+        sch = etable.Schema(
+            [etable.Column("Run", etensor.INT64, go.nil, go.nil),
+            etable.Column("Epoch", etensor.INT64, go.nil, go.nil),
+            etable.Column("Trial", etensor.INT64, go.nil, go.nil),
+            etable.Column("TrialName", etensor.STRING, go.nil, go.nil),
+            etable.Column("Err", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil)]
+        )
         for lnm in ss.LayStatNms :
             sch.append(etable.Column(lnm + " ActM.Avg", etensor.FLOAT64, go.nil, go.nil))
             
@@ -1001,14 +1007,15 @@ class Sim(pygiv.ClassViewObj):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("Epoch", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
+        sch = etable.Schema(
+            [etable.Column("Run", etensor.INT64, go.nil, go.nil),
+            etable.Column("Epoch", etensor.INT64, go.nil, go.nil),
+            etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil)]
+        )
         dt.SetFromSchema(sch, 0)
 
     def ConfigTstEpcPlot(ss, plt, dt):
@@ -1050,9 +1057,9 @@ class Sim(pygiv.ClassViewObj):
         dt.SetMetaData("precision", str(LogPrec))
 
         np = 100 # max cycles
-        sch = etable.Schema()
-        sch.append(etable.Column("Cycle", etensor.INT64, go.nil, go.nil))
-        
+        sch = etable.Schema(
+            [etable.Column("Cycle", etensor.INT64, go.nil, go.nil)]
+        )
         for lnm in ss.LayStatNms:
             sch.append(etable.Column(lnm + " Ge.Avg", etensor.FLOAT64, go.nil, go.nil))
             sch.append(etable.Column(lnm + " Act.Avg", etensor.FLOAT64, go.nil, go.nil))
@@ -1116,15 +1123,16 @@ class Sim(pygiv.ClassViewObj):
         dt.SetMetaData("read-only", "true")
         dt.SetMetaData("precision", str(LogPrec))
 
-        sch = etable.Schema()
-        sch.append(etable.Column("Run", etensor.INT64, go.nil, go.nil))
-        sch.append(etable.Column("Params", etensor.STRING, go.nil, go.nil))
-        sch.append(etable.Column("FirstZero", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil))
-        sch.append(etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil))
+        sch = etable.Schema(
+            [etable.Column("Run", etensor.INT64, go.nil, go.nil),
+            etable.Column("Params", etensor.STRING, go.nil, go.nil),
+            etable.Column("FirstZero", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("SSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("AvgSSE", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctErr", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("PctCor", etensor.FLOAT64, go.nil, go.nil),
+            etable.Column("CosDiff", etensor.FLOAT64, go.nil, go.nil)]
+        )
         dt.SetFromSchema(sch, 0)
 
     def ConfigRunPlot(ss, plt, dt):

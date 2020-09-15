@@ -80,6 +80,7 @@ class ClassView(object):
         self.Frame.DeleteChildren(True)
         flds = self.Class.__dict__
         self.Views = {}
+        self.Widgets = {}
         for nm, val in flds.items():
             tags = self.FieldTags(nm)
             if HasTagValue(tags, "view", "-") or nm == "Tags" or nm == "ClassView" or nm == "ClassViewDialog":
@@ -104,15 +105,16 @@ class ClassView(object):
         self.Frame.UpdateEnd(updt)
         
     def Update(self):
+        wupdt = self.Frame.TopUpdateStart()
         flds = self.Class.__dict__
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
-                # print("updating:", nm, "view:", vw)
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
                 PyObjUpdtView(val, vw, nm)
+        self.Frame.TopUpdateEnd(wupdt)
 
 def ClassViewDialog(vp, obj, name, tags, opts):
     """
@@ -139,6 +141,10 @@ def ClassViewDialog(vp, obj, name, tags, opts):
 
 # classviews is a dictionary of classviews -- needed for callbacks
 classviews = {}
+
+def TagValue(tags, key):
+    """ returns tag value for given key """
+    return giv.StructTagVal(key, tags)
 
 def HasTagValue(tags, key, value):
     """ returns true if given key has given value """
@@ -182,12 +188,31 @@ def PyObjView(val, nm, frame, ctxt, tags):
     elif isinstance(val, (int, float)):
         vw = gi.AddNewSpinBox(frame, fnm)
         vw.SetValue(val)
-        vw.SpinBoxSig.Connect(frame, SetIntValCB)
+        if isinstance(val, int):
+            vw.SpinBoxSig.Connect(frame, SetIntValCB)
+            vw.Step = 1
+        else:
+            vw.SpinBoxSig.Connect(frame, SetFloatValCB)
+        mv = TagValue(tags, "min")
+        if mv != "":
+            vw.SetMin(float(mv))
+        mv = TagValue(tags, "max")
+        if mv != "":
+            vw.SetMax(float(mv))
+        mv = TagValue(tags, "step")
+        if mv != "":
+            vw.Step = float(step)
+        mv = TagValue(tags, "format")
+        if mv != "":
+            vw.Format = mv
     else:
         vw = gi.AddNewTextField(frame, fnm)
         vw.SetText(str(val))
         vw.SetPropStr("min-width", "10em")
         vw.TextFieldSig.Connect(frame, SetStrValCB)
+        mv = TagValue(tags, "width")
+        if mv != "":
+            vw.SetProp("width", units.NewCh(float(width)))
     if HasTagValue(tags, "inactive", "+"):
         vw.SetInactive()
     return vw
@@ -230,10 +255,16 @@ def PyObjUpdtView(val, vw, nm):
 def SetIntValCB(recv, send, sig, data):
     vw = gi.SpinBox(handle=send)
     nm = vw.Name()
-    # print("spin name:", nm)
     nms = nm.split(':')
     cv = classviews[nms[0]]
-    setattr(cv.Class, nms[1], vw.Value)
+    setattr(cv.Class, nms[1], int(vw.Value))
+
+def SetFloatValCB(recv, send, sig, data):
+    vw = gi.SpinBox(handle=send)
+    nm = vw.Name()
+    nms = nm.split(':')
+    cv = classviews[nms[0]]
+    setattr(cv.Class, nms[1], float(vw.Value))
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)
