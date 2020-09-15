@@ -5,7 +5,16 @@
 package leabra
 
 import (
+	"fmt"
+	"math"
+	"math/rand"
+	"strings"
+	"unsafe"
+
+	"github.com/c2h5oh/datasize"
+	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/ki"
@@ -416,6 +425,161 @@ func (nt *Network) SetDWts(dwts []float32) {
 			idx += ns
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//  Misc Reports / Threading Allocation
+
+// SizeReport returns a string reporting the size of each layer and projection
+// in the network, and total memory footprint.
+func (nt *Network) SizeReport() string {
+	var b strings.Builder
+	neur := 0
+	neurMem := 0
+	syn := 0
+	synMem := 0
+	for _, lyi := range nt.Layers {
+		ly := lyi.(LeabraLayer).AsLeabra()
+		nn := len(ly.Neurons)
+		nmem := nn * int(unsafe.Sizeof(Neuron{}))
+		neur += nn
+		neurMem += nmem
+		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Nm, nn, (datasize.ByteSize)(nmem).HumanReadable())
+		for _, pji := range ly.SndPrjns {
+			pj := pji.(LeabraPrjn).AsLeabra()
+			ns := len(pj.Syns)
+			syn += ns
+			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPrjn{}))
+			synMem += pmem
+			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pj.Recv.Name(), ns, (datasize.ByteSize)(pmem).HumanReadable())
+		}
+	}
+	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Nm, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
+	return b.String()
+}
+
+// ThreadAlloc allocates layers to given number of threads,
+// attempting to evenly divide computation.  Returns report
+// of thread allocations and estimated computational cost per thread.
+func (nt *Network) ThreadAlloc(nThread int) string {
+	nl := len(nt.Layers)
+	if nl < nThread {
+		return fmt.Sprintf("Number of threads: %d > number of layers: %d -- must be less\n", nThread, nl)
+	}
+	if nl == nThread {
+		for li, lyi := range nt.Layers {
+			ly := lyi.(LeabraLayer).AsLeabra()
+			ly.SetThread(li)
+		}
+		return fmt.Sprintf("Number of threads: %d == number of layers: %d\n", nThread, nl)
+	}
+
+	type td struct {
+		Lays []int
+		Neur int // neur cost
+		Syn  int // send syn cost
+		Tot  int // total cost
+	}
+
+	avgFunc := func(thds []td) float32 {
+		avg := 0
+		for i := range thds {
+			avg += thds[i].Tot
+		}
+		return float32(avg) / float32(len(thds))
+	}
+
+	devFunc := func(thds []td) float32 {
+		avg := avgFunc(thds)
+		dev := float32(0)
+		for i := range thds {
+			dev += math32.Abs(float32(thds[i].Tot) - avg)
+		}
+		return float32(dev) / float32(len(thds))
+	}
+
+	// cache per-layer data first
+	ld := make([]td, nl)
+	for li, lyi := range nt.Layers {
+		ly := lyi.(LeabraLayer).AsLeabra()
+		ld[li].Neur, ld[li].Syn, ld[li].Tot = ly.CostEst()
+	}
+
+	// number of initial random permutations to create
+	initN := 100
+	pth := float64(nl) / float64(nThread)
+	if pth < 2 {
+		initN = 10
+	} else if pth > 3 {
+		initN = 500
+	}
+	thrs := make([][]td, initN)
+	devs := make([]float32, initN)
+	ord := rand.Perm(nl)
+	minDev := float32(1.0e20)
+	minDevIdx := -1
+	for ti := 0; ti < initN; ti++ {
+		thds := &thrs[ti]
+		*thds = make([]td, nThread)
+		for t := 0; t < nThread; t++ {
+			thd := &(*thds)[t]
+			ist := int(math.Round(float64(t) * pth))
+			ied := int(math.Round(float64(t+1) * pth))
+			thd.Neur = 0
+			thd.Syn = 0
+			for i := ist; i < ied; i++ {
+				li := ord[i]
+				thd.Neur += ld[li].Neur
+				thd.Syn += ld[li].Syn
+				thd.Tot += ld[li].Tot
+				thd.Lays = append(thd.Lays, ord[i])
+			}
+		}
+		dev := devFunc(*thds)
+		if dev < minDev {
+			minDev = dev
+			minDevIdx = ti
+		}
+		devs[ti] = dev
+		erand.PermuteInts(ord)
+	}
+
+	// todo: could optimize best case further by trying to switch one layer at random with each other
+	// thread, and seeing if that is faster..  but probably not worth it given inaccuracy of estimate.
+
+	var b strings.Builder
+	b.WriteString(nt.ThreadReport())
+
+	fmt.Fprintf(&b, "Deviation: %s \t Idx: %d\n", (datasize.ByteSize)(minDev).HumanReadable(), minDevIdx)
+
+	nt.StopThreads()
+	nt.BuildThreads()
+	nt.StartThreads()
+
+	return b.String()
+}
+
+// ThreadReport returns report of thread allocations and
+// estimated computational cost per thread.
+func (nt *Network) ThreadReport() string {
+	var b strings.Builder
+	// p := message.NewPrinter(language.English)
+	fmt.Fprintf(&b, "Network: %s Auto Thread Allocation for %d threads:\n", nt.Nm, nt.NThreads)
+	for th := 0; th < nt.NThreads; th++ {
+		tneur := 0
+		tsyn := 0
+		ttot := 0
+		for _, lyi := range nt.ThrLay[th] {
+			ly := lyi.(LeabraLayer).AsLeabra()
+			neur, syn, tot := ly.CostEst()
+			tneur += neur
+			tsyn += syn
+			ttot += tot
+			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Nm, tot/1000, neur/1000, syn/1000)
+		}
+		fmt.Fprintf(&b, "Thread: %d \t cost: %d K \t neur: %d K \t syn: %d K\n", th, ttot/1000, tneur/1000, tsyn/1000)
+	}
+	return b.String()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
