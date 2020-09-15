@@ -13,8 +13,6 @@ import (
 	"github.com/emer/leabra/examples/pvlv/data"
 	"github.com/emer/leabra/pvlv"
 	"github.com/goki/ki/kit"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"strconv"
@@ -189,16 +187,6 @@ const (
 )
 
 var KiT_ContextModel = kit.Enums.AddEnum(ContextModelN, kit.NotBitFlag, nil)
-
-func ReadParamsYaml(fn string) *params.Sets {
-	var result params.Sets
-	b, err := ioutil.ReadFile(fn)
-	if err != nil {
-		panic(err)
-	}
-	err = yaml.Unmarshal(b, &result)
-	return &result
-}
 
 func (ev *PVLVEnv) Counters() []env.TimeScales {
 	return []env.TimeScales{env.Run, env.Epoch, env.Trial}
