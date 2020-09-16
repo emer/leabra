@@ -1,12 +1,9 @@
-# Copyright (c) 2019, The Emergent Authors. All rights reserved.
+# Copyright (c) 2019, The GoKi Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
 from leabra import go, gi, giv
 from enum import Enum
-
-# todo: represent pandas with equivalent datatable?
-import pandas as pd
 
 class ClassViewObj(object):
     """
@@ -17,6 +14,7 @@ class ClassViewObj(object):
     def __init__(self):
         self.Tags = {}
         self.ClassView = 0
+        self.ClassViewInline = 0
         self.ClassViewDialog = 0
     
     def SetTags(self, field, tags):
@@ -30,27 +28,111 @@ class ClassViewObj(object):
         if self.ClassView != 0:
             self.ClassView.Update()
     
+    def NewClassViewInline(self, name):
+        self.ClassViewInline = ClassViewInline(self, name)
+        return self.ClassViewInline
+
+    def UpdateClassViewInline(self):
+        if self.ClassViewInline != 0:
+            self.ClassViewInline.Update()
+        
     def OpenViewDialog(self, vp, name, tags):
         """ opens a new dialog window for this object, or if one already exists, raises it """
-        if self.ClassViewDialog != 0:
-            self.ClassViewDialog.Win.OSWin.Raise()
+        if self.ClassViewDialog != 0 and self.ClassViewDialog.Win.IsVisible():
+            self.ClassViewDialog.Win.Raise()
             return
-        self.ClassViewDialog(vw.Viewport, self, name, tags, giv.DlgOpts(Title=name))
+        self.ClassViewDialog = ClassViewDialog(vp, self, name, tags, giv.DlgOpts(Title=name))
+        return self.ClassViewDialog
         
-class ClassView(object):
+class ClassViewInline(object):
     """
-    ClassView provides GoGi giv.StructView like editor for python class objects under GoGi.
+    ClassViewInline provides GoGi giv.StructViewInline like inline editor for 
+    python class objects under GoGi.
     Due to limitations on calling python callbacks across threads, you must pass a unique
-    name to the constructor, along with a dictionary of tags using the same syntax as the struct
-    field tags in Go: https://github.com/goki/gi/wiki/Tags for customizing the view properties.
-    (space separated, name:"value")
+    name to the constructor.  The object must be a ClassViewObj, with tags using same
+    syntax as the struct field tags in Go: https://github.com/goki/gi/wiki/Tags
+    for customizing the view properties (space separated, name:"value")
     """
     def __init__(self, obj, name):
         """ note: essential to provide a distinctive name for each view """
         self.Class = obj
         self.Name = name
         classviews[name] = self
-        self.Frame = gi.Frame()
+        self.Lay = 0
+        self.Tags = obj.Tags
+        self.Views = {} # dict of ValueView reps of Go objs
+        self.Widgets = {} # dict of Widget reps of Python objs
+        
+    def FieldTags(self, field):
+        """ returns the full string of tags for given field, empty string if none """
+        if field in self.Tags:
+            return self.Tags[field]
+        return ""
+
+    def FieldTagVal(self, field, key):
+        """ returns the value for given key in tags for given field, empty string if none """
+        return giv.StructTagVal(key, self.FieldTags(field))
+
+    def Config(self):
+        self.Lay = gi.Layout()
+        self.Lay.InitName(self.Lay, self.Name)
+        self.Lay.Lay = gi.LayoutHoriz
+        self.Lay.SetStretchMaxWidth()
+        updt = self.Lay.UpdateStart()
+        flds = self.Class.__dict__
+        self.Views = {}
+        self.Widgets = {}
+        for nm, val in flds.items():
+            tags = self.FieldTags(nm)
+            if HasTagValue(tags, "view", "-") or nm == "Tags" or nm.startswith("ClassView"):
+                continue
+            lbl = gi.Label(self.Lay.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
+            lbl.Redrawable = True
+            lbl.SetProp("horizontal-align", "left")
+            lbl.SetText(nm)
+            dsc = self.FieldTagVal(nm, "desc")
+            if dsc != "":
+                lbl.Tooltip = dsc
+            if isinstance(val, go.GoClass):
+                fnm = self.Name + ":" + nm
+                vv = giv.ToValueView(val, tags)
+                giv.SetSoloValueIface(vv, val)
+                vw = self.Lay.AddNewChild(vv.WidgetType(), fnm)
+                vv.ConfigWidget(vw)
+                self.Views[nm] = vv
+                self.Widgets[nm] = vw
+                # todo: vv.ViewSig.Connect?
+            else:
+                vw = PyObjView(val, nm, self.Lay, self.Name, tags)
+                self.Widgets[nm] = vw
+        self.Lay.UpdateEnd(updt)
+        
+    def Update(self):
+        updt = self.Lay.UpdateStart()
+        flds = self.Class.__dict__
+        for nm, val in flds.items():
+            if nm in self.Views:
+                vv = self.Views[nm]
+                vv.UpdateWidget()
+            elif nm in self.Widgets:
+                vw = self.Widgets[nm]
+                PyObjUpdtView(val, vw, nm)
+        self.Lay.UpdateEnd(updt)
+
+class ClassView(object):
+    """
+    ClassView provides GoGi giv.StructView like editor for python class objects under GoGi.
+    Due to limitations on calling python callbacks across threads, you must pass a unique
+    name to the constructor.  The object must be a ClassViewObj, with tags using same
+    syntax as the struct field tags in Go: https://github.com/goki/gi/wiki/Tags
+    for customizing the view properties (space separated, name:"value")
+    """
+    def __init__(self, obj, name):
+        """ note: essential to provide a distinctive name for each view """
+        self.Class = obj
+        self.Name = name
+        classviews[name] = self
+        self.Frame = 0
         self.Tags = obj.Tags
         self.Views = {} # dict of ValueView reps of Go objs
         self.Widgets = {} # dict of Widget reps of Python objs
@@ -83,7 +165,7 @@ class ClassView(object):
         self.Widgets = {}
         for nm, val in flds.items():
             tags = self.FieldTags(nm)
-            if HasTagValue(tags, "view", "-") or nm == "Tags" or nm == "ClassView" or nm == "ClassViewDialog":
+            if HasTagValue(tags, "view", "-") or nm == "Tags" or nm.startswith("ClassView"):
                 continue
             lbl = gi.Label(self.Frame.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
             lbl.SetText(nm)
@@ -105,7 +187,7 @@ class ClassView(object):
         self.Frame.UpdateEnd(updt)
         
     def Update(self):
-        wupdt = self.Frame.TopUpdateStart()
+        updt = self.Frame.UpdateStart()
         flds = self.Class.__dict__
         for nm, val in flds.items():
             if nm in self.Views:
@@ -114,7 +196,7 @@ class ClassView(object):
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
                 PyObjUpdtView(val, vw, nm)
-        self.Frame.TopUpdateEnd(wupdt)
+        self.Frame.UpdateEnd(updt)
 
 def ClassViewDialog(vp, obj, name, tags, opts):
     """
@@ -126,9 +208,9 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     frame = dlg.Frame()
     prIdx = dlg.PromptWidgetIdx(frame)
 
-    cv = ClassView(name, tags)
+    cv = obj.NewClassView(name)
     cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIdx+1, "cv-frame"))
-    cv.SetClass(obj)
+    cv.Config()
     
     # sv.Viewport = dlg.Embed(gi.KiT_Viewport2D).(*gi.Viewport2D)
     # if opts.Inactive {
@@ -168,19 +250,18 @@ def PyObjView(val, nm, frame, ctxt, tags):
         ItemsFromEnum(vw, val)
         vw.ComboSig.Connect(frame, SetEnumCB)
     elif isinstance(val, ClassViewObj):
-        vw = gi.AddNewAction(frame, fnm)
-        vw.SetText(nm)
-        vw.SetPropStr("padding", "2px")
-        vw.SetPropStr("margin", "2px")
-        vw.SetPropStr("border-radius", "4px")
-        vw.ActionSig.Connect(frame, EditObjCB)
-    elif isinstance(val, pd.DataFrame):
-        vw = gi.AddNewAction(frame, fnm)
-        vw.SetText(nm)
-        vw.SetPropStr("padding", "2px")
-        vw.SetPropStr("margin", "2px")
-        vw.SetPropStr("border-radius", "4px")
-        vw.ActionSig.Connect(frame, EditObjCB)
+        if HasTagValue(tags, "view", "inline"):
+            sv = val.NewClassViewInline(fnm)
+            sv.Config()
+            frame.AddChild(sv.Lay)
+            vw = sv.Lay
+        else:
+            vw = gi.AddNewAction(frame, fnm)
+            vw.SetText(nm)
+            vw.SetPropStr("padding", "2px")
+            vw.SetPropStr("margin", "2px")
+            vw.SetPropStr("border-radius", "4px")
+            vw.ActionSig.Connect(frame, EditObjCB)
     elif isinstance(val, bool):
         vw = gi.AddNewCheckBox(frame, fnm)
         vw.SetChecked(val)
@@ -201,7 +282,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
             vw.SetMax(float(mv))
         mv = TagValue(tags, "step")
         if mv != "":
-            vw.Step = float(step)
+            vw.Step = float(mv)
         mv = TagValue(tags, "format")
         if mv != "":
             vw.Format = mv
@@ -229,10 +310,9 @@ def PyObjUpdtView(val, vw, nm):
             print("epygiv; Enum value: %s doesn't have ComboBox widget" % nm)
     elif isinstance(val, go.GoClass):
         pass
-    elif isinstance(val, pd.DataFrame):
-        pass
     elif isinstance(val, ClassViewObj):
-        pass
+        val.UpdateClassViewInline()
+        val.UpdateClassView()
     elif isinstance(val, bool):
         if isinstance(vw, gi.CheckBox):
             svw = gi.CheckBox(vw)
@@ -274,7 +354,7 @@ def EditObjCB(recv, send, sig, data):
     fld = getattr(cv.Class, nms[1])
     tags = cv.FieldTags(nms[1])
     nnm = nm.replace(":", "_")
-    return ClassViewDialog(vw.Viewport, fld, nnm, tags, giv.DlgOpts(Title=nnm))
+    return fld.OpenViewDialog(vw.Viewport, nnm, tags)
 
 def SetStrValCB(recv, send, sig, data):
     if sig != gi.TextFieldDone:
@@ -300,8 +380,11 @@ def SetBoolValCB(recv, send, sig, data):
 
 def ItemsFromEnum(cb, enm):
     nms = []
-    for en in type(enm):
-        nms.append(en.name)
+    typ = type(enm)
+    nnm = typ.__name__ + "N" # common convention of using the type name + N for last item in list
+    for en in typ:
+        if en.name != nnm:
+            nms.append(en.name)
     cb.ItemsFromStringList(go.Slice_string(nms), False, 0)
     cb.SetCurVal(enm.name)
     

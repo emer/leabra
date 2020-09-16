@@ -50,7 +50,7 @@ LogPrec = 4
 
 def InitCB(recv, send, sig, data):
     TheSim.Init()
-    TheSim.ClassView.Update()
+    TheSim.UpdateClassView()
     TheSim.vp.SetNeedsFullRender()
 
 def TrainCB(recv, send, sig, data):
@@ -67,7 +67,7 @@ def StepTrialCB(recv, send, sig, data):
         TheSim.IsRunning = True
         TheSim.TrainTrial()
         TheSim.IsRunning = False
-        TheSim.ClassView.Update()
+        TheSim.UpdateClassView()
         TheSim.vp.SetNeedsFullRender()
 
 def StepEpochCB(recv, send, sig, data):
@@ -87,7 +87,7 @@ def TestTrialCB(recv, send, sig, data):
         TheSim.IsRunning = True
         TheSim.TestTrial(False)
         TheSim.IsRunning = False
-        TheSim.ClassView.Update()
+        TheSim.UpdateClassView()
         TheSim.vp.SetNeedsFullRender()
 
 def TestItemCB2(recv, send, sig, data):

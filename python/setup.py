@@ -5,9 +5,9 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="emergent",
-    version="0.1.0",
+    version="1.1.0",
     author="emergent",
-    author_email="randy.oreilly@colorado.edu",
+    author_email="oreilly@ucdavis.edu",
     description="Python interface to emergent neural network simulation system, in Go",
     long_description=long_description,
     long_description_content_type="text/markdown",
