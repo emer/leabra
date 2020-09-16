@@ -114,32 +114,35 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	//TrialOutputData             *etable.Table     `view:"-" desc:"Trial-level output data"`
 	//EpochOutputData             *etable.Table     `view:"-" desc:"EpochCt-level output data"`
 	//EpochOutputDataCmp             *etable.Table     `view:"-" desc:"EpochCt-level output data copy"`
-	TrialTypeEpochFirstLog    *etable.Table `view:"-" desc:"TODO: FILL THIS IN"`
-	TrialTypeEpochFirstLogCmp *etable.Table `view:"-" desc:"TODO: FILL THIS IN"`
 	//HistoryGraphData          *etable.Table     `view:"-" desc:"data for history graph"`
 	//RealTimeDataLog           *etable.Table     `view:"-"`
 	//TrnEpcLog                 *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	//RunLog                    *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	//RunStats                  *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
-	Time       leabra.Time       `desc:"leabra timing parameters and state"`
-	ViewOn     bool              `desc:"whether to update the network view while running"`
-	TrainUpdt  leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
-	TestUpdt   leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
-	TstRecLays []string          `desc:"names of layers to record activations etc of during testing"`
+	TimeLogEpoch    int               `desc:"current epoch within current run phase"`
+	TimeLogEpochAll int               `desc:"current epoch across all phases of the run"`
+	Time            leabra.Time       `desc:"leabra timing parameters and state"`
+	ViewOn          bool              `desc:"whether to update the network view while running"`
+	TrainUpdt       leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
+	TestUpdt        leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	TstRecLays      []string          `desc:"names of layers to record activations etc of during testing"`
 
 	// internal state - view:"-"
-	Win                    *gi.Window         `view:"-" desc:"main GUI window"`
-	NetView                *netview.NetView   `view:"-" desc:"the network viewer"`
-	ToolBar                *gi.ToolBar        `view:"-" desc:"the master toolbar"`
-	WtsGrid                *etview.TensorGrid `view:"-" desc:"the weights grid view"`
-	TrialTypeData          *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeDataPlot      *eplot.Plot2D      `view:"no-inline" desc:"multiple views for different type of trials"`
-	TrialTypeSet           map[string]int     `view:"-"`
-	TrialTypeSetCounter    int                `view:"-"`
-	TrialTypeEpochFirst    *eplot.Plot2D      `view:"-" desc:"epoch plot"`
-	TrialTypeEpochFirstCmp *eplot.Plot2D      `view:"-" desc:"epoch plot"`
-	HistoryGraph           *eplot.Plot2D      `view:"-" desc:"trial history"`
-	RealTimeData           *eplot.Plot2D      `view:"-" desc:"??"`
+	Win                       *gi.Window         `view:"-" desc:"main GUI window"`
+	NetView                   *netview.NetView   `view:"-" desc:"the network viewer"`
+	ToolBar                   *gi.ToolBar        `view:"-" desc:"the master toolbar"`
+	WtsGrid                   *etview.TensorGrid `view:"-" desc:"the weights grid view"`
+	TrialTypeData             *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
+	TrialTypeEpochFirstLogged map[string]bool
+	TrialTypeEpochFirstLog    *etable.Table  `view:"no-inline" desc:"data for the TrialTypeData plot"`
+	TrialTypeEpochFirstLogCmp *etable.Table  `view:"no-inline" desc:"data for the TrialTypeData plot"`
+	TrialTypeDataPlot         *eplot.Plot2D  `view:"no-inline" desc:"multiple views for different type of trials"`
+	TrialTypeSet              map[string]int `view:"-"`
+	TrialTypeSetCounter       int            `view:"-"`
+	TrialTypeEpochFirst       *eplot.Plot2D  `view:"-" desc:"epoch plot"`
+	TrialTypeEpochFirstCmp    *eplot.Plot2D  `view:"-" desc:"epoch plot"`
+	HistoryGraph              *eplot.Plot2D  `view:"-" desc:"trial history"`
+	RealTimeData              *eplot.Plot2D  `view:"-" desc:"??"`
 
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
@@ -210,10 +213,10 @@ func (ss *Sim) New() {
 	//ss.TrialOutputData = &etable.Table{}
 	//ss.EpochOutputData = &etable.Table{}
 	ss.TrialTypeData = &etable.Table{}
-	ss.TrialTypeSet = map[string]int{}
-	ss.TrialTypeSetCounter = 0
 	ss.TrialTypeEpochFirstLog = &etable.Table{}
 	ss.TrialTypeEpochFirstLogCmp = &etable.Table{}
+	ss.TrialTypeSet = map[string]int{}
+	ss.TrialTypeSetCounter = 0
 	//ss.HistoryGraphData = &etable.Table{}
 	//ss.RealTimeDataLog = &etable.Table{}
 	// TODO: fix these
@@ -251,7 +254,7 @@ func (ss *Sim) New() {
 }
 
 func (ss *Sim) Defaults() {
-	defaultRunSeqNm := "PosAcq_B50"
+	defaultRunSeqNm := "PosAcq"
 	ss.SeqParamsName = defaultRunSeqNm
 	err := ss.SetRunSeqParams()
 	if err != nil {
@@ -543,25 +546,16 @@ func (ss *Sim) ConfigTrialTypeEpochFirstLog(dt *etable.Table, name string) {
 	sch := etable.Schema{}
 
 	colNames := []string{
-		"TrialName", "EpochAll", "Tick", "Time", "Stimulus", "GroupName", "RTCycles", "SSE", "NormErr",
-		"ExtRew", "VTAp_act", "VTAn_act", "LHbRMTg_act", "PosPV_US0_act", "PosPV_US1_act", "NegPV_US0_act",
-		"CEmPos_US0_act", "CEmPos_US1_act", "CEmNeg_US0_act", "BLAmygD1_US0_act", "BLAmygD2_US0_act",
-		"BLAmygD1_US1_act", "BLAmygD2_US1_act", "BLAmygD1_delta", "BLAmygD1_absdif", "BLAmygD2_delta",
-		"BLAmygD2_absdif", "BLAmygD1_fmstim_maxwt", "CElAcqPosD1_US0_act", "CElExtPosD2_US0_act", "CElAcqPosD1_US1_act",
-		"CElExtPosD2_US1_act", "CElAcqNegD2_US0_act", "CElExtNegD1_US0_act", "CElAcqPosD1_US0_act_dif",
-		"CElExtPosD2_US0_act_dif", "VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act", "VSPatchNegD2_US0_act",
-		"VSPatchNegD1_US0_act", "VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act", "VSMatrixPosD1_US1_act",
-		"VSMatrixPosD2_US1_act", "VSMatrixNegD2_US0_act", "VSMatrixNegD1_US0_act", "VTA_glut_input", "VTA_input_to_rmtg",
-		"VTA_pvi_input", "VTA_net_DA", "LHbRMT_netin_avg", "LHbRMT_acts_eq_avg", "LHbRMT_user_data_net_LHb",
-		"VTAp_user_data_LHb_DA", "TrialType", "Batch", "Epoch",
+		"Epoch", "VTAp_act", "BLAmygD1_US0_act", "BLAmygD2_US0_act",
+		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act", "CElAcqNegD2_US0_act",
+		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act",
 	}
 
 	for _, colName := range colNames {
-		switch colName {
-		case "trial_name", "Time", "Stimulus", "group_name", "trial_typ":
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.STRING})
-		default:
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64})
+		if colName == "Epoch" {
+			sch = append(sch, etable.Column{Name: colName, Type: etensor.INT64})
+		} else {
+			sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64, CellShape: []int{15, 1}, DimNames: []string{"Tick", "Value"}})
 		}
 	}
 	dt.SetFromSchema(sch, 0)
@@ -575,6 +569,7 @@ func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
 
 	colNames := []string{
 		"TrialType",
+		"Epoch",
 		"VTAp_act", "VTAn_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
 		"VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act",
@@ -649,15 +644,25 @@ func (ss *Sim) ConfigTrialTypeEpochFirstPlot(plt *eplot.Plot2D, dt *etable.Table
 	plt.Params.XAxisCol = "Epoch"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Epoch", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 1)
-	plt.SetColParams("VTAp_act", eplot.On, eplot.FixMin, -1, eplot.FixMax, 1)
-	plt.SetColParams("BLAmygD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("BLAmygD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
-	plt.SetColParams("CElAcqPosD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("CElExtPosD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("VSMatrixPosD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("VSMatrixPosD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("CElAcqNegD2_US0_act", eplot.Off, eplot.FloatMin, 0, eplot.FloatMin, 1)
+	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+	for _, colNm := range []string{"VTAp_act",
+		"BLAmygD2_US0_act", "BLAmygD1_US0_act",
+		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
+		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act", "CElAcqNegD2_US0_act"} {
+		plt.SetColParams(colNm, eplot.Off, eplot.FixMin, -1, eplot.FixMax, 1)
+		cp := plt.ColParams(colNm)
+		cp.TensorIdx = -1
+		if colNm == "VTAp_act" {
+			cp.On = eplot.On
+		}
+	}
+	//plt.SetColParams("BLAmygD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//plt.SetColParams("BLAmygD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+	//plt.SetColParams("CElAcqPosD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//plt.SetColParams("CElExtPosD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//plt.SetColParams("VSMatrixPosD1_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//plt.SetColParams("VSMatrixPosD2_US0_act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//plt.SetColParams("CElAcqNegD2_US0_act", eplot.Off, eplot.FloatMin, 0, eplot.FloatMin, 1)
 
 	return plt
 }
@@ -1122,6 +1127,9 @@ func (ss *Sim) LogFileName(lognm string) string {
 // LogTrnEpc adds data from current epoch to the TrnEpcLog table.
 // computes epoch averages prior to logging.
 func (ss *Sim) LogTrnEpc(ev *PVLVEnv) {
+	//ss.AggregateTTEpochFirst(ev)
+	//ss.UpdateEpochFirst(ev)
+	ss.TrialTypeEpochFirst.GoUpdate()
 	//row := dt.Rows
 	//dt.SetNumRows(row + 1)
 	//
@@ -1180,6 +1188,29 @@ func (ss *Sim) LogTrnEpc(ev *PVLVEnv) {
 	//	}
 	//	dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
 	//}
+}
+
+// Try to make a more descriptive legend. Does not work
+func (ss *Sim) UpdateEpochFirst(ev *PVLVEnv) {
+	plt := ss.TrialTypeEpochFirst
+	for cpi := range plt.Cols {
+		cp := plt.Cols[cpi]
+		for ttn, _ := range ss.TrialTypeSet {
+			parts := strings.Split(ttn, "_")
+			stim := parts[0]
+			val := ""
+			omit := ""
+			if parts[2] == "POS" {
+				val = "+"
+			} else {
+				val = "-"
+			}
+			if parts[3] == "omit" {
+				omit = "~"
+			}
+			cp.Lbl = cp.Col + ":" + omit + stim + val
+		}
+	}
 }
 
 func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
@@ -1477,6 +1508,7 @@ func (ss *Sim) InitRun(ev *PVLVEnv) error {
 	ss.Net.InitActs()
 	ss.InitStats()
 	ss.ClearCycleData()
+	ss.TimeLogEpoch = 0
 	return nil
 }
 
@@ -1516,6 +1548,7 @@ func (ss *Sim) TrainMultiRun() bool {
 		ss.Win.Viewport.SetNeedsFullRender()
 		ss.StructView.FullRender2DTree()
 	}
+	ss.TimeLogEpochAll = 0
 	for i, seqStep := range seqSteps {
 		activateStep(i, seqStep)
 		if ev.CurRunParams.Nm == "NullStep" {
@@ -1638,7 +1671,7 @@ func (ss *Sim) SaveLogFiles() {
 // end SaveLogFiles functions
 
 // TrialAnalysis and its functions
-func (ss *Sim) TrialAnalysis() {
+func (ss *Sim) TrialAnalysis(ev *PVLVEnv) {
 	//if !ss.Interactive {
 	//	ss.AllTrialData.ResetData()
 	//	ss.FirstRun = true
@@ -1655,10 +1688,6 @@ func (ss *Sim) TrialAnalysis() {
 	//		ss.AnalyzeTicks(ev)
 	//	}
 	//}
-}
-
-func (ss *Sim) TrialMonitor() {
-
 }
 
 func (ss *Sim) GetNewData() {
@@ -1687,11 +1716,12 @@ func (ss *Sim) AnalyzeTicksExistingData(ev *PVLVEnv) {
 
 func (ss *Sim) SetTrialTypeDataXLabels(ev *PVLVEnv) {
 	tgNmMap := map[string]string{}
+	ss.TrialTypeEpochFirstLogged = map[string]bool{}
 	ev.TrialInstances.Reset()
 	ticks := 0
 	for !ev.TrialInstances.AtEnd() {
 		tg := ev.TrialInstances.ReadNext()
-		name := tg.TrialName + "_t"
+		name := tg.TrialName + "_t" // hack: include _t to make omit trials sort before rewarded trials
 		if ticks == 0 {
 			ticks = tg.AlphaTicksPerTrialGp
 		}
@@ -1713,6 +1743,7 @@ func (ss *Sim) SetTrialTypeDataXLabels(ev *PVLVEnv) {
 			fullName := name + strconv.Itoa(j)
 			ss.TrialTypeSet[fullName] = row
 			dt.SetCellString("TrialType", row, fullName)
+			ss.TrialTypeEpochFirstLogged[fullName] = false
 		}
 	}
 	ss.TrialTypeSetCounter = len(names) * ticks
@@ -1720,6 +1751,7 @@ func (ss *Sim) SetTrialTypeDataXLabels(ev *PVLVEnv) {
 
 func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 	dt := ss.TrialTypeData
+	efdt := ss.TrialTypeEpochFirstLog
 	row, ok := ss.TrialTypeSet[ev.AlphaTrialName]
 	if !ok {
 		row = ss.TrialTypeSetCounter
@@ -1731,11 +1763,11 @@ func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 		dt.SetCellString("TrialType", row, ev.AlphaTrialName)
 	}
 	for _, colNm := range dt.ColNames {
-		if colNm != "TrialType" {
+		if colNm != "TrialType" && colNm != "Epoch" {
 			parts := strings.Split(colNm, "_")
 			lnm := parts[0]
 			if parts[1] != "act" {
-
+				// ??
 			}
 			tsr := ss.ValsTsr(lnm)
 			ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
@@ -1744,6 +1776,15 @@ func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 				dt.SetCellTensor(colNm, row, tsr)
 			} else {
 				fmt.Println(err)
+			}
+			if !ss.TrialTypeEpochFirstLogged[ev.AlphaTrialName] {
+				ss.TrialTypeEpochFirstLogged[ev.AlphaTrialName] = true
+				efRow := ss.TimeLogEpochAll
+				if efdt.Rows <= efRow {
+					efdt.SetNumRows(efRow + 1)
+				}
+				efdt.SetCellFloat("Epoch", efRow, float64(efRow))
+				efdt.SetCellTensorFloat1D(colNm, efRow, ss.TrialTypeSet[ev.AlphaTrialName], float64(tsr.Values[0]))
 			}
 		}
 	}
@@ -1816,10 +1857,13 @@ func (ss *Sim) TimeAggTickData(ev *PVLVEnv) {
 
 func (ss *Sim) EpochMonitor(ev *PVLVEnv) {
 	ss.LogTrnEpc(ev)
+	ss.TimeLogEpoch += 1
+	ss.TimeLogEpochAll += 1
 }
 
-func (ss *Sim) TrialStats(accum bool) {
-}
+//func (ss *Sim) TrialStats(ev *PVLVEnv, accum bool) {
+//	fmt.Println(trialType, tick)
+//}
 
 // InitStats initializes all the statistics, especially important for the
 // cumulative epoch stats -- called at start of new run
@@ -1886,7 +1930,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	return verbose, threads
 }
 
-func (ss *Sim) GetEnvParams(nm string) (*data.EpochParamsRecs, bool) {
+func (ss *Sim) GetEpochParams(nm string) (*data.EpochParamsRecs, bool) {
 	groups, ok := ss.MasterEpochParams[nm]
 	ret := data.NewEpochParamsRecs(&groups)
 	return ret, ok

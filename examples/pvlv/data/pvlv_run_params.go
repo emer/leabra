@@ -7,7 +7,7 @@ package data
 type RunParams struct {
 	Nm               string `desc:"identifier for this type of configuration"`
 	Desc             string `desc:"description of this configuration"`
-	EnvParamsTable   string `desc:"trial group name"`
+	EpochParamsTable string `desc:"trial group name"`
 	FixedProb        bool   `desc:"fixed probability for each trial group"`
 	RunProg          string `view:"-"`
 	InitProg         string `view:"-"`
@@ -40,7 +40,7 @@ func AllRunParams() RunParamsMap {
 		"RunMaster": {
 			Nm:               "RunMaster",
 			Desc:             "default values for basic training parameters -- this is a 'master' param set -- make changes here and all others in group will auto-update",
-			EnvParamsTable:   "PosAcq",
+			EpochParamsTable: "PosAcq",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -69,7 +69,7 @@ func AllRunParams() RunParamsMap {
 		"NullStep": {
 			Nm:               "NullStep",
 			Desc:             "use for unused steps in sequences",
-			EnvParamsTable:   "PosAcq",
+			EpochParamsTable: "BlankTemplate",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -98,7 +98,7 @@ func AllRunParams() RunParamsMap {
 		"AutomatedTesting": {
 			Nm:               "AutomatedTesting",
 			Desc:             "This is the startup paramset for automated testing. The individual elements will get reset based on the sub Paramsets",
-			EnvParamsTable:   "PosAcq",
+			EpochParamsTable: "PosAcq",
 			FixedProb:        true,
 			RunProg:          "",
 			InitProg:         "",
@@ -127,7 +127,7 @@ func AllRunParams() RunParamsMap {
 		"USDebug": {
 			Nm:               "USDebug",
 			Desc:             "For debugging, 100% reward, CS A",
-			EnvParamsTable:   "USDebug",
+			EpochParamsTable: "USDebug",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -156,7 +156,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_B50": {
 			Nm:               "PosAcq_B50",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50%",
-			EnvParamsTable:   "PosAcq_B50",
+			EpochParamsTable: "PosAcq_B50",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -185,7 +185,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_A50": {
 			Nm:               "PosAcq_A50",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS at 50%",
-			EnvParamsTable:   "PosAcq_A50",
+			EpochParamsTable: "PosAcq_A50",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -214,7 +214,7 @@ func AllRunParams() RunParamsMap {
 		"US0": {
 			Nm:               "US0",
 			Desc:             "No US at all",
-			EnvParamsTable:   "US0",
+			EpochParamsTable: "US0",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -243,7 +243,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_pre_second_order": {
 			Nm:               "PosAcq_pre_second_order",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50%",
-			EnvParamsTable:   "PosAcq_pre_second_order",
+			EpochParamsTable: "PosAcq_pre_second_order",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -272,7 +272,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_B50_cont": {
 			Nm:               "PosAcq_B50_cont",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50% reinf, continue using prior weights",
-			EnvParamsTable:   "PosReacq",
+			EpochParamsTable: "PosReacq",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -301,7 +301,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_B100": {
 			Nm:               "PosAcq_B100",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 100%",
-			EnvParamsTable:   "PosAcq_B100",
+			EpochParamsTable: "PosAcq_B100",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -330,7 +330,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_B100_Cont": {
 			Nm:               "PosAcq_B100_cont",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS -- continue w/ wts",
-			EnvParamsTable:   "PosAcq_B100_cont",
+			EpochParamsTable: "PosAcq_B100_cont",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -359,7 +359,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcqEarlyUS_test": {
 			Nm:               "PosAcqEarlyUS_test",
 			Desc:             "Testing session: after pos_acq trng, deliver US early or late",
-			EnvParamsTable:   "PosAcqEarlyUS_test",
+			EpochParamsTable: "PosAcqEarlyUS_test",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -388,7 +388,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_B25": {
 			Nm:               "PosAcq_B25",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS",
-			EnvParamsTable:   "PosAcq_B25",
+			EpochParamsTable: "PosAcq_B25",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -417,7 +417,7 @@ func AllRunParams() RunParamsMap {
 		"PosExtinct": {
 			Nm:               "PosExtinct",
 			Desc:             "Pavlovian extinction: A_NRf_POS",
-			EnvParamsTable:   "PosExtinct",
+			EpochParamsTable: "PosExtinct",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -446,7 +446,7 @@ func AllRunParams() RunParamsMap {
 		"PosCondInhib": {
 			Nm:               "PosCondInhib",
 			Desc:             "conditioned inhibition training: AX_NRf_POS, A_Rf_POS interleaved",
-			EnvParamsTable:   "PosCondInhib",
+			EpochParamsTable: "PosCondInhib",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -475,7 +475,7 @@ func AllRunParams() RunParamsMap {
 		"PosSecondOrderCond": {
 			Nm:               "PosSecondOrderCond",
 			Desc:             "second order conditionig training: AB_NRf_POS, A_Rf_POS interleaved; A = 1st order, F = 2nd order CS",
-			EnvParamsTable:   "PosSecondOrderCond",
+			EpochParamsTable: "PosSecondOrderCond",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -504,7 +504,7 @@ func AllRunParams() RunParamsMap {
 		"PosCondInhib_test": {
 			Nm:               "PosCondInhib_test",
 			Desc:             "Testing session: A_NRf_POS, AX_NRf_POS, and X_NRf_POS cases",
-			EnvParamsTable:   "PosCondInhib_test",
+			EpochParamsTable: "PosCondInhib_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -533,7 +533,7 @@ func AllRunParams() RunParamsMap {
 		"NegAcq": {
 			Nm:               "NegAcq",
 			Desc:             "Pavlovian conditioning w/ negatively-valenced US: D_Rf_NEG",
-			EnvParamsTable:   "NegAcq",
+			EpochParamsTable: "NegAcq",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -562,7 +562,7 @@ func AllRunParams() RunParamsMap {
 		"NegAcqFixedProb": {
 			Nm:               "NegAcqFixedProb",
 			Desc:             "Pavlovian conditioning w/ negatively-valenced US: A_Rf_NEG",
-			EnvParamsTable:   "NegAcq",
+			EpochParamsTable: "NegAcq",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -591,7 +591,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcqOmit": {
 			Nm:               "PosAcqOmit",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			EnvParamsTable:   "PosAcqOmit",
+			EpochParamsTable: "PosAcqOmit",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -620,7 +620,7 @@ func AllRunParams() RunParamsMap {
 		"NegCondInh": {
 			Nm:               "NegCondInh",
 			Desc:             "condition inhibition w/ negatively-valenced US: CZ_NRf_NEG, C_Rf_NEG interleaved; i.e.,  Z = security signal",
-			EnvParamsTable:   "NegCondInhib",
+			EpochParamsTable: "NegCondInhib",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -649,7 +649,7 @@ func AllRunParams() RunParamsMap {
 		"NegCondInh_test": {
 			Nm:               "NegCondInh_test",
 			Desc:             "condition inhibition w/ negatively-valenced US: CZ_NRf_NEG, C_Rf_NEG interleaved; i.e.,  Z = security signal",
-			EnvParamsTable:   "NegCondInhib_test",
+			EpochParamsTable: "NegCondInhib_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -678,7 +678,7 @@ func AllRunParams() RunParamsMap {
 		"NegExtinct": {
 			Nm:               "NegExtinct",
 			Desc:             "Pavlovian conditioning w/ negatively-valenced US: A_Rf_NEG",
-			EnvParamsTable:   "NegExtinct",
+			EpochParamsTable: "NegExtinct",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -707,7 +707,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_contextA": {
 			Nm:               "PosAcq_contextA",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			EnvParamsTable:   "PosAcq_contextA",
+			EpochParamsTable: "PosAcq_contextA",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -736,7 +736,7 @@ func AllRunParams() RunParamsMap {
 		"PosExtinct_contextB": {
 			Nm:               "PosExtinct_contextB",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			EnvParamsTable:   "PosExtinct_contextB",
+			EpochParamsTable: "PosExtinct_contextB",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -765,7 +765,7 @@ func AllRunParams() RunParamsMap {
 		"PosRenewal_contextA": {
 			Nm:               "PosRenewal_contextA",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			EnvParamsTable:   "PosRenewal_contextA",
+			EpochParamsTable: "PosRenewal_contextA",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -794,7 +794,7 @@ func AllRunParams() RunParamsMap {
 		"PosBlocking_A_training": {
 			Nm:               "PosBlocking_A_training",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "PosBlocking_A_training",
+			EpochParamsTable: "PosBlocking_A_training",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -823,7 +823,7 @@ func AllRunParams() RunParamsMap {
 		"PosBlocking": {
 			Nm:               "PosBlocking",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "PosBlocking",
+			EpochParamsTable: "PosBlocking",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -852,7 +852,7 @@ func AllRunParams() RunParamsMap {
 		"PosBlocking_test": {
 			Nm:               "PosBlocking_test",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "PosBlocking_test",
+			EpochParamsTable: "PosBlocking_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -881,7 +881,7 @@ func AllRunParams() RunParamsMap {
 		"NegBlocking_E_training": {
 			Nm:               "NegBlocking_E_training",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "NegBlocking_E_training",
+			EpochParamsTable: "NegBlocking_E_training",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -910,7 +910,7 @@ func AllRunParams() RunParamsMap {
 		"NegBlocking": {
 			Nm:               "NegBlocking",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "NegBlocking",
+			EpochParamsTable: "NegBlocking",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -939,7 +939,7 @@ func AllRunParams() RunParamsMap {
 		"NegBlocking_test": {
 			Nm:               "NegBlocking_test",
 			Desc:             "Blocking experiment",
-			EnvParamsTable:   "NegBlocking_test",
+			EpochParamsTable: "NegBlocking_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -968,7 +968,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_Mag": {
 			Nm:               "PosAcq_Mag",
 			Desc:             "Magnitude experiment",
-			EnvParamsTable:   "PosAcq_Magnitude",
+			EpochParamsTable: "PosAcq_Magnitude",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -997,7 +997,7 @@ func AllRunParams() RunParamsMap {
 		"PosSumAcq": {
 			Nm:               "PosSumAcq",
 			Desc:             "Conditioned Inhibition - A+, C+",
-			EnvParamsTable:   "PosSumAcq",
+			EpochParamsTable: "PosSumAcq",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1026,7 +1026,7 @@ func AllRunParams() RunParamsMap {
 		"PosSumCondInhib": {
 			Nm:               "PosSumCondInhib",
 			Desc:             "Conditioned Inhibition - AX-, A+",
-			EnvParamsTable:   "PosCondInhib_BY",
+			EpochParamsTable: "PosCondInhib_BY",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1055,7 +1055,7 @@ func AllRunParams() RunParamsMap {
 		"PosSum_test": {
 			Nm:               "PosSum_test",
 			Desc:             "Conditioned Inhibition Summation Test",
-			EnvParamsTable:   "PosSumTest_CondInhib",
+			EpochParamsTable: "PosSumTest_CondInhib",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1084,7 +1084,7 @@ func AllRunParams() RunParamsMap {
 		"NegSumAcq": {
 			Nm:               "NegSumAcq",
 			Desc:             "Conditioned Inhibition - D-, E-",
-			EnvParamsTable:   "NegSumAcq",
+			EpochParamsTable: "NegSumAcq",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1113,7 +1113,7 @@ func AllRunParams() RunParamsMap {
 		"NegSumCondInhib": {
 			Nm:               "NegSumCondInhib",
 			Desc:             "Conditioned Inhibition - DU, D-",
-			EnvParamsTable:   "NegCondInhib_FV",
+			EpochParamsTable: "NegCondInhib_FV",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1142,7 +1142,7 @@ func AllRunParams() RunParamsMap {
 		"NegSum_test": {
 			Nm:               "NegSum_test",
 			Desc:             "Conditioned Inhibition Summation Test",
-			EnvParamsTable:   "NegSum_test_CondInhib",
+			EpochParamsTable: "NegSum_test_CondInhib",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1171,7 +1171,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_train": {
 			Nm:               "Unblocking_train",
 			Desc:             "A+++,B+++,C+",
-			EnvParamsTable:   "Unblocking_train",
+			EpochParamsTable: "Unblocking_train",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1200,7 +1200,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_Value": {
 			Nm:               "Unblocking_Value",
 			Desc:             "AX+++,CZ+++",
-			EnvParamsTable:   "Unblocking_Value",
+			EpochParamsTable: "Unblocking_Value",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1229,7 +1229,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_Value_test": {
 			Nm:               "Unblocking_Value_test",
 			Desc:             "A,X,C,Z",
-			EnvParamsTable:   "Unblocking_Value_test",
+			EpochParamsTable: "Unblocking_Value_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1258,7 +1258,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_train_US": {
 			Nm:               "Unblocking_train_US",
 			Desc:             "A+++ (water) ,B+++ (food)",
-			EnvParamsTable:   "Unblocking_train_US",
+			EpochParamsTable: "Unblocking_train_US",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1287,7 +1287,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_Identity": {
 			Nm:               "Unblocking_Identity",
 			Desc:             "AX+++(water),BY+++(water)",
-			EnvParamsTable:   "Unblocking_Identity",
+			EpochParamsTable: "Unblocking_Identity",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1316,7 +1316,7 @@ func AllRunParams() RunParamsMap {
 		"Unblocking_Identity_test": {
 			Nm:               "Unblocking_Identity_test",
 			Desc:             "A,X,B,Y",
-			EnvParamsTable:   "Unblocking_Identity_test",
+			EpochParamsTable: "Unblocking_Identity_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1345,7 +1345,7 @@ func AllRunParams() RunParamsMap {
 		"PosAcq_Mag_Change": {
 			Nm:               "PosAcq_Mag_Change",
 			Desc:             "Magnitude experiment",
-			EnvParamsTable:   "PosAcq_Magnitude_Change",
+			EpochParamsTable: "PosAcq_Magnitude_Change",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1374,7 +1374,7 @@ func AllRunParams() RunParamsMap {
 		"NegAcq_Mag": {
 			Nm:               "NegAcq_Mag",
 			Desc:             "Magnitude experiment",
-			EnvParamsTable:   "NegAcq_Magnitude",
+			EpochParamsTable: "NegAcq_Magnitude",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1403,7 +1403,7 @@ func AllRunParams() RunParamsMap {
 		"NegAcq_Mag_Change": {
 			Nm:               "NegAcq_Mag_Change",
 			Desc:             "Magnitude experiment",
-			EnvParamsTable:   "NegAcq_Magnitude_Change",
+			EpochParamsTable: "NegAcq_Magnitude_Change",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1432,7 +1432,7 @@ func AllRunParams() RunParamsMap {
 		"Overexpect_train": {
 			Nm:               "Overexpect_train",
 			Desc:             "Overexpectation training (A+, B+, C+, X+, Y-)",
-			EnvParamsTable:   "Overexpectation_train",
+			EpochParamsTable: "Overexpectation_train",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1461,7 +1461,7 @@ func AllRunParams() RunParamsMap {
 		"Overexpect_Compound": {
 			Nm:               "Overexpect_Compound",
 			Desc:             "Overexpectation compound training (AX+, BY-, CX+, X+, Y-)",
-			EnvParamsTable:   "Overexpectation_Compound",
+			EpochParamsTable: "Overexpectation_Compound",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1490,7 +1490,7 @@ func AllRunParams() RunParamsMap {
 		"Overexpect_test": {
 			Nm:               "Overexpect_test",
 			Desc:             "Overexpectation test ( A-, B-, C-, X-)",
-			EnvParamsTable:   "Overexpectation_test",
+			EpochParamsTable: "Overexpectation_test",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1519,7 +1519,7 @@ func AllRunParams() RunParamsMap {
 		"PosNeg": {
 			Nm:               "PosNeg",
 			Desc:             "Positive negative test - W equally reinforced with reward + punishment",
-			EnvParamsTable:   "PosNeg",
+			EpochParamsTable: "PosNeg",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1548,7 +1548,7 @@ func AllRunParams() RunParamsMap {
 		"PosOrNegAcq": {
 			Nm:               "PosOrNegAcq",
 			Desc:             "Positive negative acquisition - with reward or punishment on interleaved trials according to user-set probabilities",
-			EnvParamsTable:   "PosOrNegAcq",
+			EpochParamsTable: "PosOrNegAcq",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1577,7 +1577,7 @@ func AllRunParams() RunParamsMap {
 		"CondExp": {
 			Nm:               "CondExp",
 			Desc:             "",
-			EnvParamsTable:   "CondExp",
+			EpochParamsTable: "CondExp",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -1606,7 +1606,7 @@ func AllRunParams() RunParamsMap {
 		"PainExp": {
 			Nm:               "PainExp",
 			Desc:             "",
-			EnvParamsTable:   "CondExp",
+			EpochParamsTable: "CondExp",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",

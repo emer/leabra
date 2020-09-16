@@ -233,7 +233,7 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone
 	ss.Net.ClearMSNTraces(&ss.Time)
 	epochDone = ev.TrialCt.Incr()
 	ss.TrialEnd(ev, train)
-	ss.TrialStats(train) // accumulate
+	//ss.LogTrialData(ev) // accumulate
 	if ss.TrainUpdt == leabra.Trial {
 		ss.UpdateView(true)
 	}
@@ -262,22 +262,6 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim) {
 	}
 	ss.LogTrialTypeData(ev)
 	_ = ss.Stepper.StepPoint(int(SettlePlus))
-}
-
-func (ev *PVLVEnv) IsEpochEnd() bool {
-	if ev.CurRunParams.UseTrialGp {
-		if ev.TrialCt.Cur >= ev.CurRunParams.TrialGpsPerEpoch {
-			return true
-		} else {
-			return false
-		}
-	} else {
-		if ev.AlphaCycle.Cur >= ev.CurRunParams.TrialsPerEpoch {
-			return true
-		} else {
-			return false
-		}
-	}
 }
 
 // brought over from cemer. This was named StepStopTest in cemer

@@ -86,9 +86,9 @@ func (ev *PVLVEnv) New(ss *Sim) {
 // Trial fields: trial_gp_name, percent_of_total, ...
 func (ev *PVLVEnv) Init(ss *Sim) (ok bool) {
 	ev.CurRunParams = ss.RunParams
-	ev.EpochParams, ok = ss.GetEnvParams(ev.CurRunParams.EnvParamsTable)
+	ev.EpochParams, ok = ss.GetEpochParams(ev.CurRunParams.EpochParamsTable)
 	if !ok {
-		fmt.Printf("EpochParams lookup failed for %v\n", ev.CurRunParams.EnvParamsTable)
+		fmt.Printf("EpochParams lookup failed for %v\n", ev.CurRunParams.EpochParamsTable)
 		return ok
 	}
 	ev.GlobalStep = 0
@@ -141,6 +141,9 @@ func (ev *PVLVEnv) Validate() error {
 
 // EpochStart
 func (ev *PVLVEnv) EpochStart(ss *Sim) {
+	for colNm, _ := range ss.TrialTypeEpochFirstLogged {
+		ss.TrialTypeEpochFirstLogged[colNm] = false
+	}
 	ev.AlphaCycle.Init()
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	ev.TrialCt.Init()
@@ -153,7 +156,7 @@ func (ev *PVLVEnv) EpochStart(ss *Sim) {
 
 // EpochEnd
 func (ev *PVLVEnv) EpochEnd(ss *Sim) {
-	ss.TrialAnalysis()
+	//ss.TrialAnalysis(ev)
 	ss.EpochMonitor(ev)
 	if ev.EpochCt.Cur%ev.CurRunParams.SaveWtsInterval == 0 && ev.EpochCt.Cur > 0 {
 		ev.SaveWeights(ss)
@@ -368,7 +371,7 @@ func (ev *PVLVEnv) SetTableEpochTrialGpListFmDefnTable() {
 				trialGpName = strings.TrimSuffix(trialGpName, "_test")
 				// could be repeat of eco trial type - but with different test flag
 				testFlag := false
-				if strings.Contains(strings.ToLower(ev.CurRunParams.EnvParamsTable), "test") {
+				if strings.Contains(strings.ToLower(ev.CurRunParams.EpochParamsTable), "test") {
 					trialGpName += "_test"
 					testFlag = true // just in case - should be redundant
 				} else {
