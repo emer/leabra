@@ -251,7 +251,7 @@ func (ss *Sim) New() {
 }
 
 func (ss *Sim) Defaults() {
-	defaultRunSeqNm := "PosAcq"
+	defaultRunSeqNm := "PosAcq_B50"
 	ss.SeqParamsName = defaultRunSeqNm
 	err := ss.SetRunSeqParams()
 	if err != nil {
