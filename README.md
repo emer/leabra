@@ -282,7 +282,7 @@ Furthermore, we add two tunable parameters that further scale the overall conduc
 
 The scaling contributions of these two factors are:
 
-* `GScale = WtScale.Abs * (WtScale.Rel / Sum(all WtScale.Rel))
+* `GScale = WtScale.Abs * (WtScale.Rel / Sum(all WtScale.Rel))`
 
 Thus, all the `Rel` factors contribute in proportion to their relative value compared to the sum of all such factors across all receiving projections into a layer, while `Abs` just multiplies directly.
 
@@ -292,7 +292,7 @@ Typically the `Ge` value should be between .5 and 1, to maintain a reasonably re
 
 ### Automatic Rescaling
 
-Here are the relevant factors that are used to compute the automatic rescaling to take into account the expected activity level on the sending layer, and the number of connections in the projection.  The actual code is in `leabra/layer.go: GScaleFmAvgAct()`, and `leabra/act.go SLayActScale`
+Here are the relevant factors that are used to compute the automatic rescaling to take into account the expected activity level on the sending layer, and the number of connections in the projection.  The actual code is in `leabra/layer.go: GScaleFmAvgAct()` and `leabra/act.go SLayActScale`
 
 * `savg` = sending layer average activation
 * `snu` = sending layer number of units
@@ -300,13 +300,13 @@ Here are the relevant factors that are used to compute the automatic rescaling t
 * `slayActN = int(Round(savg * snu))` -- must be at least 1
 * `sc` = scaling factor, which is roughly 1 / expected number of active sending connections.
 * `if ncon == snu:` -- full connectivity
-* `    sc = 1 / slayActN`
+    + `sc = 1 / slayActN`
 * `else:`           -- partial connectivity -- trickier
-* `    avgActN = int(Round(savg * ncon))` -- avg proportion of connections
-* `    expActN = avgActN + 2`  -- add an extra 2 variance around expected value
-* `    maxActN = MIN(ncon, sLayActN)`  -- can't be more than number active
-* `    expActN = MIN(expActN, maxActN)`  -- constrain
-* `    sc = 1 / expActN`
+    + `avgActN = int(Round(savg * ncon))` -- avg proportion of connections
+    + `expActN = avgActN + 2`  -- add an extra 2 variance around expected value
+    + `maxActN = MIN(ncon, sLayActN)`  -- can't be more than number active
+    + `expActN = MIN(expActN, maxActN)`  -- constrain
+    + `sc = 1 / expActN`
 
 This `sc` factor multiplies the `GScale` factor as computed above.
 
