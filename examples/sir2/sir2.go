@@ -74,8 +74,10 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.WtBal.On":    "false",
 				}},
-			{Sel: "Layer", Desc: "no special params",
-				Params: params.Params{}},
+			{Sel: "Layer", Desc: "no decay",
+				Params: params.Params{
+					"Layer.Act.Init.Decay": "0", // key for all layers not otherwise done automatically
+				}},
 			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.2",
@@ -98,12 +100,6 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Act.Clamp.Range.Min": "-1",
 					"Layer.Act.Clamp.Range.Max": "1",
-				}},
-			{Sel: ".PFCToDeep", Desc: "PFC -> Deep consistent wt",
-				Params: params.Params{
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
 				}},
 			{Sel: ".PFCFmDeep", Desc: "PFC Deep -> PFC fixed",
 				Params: params.Params{
@@ -132,11 +128,13 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":         "0.04",
+					"Prjn.Learn.Lrate":         "0.04", // .04 > .1
 					"Prjn.WtInit.Var":          "0.1",
-					"Prjn.Trace.GateNoGoPosLR": "1.0", // .1 default -- 1.0 seems potentially even better
-					"Prjn.Trace.NotGatedLR":    "0.7", // 0.7 default
-					"Prjn.Trace.Decay":         "1.0", // 1 default
+					"Prjn.Trace.GateNoGoPosLR": "0.1",  // 0.1 default
+					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
+					"Prjn.Trace.Decay":         "1.0",  // 1.0 default
+					"Prjn.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..
+					"Prjn.Trace.Deriv":         "true", // true default -- better than false
 				}},
 			{Sel: "MatrixLayer", Desc: "exploring these options",
 				Params: params.Params{
@@ -159,12 +157,13 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.ActAvg.Init":  ".2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
+					"Layer.Gate.GeGain":        "3",
 					"Layer.Gate.NoGo":          "1",
 					"Layer.Gate.Thr":           "0.2",
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "2.2",
+					"Layer.Inhib.Layer.Gi":     "2.4", // 2.4 > 2.2 > 1.8
 					"Layer.Inhib.Layer.FB":     "0.5",
 					"Layer.Inhib.Layer.FBTau":  "3", // otherwise a bit jumpy
 					"Layer.Inhib.Pool.On":      "false",
@@ -205,6 +204,11 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Act.Clamp.Range.Min": "-1",
 					"Layer.Act.Clamp.Range.Max": "1",
+				}},
+			{Sel: "#RWPred", Desc: "keep it guessing",
+				Params: params.Params{
+					"Layer.PredRange.Min": "0.01",
+					"Layer.PredRange.Max": "0.99",
 				}},
 		},
 	}},
@@ -381,12 +385,15 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 3, 1, 7)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 3, 1, 7)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
 	_ = pfcMntD
 	_ = pfcOut
+
+	cin := cini.(*pbwm.CINLayer)
+	cin.RewLays.Add(rew.Name(), rp.Name())
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
 
@@ -397,7 +404,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmin.Wrap = true
 
 	net.ConnectLayersPrjn(inp, rp, full, emer.Forward, &rl.RWPrjn{})
-	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
+	// net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
 
 	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
@@ -450,9 +457,9 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters(train bool) string {
 	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String())
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String())
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String())
+		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%s\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String())
 	}
 }
 
@@ -1156,13 +1163,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	}
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast:]
 
-	params := "Std"
-	// if ss.AvgLGain != 2.5 {
-	// 	params += fmt.Sprintf("_AvgLGain=%v", ss.AvgLGain)
-	// }
-	// if ss.InputNoise != 0 {
-	// 	params += fmt.Sprintf("_InVar=%v", ss.InputNoise)
-	// }
+	params := ss.RunName()
 
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
@@ -1291,7 +1292,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "RunPlot").(*eplot.Plot2D)
 	ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
 
-	split.SetSplits(.3, .7)
+	split.SetSplits(.2, .8)
 
 	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc: func(act *gi.Action) {
 		act.SetActiveStateUpdt(!ss.IsRunning)
@@ -1520,7 +1521,7 @@ func (ss *Sim) CmdArgs() {
 			log.Println(err)
 			ss.TrnEpcFile = nil
 		} else {
-			fmt.Printf("Saving epoch log to: %v\n", fnm)
+			fmt.Printf("Saving epoch log to: %s\n", fnm)
 			defer ss.TrnEpcFile.Close()
 		}
 	}
@@ -1532,7 +1533,7 @@ func (ss *Sim) CmdArgs() {
 			log.Println(err)
 			ss.RunFile = nil
 		} else {
-			fmt.Printf("Saving run log to: %v\n", fnm)
+			fmt.Printf("Saving run log to: %s\n", fnm)
 			defer ss.RunFile.Close()
 		}
 	}

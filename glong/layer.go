@@ -238,7 +238,7 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 		return -1, err
 	}
 	nn := ly.Layer.UnitVarNum()
-	return nn + vidx, err
+	return nn + vidx, nil
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.

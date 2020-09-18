@@ -8,7 +8,6 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -79,6 +78,82 @@ func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX 
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has 1x1 neurons.
 func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
+	return AddGPeLayer(&nt.Network, name, nY, nMaint, nOut)
+}
+
+// AddGPiThalLayer adds a GPiThalLayer of given size, with given name.
+// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// and each pool has 1x1 neurons.
+func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLayer {
+	return AddGPiThalLayer(&nt.Network, name, nY, nMaint, nOut)
+}
+
+// AddCINLayer adds a CINLayer, with a single neuron.
+func (nt *Network) AddCINLayer(name string) *CINLayer {
+	return AddCINLayer(&nt.Network, name)
+}
+
+// AddDorsalBG adds MatrixGo, NoGo, GPe, GPiThal, and CIN layers, with given optional prefix.
+// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
+// are made to drive GPiThal, with BgFixed class name set so
+// they can be styled appropriately (no learning, WtRnd.Mean=0.8, Var=0)
+func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi, cin leabra.LeabraLayer) {
+	return AddDorsalBG(&nt.Network, prefix, nY, nMaint, nOut, nNeurY, nNeurX)
+}
+
+// AddPFCLayer adds a PFCLayer, super and deep, of given size, with given name.
+// nY, nX = number of pools in Y, X dimensions, and each pool has nNeurY, nNeurX neurons.
+// out is true for output-gating layer, and dynmaint is true for maintenance-only dyn,
+// else Full set of 5 dynamic maintenance types. Both have the class "PFC" set.
+// deep is positioned behind super.
+func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out, dynMaint bool) (sp, dp leabra.LeabraLayer) {
+	return AddPFCLayer(&nt.Network, name, nY, nX, nNeurY, nNeurX, out, dynMaint)
+}
+
+// AddPFC adds paired PFCmnt, PFCout and associated Deep layers,
+// with given optional prefix.
+// nY = number of pools in Y dimension, nMaint, nOut are pools in X dimension,
+// and each pool has nNeurY, nNeurX neurons.
+// dynMaint is true for maintenance-only dyn, else full set of 5 dynamic maintenance types.
+// Appropriate OneToOne connections are made between PFCmntD -> PFCout.
+func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int, dynMaint bool) (pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
+	return AddPFC(&nt.Network, prefix, nY, nMaint, nOut, nNeurY, nNeurX, dynMaint)
+}
+
+// AddPBWM adds a DorsalBG and PFC with given params
+// Defaults to simple case of basic maint dynamics in Deep
+func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
+	return AddPBWM(&nt.Network, prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX)
+}
+
+////////////////////////////////////////////////////////////////////////
+// Network functions available here as standalone functions
+//         for mixing in to other models
+
+// AddCINLayer adds a CINLayer, with a single neuron.
+func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
+	ly := &CINLayer{}
+	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	return ly
+}
+
+// AddMatrixLayer adds a MatrixLayer of given size, with given name.
+// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)
+func AddMatrixLayer(nt *leabra.Network, name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
+	tX := nMaint + nOut
+	mtx := &MatrixLayer{}
+	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	mtx.DaR = da
+	mtx.GateShp.Set(nY, nMaint, nOut)
+	return mtx
+}
+
+// AddGPeLayer adds a pbwm.Layer to serve as a GPe layer, with given name.
+// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// and each pool has 1x1 neurons.
+func AddGPeLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
 	gpe := &Layer{}
 	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, emer.Hidden)
@@ -88,7 +163,7 @@ func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 // AddGPiThalLayer adds a GPiThalLayer of given size, with given name.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has 1x1 neurons.
-func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLayer {
+func AddGPiThalLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *GPiThalLayer {
 	tX := nMaint + nOut
 	gpi := &GPiThalLayer{}
 	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, emer.Hidden)
@@ -96,20 +171,24 @@ func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *GPiThalLa
 	return gpi
 }
 
-// AddDorsalBG adds MatrixGo, NoGo, GPe, and GPiThal layers, with given optional prefix.
+// AddDorsalBG adds MatrixGo, NoGo, GPe, GPiThal, and CIN layers, with given optional prefix.
 // nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
 // and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
 // are made to drive GPiThal, with BgFixed class name set so
 // they can be styled appropriately (no learning, WtRnd.Mean=0.8, Var=0)
-func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi leabra.LeabraLayer) {
-	mtxGo = nt.AddMatrixLayer(prefix+"MatrixGo", nY, nMaint, nOut, nNeurY, nNeurX, D1R)
-	mtxNoGo = nt.AddMatrixLayer(prefix+"MatrixNoGo", nY, nMaint, nOut, nNeurY, nNeurX, D2R)
-	gpe = nt.AddGPeLayer(prefix+"GPeNoGo", nY, nMaint, nOut)
-	gpi = nt.AddGPiThalLayer(prefix+"GPiThal", nY, nMaint, nOut)
+func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (mtxGo, mtxNoGo, gpe, gpi, cin leabra.LeabraLayer) {
+	mtxGo = AddMatrixLayer(nt, prefix+"MatrixGo", nY, nMaint, nOut, nNeurY, nNeurX, D1R)
+	mtxNoGo = AddMatrixLayer(nt, prefix+"MatrixNoGo", nY, nMaint, nOut, nNeurY, nNeurX, D2R)
+	gpe = AddGPeLayer(nt, prefix+"GPeNoGo", nY, nMaint, nOut)
+	gpi = AddGPiThalLayer(nt, prefix+"GPiThal", nY, nMaint, nOut)
+	cini := AddCINLayer(nt, prefix+"CIN")
+	cin = cini
+	cini.SendACh.Add(mtxGo.Name(), mtxNoGo.Name())
 
 	mtxNoGo.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: mtxGo.Name(), XAlign: relpos.Left, Space: 2})
 	gpe.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNoGo.Name(), YAlign: relpos.Front, Space: 2})
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
+	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name(), XAlign: relpos.Left, Space: 2})
 
 	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
 	pj.SetClass("BgFixed")
@@ -117,48 +196,55 @@ func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX i
 	pj.SetClass("BgFixed")
 	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
 	pj.SetClass("BgFixed")
+
 	return
 }
 
 // AddPFCLayer adds a PFCLayer, super and deep, of given size, with given name.
 // nY, nX = number of pools in Y, X dimensions, and each pool has nNeurY, nNeurX neurons.
-// out is true for output-gating layer. Both have the class "PFC" set.
-// deep receives one-to-one projections of class "PFCToDeep" from super, and sends "PFCFmDeep",
-// and is positioned behind it.
-func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out bool) (sp, dp *PFCLayer) {
-	sp = &PFCLayer{}
-	nt.AddLayerInit(sp, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
-	dp = &PFCLayer{}
-	nt.AddLayerInit(dp, name+"D", []int{nY, nX, nNeurY, nNeurX}, deep.CT)
+// out is true for output-gating layer, and dynmaint is true for maintenance-only dyn,
+// else Full set of 5 dynamic maintenance types. Both have the class "PFC" set.
+// deep is positioned behind super.
+func AddPFCLayer(nt *leabra.Network, name string, nY, nX, nNeurY, nNeurX int, out, dynMaint bool) (sp, dp leabra.LeabraLayer) {
+	sp = nt.AddLayer(name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden).(leabra.LeabraLayer)
+	ddp := &PFCDeepLayer{}
+	dp = ddp
+	dym := 1
+	if !dynMaint {
+		dym = 5
+	}
+	nt.AddLayerInit(ddp, name+"D", []int{nY, nX, dym * nNeurY, nNeurX}, emer.Hidden)
 	sp.SetClass("PFC")
-	dp.SetClass("PFC")
-	sp.Gate.OutGate = out
-	dp.Gate.OutGate = out
-	dp.Dyns.MaintOnly()
+	ddp.SetClass("PFC")
+	ddp.Gate.OutGate = out
+	if dynMaint {
+		ddp.Dyns.MaintOnly()
+	} else {
+		ddp.Dyns.FullDyn(10)
+	}
 	dp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-
-	// one2one := prjn.NewOneToOne()
-
-	// pj := nt.ConnectLayers(sp, dp, one2one, leabra.BurstCtxt)
-	// pj.SetClass("PFCToDeep")
 	return
 }
 
 // AddPFC adds paired PFCmnt, PFCout and associated Deep layers,
 // with given optional prefix.
 // nY = number of pools in Y dimension, nMaint, nOut are pools in X dimension,
-// and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
-// are made within super / deep (see AddPFCLayer) and between PFCmntD -> PFCout.
-func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
+// and each pool has nNeurY, nNeurX neurons.
+// dynMaint is true for maintenance-only dyn, else full set of 5 dynamic maintenance types.
+// Appropriate OneToOne connections are made between PFCmntD -> PFCout.
+func AddPFC(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX int, dynMaint bool) (pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
 	if prefix == "" {
 		prefix = "PFC"
 	}
 	if nMaint > 0 {
-		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"mnt", nY, nMaint, nNeurY, nNeurX, false)
+		pfcMnt, pfcMntD = AddPFCLayer(nt, prefix+"mnt", nY, nMaint, nNeurY, nNeurX, false, dynMaint)
 	}
 	if nOut > 0 {
-		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"out", nY, nOut, nNeurY, nNeurX, true)
+		pfcOut, pfcOutD = AddPFCLayer(nt, prefix+"out", nY, nOut, nNeurY, nNeurX, true, dynMaint)
 	}
+
+	// todo: need a Rect projection from MntD -> out if !dynMaint, or something else..
+
 	if pfcOut != nil && pfcMnt != nil {
 		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
 		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
@@ -167,10 +253,11 @@ func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) (
 	return
 }
 
-// AddPBWM adds a DorsalBG an PFC with given params
-func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
-	mtxGo, mtxNoGo, gpe, gpi = nt.AddDorsalBG(prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
-	pfcMnt, pfcMntD, pfcOut, pfcOutD = nt.AddPFC(prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX)
+// AddPBWM adds a DorsalBG and PFC with given params
+// Defaults to simple case of basic maint dynamics in Deep
+func AddPBWM(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) (mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD leabra.LeabraLayer) {
+	mtxGo, mtxNoGo, gpe, gpi, cin = AddDorsalBG(nt, prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
+	pfcMnt, pfcMntD, pfcOut, pfcOutD = AddPFC(nt, prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX, true) // default dynmaint
 	if pfcMnt != nil {
 		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	}
@@ -188,12 +275,10 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 
 // CycleImpl runs one cycle of activation updating
 // PBWM calls GateSend after Cycle and before DeepBurst
-// Deep version adds call to update DeepBurst at end
 func (nt *Network) CycleImpl(ltime *leabra.Time) {
-	nt.Network.CycleImpl(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
+	nt.Network.CycleImpl(ltime) // basic version from leabra.Network
 	nt.GateSend(ltime)          // GateLayer (GPiThal) computes gating, sends to other layers
 	nt.RecGateAct(ltime)        // Record activation state at time of gating (in ActG neuron var)
-	// nt.DeepBurst(ltime)                 // Act -> Burst (during BurstQtr) (see deep for details)
 
 	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }

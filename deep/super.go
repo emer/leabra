@@ -279,7 +279,7 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 		return vidx, err
 	}
 	vidx += ly.TopoInhibLayer.UnitVarNum()
-	return vidx, err
+	return vidx, nil
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.

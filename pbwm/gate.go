@@ -5,8 +5,6 @@
 package pbwm
 
 import (
-	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
@@ -91,10 +89,9 @@ func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
 // GateState is gating state values stored in layers that receive thalamic gating signals
 // including MatrixLayer, PFCLayer, GPiThal layer, etc -- use GateLayer as base layer to include.
 type GateState struct {
-	Act   float32         `desc:"gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle"`
-	Now   bool            `desc:"gating timing signal -- true if this is the moment when gating takes place"`
-	Cnt   int             `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
-	GeRaw minmax.AvgMax32 `copy:"-" desc:"not copies: average and max Ge Raw excitatory conductance values -- before being influenced by gating signals"`
+	Act float32 `desc:"gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle"`
+	Now bool    `desc:"gating timing signal -- true if this is the moment when gating takes place"`
+	Cnt int     `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
 }
 
 // Init initializes the values -- call during InitActs()
@@ -102,7 +99,6 @@ func (gs *GateState) Init() {
 	gs.Act = 0
 	gs.Now = false
 	gs.Cnt = -1
-	gs.GeRaw.Init()
 }
 
 // CopyFrom copies from another GateState -- only the Act and Now signals are copied
@@ -122,7 +118,7 @@ type GateLayer struct {
 	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
 }
 
-var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, deep.LayerProps)
+var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, leabra.LayerProps)
 
 func (ly *GateLayer) AsGate() *GateLayer {
 	return ly
@@ -208,20 +204,6 @@ func (ly *GateLayer) InitActs() {
 	for si := range ly.GateStates {
 		gs := &ly.GateStates[si]
 		gs.Init()
-	}
-}
-
-// AvgMaxGeRaw computes the average and max GeRaw stats
-func (ly *GateLayer) AvgMaxGeRaw(ltime *leabra.Time) {
-	for si := range ly.GateStates {
-		gs := &ly.GateStates[si]
-		pl := &ly.Pools[si+1]
-		gs.GeRaw.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
-			nrn := &ly.Neurons[ni]
-			gs.GeRaw.UpdateVal(nrn.GeRaw, ni)
-		}
-		gs.GeRaw.CalcAvg()
 	}
 }
 
