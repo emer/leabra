@@ -112,8 +112,8 @@ func (pj *MSNPrjn) DWt() {
 
 			da, _ := mn.VarByName("DA")
 			daLrn := rlay.DALrnFmDA(da)
-			rnAct := mn.ModAct // ModAct seems more correct than ActP, but doesn't match CEmer results quite as well
-			//rnAct := rn.ActP
+			//rnAct := mn.ModAct // ModAct seems more correct than ActP, but doesn't match CEmer results quite as well
+			rnAct := rn.ActP
 			effModLevel := mn.ModNet
 			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)
