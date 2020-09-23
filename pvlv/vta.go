@@ -156,7 +156,7 @@ func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 
 func (ly *VTALayer) ActFmG(ltime *leabra.Time) {
 	if ltime.Quarter == int(leabra.Q4) {
-		ly.VTAAct()
+		ly.VTAAct(ltime)
 	} else {
 		nrn := &ly.Neurons[0]
 		nrn.ActLrn = 0
@@ -171,16 +171,16 @@ func (ly *VTALayer) CyclePost(ltime *leabra.Time) {
 	ly.SendDA.SendDA(ly.Network, ly.SendVal)
 }
 
-func (ly *VTALayer) VTAAct() {
+func (ly *VTALayer) VTAAct(ltime *leabra.Time) {
 	if ly.Valence == POS {
-		ly.VTAActP()
+		ly.VTAActP(ltime)
 	} else {
-		ly.VTAActN()
+		ly.VTAActN(ltime)
 	}
 }
 
 // VTAp activation
-func (ly *VTALayer) VTAActP() {
+func (ly *VTALayer) VTAActP(ltime *leabra.Time) {
 	pptGLy := ly.RecvFrom["PPTg"]
 	lhbLy := ly.RecvFrom["LHbRMTg"]
 	posPVLy := ly.RecvFrom["PosPV"]
@@ -268,7 +268,7 @@ func (ly *VTALayer) VTAActP() {
 }
 
 // VTAn activation
-func (ly *VTALayer) VTAActN() {
+func (ly *VTALayer) VTAActN(ltime *leabra.Time) {
 	negPVLy := ly.RecvFrom["NegPV"]
 	lhbLy := ly.RecvFrom["LHbRMTg"]
 	vsPatchNegD1Ly := ly.RecvFrom["VSPatchNegD1"]
