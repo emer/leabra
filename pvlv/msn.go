@@ -58,8 +58,9 @@ type DelayedInhibParams struct {
 
 // Params for for trace-based learning
 type MSNTraceParams struct {
-	Deriv bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
-	Decay float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+	Deriv       bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+	Decay       float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+	GateLRScale float32 `desc:"learning rate scale factor, if "`
 }
 
 // DelInhState contains extra variables for MSNLayer neurons -- stored separately
@@ -237,6 +238,48 @@ func (ly *MSNLayer) PoolDelayedInhib(pl *leabra.Pool) {
 		ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
 		nrn.Gi = pl.Inhib.Gi + nrn.GiSelf + nrn.GiSyn
 		nrn.Gi += ly.DIParams.PrvTrl*dis.GePrvTrl + ly.DIParams.PrvQ*dis.GePrvQ
+	}
+}
+
+func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
+	plMax := ly.ModPools[0].ModNetStats.Max
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		mnr := &ly.ModNeurs[ni]
+		if ly.Compartment == MATRIX {
+			if mnr.ModNet <= ly.ModNetThreshold {
+				mnr.ModLrn = 0
+				mnr.ModLevel = 1
+			} else {
+				if plMax != 0 {
+					//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
+					mnr.ModLrn = mnr.ModNet / plMax
+				} else {
+					mnr.ModLrn = 1
+				}
+			}
+		} else { // PATCH
+			if mnr.ModNet <= ly.ModNetThreshold { // not enough yet
+				mnr.ModLrn = 0 // default is 0
+				if ly.ActModZero {
+					mnr.ModLevel = 0
+				} else {
+					mnr.ModLevel = 1
+				}
+			} else {
+				//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet * (1 - plMax)))
+				if plMax != 0 {
+					//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
+					mnr.ModLrn = mnr.ModNet / plMax
+				} else {
+					mnr.ModLrn = 1
+				}
+				mnr.ModLevel = 1 // do not modulate!
+			}
+		}
 	}
 }
 

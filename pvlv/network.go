@@ -86,7 +86,7 @@ func (nt *Network) RecvModInc(ltime *leabra.Time) {
 	}, "RecvModInc")
 }
 
-func (nt *Network) ClearModActs(ltime *leabra.Time) {
+func (nt *Network) ClearModActs(_ *leabra.Time) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if ml, ok := ly.(IModLayer); ok {
 			ml.AsMod().ClearModActs()
@@ -94,7 +94,7 @@ func (nt *Network) ClearModActs(ltime *leabra.Time) {
 	}, "ClearModActs")
 }
 
-func (nt *Network) ClearMSNTraces(ltime *leabra.Time) {
+func (nt *Network) ClearMSNTraces(_ *leabra.Time) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if msnly, ok := ly.(IMSNLayer); ok {
 			msnly.AsMSNLayer().ClearMSNTrace()

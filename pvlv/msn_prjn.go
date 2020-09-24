@@ -71,6 +71,7 @@ func (pj *MSNPrjn) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.Tr = 0
+		sy.NTr = 0
 	}
 }
 
@@ -112,15 +113,21 @@ func (pj *MSNPrjn) DWt() {
 
 			da, _ := mn.VarByName("DA")
 			daLrn := rlay.DALrnFmDA(da)
-			rnAct := mn.ModAct // ModAct seems more correct than ActP, but doesn't match CEmer results quite as well
-			//rnAct := rn.ActP
+			//rnAct := mn.ModAct // ModAct seems more correct than ActP, but doesn't match CEmer results quite as well
+			rnAct := rn.ActP
+			//rnAct := rn.Act
 			effModLevel := mn.ModNet
 			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)
 			switch pj.LearningRule {
 			case TraceNoThalVS:
 				tr := trsy.Tr
-				effLRate = pj.Learn.Lrate
+				if mn.ModLrn == 0 {
+					effLRate = pj.Learn.Lrate * pj.Trace.GateLRScale
+				} else {
+					effLRate = pj.Learn.Lrate
+				}
+				//effLRate = pj.Learn.Lrate * mn.ModLrn
 				rawDWt = daLrn * tr // multiplied by learning rate below
 
 				newNTr := pj.Trace.MSNActLrnFactor(effRnAct) * snAct
@@ -128,8 +135,8 @@ func (pj *MSNPrjn) DWt() {
 				if decay > 1 {
 					decay = 1
 				}
-				trInc := newNTr - decay*tr
-				tr += trInc
+				//trInc := newNTr - decay*tr
+				tr += newNTr - decay*tr
 				trsy.Tr = tr
 				trsy.NTr = newNTr
 			case DAHebbVS:
@@ -176,7 +183,7 @@ func (tr *TraceSyn) VarNames() []string {
 func TraceVarByName(varNm string) (int, error) {
 	i, ok := TraceVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("synapse VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }
@@ -192,7 +199,7 @@ func (tr *TraceSyn) VarByIndex(idx int) float32 {
 func SynapseVarByName(varNm string) (int, error) {
 	i, ok := TraceVarsMap[varNm]
 	if !ok {
-		return -1, fmt.Errorf("Synapse VarByName: variable name: %v not valid", varNm)
+		return -1, fmt.Errorf("synapse VarByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }

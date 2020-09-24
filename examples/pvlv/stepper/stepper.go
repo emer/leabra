@@ -75,6 +75,10 @@ func (st *Stepper) Init() *Stepper {
 	return st
 }
 
+func DontStop(_ interface{}, _ int) bool {
+	return false
+}
+
 // Set the internal value of StepGrain to an uninterpreted int. Semantics are up to the client
 func (st *Stepper) SetStepGrain(grain int) {
 	st.StepGrain = grain
@@ -122,7 +126,7 @@ func (st *Stepper) RegisterPauseNotifier(notifier PauseNotifier, pnState interfa
 
 // Request to enter the Stopped state. Doesn't actually change state, and does not wait.
 func (st *Stepper) Stop() {
-	st.PleaseEnter(Stopped)
+	st.Enter(Stopped)
 }
 
 // Request to enter the Stopped state, and wait for it to happen.
@@ -153,7 +157,7 @@ func (st *Stepper) StopRequested() bool {
 
 // Pause and wait for stop or go signal
 func (st *Stepper) Pause() {
-	st.PleaseEnter(Paused)
+	st.Enter(Paused)
 }
 
 // Check for the application either Running or Stepping (neither Paused nor Stopped)
@@ -201,12 +205,12 @@ func (st *Stepper) WaitToGo() RunState {
 	st.StateMut.Lock()
 	defer st.StateMut.Unlock()
 	for {
-		state := st.CurState
-		if state == Running || state == Stepping {
-			return state
-		} else if st.CurState == Stopped {
+		switch st.CurState {
+		case Running, Stepping:
+			return st.CurState
+		case Stopped:
 			return Stopped
-		} else {
+		case Paused:
 			st.StateChange.Wait()
 		}
 	}
@@ -233,10 +237,13 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 	if state == Stopped || reqState == Stopped {
 		return true
 	}
-	if !st.Stepping { // quick check. If state is Running, just keep going. If Paused, Stepping should be true.
+	if reqState == Paused && state != Paused {
+		st.Enter(Paused)
+	}
+	if state == Running {
 		return false
 	}
-	if grain == st.StepGrain { // exact equality is the only test that really works well
+	if state != Paused && grain == st.StepGrain { // exact equality is the only test that really works well
 		st.StepsRemaining--
 		if st.StepsRemaining <= 0 {
 			st.Enter(Paused)
@@ -244,10 +251,11 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 			st.StepsRemaining = st.StepsPerClick
 		}
 	}
-	stopMatched := st.CondChecker(st.CheckerState, grain)
-	if stopMatched {
-		st.Enter(Stopped)
-		return true
+	if st.CondChecker != nil {
+		stopMatched := st.CondChecker(st.CheckerState, grain)
+		if stopMatched {
+			st.Enter(Paused)
+		}
 	}
 	for {
 		_, reqState := st.CheckStates()

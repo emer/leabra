@@ -184,9 +184,8 @@ func (ss *Sim) ApplyPVInputs(ev *PVLVEnv) {
 func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 	epochDone := false
 	var curTG *data.TrialInstance
+	ev.EpochStart(ss)
 	ev.SetEpochTrialList(ss) // sets up one epoch's worth of data
-	ev.TrialCt.Init()
-	//}
 	epochDone = ev.TrialCt.Cur >= ev.TrialCt.Max
 	for !epochDone {
 		if ev.TrialInstances.AtEnd() {
@@ -220,8 +219,8 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone
 	ss.Net.ClearModActs(&ss.Time)
 	for !trialDone {
 		ev.SetupOneAlphaTrial(curTrial, 0)
-		train = !ev.IsTestTrial()
-		ev.RunOneAlphaCycle(ss)
+		train = !ev.IsTestTrial(curTrial)
+		ev.RunOneAlphaCycle(ss, curTrial)
 		trialDone = ev.AlphaCycle.Incr()
 		if ss.Stepper.StepPoint(int(AlphaCycle)) {
 			return
@@ -245,8 +244,8 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
 // If train is true, then learning DWt or WtFmDWt calls are made.
 // Handles netview updating within scope of AlphaCycle
-func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim) {
-	train := !ev.IsTestTrial()
+func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
+	train := !ev.IsTestTrial(trial)
 	ss.TrialStart(ev, train)
 	ev.SetState()
 	ss.ApplyInputs(ev)

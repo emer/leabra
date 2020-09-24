@@ -56,3 +56,5 @@ func (til *TrialInstanceList) Get(i int) interface{} {
 func (til *TrialInstanceRecs) ReadNext() *TrialInstance {
 	return til.Recs.ReadNext().(*TrialInstance)
 }
+
+var _ IRecs = (*TrialInstanceList)(nil) // check for interface implementation
