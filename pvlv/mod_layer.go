@@ -145,9 +145,6 @@ const (
 
 var KiT_DaRType = kit.Enums.AddEnum(DaRTypeN, kit.NotBitFlag, nil)
 
-func (ev DaRType) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *DaRType) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
-
 // Retrieve a value for a trace of some quantity, possibly more than just a variable
 func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 	var val float32
@@ -360,7 +357,11 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
-		mnr.ModNet = sender.ModSendValue(nrn.SubPool) * scale
+		modVal := sender.ModSendValue(nrn.SubPool)
+		//if ly.Debug > 0 && ni == 1 && modVal != 0 && ly.Nm == "VSMatrixNegD2" {
+		//	fmt.Printf("%s: modVal:%f, Modnet:%f, scale:%f\n", ly.Nm, modVal, mnr.ModNet, scale)
+		//}
+		mnr.ModNet = modVal * scale
 	}
 }
 
@@ -383,10 +384,12 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 				mnr.ModLevel = 1
 			}
 		} else {
+			//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet * (1 - plMax)))
 			if plMax != 0 {
-				mnr.ModLrn = math32.Min(1, mnr.ModNet/plMax)
+				//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
+				mnr.ModLrn = mnr.ModNet / plMax
 			} else {
-				mnr.ModLrn = 0
+				mnr.ModLrn = 1
 			}
 			mnr.ModLevel = 1 // do not modulate!
 		}
