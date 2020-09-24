@@ -30,33 +30,31 @@ type LHbRMTgGains struct {
 type LHbRMTgLayer struct {
 	leabra.Layer
 	RcvFrom       emer.LayNames
-	Gains         LHbRMTgGains `view:"inline"`
-	PVNegDiscount float32      `desc:"reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes"`
-	//InternalState LHBRMTgInternalState // for debugging
+	Gains         LHbRMTgGains         `view:"inline"`
+	PVNegDiscount float32              `desc:"reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes"`
+	InternalState LHBRMTgInternalState // for debugging
 }
 
 var KiT_LHbRMTgLayer = kit.Types.AddType(&LHbRMTgLayer{}, leabra.LayerProps)
 
-/*
 type LHBRMTgInternalState struct {
-	VSPatchPosD1 float32
-	VSPatchPosD2 float32
-	VSPatchNegD1 float32
-	VSPatchNegD2 float32
-	VSMatrixPosD1 float32
-	VSMatrixPosD2 float32
-	VSMatrixNegD1 float32
-	VSMatrixNegD2 float32
-	PosPV float32
-	NegPV float32
-	VSPatchPosNet float32
-	VSPatchNegNet float32
+	VSPatchPosD1   float32
+	VSPatchPosD2   float32
+	VSPatchNegD1   float32
+	VSPatchNegD2   float32
+	VSMatrixPosD1  float32
+	VSMatrixPosD2  float32
+	VSMatrixNegD1  float32
+	VSMatrixNegD2  float32
+	PosPV          float32
+	NegPV          float32
+	VSPatchPosNet  float32
+	VSPatchNegNet  float32
 	VSMatrixPosNet float32
 	VSMatrixNegNet float32
-	NetPos float32
-	NetNeg float32
+	NetPos         float32
+	NetNeg         float32
 }
-*/
 
 func AddLHbRMTgLayer(nt *Network, name string) *LHbRMTgLayer {
 	ly := LHbRMTgLayer{}
@@ -173,23 +171,22 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 	netLHb := netNeg - netPos + vsPatchPosNet - vsPatchNegNet
 	netLHb *= ly.Gains.All
 
-	/*	ly.InternalState.VSPatchPosD1 = vsPatchPosD1
-		ly.InternalState.VSPatchPosD2 = vsPatchPosD2
-		ly.InternalState.VSPatchNegD1 = vsPatchNegD1
-		ly.InternalState.VSPatchNegD2 = vsPatchNegD2
-		ly.InternalState.VSMatrixPosD1 = vsMatrixPosD1
-		ly.InternalState.VSMatrixPosD2 = vsMatrixPosD2
-		ly.InternalState.VSMatrixNegD1 = vsMatrixNegD1
-		ly.InternalState.VSMatrixNegD2 = vsMatrixNegD2
-		ly.InternalState.PosPV = pvPos
-		ly.InternalState.NegPV = pvNeg
-		ly.InternalState.VSPatchPosNet = vsPatchPosNet
-		ly.InternalState.VSPatchNegNet = vsPatchNegNet
-		ly.InternalState.VSMatrixPosNet = vsMatrixPosNet
-		ly.InternalState.VSMatrixNegNet = vsMatrixNegNet
-		ly.InternalState.NetPos = netPos
-		ly.InternalState.NetNeg = netNeg
-	*/
+	ly.InternalState.VSPatchPosD1 = vsPatchPosD1
+	ly.InternalState.VSPatchPosD2 = vsPatchPosD2
+	ly.InternalState.VSPatchNegD1 = vsPatchNegD1
+	ly.InternalState.VSPatchNegD2 = vsPatchNegD2
+	ly.InternalState.VSMatrixPosD1 = vsMatrixPosD1
+	ly.InternalState.VSMatrixPosD2 = vsMatrixPosD2
+	ly.InternalState.VSMatrixNegD1 = vsMatrixNegD1
+	ly.InternalState.VSMatrixNegD2 = vsMatrixNegD2
+	ly.InternalState.PosPV = pvPos
+	ly.InternalState.NegPV = pvNeg
+	ly.InternalState.VSPatchPosNet = vsPatchPosNet
+	ly.InternalState.VSPatchNegNet = vsPatchNegNet
+	ly.InternalState.VSMatrixPosNet = vsMatrixPosNet
+	ly.InternalState.VSMatrixNegNet = vsMatrixNegNet
+	ly.InternalState.NetPos = netPos
+	ly.InternalState.NetNeg = netNeg
 
 	for i := range ly.Neurons {
 		ly.Neurons[i].Act = netLHb
@@ -206,24 +203,40 @@ func (ly *LHbRMTgLayer) GetMonitorVal(data []string) float64 {
 	switch valType {
 	case "TotalAct":
 		val = TotalAct(ly)
-	/*
-		case "VSPatchPosD1": val = ly.InternalState.VSPatchPosD1
-		case "VSPatchPosD2": val = ly.InternalState.VSPatchPosD2
-		case "VSPatchNegD1": val = ly.InternalState.VSPatchNegD1
-		case "VSPatchNegD2": val = ly.InternalState.VSPatchNegD2
-		case "VSMatrixPosD1": val = ly.InternalState.VSMatrixPosD1
-		case "VSMatrixPosD2": val = ly.InternalState.VSMatrixPosD2
-		case "VSMatrixNegD1": val = ly.InternalState.VSMatrixNegD1
-		case "VSMatrixNegD2": val = ly.InternalState.VSMatrixNegD2
-		case "PosPV": val = ly.InternalState.PosPV
-		case "NegPV": val = ly.InternalState.NegPV
-		case "VSPatchPosNet": val = ly.InternalState.VSPatchPosNet
-		case "VSPatchNegNet": val = ly.InternalState.VSPatchNegNet
-		case "VSMatrixPosNet": val = ly.InternalState.VSMatrixPosNet
-		case "VSMatrixNegNet": val = ly.InternalState.VSMatrixNegNet
-		case "NetPos": val = ly.InternalState.NetPos
-		case "NetNeg": val = ly.InternalState.NetNeg
-	*/
+
+	case "VSPatchPosD1":
+		val = ly.InternalState.VSPatchPosD1
+	case "VSPatchPosD2":
+		val = ly.InternalState.VSPatchPosD2
+	case "VSPatchNegD1":
+		val = ly.InternalState.VSPatchNegD1
+	case "VSPatchNegD2":
+		val = ly.InternalState.VSPatchNegD2
+	case "VSMatrixPosD1":
+		val = ly.InternalState.VSMatrixPosD1
+	case "VSMatrixPosD2":
+		val = ly.InternalState.VSMatrixPosD2
+	case "VSMatrixNegD1":
+		val = ly.InternalState.VSMatrixNegD1
+	case "VSMatrixNegD2":
+		val = ly.InternalState.VSMatrixNegD2
+	case "PosPV":
+		val = ly.InternalState.PosPV
+	case "NegPV":
+		val = ly.InternalState.NegPV
+	case "VSPatchPosNet":
+		val = ly.InternalState.VSPatchPosNet
+	case "VSPatchNegNet":
+		val = ly.InternalState.VSPatchNegNet
+	case "VSMatrixPosNet":
+		val = ly.InternalState.VSMatrixPosNet
+	case "VSMatrixNegNet":
+		val = ly.InternalState.VSMatrixNegNet
+	case "NetPos":
+		val = ly.InternalState.NetPos
+	case "NetNeg":
+		val = ly.InternalState.NetNeg
+
 	default:
 		val = ly.Neurons[0].Act
 	}
