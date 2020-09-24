@@ -4,4 +4,4 @@
 
 package main
 
-//go:generate stringer -linecomment -output=strings.go -type=StepGrain,StopStepCond
+//go:generate stringer -linecomment -output=strings.go -type=StepGrain,StopStepCond,ContextModel
