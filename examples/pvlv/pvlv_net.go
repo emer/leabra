@@ -229,7 +229,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("PVLVLrnCons VSPatchConsToNegD1")
 
 	// to VSMatrixPosD1
-	net.ConnectLayersActMod(blAmygPosD1, vsMatrixPosD1, 0.2)
+	net.ConnectLayersActMod(blAmygPosD1, vsMatrixPosD1, 0.015)
 	pj = net.ConnectLayersPrjn(stimIn, vsMatrixPosD1, pjFull, emer.Forward,
 		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToPosD1")
@@ -241,7 +241,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("PVLVLrnCons VSMatrixConsToPosD2")
 
 	// to VSMatrixNegD2
-	net.ConnectLayersActMod(blAmygNegD2, vsMatrixNegD2, 0.2)
+	net.ConnectLayersActMod(blAmygNegD2, vsMatrixNegD2, 0.015)
 	pj = net.ConnectLayersPrjn(stimIn, vsMatrixNegD2, pjFull, emer.Forward,
 		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToNegD2")
