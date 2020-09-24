@@ -6,7 +6,6 @@ package pbwm
 
 import (
 	"github.com/chewxy/math32"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -17,7 +16,7 @@ type DaHebbPrjn struct {
 	leabra.Prjn
 }
 
-var KiT_DaHebbPrjn = kit.Types.AddType(&DaHebbPrjn{}, deep.PrjnProps)
+var KiT_DaHebbPrjn = kit.Types.AddType(&DaHebbPrjn{}, leabra.PrjnProps)
 
 func (pj *DaHebbPrjn) Defaults() {
 	pj.Prjn.Defaults()

@@ -4,7 +4,7 @@
 
 package pbwm
 
-import "github.com/emer/leabra/deep"
+import "github.com/emer/leabra/leabra"
 
 // NeurVars are indexes into extra PBWM neuron-level variables
 type NeurVars int
@@ -18,7 +18,8 @@ const (
 	GateNow
 	GateCnt
 	ActG
-	Cust1
+	NrnMaint
+	MaintGe
 	NeurVarsN
 )
 
@@ -26,7 +27,7 @@ var (
 	// NeuronVars are the pbwm neurons plus some custom variables that sub-types use for their
 	// algo-specific cases -- need a consistent set of overall network-level vars for display / generic
 	// interface.
-	NeuronVars    = []string{"DA", "DALrn", "ACh", "SE", "GateAct", "GateNow", "GateCnt", "ActG", "Cust1"}
+	NeuronVars    = []string{"DA", "DALrn", "ACh", "SE", "GateAct", "GateNow", "GateCnt", "ActG", "Maint", "MaintGe"}
 	NeuronVarsMap map[string]int
 	NeuronVarsAll []string
 )
@@ -36,8 +37,8 @@ func init() {
 	for i, v := range NeuronVars {
 		NeuronVarsMap[v] = i
 	}
-	ln := len(deep.NeuronVarsAll)
+	ln := len(leabra.NeuronVars)
 	NeuronVarsAll = make([]string, len(NeuronVars)+ln)
-	copy(NeuronVarsAll, deep.NeuronVarsAll)
+	copy(NeuronVarsAll, leabra.NeuronVars)
 	copy(NeuronVarsAll[ln:], NeuronVars)
 }

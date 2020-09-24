@@ -304,7 +304,7 @@ func (pj *MatrixPrjn) DWt() {
 	daLrn := rlay.DALrn // includes d2 reversal etc
 
 	ach := rlay.ACh
-	dk := mat32.Min(1, ach*pj.Trace.Decay)
+	achDk := mat32.Min(1, ach*pj.Trace.Decay)
 
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
@@ -332,7 +332,7 @@ func (pj *MatrixPrjn) DWt() {
 			if da != 0 {
 				dwt = daLrn * tr
 			}
-			tr -= dk * tr // decay trace that drove dwt
+			tr -= achDk * tr // decay trace that drove dwt
 
 			if !pj.Trace.CurTrlDA {
 				tr += ntr

@@ -46,8 +46,9 @@ Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with somet
 * GPiThalLayer receives from Matrix Go and GPe NoGo to compute final WTA gating, and
    broadcasts GateState info to its SendTo layers.  See Timing params for timing.
 
-* PFCLayer for active maintenance -- uses DeepLeabra framework, with update timing according to
-	deep.Layer DeepBurst.BurstQtr.  Gating is computed in quarter *before* updating in BurstQtr.
-	At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
+* PFCLayer for active maintenance -- reproduces a DeepLeabra like framework,
+   with update timing according to BurstQtr.  Gating is computed in quarter
+   *before* updating in BurstQtr.
+   At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
 */
 package pbwm

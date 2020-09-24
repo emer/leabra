@@ -1,4 +1,4 @@
-# PBWM Version 1
+# PBWM
 
 [![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm1?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm1)
 
@@ -6,15 +6,15 @@ See [sir2](https://github.com/emer/leabra/blob/master/examples/sir2) example for
 
 In the [cemer](https://github.com/emer/cemer) (C++ emergent) versioning system, this is **version 5** of PBWM, reflecting a number of intermediate unpublished versions.
 
-In the Go framework, it is version 1.
+As of 9/2020, this implementation has been separated from the `deep` code, and there is just a `PFCDeepLayer` that manages all of the PFC-specific functionality, grabbing values from corresponding neurons in the Super layer, which can be of any type.  Also, the `rl` dopamine component is now independent and any source of dopamine can be used.  Current development in this space of ideas is taking place in `agate` and `pcore` packages, so this `pbwm` package represents its own separate stable branch going forward.
 
 PBWM is the *prefrontal-cortex basal-ganglia working memory* model [O'Reilly & Frank, 2006](#references), where the basal ganglia (BG) drives *gating* of PFC working memory maintenance, switching it dynamically between *updating* of new information vs. *maintenance* of existing information.  It was originally inspired by existing data, biology, and theory about the role of the BG in motor action selection, and the LSTM (long short-term-memory) computational model of [Hochreiter & Schmidhuber](#references), which solved limitations in existing recurrent backpropagation networks by adding dynamic input and output gates.  These LSTM models have experienced a significant resurgence along with the backpropagation neural networks in general.
 
 The simple computational idea is that the BG gating signals fire phasically to disinhibit corticothalamic loops through the PFC, enabling the robust maintenance of new information there.  In the absence of such gating signals, the PFC will continue to maintain existing information.  The output of the BG through the GPi (globus pallidus internal segment) and homologous SNr (substantia nigra pars reticulata) represents a major bottleneck with a relatively small number of neurons, meaning that each BG gating output affects a relatively large group of PFC neurons.  One idea is that these BG gating signals target different PFC hypercolumns or *stripes* -- these correspond to `Pools` of neurons within the layers in the current implementation.
 
-In the current version, we integrate with the broader `DeepLeabra` framework (in the `deep` directory) that incorporates the separation between *superficial* and *deep* layers in cortex and their connections with the thalamus: the thalamocortical loops are principally between the deep layers.  Thus, within a given PFC area, you can have the superficial layers being more sensitive to current inputs, while the deep layers are more robustly maintaining information through the thalamocortical loops.
+There are two PFC lamina, `PFCSuper` and `PFCDeep`, which are inspired by the broader `DeepLeabra` framework (in the `deep` directory) that incorporates the separation between *superficial* and *deep* layers in cortex and their connections with the thalamus: the thalamocortical loops are principally between the deep layers.  Thus, within a given PFC area, you can have the superficial layers being more sensitive to current inputs, while the deep layers are more robustly maintaining information through the thalamocortical loops.  The deep layer neurons mirror those in the superficial layer (as in a microcolumn), and receive activation from the superficial layer only when gating occurs -- after that point their dynamics can be controlled by specific profiles (stable, rising, falling etc), with multiple possible such trajectories per superficial neuron.
 
-Furthermore, it allows a unification of maintenance and output gating, both of which are effectively opening up a gate between superficial to deep (via the thalamocortical loops) -- deep layers the drive principal output of frontal areas (e.g., in M1, deep layers directly drive motor actions through subcortical projections).  In PFC, deep layers are a major source of top-down activation to other cortical areas, in keeping with the idea of executing "cognitive actions" that influence processing elsewhere in the brain.  The only real difference is whether the neurons exhibit significant sustained maintenance, or are only phasically activated by gating.  Both profiles are widely observed e.g., [Sommer & Wurtz, 2000](#references).
+The super vs. deep distinction allows a unification of maintenance and output gating, both of which are effectively opening up a gate between superficial to deep (via the thalamocortical loops) -- deep layers the drive principal output of frontal areas (e.g., in M1, deep layers directly drive motor actions through subcortical projections).  In PFC, deep layers are a major source of top-down activation to other cortical areas, in keeping with the idea of executing "cognitive actions" that influence processing elsewhere in the brain.  The only real difference is whether the neurons exhibit significant sustained maintenance, or are only phasically activated by gating.  Both profiles are widely observed e.g., [Sommer & Wurtz, 2000](#references).
 
 The key, more complex computational challenges are:
 
@@ -26,21 +26,21 @@ The key, more complex computational challenges are:
 
 ## Updating
 
-For the updating question, we compute a BG gating signal in the middle of the 1st quarter (set by `GPiThal.Timing.GateQtr`) of the overall AlphaCycle of processing (cycle 18 of 25, per `GPiThal.Timing.Cycle` parameter), which has the immediate effect of clearing out the existing PFC activations (see `PFCLayer.Maint.Clear`, such that by the end of the next quarter (2), the new information is sufficiently represented in the superficial PFC neurons.  At the end of 2nd quarter (per `PFCLayer.DeepBurst.BurstQtr`), the superficial activations drive updating of the deep layers (via the standard `deep` `CtxtGe` computation), to maintain the new information.  In keeping with the beta frequency cycle of the BG / PFC circuit (20 Hz, 50 msec cycle time), we support a second round of gating in the middle of the 2nd quarter (again by `GPiThal.Timing.GateQtr`), followed by maintenance activating in deep layers after the 4th quarter.
+For the updating question, we compute a BG gating signal in the middle of the 1st quarter (set by `GPiThal.Timing.GateQtr`) of the overall AlphaCycle of processing (cycle 18 of 25, per `GPiThal.Timing.Cycle` parameter), which has the immediate effect of clearing out the existing PFC activations (see `PFCLayer.Maint.Clear`, such that by the end of the next quarter (2), the new information is sufficiently represented in the superficial PFC neurons.  At the end of 2nd quarter (per `PFCLayer.Gate.GateQtr`, which is typically 1 quarter after the GPiThal version), the superficial activations drive updating of the deep layers, to maintain the new information.  In keeping with the beta frequency cycle of the BG / PFC circuit (20 Hz, 50 msec cycle time), we support a second round of gating in the middle of the 2nd quarter (again by `GPiThal.Timing.GateQtr`), followed by maintenance activating in deep layers after the 4th quarter.
 
-For `PFCout` layers (with `PFCLayer.Gate.OutGate` set), there is an `OutQ1Only` option (default true) which, with `PFCLayer.DeepBurst.BurstQtr` set to Q1, causes output gating to update at the end of the 1st quarter, which gives more time for it to drive output responding.   And the 2nd beta-frequency gating comes too late in a standard AlphaCycle based update sequence to drive output, so it is not useful.  However, supporting two phases of maintenance updating allows for stripes cleared by output gating (see next subsection) to update in the 2nd half of the alpha cycle, which is useful.
+For `PFCout` layers (with `PFCLayer.Gate.OutGate` set), there is an `OutQ1Only` option (default true) which, with `PFCLayer.Gate.GateQtr` set to Q1, causes output gating to update at the end of the 1st quarter, which gives more time for it to drive output responding.   And the 2nd beta-frequency gating comes too late in a standard AlphaCycle based update sequence to drive output, so it is not useful.  However, supporting two phases of maintenance updating allows for stripes cleared by output gating (see next subsection) to update in the 2nd half of the alpha cycle, which is useful.
 
 In summary, for `PFCmnt` maintenance gating:
 
 * Q1, cycle 18: BG gating, PFC clearing of any existing act
-* Q2, end: Super -> Deep (CtxtGe)
+* Q2, end: Super -> Deep
 * Q2, cycle 18: BG gating, PFC clearing
-* Q4, end: Super -> Deep (CtxtGe)
+* Q4, end: Super -> Deep
 
 And `PFCout` output gating:
 
 * Q1, cycle 18: BG gating -- triggers clearing of corresponding Maint stripe
-* Q1, end: Super -> Deep (CtxtGe) so Deep can drive network output layers
+* Q1, end: Super -> Deep, so Deep can drive network output layers
 
 ## Maint & Output Organization
 
@@ -66,7 +66,7 @@ Here are the details about each different layer type in PBWM:
 
 * [GPiThalLayer](https://godoc.org/github.com/emer/leabra/pbwm#GPiThalLayer): Has a strong competition for selecting which stripe gets to gate, based on projections from the MatrixGo units, and the NoGo influence from GPeNoGo, which can effectively *veto* a few of the possible stripes to prevent gating. We have combined the functions of the GPi (or SNr) and the Thalamus into a single abstracted layer, which has the excitatory kinds of outputs that we would expect from the thalamus, but also implements the stripe-level competition mediated by the GPi/SNr. If there is more overall Go than NoGo activity, then the GPiThal unit gets activated, which then effectively establishes an excitatory loop through the corresponding deep layers of the PFC, with which the thalamus neurons are bidirectionally interconnected.  This layer uses [GateLayer](https://godoc.org/github.com/emer/leabra/pbwm#GateLayer) framework to update [GateState](https://godoc.org/github.com/emer/leabra/pbwm#GateState) which is broadcast to the Matrix and PFC, so they have current gating state information.
 
-* [PFCLayer](https://godoc.org/github.com/emer/leabra/pbwm#PFCLayer): Uses `deep` super vs. deep dynamics with gating (in `GateState` values broadcast from GPiThal) determining when super drives deep.  Actual maintenance in deep layer can be set using `PFCDyn` fixed dynamics that provides a simple way of shaping a temporally-evolving activation pattern over the layer, with a minimal case of just stable fixed maintenance.  Gating in the `out` stripe will drive clearing of maintenance in corresponding `mnt` stripe.
+* [PFCDeepLayer](https://godoc.org/github.com/emer/leabra/pbwm#PFCDeepLayer): Uses `deep`-like super vs. deep dynamics with gating (in `GateState` values broadcast from GPiThal) determining when deep updates from super.  Actual maintenance in deep layer can be set using `PFCDyn` fixed dynamics that provides a simple way of shaping a temporally-evolving activation pattern over the layer, with a minimal case of just stable fixed maintenance.  The different dyn patterns take place in extra Y-axis rows, with the inner-loop being the super y axis, and outer loop being the different dyn types.  Whereas there was some ambiguity previously in whether the super layer reflected the maintenance in deep to some extent, or just the current input state, the current version makes a stronger distinction here: super is *only* representing the current sensory inputs.  This also avoids any need for explicit clearing of super prior to gating in new information.  Furthermore, the super layer can be any type of layer -- all of the specific functionality is now in the PFCDeepLayer type.
 
 # Dopamine Layers
 
@@ -86,17 +86,17 @@ It extends the core `Cycle` method called every cycle of updating as follows:
 
 ```Go
 func (nt *Network) Cycle(ltime *leabra.Time) {
-	nt.Network.Network.Cycle(ltime) // basic version from leabra.Network (not deep.Network, which calls DeepBurst)
-	nt.GateSend(ltime) // GateLayer (GPiThal) computes gating, sends to other layers
-	nt.RecGateAct(ltime) // Record activation state at time of gating (in ActG neuron var)
-	nt.DeepBurst(ltime) // Act -> Burst (during BurstQtr) (see deep for details)
-	nt.SendMods(ltime) // send modulators (DA)
+	nt.Network.CycleImpl(ltime) // basic version from leabra.Network
+	nt.GateSend(ltime)          // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ltime)        // Record activation state at time of gating (in ActG neuron var)
+
+	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }
 ```
 
 which determines the additional steps of computation after the activations have been updated in the current cycle, supporting the extra gating and DA modulation functions.
 
-From `deep.Network`, there is a key addition to `QuarterFinal` method that calls `DeepCtxt` which in turn calls `SendCtxtGe` and `CtxtFmGe` -- this is how the deep layers get their "context" inputs from corresponding superficial layers (mediated through layer 5IB neurons in the biology, which burst periodically).  This is when the PFC layers update deep from super.
+There is also a key addition to `QuarterFinal` method that calls `DeepMaint` where deep layers get their updated maintenance inputs from corresponding superficial layers (mediated through layer 5IB neurons in the biology, which burst periodically).  This is when the PFC layers update deep from super.
 
 ## GPiThal and GateState
 
@@ -112,28 +112,22 @@ All gated PBWM layers are of type [GateLayer](https://godoc.org/github.com/emer/
 
 ## PFCLayer
 
-[PFCLayer](https://godoc.org/github.com/emer/leabra/pbwm#PFCLayer) supports `mnt` and `out` and Super vs. Deep PFC layers.
+[PFCDeepLayer](https://godoc.org/github.com/emer/leabra/pbwm#PFCDeepLayer) supports `mnt` and `out` types, and handles all the PFC-specific gating logic.
 
-* Cycle: 
-    + `ActFmG` calls `Gating` which is only run on Super layers, and only does something when `GateState.Now = true` and it calls `DecayStatePool` if `GateState.Act > 0` (i.e., the stripe has gated) to clear out any existing activation, and resets `Cnt = 0` indicating just gated.  For `out` layers, it clears the corresponding `mnt` stripe.
+* Cycle: `ActFmG` calls `Gating`, which only does something when `GateState.Now = true`: it resets `Cnt = 0` indicating just gated.
 
-    + `BurstFmAct` for Super layers applies gating from `Cnt` state to `Burst` activations (which reflect 5IB activity as gated by BG, and are what is sent to the deep layer during `SendCtxtGe`)
-
-* `QuarterFinal` for Super calls `GateStateToDeep` to copy updated `GateState` info computed in `Gating` over to the corresponding Deep layer.
-    + `SendCtxtGe` (called after QuarterFinal by Network in a separate pass) updates the `GateState.Cnt` for Super and Deep layers, incrementing Cnt up for maintaining layers, and decrementing for non-maintaining.  Super then sends `CtxtGe` to Deep.
-
-    + `CtxtFmGe` (only Deep) gets the CtxtGe value from super (always) and calls `DeepMaint` which applies the `PFCDyn` dynamics to the `CtxtGe` currents if using those.  It saves the initial `CtxtGe` as a `Maint` neuron-level value which is visible as `Cust1` variable in NetView, and is used to multiply the dynamics by the original activation strength.
+* `QuarterFinal`: calls `DeepMaint` which grabs the corresponding superficial activation, if gating has happened, and otherwise it just updates the `MaintGe` conductance based on dynamics.
 
 In summary, for `PFCmnt` maintenance gating:
 
 * Q1, cycle 18: BG gating, PFC clearing of any existing act: `Gating` call
-* Q2, end: Super -> Deep (CtxtGe): `QuarterFinal` based on `BurstFmAct` gated `Burst` vals
+* Q2, end: Super -> Deep `DeepMaint` 
 * ...
 
 And `PFCout` output gating:
 
 * Q1, cycle 18: BG gating -- triggers clearing of corresponding Maint stripe
-* Q1, end: Super -> Deep (CtxtGe) so Deep can drive network output layers
+* Q1, end: Super -> Deep so Deep can drive network output layers
 
 # TODO
 
@@ -141,15 +135,12 @@ And `PFCout` output gating:
 
 - [ ] patch -- not *essential* for SIR1, test in SIR2
 
-- [ ] TAN -- not *essential* for SIR1, test for SIR2
+- [x] CIN -- did not work well at all surprisingly -- works much better in pcore..
 
 - [ ] del_inhib -- delta inhibition -- SIR1 MUCH faster learning without!  test for SIR2
 
 - [ ] slow_wts -- not important for SIR1, test for SIR2
 
-- [ ] GPe, GPi learning too -- allows Matrix to act like a hidden layer!
-
-- [ ] Currently only supporting 1-to-1 Maint and Out prjns -- Out gating automatically clears same pool in maint -- could explore different arrangements
 
 # References
 

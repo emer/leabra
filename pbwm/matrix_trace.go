@@ -9,6 +9,7 @@ import (
 
 	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // TraceSyn holds extra synaptic state for trace projections
@@ -45,17 +46,17 @@ var TraceSynVars = []string{"NTr", "Tr"}
 type TraceParams struct {
 	NotGatedLR    float32 `def:"0.7" min:"0" desc:"learning rate for all not-gated stripes, which learn in the opposite direction to the gated stripes, and typically with a slightly lower learning rate -- although there are different learning logics associated with each of these different not-gated cases, in practice the same learning rate for all works best, and is simplest"`
 	GateNoGoPosLR float32 `def:"0.1" min:"0" desc:"learning rate for gated, NoGo (D2), positive dopamine (weights decrease) -- this is the single most important learning parameter here -- by making this relatively small (but non-zero), an asymmetry in the role of Go vs. NoGo is established, whereby the NoGo pathway focuses largely on punishing and preventing actions associated with negative outcomes, while those assoicated with positive outcomes only very slowly get relief from this NoGo pressure -- this is critical for causing the model to explore other possible actions even when a given action SOMETIMES produces good results -- NoGo demands a very high, consistent level of good outcomes in order to have a net decrease in these avoidance weights.  Note that the gating signal applies to both Go and NoGo MSN's for gated stripes, ensuring learning is about the action that was actually selected (see not_ cases for logic for actions that were close but not taken)"`
-	AChResetThr   float32 `min:"0" def:"0.5" desc:"threshold on receiving unit ACh value, sent by TAN units, for reseting the trace"`
+	AChDecay      float32 `min:"0" def:"0" desc:"decay driven by receiving unit ACh value, sent by CIN units, for reseting the trace"`
+	Decay         float32 `min:"0" def:"1" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
 	Deriv         bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
-	Decay         float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
 }
 
 func (tp *TraceParams) Defaults() {
 	tp.NotGatedLR = 0.7
 	tp.GateNoGoPosLR = 0.1
-	tp.AChResetThr = 0.5
-	tp.Deriv = true
+	tp.AChDecay = 0 // not useful at all, surprisingly.
 	tp.Decay = 1
+	tp.Deriv = true
 }
 
 // LrnFactor resturns multiplicative factor for level of msn activation.  If Deriv
@@ -142,11 +143,12 @@ func (pj *MatrixTracePrjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			da := rlayi.UnitValByIdx(DA, int(ri))
+			da := rlayi.UnitValByIdx(DA, int(ri)) // note: more efficient to just assume same for all units
 			daLrn := rlayi.UnitValByIdx(DALrn, int(ri))
 			ach := rlayi.UnitValByIdx(ACh, int(ri))
-			tr := trsy.Tr
 			gateAct := rlayi.UnitValByIdx(GateAct, int(ri))
+			achDk := mat32.Min(1, ach*pj.Trace.AChDecay)
+			tr := trsy.Tr
 
 			dwt := float32(0)
 			if da != 0 {
@@ -156,9 +158,7 @@ func (pj *MatrixTracePrjn) DWt() {
 				}
 			}
 
-			if ach >= pj.Trace.AChResetThr {
-				tr = 0
-			}
+			tr -= achDk * tr
 
 			newNTr := pj.Trace.LrnFactor(rn.Act) * sn.Act
 			ntr := float32(0)

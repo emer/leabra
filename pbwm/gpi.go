@@ -9,9 +9,7 @@ import (
 	"log"
 
 	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/kit"
 )
 
@@ -25,7 +23,7 @@ type GPiThalPrjn struct {
 	GeRaw       []float32 `desc:"per-recv, per-prjn raw excitatory input"`
 }
 
-var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, deep.PrjnProps)
+var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, leabra.PrjnProps)
 
 func (pj *GPiThalPrjn) Build() error {
 	err := pj.Prjn.Build()
@@ -70,28 +68,14 @@ func (pj *GPiThalPrjn) RecvGInc() {
 
 // GPiTimingParams has timing parameters for gating in the GPiThal layer
 type GPiTimingParams struct {
-	GateQtr leabra.Quarters `desc:"Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the deep BurstQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
+	GateQtr leabra.Quarters `desc:"Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the PFC GateQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
 	Cycle   int             `def:"18" desc:"cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way."`
 }
 
 func (gt *GPiTimingParams) Defaults() {
-	gt.SetGateQtr(leabra.Q1)
-	gt.SetGateQtr(leabra.Q3)
+	gt.GateQtr.Set(int(leabra.Q1))
+	gt.GateQtr.Set(int(leabra.Q3))
 	gt.Cycle = 18
-}
-
-// SetGateQtr sets given gating quarter (adds to any existing) -- Q1, 3 by default
-func (gt *GPiTimingParams) SetGateQtr(qtr leabra.Quarters) {
-	bitflag.Set32((*int32)(&gt.GateQtr), int(qtr))
-}
-
-// IsGateQtr returns true if the given quarter (0-3) is set as a Gating quarter
-func (gt *GPiTimingParams) IsGateQtr(qtr int) bool {
-	qmsk := leabra.Quarters(1 << uint(qtr))
-	if gt.GateQtr&qmsk != 0 {
-		return true
-	}
-	return false
 }
 
 // GPiGateParams has gating parameters for gating in GPiThal layer, including threshold
@@ -131,7 +115,7 @@ type GPiThalLayer struct {
 	GPiNeurs []GPiNeuron     `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
-var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, deep.LayerProps)
+var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, leabra.LayerProps)
 
 // Sel: "GPiThalLayer", Desc: "defaults ",
 // 	Params: params.Params{
@@ -167,14 +151,14 @@ func (ly *GPiThalLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	return gnrn.ActG
 }
 
-// SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmnt, PFCout
+// SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmntD, PFCoutD
 // with optional prefix -- excludes mnt, out cases if corresp shape = 0
 func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 	pfcprefix := "PFC"
 	if prefix != "" {
 		pfcprefix = prefix
 	}
-	std := []string{prefix + "MatrixGo", prefix + "MatrixNoGo", pfcprefix + "mnt", pfcprefix + "out"}
+	std := []string{prefix + "MatrixGo", prefix + "MatrixNoGo", pfcprefix + "mntD", pfcprefix + "outD"}
 	ly.SendTo = make([]string, 2)
 	for i, s := range std {
 		nm := s
@@ -184,12 +168,10 @@ func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 		case i == 2:
 			if ly.GateShp.MaintX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
-				ly.SendTo = append(ly.SendTo, nm+"D")
 			}
 		case i == 3:
 			if ly.GateShp.OutX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
-				ly.SendTo = append(ly.SendTo, nm+"D")
 			}
 		}
 	}
@@ -338,7 +320,7 @@ func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
 
 // GateFmAct updates GateState from current activations, at time of gating
 func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
-	gateQtr := ly.Timing.IsGateQtr(ltime.Quarter)
+	gateQtr := ly.Timing.GateQtr.Has(ltime.Quarter)
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]

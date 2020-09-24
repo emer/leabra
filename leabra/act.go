@@ -456,12 +456,12 @@ func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
 	if ncon == snu {
 		sc = 1 / float32(slayActN)
 	} else {
-		rMaxActN := int(math32.Min(ncon, float32(slayActN))) // max number we could get
-		rAvgActN := int(mat32.Round(savg * ncon))            // recv average actual # active if uniform
-		rAvgActN = ints.MaxInt(rAvgActN, 1)
-		rExpActN := rAvgActN + semExtra // expected
-		rExpActN = ints.MinInt(rExpActN, rMaxActN)
-		sc = 1 / float32(rExpActN)
+		maxActN := int(math32.Min(ncon, float32(slayActN))) // max number we could get
+		avgActN := int(mat32.Round(savg * ncon))            // recv average actual # active if uniform
+		avgActN = ints.MaxInt(avgActN, 1)
+		expActN := avgActN + semExtra // expected
+		expActN = ints.MinInt(expActN, maxActN)
+		sc = 1 / float32(expActN)
 	}
 	return sc
 }

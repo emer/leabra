@@ -272,4 +272,41 @@ Learning is based on running-averages of activation variables, parameterized in 
     + `DWt = 0`
         + reset weight changes now that they have been applied.
 
+## Input Scaling
+
+The `Ge` and `Gi` synaptic conductances computed from a given projection from one layer to the next reflect the number of receptors currently open and capable of passing current, which is a function of the activity of the sending layer, and total number of synapses.  We use a set of equations to automatically normalize (rescale) these factors across different projections, so that each projection has roughly an equal influence on the receiving neuron, by default.
+
+The most important factor to be mindful of for this automatic rescaling process is the expected activity level in a given sending layer.  This is set initially to `Layer.Inhib.ActAvg.Init`, and adapted from there by the various other parameters in that `Inhib.ActAvg` struct.  It is a good idea in general to set that `Init` value to a reasonable estimate of the proportion of activity you expect in the layer, and in very small networks, it is typically much better to just set the `Fixed` flag and keep this `Init` value as such, as otherwise the automatically computed averages can fluctuate significantly and thus create corresponding changes in input scaling.  The default `UseFirst` flag tries to avoid the dependence on the `Init` values but sometimes the first value may not be very representative, so it is better to set `Init` and turn off `UseFirst` for more reliable performance.
+
+Furthermore, we add two tunable parameters that further scale the overall conductance received from a given projection (one in a *relative* way compared to other projections, and the other a simple *absolute* multiplicative scaling factor).  These are some of the most important parameters to configure in the model -- in particular the strength of top-down "back" projections typically must be relatively weak compared to bottom-up forward projections (e.g., a relative scaling factor of 0.1 or 0.2 relative to the forward projections).
+
+The scaling contributions of these two factors are:
+
+* `GScale = WtScale.Abs * (WtScale.Rel / Sum(all WtScale.Rel))`
+
+Thus, all the `Rel` factors contribute in proportion to their relative value compared to the sum of all such factors across all receiving projections into a layer, while `Abs` just multiplies directly.
+
+In general, you want to adjust the `Rel` factors, to keep the total `Ge` and `Gi` levels relatively constant, while just shifting the relative contributions.  In the relatively rare case where the overall `Ge` levels are too high or too low, you should adjust the `Abs` values to compensate.
+
+Typically the `Ge` value should be between .5 and 1, to maintain a reasonably responsive neural response, and avoid numerical integration instabilities and saturation that can arise if the values get too high.  You can record the `Layer.Pools[0].Inhib.Ge.Avg` and `.Max` values at the epoch level to see how these are looking -- this is especially important in large networks, and those with unusual, complex patterns of connectivity, where things might get out of whack.
+
+### Automatic Rescaling
+
+Here are the relevant factors that are used to compute the automatic rescaling to take into account the expected activity level on the sending layer, and the number of connections in the projection.  The actual code is in `leabra/layer.go: GScaleFmAvgAct()` and `leabra/act.go SLayActScale`
+
+* `savg` = sending layer average activation
+* `snu` = sending layer number of units
+* `ncon` = number of connections
+* `slayActN = int(Round(savg * snu))` -- must be at least 1
+* `sc` = scaling factor, which is roughly 1 / expected number of active sending connections.
+* `if ncon == snu:` -- full connectivity
+    + `sc = 1 / slayActN`
+* `else:`           -- partial connectivity -- trickier
+    + `avgActN = int(Round(savg * ncon))` -- avg proportion of connections
+    + `expActN = avgActN + 2`  -- add an extra 2 variance around expected value
+    + `maxActN = MIN(ncon, sLayActN)`  -- can't be more than number active
+    + `expActN = MIN(expActN, maxActN)`  -- constrain
+    + `sc = 1 / expActN`
+
+This `sc` factor multiplies the `GScale` factor as computed above.
 

@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/chewxy/math32"
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -29,6 +28,12 @@ var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 func (ly *Layer) GetDA() float32   { return ly.DA }
 func (ly *Layer) SetDA(da float32) { ly.DA = da }
+
+func (ly *Layer) GetACh() float32    { return ly.ACh }
+func (ly *Layer) SetACh(ach float32) { ly.ACh = ach }
+
+func (ly *Layer) GetSE() float32   { return ly.SE }
+func (ly *Layer) SetSE(se float32) { ly.SE = se }
 
 // AsPBWM returns this layer as a pbwm.Layer
 func (ly *Layer) AsPBWM() *Layer {
@@ -57,6 +62,7 @@ func (ly *Layer) SendMods(ltime *leabra.Time) {
 
 func (ly *Layer) Defaults() {
 	ly.Layer.Defaults()
+	ly.Act.Init.Decay = 0
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
@@ -103,8 +109,8 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	if !ok {
 		return -1, fmt.Errorf("pbwm.NeuronVars: variable named: %s not found", varNm)
 	}
-	vidx += len(deep.NeuronVarsAll)
-	return vidx, err
+	vidx += ly.Layer.UnitVarNum()
+	return vidx, nil
 }
 
 // UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
@@ -112,10 +118,10 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 || varIdx >= len(NeuronVarsAll) {
+	if varIdx < 0 {
 		return math32.NaN()
 	}
-	nn := len(deep.NeuronVars)
+	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
@@ -124,6 +130,12 @@ func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 	}
 	varIdx -= nn
 	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeurVars(varIdx), idx)
+}
+
+// UnitVarNum returns the number of Neuron-level variables
+// for this layer.  This is needed for extending indexes in derived types.
+func (ly *Layer) UnitVarNum() int {
+	return ly.Layer.UnitVarNum() + int(NeurVarsN)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
