@@ -101,8 +101,8 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	StepMode                     bool         `view:"-" desc:"running from Step command?"`
 	TestMode                     bool         `inactive:"+" desc:"testing mode, no training"`
 
-	CycleUpdateNetView           bool `desc:"determines whether network views will be updated on a cycle-by-cycle basis (slow, but often quite useful for seeing how processing is proceeding)"`
-	NetTimesCycleQtr             bool `desc:"turn this OFF to see cycle-level updating"`
+	CycleLogUpdt                 leabra.TimeScales `desc:"time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented"`
+	NetTimesCycleQtr             bool              `desc:"turn this OFF to see cycle-level updating"`
 	TrialAnalysisTimeLogInterval int
 	TrialAnalUpdateCmpGraphs     bool          `desc:"turn off to preserve existing cmp graphs - else saves cur as cmp for new run"`
 	Net                          *pvlv.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
@@ -262,8 +262,9 @@ func (ss *Sim) Defaults() {
 	if err != nil {
 		panic(err)
 	}
-	ss.TrainUpdt = leabra.Quarter
-	ss.CycleUpdateNetView = false
+	ss.TrainUpdt = leabra.AlphaCycle
+	ss.TestUpdt = leabra.Cycle
+	ss.CycleLogUpdt = leabra.Quarter
 	ss.NetTimesCycleQtr = true
 	ss.TrialAnalysisTimeLogInterval = 1
 	ss.TrialAnalUpdateCmpGraphs = true
@@ -273,6 +274,21 @@ func (ss *Sim) Defaults() {
 	ss.StopConditionTrialNameString = "_t3"
 	ss.ViewOn = true
 	ss.RndSeed = 1
+}
+
+func (ss *Sim) MaybeUpdate(train, exact bool, checkTS leabra.TimeScales) {
+	if !ss.ViewOn {
+		return
+	}
+	var ts leabra.TimeScales
+	if train {
+		ts = ss.TrainUpdt
+	} else {
+		ts = ss.TestUpdt
+	}
+	if (exact && ts == checkTS) || ts <= checkTS {
+		ss.UpdateView(train)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1564,7 +1580,7 @@ func (ss *Sim) TrainMultiRun() bool {
 		if allDone || ss.Stepper.StopRequested() || ss.Stopped() {
 			break
 		}
-		if ss.TrainUpdt >= leabra.Run {
+		if ss.ViewOn && ss.TrainUpdt >= leabra.Run {
 			ss.UpdateView(true)
 		}
 	}
@@ -1895,7 +1911,7 @@ func (ss *Sim) LogCycleData(ev *PVLVEnv) {
 	}
 	label := fmt.Sprintf("%20s: %3d", ev.AlphaTrialName, row)
 	ss.CycleDataPlot.Params.XAxisLabel = label
-	if ss.CycleUpdateNetView || row%25 == 0 {
+	if ss.CycleLogUpdt == leabra.Quarter || row%25 == 0 {
 		ss.CycleDataPlot.GoUpdate()
 	}
 }
