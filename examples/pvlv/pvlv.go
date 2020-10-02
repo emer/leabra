@@ -134,16 +134,15 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	ToolBar                   *gi.ToolBar        `view:"-" desc:"the master toolbar"`
 	WtsGrid                   *etview.TensorGrid `view:"-" desc:"the weights grid view"`
 	TrialTypeData             *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeEpochFirstLogged map[string]bool
-	TrialTypeEpochFirstLog    *etable.Table  `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeEpochFirstLogCmp *etable.Table  `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeDataPlot         *eplot.Plot2D  `view:"no-inline" desc:"multiple views for different type of trials"`
-	TrialTypeSet              map[string]int `view:"-"`
-	TrialTypeSetCounter       int            `view:"-"`
-	TrialTypeEpochFirst       *eplot.Plot2D  `view:"-" desc:"epoch plot"`
-	TrialTypeEpochFirstCmp    *eplot.Plot2D  `view:"-" desc:"epoch plot"`
-	HistoryGraph              *eplot.Plot2D  `view:"-" desc:"trial history"`
-	RealTimeData              *eplot.Plot2D  `view:"-" desc:"??"`
+	TrialTypeEpochFirstLog    *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
+	TrialTypeEpochFirstLogCmp *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
+	TrialTypeDataPlot         *eplot.Plot2D      `view:"no-inline" desc:"multiple views for different type of trials"`
+	TrialTypeSet              map[string]int     `view:"-"`
+	TrialTypeSetCounter       int                `view:"-"`
+	TrialTypeEpochFirst       *eplot.Plot2D      `view:"-" desc:"epoch plot"`
+	TrialTypeEpochFirstCmp    *eplot.Plot2D      `view:"-" desc:"epoch plot"`
+	HistoryGraph              *eplot.Plot2D      `view:"-" desc:"trial history"`
+	RealTimeData              *eplot.Plot2D      `view:"-" desc:"??"`
 
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
 	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
@@ -155,24 +154,26 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	LayerThreads bool             `desc:"use per-layer threads"`
 
 	// internal state - view:"-"
-	SumDA        float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAbsDA     float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumRewPred   float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumErr       float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumSSE       float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAvgSSE    float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumCosDiff   float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	TrnEpcPlot   *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
-	TstEpcPlot   *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
-	TstTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
-	RunPlot      *eplot.Plot2D               `view:"-" desc:"the run plot"`
-	TrnEpcFile   *os.File                    `view:"-" desc:"log file"`
-	RunFile      *os.File                    `view:"-" desc:"log file"`
-	ValsTsrs     map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
-	LogSetParams bool                        `view:"-" desc:"if true, print message for all params that are set"`
-	LastEpcTime  leabra.Time                 `view:"-" desc:"timer for last epoch"`
-	Interactive  bool                        `view:"-" desc:"true iff running through the GUI"`
-	StructView   *giv.StructView             `view:"-" desc:"structure view for this struct"`
+	TrialTypeEpochFirstLogged map[string]bool             `view:"-"`
+	SumDA                     float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAbsDA                  float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumRewPred                float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumErr                    float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumSSE                    float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAvgSSE                 float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumCosDiff                float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	TrnEpcPlot                *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
+	TstEpcPlot                *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
+	TstTrlPlot                *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
+	RunPlot                   *eplot.Plot2D               `view:"-" desc:"the run plot"`
+	TrnEpcFile                *os.File                    `view:"-" desc:"log file"`
+	RunFile                   *os.File                    `view:"-" desc:"log file"`
+	ValsTsrs                  map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
+	LogSetParams              bool                        `view:"-" desc:"if true, print message for all params that are set"`
+	LastEpcTime               leabra.Time                 `view:"-" desc:"timer for last epoch"`
+	Interactive               bool                        `view:"-" desc:"true iff running through the GUI"`
+	StructView                *giv.StructView             `view:"-" desc:"structure view for this struct"`
+	InputShapes               map[string][]int            `view:"-"`
 
 	// master lists of various kinds of parameters
 	MasterRunParams    data.RunParamsMap   `view:"no-inline" desc:"master list of RunParams records"`
@@ -180,12 +181,8 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	MasterRunSeqParams data.SeqParamsMap   `view:"no-inline" desc:"master list of RunSeqParams records"`
 	MasterEpochParams  data.EpochParamsMap `desc:"master list of EnvEpochParams (trial groups) records"`
 
-	InputShapes map[string][]int
-
 	MaxSeqSteps int `view:"-" desc:"Maximum number of high-level sequences to run"`
 	MaxRuns     int `view:"-" desc:"maximum number of model runs to perform"` // for non-GUI runs
-
-	LHbInLayers []string `view:"-" desc:"layers that project to LHbRMTg"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -1735,8 +1732,17 @@ func (ss *Sim) AnalyzeTicksExistingData(ev *PVLVEnv) {
 
 }
 
+func IMax(x, y int) int {
+	if x > y {
+		return x
+	} else {
+		return y
+	}
+}
+
 func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error) {
 	steps := ss.GetSeqSteps(rs)
+	ticksPerGroup := 0
 	var err error
 	types := map[string]string{}
 	result := map[string]string{}
@@ -1744,7 +1750,8 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error
 		if step.Nm == "NullStep" {
 			break
 		}
-		tgt, err := ss.GetEpochTrialTypes(step)
+		tgt, ticks, err := ss.GetEpochTrialTypes(step)
+		ticksPerGroup = IMax(ticksPerGroup, ticks)
 		if err != nil {
 			return nil, err
 		}
@@ -1753,7 +1760,7 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error
 		}
 	}
 	for long, short := range types {
-		for i := 0; i < 5; i++ {
+		for i := 0; i < ticksPerGroup; i++ {
 			is := strconv.Itoa(i)
 			result[long+"_t"+is] = short + is
 		}
@@ -1761,15 +1768,16 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error
 	return result, err
 }
 
-func (ss *Sim) GetEpochTrialTypes(rp *data.RunParams) (map[string]string, error) {
+func (ss *Sim) GetEpochTrialTypes(rp *data.RunParams) (map[string]string, int, error) {
 	var err error
+	ticks := 0
 	cases := map[string]string{}
 	ep, found := ss.MasterEpochParams[rp.EpochParamsTable]
 	valMap := map[pvlv.Valence]string{pvlv.POS: "+", pvlv.NEG: "-"}
 	if !found {
 		err := errors.New(fmt.Sprintf("EpochParams %s was not found",
 			rp.EpochParamsTable))
-		return nil, err
+		return nil, 0, err
 	}
 	for _, tg := range ep {
 		parts := strings.Split(tg.TrialGpName, "_")
@@ -1793,8 +1801,9 @@ func (ss *Sim) GetEpochTrialTypes(rp *data.RunParams) (map[string]string, error)
 			cases[longNm+oSuffix+tSuffix] = shortNm + "~"
 			cases[longNm+tSuffix] = shortNm + "*"
 		}
+		ticks = IMax(ticks, tg.AlphTicksPerTrialGp)
 	}
-	return cases, err
+	return cases, ticks, err
 }
 
 func (ss *Sim) SetTrialTypeDataXLabels(ev *PVLVEnv) (nRows int) {

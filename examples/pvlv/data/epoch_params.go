@@ -217,7 +217,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"PosAcq_pre_second_order": {
+		"PosAcqPreSecondOrder": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.500,
@@ -8175,7 +8175,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_train": {
+		"UnblockingTrain": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.000,
@@ -8237,7 +8237,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_value": {
+		"UnblockingValue": {
 			{
 				TrialGpName:         "AX_Rf",
 				PercentOfTotal:      0.000,
@@ -8339,7 +8339,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_value_test": {
+		"UnblockingValue_test": {
 			{
 				TrialGpName:         "A_Rf_test",
 				PercentOfTotal:      0.000,
@@ -8421,7 +8421,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_train_US": {
+		"UnblockingTrain_US": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.333,
@@ -8483,7 +8483,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_identity": {
+		"UnblockingIdentity": {
 			{
 				TrialGpName:         "AX_Rf",
 				PercentOfTotal:      0.300,
@@ -8565,7 +8565,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Unblocking_identity_test": {
+		"UnblockingIdentity_test": {
 			{
 				TrialGpName:         "A_Rf_test",
 				PercentOfTotal:      0.251,

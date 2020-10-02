@@ -240,10 +240,10 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"PosAcq_pre_second_order": {
-			Nm:               "PosAcq_pre_second_order",
+		"PosAcqPreSecondOrder": {
+			Nm:               "PosAcqPreSecondOrder",
 			Desc:             "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50%",
-			EpochParamsTable: "PosAcq_pre_second_order",
+			EpochParamsTable: "PosAcqPreSecondOrder",
 			FixedProb:        true,
 			RunProg:          "SingleTrial",
 			InitProg:         "PVLVInit",
@@ -474,7 +474,7 @@ func AllRunParams() RunParamsMap {
 		},
 		"PosSecondOrderCond": {
 			Nm:               "PosSecondOrderCond",
-			Desc:             "second order conditionig training: AB_NRf_POS, A_Rf_POS interleaved; A = 1st order, F = 2nd order CS",
+			Desc:             "second order conditioning training: AB_NRf_POS, A_Rf_POS interleaved; A = 1st order, F = 2nd order CS",
 			EpochParamsTable: "PosSecondOrderCond",
 			FixedProb:        false,
 			RunProg:          "SingleTrial",
@@ -1197,7 +1197,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_train": {
+		"UnblockingTrain": {
 			Nm:               "Unblocking_train",
 			Desc:             "A+++,B+++,C+",
 			EpochParamsTable: "Unblocking_train",
@@ -1226,7 +1226,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_Value": {
+		"UnblockingValue": {
 			Nm:               "Unblocking_Value",
 			Desc:             "AX+++,CZ+++",
 			EpochParamsTable: "Unblocking_Value",
@@ -1255,7 +1255,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_Value_test": {
+		"UnblockingValue_test": {
 			Nm:               "Unblocking_Value_test",
 			Desc:             "A,X,C,Z",
 			EpochParamsTable: "Unblocking_Value_test",
@@ -1284,7 +1284,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_train_US": {
+		"UnblockingTrain_US": {
 			Nm:               "Unblocking_train_US",
 			Desc:             "A+++ (water) ,B+++ (food)",
 			EpochParamsTable: "Unblocking_train_US",
@@ -1313,7 +1313,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_Identity": {
+		"UnblockingIdentity": {
 			Nm:               "Unblocking_Identity",
 			Desc:             "AX+++(water),BY+++(water)",
 			EpochParamsTable: "Unblocking_Identity",
@@ -1342,7 +1342,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Unblocking_Identity_test": {
+		"UnblockingIdentity_test": {
 			Nm:               "Unblocking_Identity_test",
 			Desc:             "A,X,B,Y",
 			EpochParamsTable: "Unblocking_Identity_test",
@@ -1458,7 +1458,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Overexpect_train": {
+		"OverexpectTrain": {
 			Nm:               "Overexpect_train",
 			Desc:             "Overexpectation training (A+, B+, C+, X+, Y-)",
 			EpochParamsTable: "Overexpectation_train",
@@ -1487,7 +1487,7 @@ func AllRunParams() RunParamsMap {
 			LoadExp:          false,
 			PainExpt:         false,
 		},
-		"Overexpect_Compound": {
+		"OverexpectCompound": {
 			Nm:               "Overexpect_Compound",
 			Desc:             "Overexpectation compound training (AX+, BY-, CX+, X+, Y-)",
 			EpochParamsTable: "Overexpectation_Compound",

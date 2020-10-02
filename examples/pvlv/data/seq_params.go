@@ -225,7 +225,7 @@ func AllSeqParams() SeqParamsMap {
 			SeqStep4: "NullStep",
 			SeqStep5: "NullStep",
 		},
-		"Unblocking_valueSeq": {
+		"UnblockingValueSeq": {
 			Nm:       "Unblocking_valueSeq",
 			Desc:     "",
 			SeqStep1: "Unblocking_train",
@@ -234,7 +234,7 @@ func AllSeqParams() SeqParamsMap {
 			SeqStep4: "NullStep",
 			SeqStep5: "NullStep",
 		},
-		"Unblocking_identitySeq": {
+		"UnblockingIdentitySeq": {
 			Nm:       "Unblocking_identitySeq",
 			Desc:     "",
 			SeqStep1: "Unblocking_trainUS",
