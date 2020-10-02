@@ -595,14 +595,14 @@ func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
 	colNames := []string{
 		"TrialType",
 		"Epoch",
-		"VTAp_act", "VTAn_act",
+		"VTAp_act", "LHbRMTg_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
 		"VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act",
 		"VSPatchNegD1_US0_act", "VSPatchNegD2_US0_act",
 		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act",
 		"VSMatrixNegD1_US0_act", "VSMatrixNegD2_US0_act",
 		"CElAcqNegD2_US0_act", "CElExtNegD1_US0_act",
-		"CEmPos_US0_act", "LHbRMTg_act",
+		"CEmPos_US0_act", "VTAn_act",
 	}
 	sch := etable.Schema{}
 
@@ -782,8 +782,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	//ss.SeqParamsSelect = cb
 
 	eplot.PlotColorNames = []string{
-		"black", "SkyBlue", "red", "ForestGreen", "lawngreen", "purple", "orange", "brown", "chartreuse", "navy",
-		"cyan", "magenta", "tan", "salmon", "yellow", "blue", "SkyBlue", "pink"}
+		"yellow", "black", "blue", "red", "ForestGreen", "lightgreen", "purple", "orange", "brown", "navy",
+		"cyan", "magenta", "tan", "salmon", "blue", "SkyBlue", "pink", "chartreuse"}
 
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrialTypeData").(*eplot.Plot2D)
 	ss.TrialTypeDataPlot = ss.ConfigTrialTypeDataPlot(plt, ss.TrialTypeData)
