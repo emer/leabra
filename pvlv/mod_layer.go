@@ -40,6 +40,7 @@ type ModLayer struct {
 	ModPools     []ModPool       `desc:"pools for maintaining aggregate values"`
 	ModReceivers []ModRcvrParams `desc:"layer names and scale values for mods sent from this layer"`
 	ModParams    `desc:"parameters shared by all modulator receiver layers"`
+	DaMod        DaModParams `desc:"parameters for dopaminergic modulation"`
 	Modulators   `desc:"layer-level neuromodulator levels"`
 }
 
@@ -53,22 +54,23 @@ type ModPool struct {
 	ModSendThreshold float32 `desc:"threshold for sending modulation. values below this are not added to the pool-level total"`
 }
 
+type DaModParams struct {
+	On        bool    `desc:"whether to use dopamine modulation"`
+	RecepType DaRType `inactive:"+" desc:"dopamine receptor type, D1 or D2"`
+	BurstGain float32 `desc:"multiplicative gain factor applied to positive dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign!"`
+	DipGain   float32 `desc:"multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext"`
+}
+
 type ModParams struct {
-	DaOn             bool    `desc:"whether to use dopamine modulation"`
-	DaRType          DaRType `inactive:"+" desc:"dopamine receptor type, D1 or D2"`
-	LrnModAct        bool    `desc:"if true, phasic dopamine values effect learning by modulating net_syn values (Compute_NetinExtras() - and thus unit activations; - CAUTION - very brittle and hard to use due to unintended consequences!"`
-	PctAct           float32 `desc:"if LrnModAct is true, proportion of activation used for computing dopamine modulation value -- 1-pct_act comes from net-input -- activation is more differentiated and leads to more differentiated representations, but if there is no activation then dopamine modulation has no effect, so it depends on having that activation signal"`
 	Minus            float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
 	Plus             float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
-	NegGain          float32 `viewif:"DaOn&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
-	PosGain          float32 `viewif:"DaOn&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
+	NegGain          float32 `viewif:"DaMod.On&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
+	PosGain          float32 `viewif:"DaMod.On&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
 	ActModZero       bool    `desc:"for modulation coming from the BLA via deep_mod_net -- when this modulation signal is below zero, does it have the ability to zero out the patch activations?  i.e., is the modulation required to enable patch firing?"`
 	ModNetThreshold  float32 `desc:"threshold on deep_mod_net before deep mod is applied -- if not receiving even this amount of overall input from deep_mod sender, then do not use the deep_mod_net to drive deep_mod and deep_lrn values -- only for SUPER units -- based on LAYER level maximum for base LeabraLayerSpec, PVLV classes are based on actual deep_mod_net for each unit"`
 	ModSendThreshold float32 `desc:"threshold for including neuron activation in total to send (for ModNet)"`
 	IsModSender      bool    `desc:"does this layer send modulation to other layers?"`
 	IsPVReceiver     bool    `desc:"does this layer receive a direct PV input?"`
-	BurstDAGain      float32 `desc:"multiplicative gain factor applied to positive dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign!"`
-	DipDAGain        float32 `desc:"multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext"`
 }
 
 type ModRcvrParams struct {
@@ -456,11 +458,11 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 // GetDa in cemer
 func (ly *ModLayer) DALrnFmDA(da float32) float32 {
 	if da > 0 {
-		da *= ly.BurstDAGain
+		da *= ly.DaMod.BurstGain
 	} else {
-		da *= ly.DipDAGain
+		da *= ly.DaMod.DipGain
 	}
-	if ly.DaRType == D2R {
+	if ly.DaMod.RecepType == D2R {
 		da = -da
 	}
 	return da

@@ -68,7 +68,6 @@ func (ly *CElAmygLayer) Defaults() {
 	ly.Act.Init.Vm = 0.55
 	ly.ActModZero = false
 	ly.AcqDeepMod = true
-	ly.LrnModAct = false
-	ly.BurstDAGain = 0.04 // differs between CEl layers
-	ly.DipDAGain = 0.1    // differs between CEl layers
+	ly.DaMod.BurstGain = 0.04 // differs between CEl layers
+	ly.DaMod.DipGain = 0.1    // differs between CEl layers
 }

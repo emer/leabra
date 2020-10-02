@@ -142,7 +142,7 @@ func (nt *Network) AddMSNLayer(name string, nY, nX, nNeurY, nNeurX int, cpmt Str
 func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 	acqExt AcqExt, val Valence, dar DaRType) *CElAmygLayer {
 	ly := CElAmygLayer{CElTyp: CElAmygLayerType{AcqExt: acqExt, Valence: val}}
-	ly.DaRType = dar
+	ly.DaMod.RecepType = dar
 	nt.AddLayerInit(&ly, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
 	ly.ModLayer.Init()
 	class := "CEl" + acqExt.String() + strings.Title(strings.ToLower(val.String())) + dar.String()[0:2] + " CElAmyg"
@@ -152,7 +152,7 @@ func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 
 func (nt *Network) AddBlAmygLayer(name string, nY, nX, nNeurY, nNeurX int, val Valence, dar DaRType, lTyp emer.LayerType) *BlAmygLayer {
 	ly := BlAmygLayer{Valence: val}
-	ly.DaRType = dar
+	ly.DaMod.RecepType = dar
 	nt.AddLayerInit(&ly, name, []int{nY, nX, nNeurY, nNeurX}, lTyp)
 	ly.ModLayer.Init()
 	class := "BlAmyg" + strings.Title(strings.ToLower(val.String())) + dar.String()[0:2] + " BlAmyg"

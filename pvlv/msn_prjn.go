@@ -42,6 +42,7 @@ type MSNPrjn struct {
 	SLActVar     string         `desc:"sending layer activation variable name"`
 	RLActVar     string         `desc:"receiving layer activation variable name"`
 	MaxVSActMod  float32        `def:"0.7" min:"0" desc:"for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning"`
+	DaMod        DaModParams    `desc:"parameters for dopaminergic modulation"`
 }
 
 type IMSNPrjn interface {

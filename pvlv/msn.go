@@ -105,7 +105,7 @@ func AddMSNLayer(nt *Network, name string, nY, nX, nNeurY, nNeurX int, cpmt Stri
 	ly := &MSNLayer{}
 	nt.AddLayerInit(ly, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
 	ly.ModLayer.Init()
-	ly.DaRType = da
+	ly.DaMod.RecepType = da
 	ly.Compartment = cpmt
 	return ly
 }
@@ -141,7 +141,7 @@ func (tp *MSNTraceParams) MSNActLrnFactor(act float32) float32 {
 
 func (ly *MSNLayer) Defaults() {
 	ly.ModLayer.Defaults()
-	ly.DaOn = true
+	ly.DaMod.On = true
 	ly.Inhib.Layer.Gi = 1.9
 	ly.Inhib.Layer.FB = 0.5
 	ly.Inhib.Pool.On = true

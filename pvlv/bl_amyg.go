@@ -52,10 +52,9 @@ func (ly *BlAmygLayer) Build() error {
 func (ly *BlAmygLayer) Defaults() {
 	ly.ModLayer.Defaults()
 	ly.ActModZero = true
-	ly.BurstDAGain = 0.04
-	ly.DipDAGain = 0.1
-	ly.LrnModAct = false
-	ly.DaOn = true
+	ly.DaMod.BurstGain = 0.04
+	ly.DaMod.DipGain = 0.1
+	ly.DaMod.On = true
 	ly.Minus = 1.0
 	ly.Plus = 1.0
 	ly.NegGain = 0.1
