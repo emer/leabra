@@ -2,17 +2,21 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// The Stepper package allows you to set StepPoints in simulation code that will pause if some condition is satisfied.
-// While paused, the simulation waits for the top-level process (the user interface) to tell it to continue.
-// Once a continue notification is received, the simulation continues on its way, with all internal state
-// exactly as it was when the StopPoint was hit, without having to explicitly save anything.
-// There are two "running" states, Stepping and Running. The difference is that in the Running state, unless
-// there is a Stop request, the application will forego the possibly-complex checking for a pause (see StepPoint,
-// at the bottom of this file). StepPoint is written to make checking as quick as possible. Although the program
-// will not stop at StepPoints without interaction, it will pause if RequestedState is Paused. The main difference
-// between Paused and Stopped is that in the Paused state, the application waits for a state change, whereas in the
-// Stopped state, the Stepper exits, and no application state is preserved. After entering Stopped, the controlling
-// program (i.e., the user interface) should make sure that everything is properly reinitialized before running again.
+/*
+The Stepper package allows you to set StepPoints in simulation code that will pause if some condition is satisfied.
+While paused, the simulation waits for the top-level process (the user interface) to tell it to continue.
+Once a continue notification is received, the simulation continues on its way, with all internal state
+exactly as it was when the StopPoint was hit, without having to explicitly save anything.
+
+There are two "running" states, Stepping and Running. The difference is that in the Running state, unless
+there is a Stop request, the application will forego the possibly-complex checking for a pause (see StepPoint,
+at the bottom of this file). StepPoint is written to make checking as quick as possible. Although the program
+will not stop at StepPoints without interaction, it will pause if RequestedState is Paused. The main difference
+between Paused and Stopped is that in the Paused state, the application waits for a state change, whereas in the
+Stopped state, the Stepper exits, and no application state is preserved. After entering Stopped, the controlling
+program (i.e., the user interface) should make sure that everything is properly reinitialized before running again.
+*/
+
 package stepper
 
 import (
@@ -278,11 +282,8 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 		return false
 	}
 	if state != Paused && grain == st.StepGrain { // exact equality is the only test that really works well
-		st.StepsRemaining--
-		if st.StepsRemaining <= 0 {
-			st.Enter(Paused)
+		if st.PauseIfStepsComplete() {
 			st.PauseNotifier(st.PNState)
-			st.StepsRemaining = st.StepsPerClick
 		}
 	}
 	if st.CondChecker != nil {
@@ -315,5 +316,19 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 			//fmt.Println(st.CurState)
 			st.StateMut.Unlock()
 		}
+	}
+}
+
+func (st *Stepper) PauseIfStepsComplete() (pauseNow bool) {
+	st.StateMut.Lock()
+	defer st.StateMut.Unlock()
+	st.StepsRemaining--
+	if st.StepsRemaining <= 0 {
+		st.CurState = Paused
+		//st.RequestedState = Paused
+		st.StepsRemaining = st.StepsPerClick
+		return true
+	} else {
+		return false
 	}
 }
