@@ -913,10 +913,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 	sg := gi.AddNewComboBox(tbar, "grainMenu")
 	sg.Editable = false
-	sg.SetProp("EnumType:Flag", gi.ButtonFlagMenu)
 	var stepKeys []string
 	maxLen := 0
-	for i := 0; i < int(StepGrainN)-1; i++ {
+	for i := 0; i < int(StepGrainN); i++ {
 		s := StepGrain(i).String()
 		maxLen = ints.MaxInt(maxLen, len(s))
 		stepKeys = append(stepKeys, s)
@@ -924,7 +923,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	sg.ItemsFromStringList(stepKeys, false, maxLen)
 	sg.ComboSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.StepGrain = StepGrain(sig)
-		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
 	})
 	sg.SetCurVal(ss.StepGrain.String())
 
