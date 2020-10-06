@@ -195,11 +195,11 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 		curTG = ev.TrialInstances.ReadNext()
 		ev.AlphaCycle.Max = curTG.AlphaTicksPerTrialGp
 		epochDone = ev.RunOneTrial(ss, curTG) // run one instantiated trial type (aka "trial group")
-		if ss.Stepper.StepPoint(int(SGTrial)) {
-			return
-		}
 		if ss.ViewOn && ss.TrainUpdt == leabra.Trial {
 			ss.UpdateView(ev == &ss.TrainEnv)
+		}
+		if ss.Stepper.StepPoint(int(SGTrial)) {
+			return
 		}
 	}
 	ev.EpochCt.Incr()

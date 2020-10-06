@@ -16,6 +16,8 @@ import (
 	"github.com/emer/etable/etview"
 	_ "github.com/emer/etable/split"
 	"github.com/goki/gi/giv"
+	"github.com/goki/gi/units"
+	"github.com/goki/ki/ints"
 	"github.com/goki/mat32"
 	"log"
 	"math/rand"
@@ -92,9 +94,9 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	TrainEnv       PVLVEnv    `desc:"Training environment -- PVLV environment"`
 	TestEnv        PVLVEnv    `desc:"Testing environment -- PVLV environment"`
 
-	StepsToRun                   int          `desc:"number of StopStepGrain steps to execute before stopping"`
+	StepsToRun                   int          `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
 	OrigSteps                    int          `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
-	StepGrain                    StepGrain    `desc:"granularity for the Step command"`
+	StepGrain                    StepGrain    `view:"-" desc:"granularity for the Step command"`
 	StopStepCondition            StopStepCond `desc:"granularity for conditional stop"`
 	StopConditionTrialNameString string       `desc:"if StopStepCond is TrialName or NotTrialName, this string is used for matching the current AlphaTrialName"`
 	StopStepCounter              env.Ctr      `inactive:"+" view:"-" desc:"number of times we've hit whatever StopStepGrain is set to'"`
@@ -764,7 +766,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	cb := gi.AddNewComboBox(tbar, "SeqParams")
 	var seqKeys []string
 	for key := range ss.MasterRunSeqParams {
-		//fmt.Printf("key=%v, val=%v\n", key, val)
 		seqKeys = append(seqKeys, key)
 	}
 	sort.Strings(seqKeys)
@@ -856,48 +857,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "StepCyc", Icon: "run", Tooltip: "Step by Cycles.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Cycle)
-	})
-
-	tbar.AddAction(gi.ActOpts{Label: "StepQtr", Icon: "run", Tooltip: "Step by Quarters.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Quarter)
-	})
-
-	tbar.AddAction(gi.ActOpts{Label: "StepMinus", Icon: "run", Tooltip: "Step to the end of the Minus Phase.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettleMinus)
-	})
-
-	tbar.AddAction(gi.ActOpts{Label: "StepPlus", Icon: "run", Tooltip: "Step to the end of the Plus Phase.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettlePlus)
-	})
-
-	tbar.AddAction(gi.ActOpts{Label: "StepAlpha", Icon: "run", Tooltip: "Step by Alpha Cycles.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(AlphaCycle)
-	})
-
-	tbar.AddAction(gi.ActOpts{Label: "Step", Icon: "run", Tooltip: "Step by whatever unit is set.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(ss.StepGrain)
-	})
-
 	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Stop the current program at its next natural stopping point (i.e., cleanly stopping when appropriate chunks of computation have completed).", UpdateFunc: func(act *gi.Action) {
 		act.SetActiveStateUpdt(ss.Running())
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
@@ -905,6 +864,87 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		ss.Stepper.Pause()
 		ss.ToolBar.UpdateActions()
 		ss.Win.Viewport.SetNeedsFullRender()
+	})
+
+	tbar.AddSeparator("stepSep")
+	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step:")
+	stepLabel.SetProp("font-size", "large")
+
+	tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "run", Tooltip: "Step to the end of a Cycle.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(Cycle)
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "run", Tooltip: "Step to the end of a Quarter.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(Quarter)
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "SettleMinus", Icon: "run", Tooltip: "Step to the end of the Minus Phase.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(SettleMinus)
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "SettlePlus", Icon: "run", Tooltip: "Step to the end of the Plus Phase.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(SettlePlus)
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "AlphaCycle", Icon: "run", Tooltip: "Step to the end of an Alpha Cycle.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(AlphaCycle)
+	})
+
+	tbar.AddAction(gi.ActOpts{Label: "Grain:", Icon: "run", Tooltip: "Step by the selected granularity.",
+		UpdateFunc: func(act *gi.Action) {
+			act.SetActiveStateUpdt(!ss.Running())
+		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.RunSteps(ss.StepGrain)
+	})
+	sg := gi.AddNewComboBox(tbar, "grainMenu")
+	sg.Editable = false
+	sg.SetProp("EnumType:Flag", gi.ButtonFlagMenu)
+	var stepKeys []string
+	maxLen := 0
+	for i := 0; i < int(StepGrainN)-1; i++ {
+		s := StepGrain(i).String()
+		maxLen = ints.MaxInt(maxLen, len(s))
+		stepKeys = append(stepKeys, s)
+	}
+	sg.ItemsFromStringList(stepKeys, false, maxLen)
+	sg.ComboSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.StepGrain = StepGrain(sig)
+		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
+	})
+	sg.SetCurVal(ss.StepGrain.String())
+
+	nLabel := gi.AddNewLabel(tbar, "n", "N:")
+	//nLabel.SetProp("vertical-align", gi.AlignBaseline)
+	nLabel.SetProp("font-size", "large")
+	//gi.AddNewTextField(tbar, "nString")
+	nStepsBox := gi.AddNewTextField(tbar, "nString")
+	nStepsBox.SetMinPrefWidth(units.NewCh(10))
+	nStepsBox.SetText("1")
+	nStepsBox.TextFieldSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		if sig == int64(gi.TextFieldDone) || sig == int64(gi.TextFieldDeFocused) {
+			nSteps, err := strconv.ParseInt(data.(string), 10, 64)
+			if err != nil {
+				fmt.Println("invalid integer")
+			} else {
+				ss.StepsToRun = int(nSteps)
+				fmt.Printf("nSteps now = %d\n", ss.StepsToRun)
+			}
+		}
 	})
 
 	vp.UpdateEndNoSig(updt)

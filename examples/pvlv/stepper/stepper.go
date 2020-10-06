@@ -293,9 +293,8 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 		}
 	}
 	for {
-		_, reqState := st.CheckStates()
 		st.StateMut.Lock()
-		switch reqState {
+		switch st.RequestedState {
 		case Stopped:
 			st.CurState = Stopped
 			st.StateMut.Unlock()
@@ -325,7 +324,7 @@ func (st *Stepper) PauseIfStepsComplete() (pauseNow bool) {
 	st.StepsRemaining--
 	if st.StepsRemaining <= 0 {
 		st.CurState = Paused
-		//st.RequestedState = Paused
+		st.RequestedState = Paused
 		st.StepsRemaining = st.StepsPerClick
 		return true
 	} else {
