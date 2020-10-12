@@ -254,11 +254,11 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 				mnr.ModLrn = 0
 				mnr.ModLevel = 1
 			} else {
-				if plMax != 0 {
-					//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
-					mnr.ModLrn = mnr.ModNet / plMax
-				} else {
+				newLrn := mnr.ModNet / plMax
+				if math32.IsInf(newLrn, 0) || math32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
+				} else {
+					mnr.ModLrn = newLrn
 				}
 			}
 		} else { // PATCH
@@ -270,12 +270,13 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 					mnr.ModLevel = 1
 				}
 			} else {
-				//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet * (1 - plMax)))
-				if plMax != 0 {
-					//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
-					mnr.ModLrn = mnr.ModNet / plMax
-				} else {
+				newLrn := mnr.ModNet / plMax
+				if math32.IsInf(newLrn, 1) || math32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
+				} else if math32.IsInf(newLrn, -1) {
+					mnr.ModLrn = -1
+				} else {
+					mnr.ModLrn = newLrn
 				}
 				mnr.ModLevel = 1 // do not modulate!
 			}
