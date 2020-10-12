@@ -16,7 +16,6 @@ import (
 	"github.com/emer/etable/etview"
 	_ "github.com/emer/etable/split"
 	"github.com/goki/gi/giv"
-	"github.com/goki/gi/units"
 	"github.com/goki/ki/ints"
 	"github.com/goki/mat32"
 	"log"
@@ -930,19 +929,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	//nLabel.SetProp("vertical-align", gi.AlignBaseline)
 	nLabel.SetProp("font-size", "large")
 	//gi.AddNewTextField(tbar, "nString")
-	nStepsBox := gi.AddNewTextField(tbar, "nString")
-	nStepsBox.SetMinPrefWidth(units.NewCh(10))
-	nStepsBox.SetText("1")
-	nStepsBox.TextFieldSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		if sig == int64(gi.TextFieldDone) || sig == int64(gi.TextFieldDeFocused) {
-			nSteps, err := strconv.ParseInt(data.(string), 10, 64)
-			if err != nil {
-				fmt.Println("invalid integer")
-			} else {
-				ss.StepsToRun = int(nSteps)
-				fmt.Printf("nSteps now = %d\n", ss.StepsToRun)
-			}
-		}
+	nStepsBox := gi.AddNewSpinBox(tbar, "nString")
+	stepsProps := ki.Props{"value": 1, "has-min": true, "min": 1, "has-max": false, "step": 1, "pagestep": 10}
+	nStepsBox.SetProps(stepsProps, true)
+	nStepsBox.SpinBoxSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.StepsToRun = int(nStepsBox.Value)
 	})
 
 	vp.UpdateEndNoSig(updt)
