@@ -8,9 +8,9 @@ import (
 	p "github.com/emer/leabra/pvlv"
 )
 
-// Epoch : epoch-level state
+// TrialGp : epoch-level state
 // aka TrialGroup
-type EpochParams struct {
+type TrialGroupParams struct {
 	TrialGpName         string    `desc:"name"`
 	PercentOfTotal      float64   `desc:"Percent of all trials for this type"`
 	ValenceContext      p.Valence `desc:"Positive or negative reward valence"`
@@ -31,42 +31,42 @@ type EpochParams struct {
 	Location            string    `desc:"Location"`
 }
 
-type EpochParamsMap map[string]EpochParamsList
+type TrialBlockMap map[string]TrialBlock
 
-type EpochParamsList []*EpochParams
+type TrialBlock []*TrialGroupParams
 
-type EpochParamsRecs struct {
+type TrialBlockRecs struct {
 	Recs
 }
 
-func NewEpochParamsRecs(epl *EpochParamsList) *EpochParamsRecs {
+func NewTrialBlockRecs(epl *TrialBlock) *TrialBlockRecs {
 	if epl == nil {
-		epl = new(EpochParamsList)
+		epl = new(TrialBlock)
 	}
-	recs := &EpochParamsRecs{Recs: *NewRecs(epl)}
+	recs := &TrialBlockRecs{Recs: *NewRecs(epl)}
 	return recs
 }
 
-func (epl *EpochParamsList) Length() int {
+func (epl *TrialBlock) Length() int {
 	return len(*epl)
 }
 
-func (epl *EpochParamsList) Append(ins interface{}) IRecs {
-	ret := append(*epl, ins.(*EpochParams))
+func (epl *TrialBlock) Append(ins interface{}) IRecs {
+	ret := append(*epl, ins.(*TrialGroupParams))
 	return &ret
 }
 
-func (epl *EpochParamsList) Get(i int) interface{} {
+func (epl *TrialBlock) Get(i int) interface{} {
 	return (*epl)[i]
 }
 
-func (eps *EpochParamsRecs) ReadNext() *EpochParams {
-	return eps.Recs.ReadNext().(*EpochParams)
+func (eps *TrialBlockRecs) ReadNext() *TrialGroupParams {
+	return eps.Recs.ReadNext().(*TrialGroupParams)
 }
 
 // imported from PVLVEnv->EnvEpochParams_Group in cemer
-func AllEpochParams() EpochParamsMap {
-	sets := map[string]EpochParamsList{
+func AllTrialBlocks() TrialBlockMap {
+	sets := map[string]TrialBlock{
 		"PosAcq_B50": {
 			{
 				TrialGpName:         "A_Rf",
@@ -609,7 +609,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"Overexpectation_compound": {
+		"OverexpectationCompound": {
 			{
 				TrialGpName:         "AX_Rf",
 				PercentOfTotal:      0.200,
@@ -877,7 +877,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"PosAcq_magnitude": {
+		"PosAcqMagnitude": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.500,
@@ -919,7 +919,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"PosAcq_magnitude_change": {
+		"PosAcqMagnitudeChange": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.500,
@@ -961,7 +961,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"NegAcq_magnitude": {
+		"NegAcqMagnitude": {
 			{
 				TrialGpName:         "D_Rf",
 				PercentOfTotal:      0.500,
@@ -1003,7 +1003,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"NegAcq_magnitude_change": {
+		"NegAcqMagnitudeChange": {
 			{
 				TrialGpName:         "D_Rf",
 				PercentOfTotal:      0.500,
@@ -7931,7 +7931,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"NegSum_Test_condInhib": {
+		"NegSumCondInhib_test": {
 			{
 				TrialGpName:         "D_NR_test",
 				PercentOfTotal:      0.171,
@@ -8053,7 +8053,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"PosSum_Test_condInhib": {
+		"PosSumCondInhib_test": {
 			{
 				TrialGpName:         "A_NR_test",
 				PercentOfTotal:      0.171,
@@ -8175,7 +8175,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"UnblockingTrain": {
+		"Unblocking_train": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.000,
@@ -8421,7 +8421,7 @@ func AllEpochParams() EpochParamsMap {
 				Location:            "",
 			},
 		},
-		"UnblockingTrain_US": {
+		"Unblocking_trainUS": {
 			{
 				TrialGpName:         "A_Rf",
 				PercentOfTotal:      0.333,

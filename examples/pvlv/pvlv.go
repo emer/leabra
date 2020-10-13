@@ -78,20 +78,19 @@ const LogPrec = 4
 // TODO this is not done.
 
 type Sim struct { // trying to duplicate the cemer version as closely as possible
-	ActivateParams bool               `desc:"whether to activate selected param sets at start of train -- otherwise just uses current values as-is"`
-	SeqParamsName  string             `inactive:"+" desc:"Name of the current run sequence. Use menu above to set"`
-	SeqParams      *data.RunSeqParams `desc:"For sequences of runs (i.e., this is above the RunParams level)"`
-	//SeqParamsSelect  *gi.ComboBox             `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
-	RunParamsName  string          `inactive:"+" desc:"name of current RunParams"`
-	RunParams      *data.RunParams `desc:"for running Train directly"`
-	Tag            string          `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Params         params.Sets     `view:"no-inline" desc:"pvlv-specific network parameters"`
-	ParamSet       string
-	StableParams   params.Set `view:"no-inline" desc:"shouldn't need to change these'"`
-	MiscParams     params.Set `view:"no-inline" desc:"misc params -- network specs"`
-	AnalysisParams params.Set `view:"no-inline" desc:"??"`
-	TrainEnv       PVLVEnv    `desc:"Training environment -- PVLV environment"`
-	TestEnv        PVLVEnv    `desc:"Testing environment -- PVLV environment"`
+	ActivateParams   bool                 `desc:"whether to activate selected param sets at start of train -- otherwise just uses current values as-is"`
+	RunParamsNm      string               `inactive:"+" desc:"Name of the current run. Use menu above to set"`
+	RunParams        *data.RunParams      `desc:"For sequences of blocks"`
+	RunBlockParamsNm string               `inactive:"+" desc:"name of current RunBlockParams"`
+	RunBlockParams   *data.RunBlockParams `desc:"for running Train directly"`
+	Tag              string               `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Params           params.Sets          `view:"no-inline" desc:"pvlv-specific network parameters"`
+	ParamSet         string
+	StableParams     params.Set `view:"no-inline" desc:"shouldn't need to change these'"`
+	MiscParams       params.Set `view:"no-inline" desc:"misc params -- network specs"`
+	AnalysisParams   params.Set `view:"no-inline" desc:"??"`
+	TrainEnv         PVLVEnv    `desc:"Training environment -- PVLV environment"`
+	TestEnv          PVLVEnv    `desc:"Testing environment -- PVLV environment"`
 
 	StepsToRun                   int          `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
 	OrigSteps                    int          `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
@@ -113,19 +112,19 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	CycleDataPlot       *eplot.Plot2D       `view:"no-inline" desc:"Fine-grained trace data"`
 	CycleOutputMetadata map[string][]string `view:"-"`
 	//TrialOutputData             *etable.Table     `view:"-" desc:"Trial-level output data"`
-	//EpochOutputData             *etable.Table     `view:"-" desc:"EpochCt-level output data"`
-	//EpochOutputDataCmp             *etable.Table     `view:"-" desc:"EpochCt-level output data copy"`
+	//EpochOutputData             *etable.Table     `view:"-" desc:"TrialGpCt-level output data"`
+	//EpochOutputDataCmp             *etable.Table     `view:"-" desc:"TrialGpCt-level output data copy"`
 	//HistoryGraphData          *etable.Table     `view:"-" desc:"data for history graph"`
 	//RealTimeDataLog           *etable.Table     `view:"-"`
 	//TrnEpcLog                 *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
 	//RunLog                    *etable.Table     `view:"no-inline" desc:"summary log of each run"`
 	//RunStats                  *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
-	TimeLogEpoch    int               `desc:"current epoch within current run phase"`
-	TimeLogEpochAll int               `desc:"current epoch across all phases of the run"`
+	TimeLogEpoch    int               `desc:"current trial group within current run phase"`
+	TimeLogEpochAll int               `desc:"current trial group across all phases of the run"`
 	Time            leabra.Time       `desc:"leabra timing parameters and state"`
 	ViewOn          bool              `desc:"whether to update the network view while running"`
-	TrainUpdt       leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
-	TestUpdt        leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
+	TrainUpdt       leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
+	TestUpdt        leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model"`
 	TstRecLays      []string          `view:"-" desc:"names of layers to record activations etc of during testing"`
 	ContextModel    ContextModel      `desc:"how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded"`
 
@@ -138,8 +137,9 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	TrialTypeEpochFirstLog    *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
 	TrialTypeEpochFirstLogCmp *etable.Table      `view:"no-inline" desc:"data for the TrialTypeData plot"`
 	TrialTypeDataPlot         *eplot.Plot2D      `view:"no-inline" desc:"multiple views for different type of trials"`
+	TrialTypeDataPerBlock     bool               `desc:"clear the TrialTypeData plot between parts of a run"`
 	TrialTypeSet              map[string]int     `view:"-"`
-	TrialTypeSetCounter       int                `view:"-"`
+	GlobalTrialTypeSet        map[string]int     `view:"-"`
 	TrialTypeEpochFirst       *eplot.Plot2D      `view:"-" desc:"epoch plot"`
 	TrialTypeEpochFirstCmp    *eplot.Plot2D      `view:"-" desc:"epoch plot"`
 	HistoryGraph              *eplot.Plot2D      `view:"-" desc:"trial history"`
@@ -150,9 +150,10 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	RndSeed      int64            `desc:"the current random seed"`
 	Stepper      *stepper.Stepper `view:"-"`
 	SimHasRun    bool             `view:"-"`
-	InitHasRun   bool             `view:"-"`
-	VerboseInit  bool             `view:"-"`
-	LayerThreads bool             `desc:"use per-layer threads"`
+	IsRunning    bool
+	InitHasRun   bool `view:"-"`
+	VerboseInit  bool `view:"-"`
+	LayerThreads bool `desc:"use per-layer threads"`
 
 	// internal state - view:"-"
 	TrialTypeEpochFirstLogged map[string]bool             `view:"-"`
@@ -177,13 +178,13 @@ type Sim struct { // trying to duplicate the cemer version as closely as possibl
 	InputShapes               map[string][]int            `view:"-"`
 
 	// master lists of various kinds of parameters
-	MasterRunParams    data.RunParamsMap   `view:"no-inline" desc:"master list of RunParams records"`
-	MasterRunConfigs   data.RunConfigsMap  `view:"-" desc:"master list of RunParams records"` // not used?
-	MasterRunSeqParams data.SeqParamsMap   `view:"no-inline" desc:"master list of RunSeqParams records"`
-	MasterEpochParams  data.EpochParamsMap `desc:"master list of EnvEpochParams (trial groups) records"`
+	MasterRunBlockParams data.RunBlockParamsMap `view:"no-inline" desc:"master list of RunBlockParams records"`
+	//MasterRunConfigs   obsolete.RunConfigsMap `view:"-" desc:"master list of BlockParams records"` // not used?
+	MasterRunParams        data.RunParamsMap  `view:"no-inline" desc:"master list of RunParams records"`
+	MasterTrialBlockParams data.TrialBlockMap `desc:"master list of EnvEpochParams (trial groups) records"`
 
-	MaxSeqSteps int `view:"-" desc:"Maximum number of high-level sequences to run"`
-	MaxRuns     int `view:"-" desc:"maximum number of model runs to perform"` // for non-GUI runs
+	MaxRunBlocks int `view:"-" desc:"Maximum number of blocks to run"`
+	MaxBlocks    int `view:"-" desc:"maximum number of block runs to perform"` // for non-GUI runs
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -215,16 +216,17 @@ func (ss *Sim) New() {
 	ss.TrialTypeEpochFirstLog = &etable.Table{}
 	ss.TrialTypeEpochFirstLogCmp = &etable.Table{}
 	ss.TrialTypeSet = map[string]int{}
-	ss.TrialTypeSetCounter = 0
+	ss.GlobalTrialTypeSet = map[string]int{}
 	//ss.HistoryGraphData = &etable.Table{}
 	//ss.RealTimeDataLog = &etable.Table{}
 	// TODO: fix these
 	ss.ActivateParams = true
 	simOneTimeInit.Do(func() {
+		ss.ValidateRunParams()
+		ss.MasterRunBlockParams = data.AllRunBlockParams()
 		ss.MasterRunParams = data.AllRunParams()
-		ss.MasterRunSeqParams = data.AllSeqParams()
-		ss.MasterRunConfigs = data.AllRunConfigs()
-		ss.MasterEpochParams = data.AllEpochParams()
+		//ss.MasterRunConfigs = obsolete.AllRunConfigs()
+		ss.MasterTrialBlockParams = data.AllTrialBlocks()
 		ss.TrainEnv = PVLVEnv{Nm: "Train", Dsc: "training environment"}
 		ss.TrainEnv.New(ss)
 		ss.Stepper = stepper.New()
@@ -242,8 +244,8 @@ func (ss *Sim) New() {
 	//	MetaData:   nil,
 	//}}
 	//ss.Experiments = Experiments()
-	//ss.RunSeqParams = ParamSets
 	//ss.RunParams = ParamSets
+	//ss.RunBlockParams = ParamSets
 	//ss.PvlvParams = ParamSets
 	//ss.StableParams = ParamSets
 	//ss.MiscParams = ParamSets
@@ -255,17 +257,18 @@ func (ss *Sim) New() {
 func (ss *Sim) Defaults() {
 	defaultRunSeqNm := "PosAcq"
 	ss.ContextModel = CONJUNCTIVE
-	ss.SeqParamsName = defaultRunSeqNm
+	ss.RunParamsNm = defaultRunSeqNm
 	err := ss.SetRunSeqParams()
 	if err != nil {
 		panic(err)
 	}
 	ss.TrainUpdt = leabra.AlphaCycle
-	ss.TestUpdt = leabra.Cycle
+	ss.TestUpdt = leabra.AlphaCycle
 	ss.CycleLogUpdt = leabra.Quarter
 	ss.NetTimesCycleQtr = true
 	ss.TrialAnalysisTimeLogInterval = 1
 	ss.TrialAnalUpdateCmpGraphs = true
+	ss.TrialTypeDataPerBlock = true
 	ss.StepsToRun = 1
 	ss.StepGrain = SGTrial
 	ss.StopStepCondition = SSNone
@@ -318,11 +321,11 @@ func (ss *Sim) Ki() *Sim {
 type StopStepCond int
 
 const (
-	SSNone              StopStepCond = iota
-	SSError                          // Error
-	SSCorrect                        // Correct
-	SSTrialNameMatch                 // Trial Name
-	SSTrialNameNonmatch              // Not Trial Name
+	SSNone              StopStepCond = iota // None
+	SSError                                 // Error
+	SSCorrect                               // Correct
+	SSTrialNameMatch                        // Trial Name
+	SSTrialNameNonmatch                     // Not Trial Name
 	StopStepCondN
 )
 
@@ -339,7 +342,10 @@ func (ss *Sim) InitSim(ev *PVLVEnv) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	_ = ss.InitRun(ev)
+	err = ss.InitRun(ev, true)
+	if err != nil {
+		fmt.Println("ERROR: InitRun failed in InitSim")
+	}
 	ss.Net.InitWts()
 	ss.UpdateView(true)
 	ss.InitHasRun = true
@@ -362,8 +368,8 @@ func (ss *Sim) Counters(train bool) string {
 	} else {
 		ev = &ss.TestEnv
 	}
-	return fmt.Sprintf("Run:\t%d\tEpoch:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
-		ev.RunCt.Cur, ev.EpochCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur, ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
+	return fmt.Sprintf("Block:\t%d\tTrialGp:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
+		ev.BlockCt.Cur, ev.TrialGpCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur, ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
 }
 
 func (ss *Sim) UpdateView(train bool) {
@@ -533,12 +539,12 @@ func (ss *Sim) ConfigEpochOutputData(dt *etable.Table) {
 		"VTAn_Marker_Fm_PPTg_n_netrel", "PPTg_n_Fm_CEmPos_netrel", "netmax",
 	}
 	dt.SetMetaData("name", "EpochOutputData")
-	dt.SetMetaData("desc", "Epoch-level output data")
+	dt.SetMetaData("desc", "TrialGp-level output data")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 	sch := etable.Schema{
 		{Name: "Batch", Type: etensor.INT},
-		{Name: "Epoch", Type: etensor.INT},
+		{Name: "TrialGp", Type: etensor.INT},
 		{Name: "TrainMode", Type: etensor.STRING},
 	}
 	for _, colName := range colNames {
@@ -571,20 +577,20 @@ func (ss *Sim) ConfigTrialTypeEpochFirstLog(dt *etable.Table, name string, nRows
 	sch := etable.Schema{}
 
 	colNames := []string{
-		"Epoch", "VTAp_act", "BLAmygD1_US0_act", "BLAmygD2_US0_act",
+		"GlobalTrialBlock", "VTAp_act", "BLAmygD1_US0_act", "BLAmygD2_US0_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act", "CElAcqNegD2_US0_act",
 		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act",
 	}
 
 	for _, colName := range colNames {
-		if colName == "Epoch" {
+		if colName == "GlobalTrialBlock" {
 			sch = append(sch, etable.Column{Name: colName, Type: etensor.INT64})
 		} else {
 			sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64, CellShape: []int{nRows, 1}, DimNames: []string{"Tick", "Value"}})
 		}
 	}
-	dt.SetFromSchema(sch, 0)
-	dt.SetNumRows(0)
+	dt.SetFromSchema(sch, nRows)
+	dt.SetNumRows(nRows)
 }
 
 func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
@@ -595,7 +601,7 @@ func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
 
 	colNames := []string{
 		"TrialType",
-		"Epoch",
+		"GlobalTrialBlock",
 		"VTAp_act", "LHbRMTg_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
 		"VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act",
@@ -645,11 +651,11 @@ func (ss *Sim) ConfigTrialTypeDataPlot(plt *eplot.Plot2D, dt *etable.Table) *epl
 }
 
 func (ss *Sim) ConfigTrialTypeEpochFirstPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "All Epochs"
-	plt.Params.XAxisCol = "Epoch"
+	plt.Params.Title = "All Trial Blocks"
+	plt.Params.XAxisCol = "GlobalTrialBlock"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+	plt.SetColParams("GlobalTrialBlock", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 	for _, colNm := range []string{"VTAp_act",
 		"BLAmygD2_US0_act", "BLAmygD1_US0_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
@@ -762,22 +768,22 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	ss.NetView = nv
 	ss.ConfigNetView(nv)
 
-	cb := gi.AddNewComboBox(tbar, "SeqParams")
+	cb := gi.AddNewComboBox(tbar, "RunParams")
 	var seqKeys []string
-	for key := range ss.MasterRunSeqParams {
+	for key := range ss.MasterRunParams {
 		seqKeys = append(seqKeys, key)
 	}
 	sort.Strings(seqKeys)
 	cb.ItemsFromStringList(seqKeys, false, 50)
 	cb.ComboSig.Connect(mfr.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.SeqParamsName = data.(string)
+		ss.RunParamsNm = data.(string)
 		err := ss.SetRunSeqParams()
 		if err != nil {
 			fmt.Printf("error setting run sequence: %v\n", err)
 		}
 		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
 	})
-	cb.SetCurVal(ss.SeqParamsName)
+	cb.SetCurVal(ss.RunParamsNm)
 	//cb.MakeItemsMenu()
 	//ss.SeqParamsSelect = cb
 
@@ -813,8 +819,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Run init code. Global variables retain current values unless reset in the init code", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(!ss.Running())
+	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Block init code. Global variables retain current values unless reset in the init code", UpdateFunc: func(act *gi.Action) {
+		act.SetActiveStateUpdt(!ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Stepper.Stop()
 		if !ss.InitHasRun {
@@ -833,13 +839,15 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 		_ = ss.InitRunSeq(&ss.TrainEnv)
 		ss.UpdateView(true)
-		ss.Win.Viewport.SetNeedsFullRender()
+		vp.SetNeedsFullRender()
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Run", Icon: "run", Tooltip: "Run the currently selected sequence. If not initialized, will run initialization first",
+	tbar.AddAction(gi.ActOpts{Label: "Run", Icon: "run", Tooltip: "Run the currently selected scenario. If not initialized, will run initialization first",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.IsRunning = true
+		tbar.UpdateActions()
 		if !ss.InitHasRun {
 			fmt.Println("Initializing...")
 			ss.InitSim(&ss.TrainEnv)
@@ -851,64 +859,64 @@ func (ss *Sim) ConfigGui() *gi.Window {
 				go ss.TrainMultiRun()
 			} else if ss.Paused() {
 				ss.Stepper.PleaseEnter(stepper.Running)
-				ss.ToolBar.UpdateActions()
 			}
 		}
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Stop the current program at its next natural stopping point (i.e., cleanly stopping when appropriate chunks of computation have completed).", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(ss.Running())
+		act.SetActiveStateUpdt(ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		fmt.Println("STOP!")
 		ss.Stepper.Pause()
+		ss.IsRunning = false
 		ss.ToolBar.UpdateActions()
 		ss.Win.Viewport.SetNeedsFullRender()
 	})
 
 	tbar.AddSeparator("stepSep")
-	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step:")
+	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Break at:")
 	stepLabel.SetProp("font-size", "large")
 
 	tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "run", Tooltip: "Step to the end of a Cycle.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Cycle)
+		ss.RunSteps(Cycle, tbar)
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "run", Tooltip: "Step to the end of a Quarter.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Quarter)
+		ss.RunSteps(Quarter, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "SettleMinus", Icon: "run", Tooltip: "Step to the end of the Minus Phase.",
+	tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "run", Tooltip: "Step to the end of the Minus Phase.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettleMinus)
+		ss.RunSteps(SettleMinus, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "SettlePlus", Icon: "run", Tooltip: "Step to the end of the Plus Phase.",
+	tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "run", Tooltip: "Step to the end of the Plus Phase.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettlePlus)
+		ss.RunSteps(SettlePlus, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "AlphaCycle", Icon: "run", Tooltip: "Step to the end of an Alpha Cycle.",
+	tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "run", Tooltip: "Step to the end of an Alpha Cycle.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(AlphaCycle)
+		ss.RunSteps(AlphaCycle, tbar)
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Grain:", Icon: "run", Tooltip: "Step by the selected granularity.",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.Running())
+			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(ss.StepGrain)
+		ss.RunSteps(ss.StepGrain, tbar)
 	})
 	sg := gi.AddNewComboBox(tbar, "grainMenu")
 	sg.Editable = false
@@ -920,7 +928,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		stepKeys = append(stepKeys, s)
 	}
 	sg.ItemsFromStringList(stepKeys, false, maxLen)
-	sg.ComboSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+	sg.ComboSig.Connect(mfr.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.StepGrain = StepGrain(sig)
 	})
 	sg.SetCurVal(ss.StepGrain.String())
@@ -998,13 +1006,15 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 }
 
-func (ss *Sim) RunSteps(grain StepGrain) {
-	if !ss.SimHasRun {
-		fmt.Println("Initializing...")
-		ss.InitSim(&ss.TrainEnv)
-		_ = ss.InitRunSeq(&ss.TrainEnv)
-	}
-	if !ss.Running() {
+func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
+	if !ss.IsRunning {
+		ss.IsRunning = true
+		tbar.UpdateActions()
+		if !ss.SimHasRun {
+			fmt.Println("Initializing...")
+			ss.InitSim(&ss.TrainEnv)
+			_ = ss.InitRunSeq(&ss.TrainEnv)
+		}
 		if ss.Stopped() {
 			ss.SimHasRun = true
 			ss.OrigSteps = ss.StepsToRun
@@ -1103,7 +1113,7 @@ func (ss *Sim) ParamsName() string {
 	if ss.ParamSet == "" {
 		return "Base"
 	}
-	return ss.SeqParams.Nm
+	return ss.RunParams.Nm
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1140,7 +1150,7 @@ func (ss *Sim) RunEpochName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.RunCt.Cur, ss.TrainEnv.EpochCt.Cur) + ".wts.gz"
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.BlockCt.Cur, ss.TrainEnv.TrialGpCt.Cur) + ".wts.gz"
 }
 
 // LogFileName returns default log file name
@@ -1160,7 +1170,7 @@ func (ss *Sim) LogTrnEpc(_ *PVLVEnv) {
 	//row := dt.Rows
 	//dt.SetNumRows(row + 1)
 	//
-	//epc := ss.TrainEnv.EpochCt.Prv         // this is triggered by increment so use previous value
+	//epc := ss.TrainEnv.TrialGpCt.Prv         // this is triggered by increment so use previous value
 	//nt := float64(ss.TrainEnv.AlphaCycle.Max) // number of trials in view
 	//
 	//ss.EpcDA = ss.SumDA / nt
@@ -1195,8 +1205,8 @@ func (ss *Sim) LogTrnEpc(_ *PVLVEnv) {
 	//}
 	//ss.LastEpcTime = time.Now()
 	//
-	//dt.SetCellFloat("Run", row, float64(ss.TrainEnv.RunCt.Cur))
-	//dt.SetCellFloat("Epoch", row, float64(epc))
+	//dt.SetCellFloat("Block", row, float64(ss.TrainEnv.BlockCt.Cur))
+	//dt.SetCellFloat("TrialGp", row, float64(epc))
 	//dt.SetCellFloat("SSE", row, ss.EpcSSE)
 	//dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
 	//dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
@@ -1210,7 +1220,7 @@ func (ss *Sim) LogTrnEpc(_ *PVLVEnv) {
 	//// note: essential to use Go version of update when called from another goroutine
 	//ss.TrnEpcPlot.GoUpdate()
 	//if ss.TrnEpcFile != nil {
-	//	if ss.TrainEnv.RunCt.Cur == 0 && epc == 0 {
+	//	if ss.TrainEnv.BlockCt.Cur == 0 && epc == 0 {
 	//		dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 	//	}
 	//	dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
@@ -1247,8 +1257,8 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	sch := etable.Schema{
-		{"Run", etensor.INT64, nil, nil},
-		{"Epoch", etensor.INT64, nil, nil},
+		{"Block", etensor.INT64, nil, nil},
+		{"TrialGp", etensor.INT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
 		{"AvgSSE", etensor.FLOAT64, nil, nil},
 		{"PctErr", etensor.FLOAT64, nil, nil},
@@ -1263,12 +1273,12 @@ func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Epoch Plot"
-	plt.Params.XAxisCol = "Epoch"
+	plt.Params.Title = "TrialGp Plot"
+	plt.Params.XAxisCol = "TrialGp"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
@@ -1288,7 +1298,7 @@ func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 // LogTstTrl adds data from current trial to the TstTrlLog table.
 // log always contains number of testing items
 func (ss *Sim) LogTstTrl(dt *etable.Table) {
-	//epc := ss.TestEnv.EpochCt.Prv // this is triggered by increment so use previous value
+	//epc := ss.TestEnv.TrialGpCt.Prv // this is triggered by increment so use previous value
 
 	trl := ss.TrainEnv.AlphaCycle.Cur
 	row := trl
@@ -1297,8 +1307,8 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		dt.SetNumRows(row + 1)
 	}
 
-	//dt.SetCellFloat("Run", row, float64(ss.TestEnv.Run.Cur))
-	//dt.SetCellFloat("Epoch", row, float64(epc))
+	//dt.SetCellFloat("Block", row, float64(ss.TestEnv.Block.Cur))
+	//dt.SetCellFloat("TrialGp", row, float64(epc))
 	//dt.SetCellFloat("Trial", row, float64(trl))
 	//dt.SetCellString("TrialName", row, ss.TestEnv.String())
 	//dt.SetCellFloat("Err", row, ss.TrlErr)
@@ -1328,8 +1338,8 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 
 	nt := ss.TrainEnv.AlphaCycle.Max
 	sch := etable.Schema{
-		{"Run", etensor.INT64, nil, nil},
-		{"Epoch", etensor.INT64, nil, nil},
+		{"Block", etensor.INT64, nil, nil},
+		{"TrialGp", etensor.INT64, nil, nil},
 		{"AlphaCycle", etensor.INT64, nil, nil},
 		{"TrialName", etensor.STRING, nil, nil},
 		{"Err", etensor.FLOAT64, nil, nil},
@@ -1352,8 +1362,8 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.Params.XAxisCol = "AlphaCycle"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AlphaCycle", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
@@ -1379,12 +1389,12 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 
 	// trl := ss.TstTrlLog
 	// tix := etable.NewIdxView(trl)
-	epc := ss.TrainEnv.EpochCt.Prv // ?
+	epc := ss.TrainEnv.TrialGpCt.Prv // ?
 
 	// note: this shows how to use agg methods to compute summary data from another
 	// data table, instead of incrementing on the Sim
-	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.RunCt.Cur))
-	dt.SetCellFloat("Epoch", row, float64(epc))
+	dt.SetCellFloat("Block", row, float64(ss.TrainEnv.BlockCt.Cur))
+	dt.SetCellFloat("TrialGp", row, float64(epc))
 
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstEpcPlot.GoUpdate()
@@ -1397,18 +1407,18 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	dt.SetFromSchema(etable.Schema{
-		{"Run", etensor.INT64, nil, nil},
-		{"Epoch", etensor.INT64, nil, nil},
+		{"Block", etensor.INT64, nil, nil},
+		{"TrialGp", etensor.INT64, nil, nil},
 	}, 0)
 }
 
 func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "SIR Testing Epoch Plot"
-	plt.Params.XAxisCol = "Epoch"
+	plt.Params.Title = "SIR Testing TrialGp Plot"
+	plt.Params.XAxisCol = "TrialGp"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Epoch", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	return plt
 }
 
@@ -1417,7 +1427,7 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 
 // LogRun adds data from current run to the RunLog table.
 func (ss *Sim) LogRun(dt *etable.Table) {
-	//run := ss.TrainEnv.RunCt.Cur // this is NOT triggered by increment yet -- use Cur
+	//run := ss.TrainEnv.BlockCt.Cur // this is NOT triggered by increment yet -- use Cur
 	//row := dt.Rows
 	//dt.SetNumRows(row + 1)
 	//
@@ -1438,7 +1448,7 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	//// 	params += fmt.Sprintf("_InVar=%v", ss.InputNoise)
 	//// }
 	//
-	//dt.SetCellFloat("Run", row, float64(run))
+	//dt.SetCellFloat("Block", row, float64(run))
 	//dt.SetCellString("Params", row, params)
 	////dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
 	//dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
@@ -1470,7 +1480,7 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
 	dt.SetFromSchema(etable.Schema{
-		{"Run", etensor.INT64, nil, nil},
+		{"Block", etensor.INT64, nil, nil},
 		{"Params", etensor.STRING, nil, nil},
 		{"FirstZero", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
@@ -1482,11 +1492,11 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 }
 
 func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "SIR Run Plot"
-	plt.Params.XAxisCol = "Run"
+	plt.Params.Title = "SIR Block Plot"
+	plt.Params.XAxisCol = "Block"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("FirstZero", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
 	plt.SetColParams("SSE", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
 	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
@@ -1498,24 +1508,25 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 
 func (ss *Sim) SetRunSeqParams() error {
 	var err error = nil
-	if ss.SeqParams == nil || ss.SeqParamsName != ss.SeqParams.Nm {
-		oldSeqParams := ss.SeqParams
-		newSeqParams, found := ss.GetRunSeqParams(ss.SeqParamsName)
+	if ss.RunParams == nil || ss.RunParamsNm != ss.RunParams.Nm {
+		oldSeqParams := ss.RunParams
+		newSeqParams, found := ss.GetRunParams(ss.RunParamsNm)
 		if !found {
-			err = errors.New(fmt.Sprintf("RunSeq \"%v\" was not found!", ss.SeqParamsName))
+			err = errors.New(fmt.Sprintf("RunSeq \"%v\" was not found!", ss.RunParamsNm))
 			fmt.Println(err)
 			return err
 		} else {
-			ss.SeqParams = newSeqParams
-			newRunParams, found := ss.GetRunParams(ss.SeqParams.SeqStep1)
+			ss.RunParams = newSeqParams
+			newBlockParams, found := ss.GetRunBlockParams(ss.RunParams.Block1Nm)
 			if !found {
-				err = errors.New(fmt.Sprintf("SeqParams step 1 \"%v\" was not found!", ss.SeqParams.SeqStep1))
-				gi.PromptDialog(nil, gi.DlgOpts{Title: "SeqParams step not found", Prompt: err.Error()}, gi.AddOk, gi.NoCancel, nil, nil)
-				ss.SeqParams = oldSeqParams
+				err = errors.New(fmt.Sprintf("RunParams step 1 \"%v\" was not found!", ss.RunParams.Block1Nm))
+				gi.PromptDialog(nil, gi.DlgOpts{Title: "RunParams step not found", Prompt: err.Error()}, gi.AddOk, gi.NoCancel, nil, nil)
+				ss.RunParams = oldSeqParams
 				return err
 			} else {
-				ss.RunParams = newRunParams
-				ss.RunParamsName = ss.RunParams.Nm
+				ss.RunBlockParams = newBlockParams
+				ss.TrainEnv.CurBlockParams = ss.RunBlockParams
+				ss.RunBlockParamsNm = ss.RunBlockParams.Nm
 				return nil
 			}
 		}
@@ -1523,7 +1534,7 @@ func (ss *Sim) SetRunSeqParams() error {
 	return nil
 }
 
-// InitRun intializes a new run of the model, using the TrainEnv.RunCt counter
+// InitRun intializes a new run of the model, using the TrainEnv.BlockCt counter
 // for the new run value
 func (ss *Sim) InitRunSeq(ev *PVLVEnv) error {
 	err := ss.SetRunSeqParams()
@@ -1531,17 +1542,26 @@ func (ss *Sim) InitRunSeq(ev *PVLVEnv) error {
 		return err
 	}
 	ev.GlobalStep = 0
-	nRows := ss.SetTrialTypeDataXLabels(ev)
-	ss.ConfigTrialTypeTables(nRows)
 	ss.ClearCycleData()
-	_ = ss.InitRun(ev)
+	ss.TrialTypeData.SetNumRows(0)
+	tgNmMap, _, err := ss.RunSeqTrialTypes(ss.RunParams)
+	ss.TrialTypeEpochFirstLogged = map[string]bool{}
+	for key := range tgNmMap {
+		ss.TrialTypeEpochFirstLogged[key] = false
+	}
+	ss.ConfigTrialTypeTables(len(tgNmMap)) // max number of rows for entire sequence, for TrialTypeEpochFirst only
+	err = ss.InitRun(ev, true)
+	if err != nil {
+		fmt.Println("ERROR: InitRun failed")
+	}
+	//ss.ConfigTrialTypeTables(nRows)
 	return nil
 }
 
-// InitRun intializes a new run of the model, using the TrainEnv.RunCt counter
+// InitRun intializes a new run of the model, using the TrainEnv.BlockCt counter
 // for the new run value
-func (ss *Sim) InitRun(ev *PVLVEnv) error {
-	err := ss.SetRunSeqParams()
+func (ss *Sim) InitRun(ev *PVLVEnv, firstInSeq bool) (err error) {
+	err = ss.SetRunSeqParams()
 	if err != nil {
 		return err
 	}
@@ -1550,58 +1570,66 @@ func (ss *Sim) InitRun(ev *PVLVEnv) error {
 	ss.InitStats()
 	ss.TimeLogEpoch = 0
 	ev.Init(ss)
+	if firstInSeq || ss.TrialTypeDataPerBlock {
+		_ = ss.SetTrialTypeDataXLabels()
+	}
 	return nil
 }
 
-func (ss *Sim) GetSeqSteps(seqParams *data.RunSeqParams) *[5]*data.RunParams {
+func (ss *Sim) GetSeqSteps(seqParams *data.RunParams) *[5]*data.RunBlockParams {
 	var found bool
-	seqSteps := &[5]*data.RunParams{}
-	seqSteps[0], found = ss.GetRunParams(seqParams.SeqStep1)
+	seqSteps := &[5]*data.RunBlockParams{}
+	seqSteps[0], found = ss.GetRunBlockParams(seqParams.Block1Nm)
 	if !found {
-		fmt.Println("SeqStep", seqParams.SeqStep1, "was not found")
+		fmt.Println("SeqStep", seqParams.Block1Nm, "was not found")
 	}
-	seqSteps[1], found = ss.GetRunParams(seqParams.SeqStep2)
+	seqSteps[1], found = ss.GetRunBlockParams(seqParams.Block2Nm)
 	if !found {
-		fmt.Println("SeqStep", seqParams.SeqStep2, "was not found")
+		fmt.Println("SeqStep", seqParams.Block2Nm, "was not found")
 	}
-	seqSteps[2], found = ss.GetRunParams(seqParams.SeqStep3)
+	seqSteps[2], found = ss.GetRunBlockParams(seqParams.Block3Nm)
 	if !found {
-		fmt.Println("SeqStep", seqParams.SeqStep3, "was not found")
+		fmt.Println("SeqStep", seqParams.Block3Nm, "was not found")
 	}
-	seqSteps[3], found = ss.GetRunParams(seqParams.SeqStep4)
+	seqSteps[3], found = ss.GetRunBlockParams(seqParams.Block4Nm)
 	if !found {
-		fmt.Println("SeqStep", seqParams.SeqStep4, "was not found")
+		fmt.Println("SeqStep", seqParams.Block4Nm, "was not found")
 	}
-	seqSteps[4], found = ss.GetRunParams(seqParams.SeqStep5)
+	seqSteps[4], found = ss.GetRunBlockParams(seqParams.Block5Nm)
 	if !found {
-		fmt.Println("SeqStep", seqParams.SeqStep5, "was not found")
+		fmt.Println("SeqStep", seqParams.Block5Nm, "was not found")
 	}
 	return seqSteps
 }
 
-// MultiRunSequence
-// Run the currently selected sequence of runs
+// Run
+// Block the currently selected sequence of runs
 // Each run has its own set of trial types
 func (ss *Sim) TrainMultiRun() bool {
 	ss.Net.InitActs()
 	allDone := false
+	//nRows := 0
+	var err error
 	ev := &ss.TrainEnv
-	seqSteps := ss.GetSeqSteps(ss.SeqParams)
-	activateStep := func(i int, runParams *data.RunParams) {
-		ev.CurRunParams = runParams
-		ss.RunParams = ev.CurRunParams
-		ss.RunParamsName = ss.RunParams.Nm
-		_ = ss.InitRun(ev)
+	seqSteps := ss.GetSeqSteps(ss.RunParams)
+	activateStep := func(i int, blockParams *data.RunBlockParams) {
+		ev.CurBlockParams = blockParams
+		ss.RunBlockParams = ev.CurBlockParams
+		ss.RunBlockParamsNm = ss.RunBlockParams.Nm
+		err = ss.InitRun(ev, i > 0)
+		if err != nil {
+			fmt.Println("ERROR: InitRun failed in activateStep")
+		}
 		ss.Win.Viewport.SetNeedsFullRender()
-		//ss.StructView.FullRender2DTree() // here so RunParamsName will update on screen, but seems to cause deadlocks
+		//ss.StructView.FullRender2DTree() // here so RunBlockParamsNm will update on screen, but seems to cause deadlocks
 	}
 	ss.TimeLogEpochAll = 0
 	for i, seqStep := range seqSteps {
-		activateStep(i, seqStep)
-		if ev.CurRunParams.Nm == "NullStep" {
+		if seqStep.Nm == "NullStep" {
 			allDone = true
 			break
 		}
+		activateStep(i, seqStep)
 		ss.TrainMultiGroup(ev, true)
 		if allDone || ss.Stepper.StopRequested() || ss.Stopped() {
 			break
@@ -1611,20 +1639,21 @@ func (ss *Sim) TrainMultiRun() bool {
 		}
 	}
 	ss.Stepper.Enter(stepper.Stopped)
+	ss.IsRunning = false
 	return allDone
 }
 
-// end MultiRunSequence
+// end Run
 
 // Multiple trial types
 func (ss *Sim) TrainMultiGroup(ev *PVLVEnv, seqRun bool) {
 	if !seqRun {
-		ev.CurRunParams = ss.RunParams
+		ev.CurBlockParams = ss.RunBlockParams
 	}
 	nDone := 0
 	//ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	//ev.TrialCt.Init()
-	for i := 0; i < ev.CurRunParams.TrainEpochs; i++ {
+	for i := 0; i < ev.CurBlockParams.TrainEpochs; i++ {
 		ev.RunOneEpoch(ss)
 		nDone++
 	}
@@ -1672,12 +1701,13 @@ func NotifyPause(st interface{}) {
 		ss.Stepper.SetNSteps(ss.StepsToRun)
 		ss.OrigSteps = ss.StepsToRun
 	}
+	ss.IsRunning = false
 	ss.ToolBar.UpdateActions()
 	ss.UpdateView(true)
 	ss.Win.Viewport.SetNeedsFullRender()
 }
 
-// end Epoch and functions
+// end TrialGp and functions
 
 // Monitors //
 
@@ -1769,12 +1799,12 @@ func IMax(x, y int) int {
 	}
 }
 
-func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error) {
+func (ss *Sim) RunSeqTrialTypes(rs *data.RunParams) (map[string]string, int, error) {
 	steps := ss.GetSeqSteps(rs)
 	ticksPerGroup := 0
 	var err error
 	types := map[string]string{}
-	result := map[string]string{}
+	fullStepMap := map[string]string{}
 	for _, step := range steps {
 		if step.Nm == "NullStep" {
 			break
@@ -1782,7 +1812,7 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error
 		tgt, ticks, err := ss.GetEpochTrialTypes(step)
 		ticksPerGroup = IMax(ticksPerGroup, ticks)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		for long, short := range tgt {
 			types[long] = short
@@ -1791,35 +1821,57 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunSeqParams) (map[string]string, error
 	for long, short := range types {
 		for i := 0; i < ticksPerGroup; i++ {
 			is := strconv.Itoa(i)
-			result[long+"_t"+is] = short + is
+			fullStepMap[long+"_t"+is] = short + is
 		}
 	}
-	return result, err
+	stepNames := sort.StringSlice{}
+	for val := range fullStepMap {
+		stepNames = append(stepNames, val)
+	}
+	sort.Sort(stepNames)
+	ss.GlobalTrialTypeSet = map[string]int{}
+	for i, name := range stepNames {
+		ss.GlobalTrialTypeSet[name] = i
+	}
+	return fullStepMap, ticksPerGroup, err
 }
 
-func (ss *Sim) GetEpochTrialTypes(rp *data.RunParams) (map[string]string, int, error) {
+func (ss *Sim) GetEpochTrialTypes(rp *data.RunBlockParams) (map[string]string, int, error) {
 	var err error
 	ticks := 0
 	cases := map[string]string{}
-	ep, found := ss.MasterEpochParams[rp.EpochParamsTable]
+	ep, found := ss.MasterTrialBlockParams[rp.TrialGroupNm]
 	valMap := map[pvlv.Valence]string{pvlv.POS: "+", pvlv.NEG: "-"}
 	if !found {
-		err := errors.New(fmt.Sprintf("EpochParams %s was not found",
-			rp.EpochParamsTable))
+		err := errors.New(fmt.Sprintf("TrialGroupParams %s was not found",
+			rp.TrialGroupNm))
 		return nil, 0, err
 	}
 	for _, tg := range ep {
-		parts := strings.Split(tg.TrialGpName, "_")
-		val := tg.ValenceContext
-		longNm := fmt.Sprintf("%s_%s", tg.TrialGpName, val)
-		shortNm := tg.CS + valMap[val]
 		tSuffix := ""
 		oSuffix := "_omit"
-		if parts[len(parts)-1] == "test" {
+		val := tg.ValenceContext
+		if strings.Contains(tg.TrialGpName, "_test") {
 			tSuffix = "_test"
 		}
+		parts := strings.Split(tg.TrialGpName, "_")
 		if parts[1] == "NR" {
 			oSuffix = ""
+		}
+		longNm := fmt.Sprintf("%s_%s", tg.TrialGpName, val)
+		shortNm := tg.CS + valMap[val]
+		if strings.Contains(longNm, "_test") {
+			parts := strings.Split(longNm, "_")
+			longNm = ""
+			for i, part := range parts {
+				isTest := part == "test"
+				if !isTest && i != 0 {
+					longNm += "_"
+				}
+				if !isTest {
+					longNm += part
+				}
+			}
 		}
 		switch tg.USProb {
 		case 1:
@@ -1835,25 +1887,37 @@ func (ss *Sim) GetEpochTrialTypes(rp *data.RunParams) (map[string]string, int, e
 	return cases, ticks, err
 }
 
-func (ss *Sim) SetTrialTypeDataXLabels(ev *PVLVEnv) (nRows int) {
-	tgNmMap, _ := ss.RunSeqTrialTypes(ss.SeqParams)
-	ss.TrialTypeEpochFirstLogged = map[string]bool{}
-	ev.TrialInstances.Reset()
+func (ss *Sim) SetTrialTypeDataXLabels() (nRows int) {
+	tgNmMap := map[string]string{}
+	var ticksPerGroup int
+
+	if ss.TrialTypeDataPerBlock {
+		types := map[string]string{}
+		types, ticksPerGroup, _ = ss.GetEpochTrialTypes(ss.RunBlockParams)
+		for long, short := range types {
+			for i := 0; i < ticksPerGroup; i++ {
+				is := strconv.Itoa(i)
+				tgNmMap[long+"_t"+is] = short + is
+			}
+		}
+	} else {
+		tgNmMap, _, _ = ss.RunSeqTrialTypes(ss.RunParams)
+	}
 	names := sort.StringSlice{}
 	for val := range tgNmMap {
 		names = append(names, val)
 	}
+	nRows = len(names)
 	sort.Sort(names)
 	dt := ss.TrialTypeData
 	ss.TrialTypeSet = map[string]int{}
 	for i, name := range names {
 		ss.TrialTypeSet[name] = i
 		dt.SetCellString("TrialType", i, name)
-		ss.TrialTypeEpochFirstLogged[name] = false
 	}
-	dt.SetNumRows(len(names))
-	ss.TrialTypeSetCounter = len(names)
-	return len(names)
+	dt.UpdateColNameMap()
+	dt.SetNumRows(nRows)
+	return nRows
 }
 
 func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
@@ -1862,7 +1926,7 @@ func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 	row, _ := ss.TrialTypeSet[ev.AlphaTrialName]
 	dt.SetCellString("TrialType", row, ev.AlphaTrialName)
 	for _, colNm := range dt.ColNames {
-		if colNm != "TrialType" && colNm != "Epoch" {
+		if colNm != "TrialType" && colNm != "GlobalTrialBlock" {
 			parts := strings.Split(colNm, "_")
 			lnm := parts[0]
 			if parts[1] != "act" {
@@ -1878,7 +1942,7 @@ func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 			}
 			if !ss.TrialTypeEpochFirstLogged[ev.AlphaTrialName] {
 				ss.TrialTypeEpochFirstLogged[ev.AlphaTrialName] = true
-				vtaCol := ss.TrialTypeSet[ev.AlphaTrialName]
+				vtaCol := ss.GlobalTrialTypeSet[ev.AlphaTrialName]
 				efRow := ss.TimeLogEpochAll
 				val := float64(tsr.Values[0])
 				if efdt.Rows <= efRow {
@@ -1887,7 +1951,7 @@ func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
 						efdt.SetCellTensor(colNm, efRow, efdt.CellTensor(colNm, efRow-1))
 					}
 				}
-				efdt.SetCellFloat("Epoch", efRow, float64(efRow))
+				efdt.SetCellFloat("GlobalTrialBlock", efRow, float64(efRow))
 				efdt.SetCellTensorFloat1D(colNm, efRow, vtaCol, val)
 			}
 		}
@@ -1982,7 +2046,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxBlocks, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
@@ -2029,25 +2093,30 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
-	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	fmt.Printf("Running %d Runs\n", ss.MaxBlocks)
 	ss.TrainMultiRun()
 	return verbose, threads
 }
 
-func (ss *Sim) GetEpochParams(nm string) (*data.EpochParamsRecs, bool) {
-	groups, ok := ss.MasterEpochParams[nm]
-	ret := data.NewEpochParamsRecs(&groups)
+func (ss *Sim) GetTrialBlockParams(nm string) (*data.TrialBlockRecs, bool) {
+	groups, ok := ss.MasterTrialBlockParams[nm]
+	ret := data.NewTrialBlockRecs(&groups)
 	return ret, ok
 }
 
-func (ev *PVLVEnv) GetEpochTrial(n int) *data.EpochParams {
-	ret := ev.EpochParams.Records.Get(n).(*data.EpochParams)
+func (ev *PVLVEnv) GetBlockTrial(n int) *data.TrialGroupParams {
+	ret := ev.TrialGroupParams.Records.Get(n).(*data.TrialGroupParams)
 	return ret
 }
 
-func (ss *Sim) GetRunConfig(nm string) data.RunConfig {
-	ret := ss.MasterRunConfigs[nm]
-	return ret
+//func (ss *Sim) GetRunConfig(nm string) obsolete.RunConfig {
+//	ret := ss.MasterRunConfigs[nm]
+//	return ret
+//}
+
+func (ss *Sim) GetRunBlockParams(nm string) (*data.RunBlockParams, bool) {
+	ret, found := ss.MasterRunBlockParams[nm]
+	return &ret, found
 }
 
 func (ss *Sim) GetRunParams(nm string) (*data.RunParams, bool) {
@@ -2055,7 +2124,41 @@ func (ss *Sim) GetRunParams(nm string) (*data.RunParams, bool) {
 	return &ret, found
 }
 
-func (ss *Sim) GetRunSeqParams(nm string) (*data.RunSeqParams, bool) {
-	ret, found := ss.MasterRunSeqParams[nm]
-	return &ret, found
+func (ss *Sim) ValidateRunParams() {
+	allSeqs := data.AllRunParams()
+	allRunBlocks := data.AllRunBlockParams()
+	allBlocks := data.AllTrialBlocks()
+runsLoop:
+	for seqNm, pSeq := range allSeqs {
+		if seqNm != pSeq.Nm {
+			fmt.Printf("ERROR: Name field \"%s\" does not match key for RunParams \"%s\"\n",
+				pSeq.Nm, seqNm)
+		}
+		blockNms := []string{pSeq.Block1Nm, pSeq.Block2Nm, pSeq.Block3Nm, pSeq.Block4Nm, pSeq.Block5Nm}
+		for i, blockNm := range blockNms {
+			if blockNm == "NullStep" || blockNm == "" {
+				continue runsLoop
+			}
+			pRun, found := allRunBlocks[blockNm]
+			if !found {
+				fmt.Printf("ERROR: Invalid run name \"%s\" in RunParams \"%s\" step %d\n",
+					blockNm, seqNm, i+1)
+			} else {
+				ss.ValidateBlockParams(blockNm, &pRun, allBlocks)
+			}
+		}
+	}
+}
+
+func (ss *Sim) ValidateBlockParams(nm string, pRun *data.RunBlockParams, allBlocks data.TrialBlockMap) {
+	if nm != pRun.Nm {
+		fmt.Printf("ERROR: Name field \"%s\" does not match key for RunBlockParams \"%s\"\n",
+			pRun.Nm, nm)
+	}
+	blockNm := pRun.TrialGroupNm
+	_, found := allBlocks[blockNm]
+	if !found {
+		fmt.Printf("ERROR: Invalid run block name \"%s\" in RunBlockParams \"%s\"\n",
+			blockNm, nm)
+	}
 }
