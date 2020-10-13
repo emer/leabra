@@ -4,7 +4,7 @@ import "github.com/emer/leabra/pvlv"
 
 // A set of trial groups, sourced from an TrialParams list, instantiated according to the
 // PercentOfTotal field in the source list.
-// this is what we get after calling SetEpochTrialList
+// this is what we get after calling SetActiveTrialList
 // Still not fully instantiated, US is still a probability
 type TrialInstance struct {
 	TrialName            string

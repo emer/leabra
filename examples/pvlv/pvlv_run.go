@@ -23,8 +23,8 @@ const (
 	SettlePlus
 	AlphaCycle
 	SGTrial // Trial
-	Epoch
-	MultiRunSequence
+	TrialGroup
+	Run
 	StepGrainN
 )
 
@@ -181,12 +181,12 @@ func (ss *Sim) ApplyPVInputs(ev *PVLVEnv) {
 }
 
 // SingleTrial and functions -- SingleTrial has been consolidated into this
-// An epoch is a set of trials, whose length is set by the current RunParams record
+// An epoch is a set of trials, whose length is set by the current RunBlockParams record
 func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 	epochDone := false
 	var curTG *data.TrialInstance
 	ev.EpochStart(ss)
-	ev.SetEpochTrialList(ss) // sets up one epoch's worth of data
+	ev.SetActiveTrialList(ss) // sets up one epoch's worth of data
 	epochDone = ev.TrialCt.Cur >= ev.TrialCt.Max
 	for !epochDone {
 		if ev.TrialInstances.AtEnd() {
@@ -202,10 +202,10 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 			return
 		}
 	}
-	ev.EpochCt.Incr()
+	ev.TrialGpCt.Incr()
 	ev.EpochEnded = true
 	ev.EpochEnd(ss) // run monitoring and analysis, maybe save weights
-	if ss.Stepper.StepPoint(int(Epoch)) {
+	if ss.Stepper.StepPoint(int(TrialGroup)) {
 		return
 	}
 	if ss.ViewOn && ss.TrainUpdt >= leabra.Epoch {
@@ -276,11 +276,8 @@ func (ev *PVLVEnv) TrialNameStopTest(_ *Sim) bool {
 
 // TrainEnd
 func (ev *PVLVEnv) TrainEnd(ss *Sim) {
-	if ev.CurRunParams.SaveFinalWts {
+	if ev.CurBlockParams.SaveFinalWts {
 		ev.SaveWeights(ss)
-	}
-	if ev.CurRunParams.LoadExp {
-		ev.SaveOutputData(ss)
 	}
 	ss.Stop()
 }

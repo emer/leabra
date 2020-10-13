@@ -70,6 +70,7 @@ type ModParams struct {
 	ModNetThreshold  float32 `desc:"threshold on deep_mod_net before deep mod is applied -- if not receiving even this amount of overall input from deep_mod sender, then do not use the deep_mod_net to drive deep_mod and deep_lrn values -- only for SUPER units -- based on LAYER level maximum for base LeabraLayerSpec, PVLV classes are based on actual deep_mod_net for each unit"`
 	ModSendThreshold float32 `desc:"threshold for including neuron activation in total to send (for ModNet)"`
 	IsModSender      bool    `desc:"does this layer send modulation to other layers?"`
+	IsModReceiver    bool    `desc:"does this layer receive modulation from other layers?"`
 	IsPVReceiver     bool    `desc:"does this layer receive a direct PV input?"`
 }
 
@@ -330,6 +331,7 @@ func (ly *ModLayer) ClearModLevels() {
 func (ly *ModLayer) AddModReceiver(rcvr ModReceiver, scale float32) {
 	ly.IsModSender = true
 	rly := rcvr.(IModLayer).AsMod()
+	rly.IsModReceiver = true
 	ly.ModReceivers = append(ly.ModReceivers, ModRcvrParams{rly.Name(), scale})
 }
 
@@ -378,22 +380,25 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 		if ly.IsModSender { // record what we send!
 			mnr.ModLrn = nrn.Act
 			mnr.ModLevel = nrn.Act
-		} else if mnr.ModNet <= ly.ModNetThreshold { // not enough yet
-			mnr.ModLrn = 0 // default is 0
-			if ly.ActModZero {
-				mnr.ModLevel = 0
-			} else {
-				mnr.ModLevel = 1
-			}
 		} else {
-			//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet * (1 - plMax)))
-			if plMax != 0 {
-				//mnr.ModLrn = math32.Max(-1, math32.Min(1, mnr.ModNet/plMax))
-				mnr.ModLrn = mnr.ModNet / plMax
+			if mnr.ModNet <= ly.ModNetThreshold { // not enough yet
+				mnr.ModLrn = 0 // default is 0
+				if ly.ActModZero {
+					mnr.ModLevel = 0
+				} else {
+					mnr.ModLevel = 1
+				}
 			} else {
-				mnr.ModLrn = 1
+				newLrn := mnr.ModNet / plMax
+				if math32.IsInf(newLrn, 1) || math32.IsNaN(newLrn) {
+					mnr.ModLrn = 1
+				} else if math32.IsInf(newLrn, -1) {
+					mnr.ModLrn = -1
+				} else {
+					mnr.ModLrn = newLrn
+				}
+				mnr.ModLevel = 1 // do not modulate!
 			}
-			mnr.ModLevel = 1 // do not modulate!
 		}
 	}
 }
@@ -512,7 +517,7 @@ func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 		}
 		ly.Act.VmFmG(nrn)
 		ly.Act.ActFmG(nrn)
-		if !ly.IsModSender { // is receiver
+		if ly.IsModReceiver {
 			newAct := nrn.Act * mnr.ModLevel
 			newDel := nrn.Act - newAct
 			nrn.Act = newAct
