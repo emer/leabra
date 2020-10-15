@@ -1080,12 +1080,15 @@ class Sim(pygiv.ClassViewObj):
         """
         LogRun adds data from current run to the RunLog table.
         """
+        epclog = ss.TrnEpcLog
+        epcix = etable.NewIdxView(epclog)
+        if epcix.Len() == 0:
+            return
+        
         run = ss.TrainEnv.Run.Cur # this is NOT triggered by increment yet -- use Cur
         row = dt.Rows
         dt.SetNumRows(row + 1)
 
-        epclog = ss.TrnEpcLog
-        epcix = etable.NewIdxView(epclog)
         # compute mean over last N epochs for run level
         nlast = 5
         if nlast > epcix.Len()-1:
