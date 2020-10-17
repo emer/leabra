@@ -11,7 +11,7 @@ exactly as it was when the StopPoint was hit, without having to explicitly save 
 There are two "running" states, Stepping and Running. The difference is that in the Running state, unless
 there is a Stop request, the application will forego the possibly-complex checking for a pause (see StepPoint,
 at the bottom of this file). StepPoint is written to make checking as quick as possible. Although the program
-will not stop at StepPoints without interaction, it will pause if RequestedState is Paused. The main difference
+will not stop at StepPoints without interaction, it will pause if RunState is Paused. The main difference
 between Paused and Stopped is that in the Paused state, the application waits for a state change, whereas in the
 Stopped state, the Stepper exits, and no application state is preserved. After entering Stopped, the controlling
 program (i.e., the user interface) should make sure that everything is properly reinitialized before running again.
@@ -28,8 +28,7 @@ import (
 type RunState int
 
 const (
-	Created  RunState = iota // this is the initial state, when a stepper is first created.
-	Stopped                  // execution is stopped. The Stepper is NOT waiting, so running again is basically a restart. The only way to go from Running or Stepping to Stopped is to explicitly call Stop(). Program state will not be preserved once the Stopped state is entered.
+	Stopped  RunState = iota // execution is stopped. The Stepper is NOT waiting, so running again is basically a restart. The only way to go from Running or Stepping to Stopped is to explicitly call Stop(). Program state will not be preserved once the Stopped state is entered.
 	Paused                   // execution is paused. The sim is waiting for further instructions, and can continue, or stop.
 	Stepping                 // the application is running, but will pause if it hits a StepPoint that matches the current StepGrain.
 	Running                  // the application is running, and will NOT pause at StepPoints. It will pause if a stop has been requested.
@@ -43,10 +42,13 @@ var KiT_RunState = kit.Enums.AddEnum(RunStateN, kit.NotBitFlag, nil)
 // A StopConditionChecker is a callback to check whether an arbitrary condition has been matched.
 // If a StopConditionChecker returns true, the program is suspended with a RunState of Paused,
 // and will remain so until the RunState changes to Stepping, Running, or Stopped.
+// As noted below for the PauseNotifier, the StopConditionChecker is called with the Stepper's lock held.
 type StopConditionChecker func(sv interface{}, grain int) (matched bool)
 
 // A PauseNotifier is a callback that will be invoked if the program enters the Paused state.
 // It takes an arbitrary state variable, sv, which is set by RegisterPauseNotifier.
+// NOTE! The PauseNotifier is called with the Stepper's lock held, so it must not call any Stepper methods
+// that try to take the lock on entry, or a deadlock will result.
 type PauseNotifier func(sv interface{})
 
 // The Stepper struct contains all of the state info for stepping a program, enabling step points.
@@ -54,14 +56,12 @@ type PauseNotifier func(sv interface{})
 type Stepper struct {
 	StateMut       sync.Mutex           `view:"-" desc:"mutex for RunState"`
 	StateChange    *sync.Cond           `view:"-" desc:"state change condition variable"`
-	CurState       RunState             `desc:"current run state"`
-	RequestedState RunState             `desc:"requested run state"`
+	RunState       RunState             `desc:"current run state"`
 	StepGrain      int                  `desc:"granularity of one step. No enum type here so clients can define their own"`
 	CondChecker    StopConditionChecker `view:"-" desc:"function to test for special stopping conditions"`
 	CheckerState   interface{}          `view:"-" desc:"arbitrary state information for condition checker"`
 	PauseNotifier  PauseNotifier        `view:"-" desc:"function to deal with any changes on client side when paused after stepping"`
 	PNState        interface{}          `view:"-" desc:"arbitrary state information for pause notifier"`
-	Stepping       bool                 `desc:"flag for stepping (as opposed to running"`
 	StepsPerClick  int                  `desc:"number of steps to execute before returning"`
 	StepsRemaining int                  `desc:"number of steps yet to execute before returning"`
 	WaitTimer      chan RunState        `desc:"watchdog timer channel"`
@@ -79,15 +79,12 @@ func (st *Stepper) Init() *Stepper {
 	oneTimeInit.Do(func() {
 		st.StateMut = sync.Mutex{}
 		st.StateChange = sync.NewCond(&st.StateMut)
-		st.CurState = Created
-		st.RequestedState = Created
-		st.StepGrain = 0
+		st.RunState = Stopped
+		st.StepGrain = 0 // probably an enum, but semantics are up to the client program
 		st.StepsRemaining = 0
 		st.StepsPerClick = 1
-		st.Stepping = false
 		st.WaitTimer = make(chan RunState, 1)
 	})
-	st.Enter(Stopped)
 	return st
 }
 
@@ -96,7 +93,7 @@ func (st *Stepper) Init() *Stepper {
 func (st *Stepper) WaitWithTimeout(cond *sync.Cond, secs int) {
 	go func() {
 		cond.Wait()
-		st.WaitTimer <- st.CurState
+		st.WaitTimer <- st.RunState
 	}()
 	for {
 		select {
@@ -123,26 +120,12 @@ func (st *Stepper) Grain() int {
 	return st.StepGrain
 }
 
-// PleaseEnter requests that the running application enter the requested state.
-// After calling this, the caller should check to see if the application has changed CurState
-func (st *Stepper) PleaseEnter(state RunState) {
-	st.StateMut.Lock()
-	defer st.StateMut.Unlock()
-	st.RequestedState = state
-	if state == Stepping {
-		st.Stepping = true
-	} else if state == Running {
-		st.Stepping = false
-	}
-	st.StateChange.Broadcast()
-}
-
-// Enter unconditionally enters the specified RunState, without checking or waiting
+// Enter unconditionally enters the specified RunState. It broadcasts a StateChange, which should be picked
+// up by a paused application.
 func (st *Stepper) Enter(state RunState) {
 	st.StateMut.Lock()
 	defer st.StateMut.Unlock()
-	st.CurState = state
-	st.RequestedState = state
+	st.RunState = state
 	st.StateChange.Broadcast()
 }
 
@@ -160,105 +143,42 @@ func (st *Stepper) RegisterPauseNotifier(notifier PauseNotifier, pnState interfa
 	st.PNState = pnState
 }
 
-// Stop sets CurState to Stopped. The running program will exit at the next StepPoint it hits.
+// Stop sets RunState to Stopped. The running program will exit at the next StepPoint it hits.
 func (st *Stepper) Stop() {
 	st.Enter(Stopped)
 }
 
-// RequestState sets RequestedState to the passed in RunState, and will optionally wait for CurState to
-// match the requested RunState.
-// RequestState will wait forever if nothing responds to the request, so it should be used with caution.
-func (st *Stepper) RequestState(state RunState, wait bool) RunState {
-	st.PleaseEnter(state)
-	if wait {
-		return st.WaitUntil(state)
-	} else {
-		return st.CurState
-	}
-}
-
-// RequestStop requests that the running program stop, and optionally waits.
-// Really just a wrapper around RequestState.
-func (st *Stepper) RequestStop(wait bool) {
-	st.RequestState(Stopped, wait)
-}
-
-// StopRequested checks for a request to enter the Stopped state.
-func (st *Stepper) StopRequested() bool {
-	st.StateMut.Lock()
-	defer st.StateMut.Unlock()
-	return st.RequestedState == Stopped
-}
-
-// RequestPause requests that the running program pause, and optionally waits.
-// Really just a wrapper around RequestState.
-func (st *Stepper) RequestPause(wait bool) {
-	st.RequestState(Paused, wait)
-}
-
-// Pause sets CurState to Paused. Note that the running program may not actually be paused.
+// Pause sets RunState to Paused. The running program will actually pause at the next StepPoint call.
 func (st *Stepper) Pause() {
 	st.Enter(Paused)
 }
 
 // Active checks that the application is either Running or Stepping (neither Paused nor Stopped).
+// This needs to use the State mutex because it checks two different fields.
 func (st *Stepper) Active() bool {
 	st.StateMut.Lock()
 	defer st.StateMut.Unlock()
-	return st.CurState == Running || st.CurState == Stepping
+	return st.RunState == Running || st.RunState == Stepping
 }
 
-// StartStepping enters the Stepping run state.
+// StartStepping enters the Stepping run state. This should be called at the start of a run only.
 func (st *Stepper) StartStepping(grain int, nSteps int) {
+	st.StateMut.Lock()
+	defer st.StateMut.Unlock()
 	if nSteps > 0 {
+		st.StepsPerClick = nSteps
 		st.StepsRemaining = nSteps
 	}
-	st.Stepping = true
 	st.StepGrain = grain
-	st.Enter(Stepping)
+	st.RunState = Stepping
 }
 
 // SetNSteps sets the number of times to go through a StepPoint of the current granularity before actually pausing.
 func (st *Stepper) SetNSteps(toTake int) {
+	st.StateMut.Lock()
+	defer st.StateMut.Unlock()
 	st.StepsPerClick = toTake
 	st.StepsRemaining = toTake
-}
-
-// WaitUntil waits for RunState to become the passed-in state, or Stopped.
-// WaitUntil may return Stopped, in which case the caller should clean up and return to its caller.
-func (st *Stepper) WaitUntil(state RunState) RunState {
-	st.StateMut.Lock()
-	defer st.StateMut.Unlock()
-	for {
-		switch st.CurState {
-		case Stopped, Paused, state:
-			return st.CurState
-		default:
-			st.WaitWithTimeout(st.StateChange, 10)
-		}
-	}
-}
-
-// WaitToGo waits for the application to enter Running, Stepping, or Stopped.
-// It returns the entered state.
-func (st *Stepper) WaitToGo() RunState {
-	st.StateMut.Lock()
-	defer st.StateMut.Unlock()
-	for {
-		switch st.CurState {
-		case Paused:
-			st.WaitWithTimeout(st.StateChange, 10)
-		default:
-			return st.CurState
-		}
-	}
-}
-
-// CheckStates gets the RunStates, both current and requested.
-func (st *Stepper) CheckStates() (cur, req RunState) {
-	st.StateMut.Lock()
-	defer st.StateMut.Unlock()
-	return st.CurState, st.RequestedState
 }
 
 // StepPoint checks for possible pause or stop.
@@ -268,20 +188,15 @@ func (st *Stepper) CheckStates() (cur, req RunState) {
 // Stepping: check to see if we should pause (if StepGrain matches, decrement StepsRemaining, stop if <= 0).
 // Paused: wait for state change.
 func (st *Stepper) StepPoint(grain int) (stop bool) {
-	state, reqState := st.CheckStates()
-	if reqState == Stopped && state != Stopped {
-		st.Enter(Stopped)
-	}
-	if state == Stopped || reqState == Stopped {
+	st.StateMut.Lock()
+	defer st.StateMut.Unlock()
+	if st.RunState == Stopped {
 		return true
 	}
-	if reqState == Paused && state != Paused {
-		st.Enter(Paused)
-	}
-	if state == Running {
+	if st.RunState == Running {
 		return false
 	}
-	if state != Paused && grain == st.StepGrain { // exact equality is the only test that really works well
+	if st.RunState != Paused && grain == st.StepGrain { // exact equality is the only test that really works well
 		if st.PauseIfStepsComplete() {
 			st.PauseNotifier(st.PNState)
 		}
@@ -289,42 +204,28 @@ func (st *Stepper) StepPoint(grain int) (stop bool) {
 	if st.CondChecker != nil {
 		stopMatched := st.CondChecker(st.CheckerState, grain)
 		if stopMatched {
-			st.Enter(Paused)
+			st.RunState = Paused
 		}
 	}
 	for {
-		st.StateMut.Lock()
-		switch st.RequestedState {
+		switch st.RunState {
 		case Stopped:
-			st.CurState = Stopped
-			st.StateMut.Unlock()
 			return true
-		case Running:
-			st.Stepping = false
-			st.CurState = Running
-			st.StateMut.Unlock()
-			return false
-		case Stepping:
-			st.Stepping = true
-			st.CurState = Stepping
-			st.StateMut.Unlock()
+		case Running, Stepping:
 			return false
 		case Paused:
-			//st.StateChange.Wait()
 			st.WaitWithTimeout(st.StateChange, 10)
-			//fmt.Println(st.CurState)
-			st.StateMut.Unlock()
 		}
 	}
 }
 
+// PauseIfStepsComplete counts down StepsRemaining, and pauses if they go to zero.
 func (st *Stepper) PauseIfStepsComplete() (pauseNow bool) {
 	st.StateMut.Lock()
 	defer st.StateMut.Unlock()
 	st.StepsRemaining--
 	if st.StepsRemaining <= 0 {
-		st.CurState = Paused
-		st.RequestedState = Paused
+		st.RunState = Paused
 		st.StepsRemaining = st.StepsPerClick
 		return true
 	} else {
