@@ -24,7 +24,7 @@ const (
 	AlphaCycle
 	SGTrial // Trial
 	TrialGroup
-	Run
+	RunBlock
 	StepGrainN
 )
 

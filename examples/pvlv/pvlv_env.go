@@ -4,8 +4,15 @@
 
 package main
 
+// The code in this file was listed verbatim from the cemer version of PVLV, and tries to duplicate its logic fathfully.
+
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"strconv"
+	"strings"
+
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/params"
 	"github.com/emer/etable/etable"
@@ -13,10 +20,6 @@ import (
 	"github.com/emer/leabra/examples/pvlv/data"
 	"github.com/emer/leabra/pvlv"
 	"github.com/goki/ki/kit"
-	"math"
-	"math/rand"
-	"strconv"
-	"strings"
 )
 
 type PVLVEnv struct {
@@ -136,7 +139,7 @@ func (ev *PVLVEnv) Validate() error {
 
 // EpochStart
 func (ev *PVLVEnv) EpochStart(ss *Sim) {
-	for colNm, _ := range ss.TrialTypeEpochFirstLogged {
+	for colNm := range ss.TrialTypeEpochFirstLogged {
 		ss.TrialTypeEpochFirstLogged[colNm] = false
 	}
 	ev.AlphaCycle.Init()
