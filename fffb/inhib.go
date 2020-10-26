@@ -42,3 +42,6 @@ func (fi *Inhib) Decay(decay float32) {
 	fi.FBi -= decay * fi.FBi
 	fi.Gi -= decay * fi.Gi
 }
+
+// Inhibs is a slice of Inhib records
+type Inhibs []Inhib
