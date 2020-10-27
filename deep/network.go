@@ -156,6 +156,49 @@ func AddDeepNoTRC4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, n
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Python versions
+
+// AddDeep2DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and TRC Pulvinar for Super (P suffix).
+// TRC projects back to Super and CT layers, type = Back, class = FmPulv
+// CT is placed Behind Super, and Pulvinar behind CT.
+// Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
+// Py is Python version, returns layers as a slice
+func AddDeep2DPy(nt *leabra.Network, name string, shapeY, shapeX int) []emer.Layer {
+	super, ct, trc := AddDeep2D(nt, name, shapeY, shapeX)
+	return []emer.Layer{super, ct, trc}
+}
+
+// AddDeep4DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn PoolOneToOne projection from Super to CT, and TRC Pulvinar for Super (P suffix).
+// TRC projects back to Super and CT layers, also PoolOneToOne, class = FmPulv
+// CT is placed Behind Super, and Pulvinar behind CT.
+// Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
+// Py is Python version, returns layers as a slice
+func AddDeep4DPy(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) []emer.Layer {
+	super, ct, trc := AddDeep4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+	return []emer.Layer{super, ct, trc}
+}
+
+// AddDeepNoTRC2DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn Full projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+// Py is Python version, returns layers as a slice
+func AddDeepNoTRC2DPy(nt *leabra.Network, name string, shapeY, shapeX int) []emer.Layer {
+	super, ct := AddDeepNoTRC2D(nt, name, shapeY, shapeX)
+	return []emer.Layer{super, ct}
+}
+
+// AddDeepNoTRC4DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
+// with CTCtxtPrjn PoolOneToOne projection from Super to CT, and NO TRC Pulvinar.
+// CT is placed Behind Super.
+// Py is Python version, returns layers as a slice
+func AddDeepNoTRC4DPy(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) []emer.Layer {
+	super, ct := AddDeepNoTRC4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
+	return []emer.Layer{super, ct}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Network versions of Add Layer methods
 
 // AddDeep2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer

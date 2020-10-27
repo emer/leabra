@@ -70,3 +70,21 @@ func AddRWLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 
 	return
 }
+
+// AddTDLayersPy adds the standard TD temporal differences layers, generating a DA signal.
+// Projection from Rew to RewInteg is given class TDRewToInteg -- should
+// have no learning and 1 weight.
+// Py is Python version, returns layers as a slice
+func AddTDLayersPy(nt *leabra.Network, prefix string, rel relpos.Relations, space float32) []leabra.LeabraLayer {
+	rew, rp, ri, td := AddTDLayers(nt, prefix, rel, space)
+	return []leabra.LeabraLayer{rew, rp, ri, td}
+}
+
+// AddRWLayersPy adds simple Rescorla-Wagner (PV only) dopamine system, with a primary
+// Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
+// Only generates DA when Rew layer has external input -- otherwise zero.
+// Py is Python version, returns layers as a slice
+func AddRWLayersPy(nt *leabra.Network, prefix string, rel relpos.Relations, space float32) []leabra.LeabraLayer {
+	rew, rp, da := AddRWLayers(nt, prefix, rel, space)
+	return []leabra.LeabraLayer{rew, rp, da}
+}
