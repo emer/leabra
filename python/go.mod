@@ -7,11 +7,11 @@ require (
 	github.com/apache/arrow/go/arrow v0.0.0-20200628183233-0b9720463eec
 	github.com/aymerick/douceur v0.2.0
 	github.com/emer/emergent v1.1.11
-	github.com/emer/etable v1.0.16
+	github.com/emer/etable v1.0.17
 	github.com/emer/leabra v1.1.11
 	github.com/emer/vision v1.1.4
 	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
-	github.com/go-python/gopy v0.3.2-0.20200916100237-6d8fa23dbe8a
+	github.com/go-python/gopy v0.3.2
 	github.com/goki/gi v1.0.16
 	github.com/goki/ki v1.0.4
 	github.com/goki/mat32 v1.0.2
