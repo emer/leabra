@@ -8,7 +8,7 @@ import (
 	p "github.com/emer/leabra/pvlv"
 )
 
-// TrialGp : epoch-level state
+// TrialGp : block-level state
 // aka TrialGroup
 type TrialGroupParams struct {
 	TrialGpName         string    `desc:"name"`
@@ -64,7 +64,7 @@ func (eps *TrialBlockRecs) ReadNext() *TrialGroupParams {
 	return eps.Recs.ReadNext().(*TrialGroupParams)
 }
 
-// imported from PVLVEnv->EnvEpochParams_Group in cemer
+// imported from PVLVEnv->EnvBlockParams_Group in cemer
 func AllTrialBlocks() TrialBlockMap {
 	sets := map[string]TrialBlock{
 		"PosAcq_B50": {

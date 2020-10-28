@@ -34,16 +34,14 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[SSNone-0]
-	_ = x[SSError-1]
-	_ = x[SSCorrect-2]
-	_ = x[SSTrialNameMatch-3]
-	_ = x[SSTrialNameNonmatch-4]
-	_ = x[StopStepCondN-5]
+	_ = x[SSTrialNameMatch-1]
+	_ = x[SSTrialNameNonmatch-2]
+	_ = x[StopStepCondN-3]
 }
 
-const _StopStepCond_name = "NoneErrorCorrectTrial NameNot Trial NameStopStepCondN"
+const _StopStepCond_name = "NoneTrial NameNot Trial NameStopStepCondN"
 
-var _StopStepCond_index = [...]uint8{0, 4, 9, 16, 26, 40, 53}
+var _StopStepCond_index = [...]uint8{0, 4, 14, 28, 41}
 
 func (i StopStepCond) String() string {
 	if i < 0 || i >= StopStepCond(len(_StopStepCond_index)-1) {
