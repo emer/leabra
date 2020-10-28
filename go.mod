@@ -9,6 +9,6 @@ require (
 	github.com/emer/empi v1.0.8
 	github.com/emer/etable v1.0.17
 	github.com/goki/gi v1.0.17
-	github.com/goki/ki v1.0.4
+	github.com/goki/ki v1.0.5
 	github.com/goki/mat32 v1.0.2
 )
