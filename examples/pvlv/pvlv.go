@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/emer/emergent/env"
+	"github.com/emer/emergent/stepper"
 	_ "github.com/emer/etable/agg"
 	"github.com/emer/etable/eplot"
 	"github.com/emer/etable/etable"
@@ -34,7 +35,6 @@ import (
 
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
-	"github.com/emer/leabra/examples/pvlv/stepper"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pvlv"
 	"github.com/goki/gi/gi"
@@ -71,21 +71,20 @@ const LogPrec = 4
 
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
-// TODO this is not done.
 
 type Sim struct {
-	RunParamsNm                  string               `inactive:"+" desc:"Name of the current run. Use menu above to set"`
-	RunParams                    *data.RunParams      `desc:"For sequences of blocks"`
-	RunBlockParamsNm             string               `inactive:"+" desc:"name of current RunBlockParams"`
-	RunBlockParams               *data.RunBlockParams `desc:"for running Train directly"`
-	Tag                          string               `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Params                       params.Sets          `view:"no-inline" desc:"pvlv-specific network parameters"`
-	ParamSet                     string
-	StableParams                 params.Set        `view:"no-inline" desc:"shouldn't need to change these'"`
-	MiscParams                   params.Set        `view:"no-inline" desc:"misc params -- network specs"`
-	AnalysisParams               params.Set        `view:"no-inline" desc:"??"`
-	TrainEnv                     PVLVEnv           `desc:"Training environment -- PVLV environment"`
-	TestEnv                      PVLVEnv           `desc:"Testing environment -- PVLV environment"`
+	RunParamsNm      string               `inactive:"+" desc:"Name of the current run. Use menu above to set"`
+	RunParams        *data.RunParams      `desc:"For sequences of blocks"`
+	RunBlockParamsNm string               `inactive:"+" desc:"name of current RunBlockParams"`
+	RunBlockParams   *data.RunBlockParams `desc:"for running Train directly"`
+	Tag              string               `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Params           params.Sets          `view:"no-inline" desc:"pvlv-specific network parameters"`
+	ParamSet         string
+	//StableParams                 params.Set        `view:"no-inline" desc:"shouldn't need to change these'"`
+	//MiscParams                   params.Set        `view:"no-inline" desc:"misc params -- network specs"`
+	//AnalysisParams               params.Set        `view:"no-inline" desc:"??"`
+	Env PVLVEnv `desc:"environment -- PVLV environment"`
+	//TestEnv                      PVLVEnv           `desc:"Testing environment -- PVLV environment"`
 	StepsToRun                   int               `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
 	OrigSteps                    int               `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
 	StepGrain                    StepGrain         `view:"-" desc:"granularity for the Step command"`
@@ -103,22 +102,14 @@ type Sim struct {
 	CycleOutputData              *etable.Table       `view:"no-inline" desc:"Cycle-level output data"`
 	CycleDataPlot                *eplot.Plot2D       `view:"no-inline" desc:"Fine-grained trace data"`
 	CycleOutputMetadata          map[string][]string `view:"-"`
-	//TrialOutputData             *etable.Table     `view:"-" desc:"Trial-level output data"`
-	//EpochOutputData             *etable.Table     `view:"-" desc:"TrialGpCt-level output data"`
-	//EpochOutputDataCmp             *etable.Table     `view:"-" desc:"TrialGpCt-level output data copy"`
-	//HistoryGraphData          *etable.Table     `view:"-" desc:"data for history graph"`
-	//RealTimeDataLog           *etable.Table     `view:"-"`
-	//TrnEpcLog                 *etable.Table     `view:"no-inline" desc:"training epoch-level log data"`
-	//RunLog                    *etable.Table     `view:"no-inline" desc:"summary log of each run"`
-	//RunStats                  *etable.Table     `view:"no-inline" desc:"aggregate stats on all runs"`
-	TimeLogEpoch    int               `desc:"current trial group within current run phase"`
-	TimeLogEpochAll int               `desc:"current trial group across all phases of the run"`
-	Time            leabra.Time       `desc:"leabra timing parameters and state"`
-	ViewOn          bool              `desc:"whether to update the network view while running"`
-	TrainUpdt       leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
-	TestUpdt        leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model"`
-	TstRecLays      []string          `view:"-" desc:"names of layers to record activations etc of during testing"`
-	ContextModel    ContextModel      `desc:"how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded"`
+	TimeLogEpoch                 int                 `desc:"current trial group within current run phase"`
+	TimeLogEpochAll              int                 `desc:"current trial group across all phases of the run"`
+	Time                         leabra.Time         `desc:"leabra timing parameters and state"`
+	ViewOn                       bool                `desc:"whether to update the network view while running"`
+	TrainUpdt                    leabra.TimeScales   `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
+	TestUpdt                     leabra.TimeScales   `desc:"at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model"`
+	TstRecLays                   []string            `view:"-" desc:"names of layers to record activations etc of during testing"`
+	ContextModel                 ContextModel        `desc:"how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded"`
 	// internal state - view:"-"
 	Win                       *gi.Window                  `view:"-" desc:"main GUI window"`
 	NetView                   *netview.NetView            `view:"-" desc:"the network viewer"`
@@ -171,6 +162,7 @@ type Sim struct {
 	MasterTrialBlockParams data.TrialBlockMap     `desc:"master list of BlockParams (sets of trial groups) records"`
 	MaxRunBlocks           int                    `view:"-" desc:"Maximum number of blocks to run"`
 	MaxBlocks              int                    `view:"-" desc:"maximum number of block runs to perform"` // for non-GUI runs
+	simOneTimeInit         sync.Once
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -184,8 +176,6 @@ func (ss *Sim) OpenCemerWeights(fName string) {
 	}
 }
 
-var simOneTimeInit sync.Once
-
 func (ss *Sim) New() {
 	ss.InputShapes = map[string][]int{
 		"StimIn":    pvlv.StimInShape,
@@ -196,44 +186,25 @@ func (ss *Sim) New() {
 	}
 	ss.Net = &pvlv.Network{}
 	ss.CycleOutputData = &etable.Table{}
-	//ss.TrialOutputData = &etable.Table{}
-	//ss.EpochOutputData = &etable.Table{}
 	ss.TrialTypeData = &etable.Table{}
 	ss.TrialTypeEpochFirstLog = &etable.Table{}
 	ss.TrialTypeEpochFirstLogCmp = &etable.Table{}
 	ss.TrialTypeSet = map[string]int{}
 	ss.GlobalTrialTypeSet = map[string]int{}
-	//ss.HistoryGraphData = &etable.Table{}
-	//ss.RealTimeDataLog = &etable.Table{}
-	// TODO: fix these
-	simOneTimeInit.Do(func() {
+	ss.simOneTimeInit.Do(func() {
 		ss.ValidateRunParams()
 		ss.MasterRunBlockParams = data.AllRunBlockParams()
 		ss.MasterRunParams = data.AllRunParams()
 		ss.MasterTrialBlockParams = data.AllTrialBlocks()
-		ss.TrainEnv = PVLVEnv{Nm: "Train", Dsc: "training environment"}
-		ss.TrainEnv.New(ss)
+		ss.Env = PVLVEnv{Nm: "Env", Dsc: "run environment"}
+		ss.Env.New(ss)
 		ss.Stepper = stepper.New()
-		ss.Stepper.RegisterStopChecker(CheckStopCondition, SimState{ss, &ss.TrainEnv})
-		ss.Stepper.RegisterPauseNotifier(NotifyPause, SimState{ss, &ss.TrainEnv})
+		ss.Stepper.RegisterStopCheckFn(ss.CheckStopCondition)
+		ss.Stepper.RegisterPauseNotifyFn(ss.NotifyPause)
 	})
 	ss.Defaults()
 	ss.Params = ParamSets
 	ss.CycleOutputDataRows = 10000
-	//ss.AnalysisData = &PVLVAnalysisData{TrialOutputData: &etable.Table{
-	//	Cols:       nil,
-	//	ColNames:   nil,
-	//	Rows:       0,
-	//	ColNameMap: nil,
-	//	MetaData:   nil,
-	//}}
-	//ss.Experiments = Experiments()
-	//ss.RunParams = ParamSets
-	//ss.RunBlockParams = ParamSets
-	//ss.PvlvParams = ParamSets
-	//ss.StableParams = ParamSets
-	//ss.MiscParams = ParamSets
-	//ss.AnalysisParams = ParamSets
 	ss.InitHasRun = false
 
 }
@@ -272,7 +243,7 @@ func (ss *Sim) MaybeUpdate(train, exact bool, checkTS leabra.TimeScales) {
 		ts = ss.TestUpdt
 	}
 	if (exact && ts == checkTS) || ts <= checkTS {
-		ss.UpdateView(train)
+		ss.UpdateView()
 	}
 }
 
@@ -284,11 +255,11 @@ func (ss *Sim) Config() {
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigOutputData()
-	ss.InitSim(&ss.TrainEnv)
+	ss.InitSim()
 }
 
 func (ss *Sim) ConfigEnv() {
-	ss.TrainEnv.Init(ss)
+	ss.Env.Init(ss)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +289,8 @@ var KiT_StopStepCond = kit.Enums.AddEnum(StopStepCondN, kit.NotBitFlag, nil)
 
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
-func (ss *Sim) InitSim(ev *PVLVEnv) {
+func (ss *Sim) InitSim() {
+	ev := &ss.Env
 	rand.Seed(ss.RndSeed)
 	ss.Stepper.Init()
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
@@ -326,12 +298,12 @@ func (ss *Sim) InitSim(ev *PVLVEnv) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = ss.InitRunBlock(ev, true)
+	err = ss.InitRunBlock(true)
 	if err != nil {
 		fmt.Println("ERROR: InitRunBlock failed in InitSim")
 	}
 	ss.Net.InitWts()
-	ss.UpdateView(true)
+	ss.UpdateView()
 	ss.InitHasRun = true
 	ss.VerboseInit = false
 }
@@ -345,20 +317,15 @@ func (ss *Sim) NewRndSeed() {
 // Counters returns a string of the current counter state
 // use tabs to achieve a reasonable formatting overall
 // and add a few tabs at the end to allow for expansion..
-func (ss *Sim) Counters(train bool) string {
-	var ev *PVLVEnv
-	if train {
-		ev = &ss.TrainEnv
-	} else {
-		ev = &ss.TestEnv
-	}
+func (ss *Sim) Counters() string {
+	ev := &ss.Env
 	return fmt.Sprintf("Block:\t%d\tTrialGp:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
 		ev.BlockCt.Cur, ev.TrialGpCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur, ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
 }
 
-func (ss *Sim) UpdateView(train bool) {
+func (ss *Sim) UpdateView() {
 	if ss.NetView != nil && ss.NetView.IsVisible() {
-		ss.NetView.Record(ss.Counters(train))
+		ss.NetView.Record(ss.Counters())
 		// note: essential to use Go version of update when called from another goroutine
 		ss.NetView.GoUpdate()
 	}
@@ -479,62 +446,6 @@ func (ss *Sim) ConfigCycleOutputDataPlot(plt *eplot.Plot2D, dt *etable.Table) *e
 		plt.SetColParams(colName, colOnOff, colFixMin, colMin, colFixMax, colMax)
 	}
 	return plt
-}
-
-func (ss *Sim) ConfigEpochOutputData(dt *etable.Table) {
-	colNames := []string{
-		"AvgSSE", "CntErr", "AvgNormErr", "AvgExtRew", "AvgCycles", "EpochTimeTot", "EpochTimeUsr", "AvgTick",
-		"BLAmygPosD1_Marker_Fm_VTAp_netrel", "BLAmygPosD1_Fm_PosPV_netrel", "BLAmygPosD1_Fm_Stim_In_netrel",
-		"BLAmygPosD1_Inhib_Fm_BLAmygPosD2_netrel", "BLAmygNegD2_Marker_Fm_VTAp_netrel", "BLAmygNegD2_Fm_NegPV_netrel",
-		"BLAmygNegD2_Fm_Stim_In_netrel", "BLAmygNegD2_Inhib_Fm_BLAmygNegD1_netrel", "BLAmygPosD2_Marker_Fm_VTAp_netrel",
-		"BLAmygPosD2_Fm_Context_In_netrel", "BLAmygPosD2_Deep_Mod_Fm_BLAmygPosD1_netrel",
-		"BLAmygNegD1_Marker_Fm_VTAp_netrel", "BLAmygNegD1_Fm_Context_In_netrel",
-		"BLAmygNegD1_Deep_Mod_Fm_BLAmygNegD2_netrel", "CElAcqPosD1_Deep_Raw_Fm_PosPV_netrel",
-		"CElAcqPosD1_Marker_Fm_VTAp_netrel", "CElAcqPosD1_Inhib_Fm_CElExtPosD2_netrel",
-		"CElAcqPosD1_Fm_BLAmygPosD1_netrel", "CElAcqPosD1_Fm_Stim_In_netrel",
-		"CElExtPosD2_Deep_Mod_Fm_CElAcqPosD1_netrel", "CElExtPosD2_Marker_Fm_VTAp_netrel",
-		"CElExtPosD2_Inhib_Fm_CElAcqPosD1_netrel", "CElExtPosD2_Fm_BLAmygPosD2_netrel",
-		"CElAcqNegD2_Deep_Raw_Fm_NegPV_netrel", "CElAcqNegD2_Marker_Fm_VTAp_netrel",
-		"CElAcqNegD2_Inhib_Fm_CElExtNegD1_netrel", "CElAcqNegD2_Fm_BLAmygNegD2_netrel",
-		"CElAcqNegD2_Fm_Stim_In_netrel", "CElExtNegD1_Deep_Mod_Fm_CElAcqNegD2_netrel",
-		"CElExtNegD1_Marker_Fm_VTAp_netrel", "CElExtNegD1_Inhib_Fm_CElAcqNegD2_netrel",
-		"CElExtNegD1_Fm_BLAmygNegD1_netrel", "CEmPos_Fm_CElAcqPosD1_netrel", "CEmPos_Inhib_Fm_CElExtPosD2_netrel",
-		"CEmNeg_Fm_CElAcqNegD2_netrel", "CEmNeg_Inhib_Fm_CElExtNegD1_netrel", "VSPatchPosD1_Marker_Fm_VTAp_netrel",
-		"VSPatchPosD1_Deep_Mod_Fm_BLAmygPosD1_netrel", "VSPatchPosD1_Fm_USTime_In_netrel",
-		"VSPatchPosD2_Marker_Fm_VTAp_netrel", "VSPatchPosD2_Deep_Mod_Fm_BLAmygPosD1_netrel",
-		"VSPatchPosD2_Fm_USTime_In_netrel", "VSPatchNegD2_Marker_Fm_VTAp_netrel",
-		"VSPatchNegD2_Deep_Mod_Fm_BLAmygNegD2_netrel", "VSPatchNegD2_Fm_USTime_In_netrel",
-		"VSPatchNegD1_Marker_Fm_VTAp_netrel", "VSPatchNegD1_Deep_Mod_Fm_BLAmygNegD2_netrel",
-		"VSPatchNegD1_Fm_USTime_In_netrel", "VSMatrixPosD1_Marker_Fm_VTAp_netrel",
-		"VSMatrixPosD1_Deep_Mod_Fm_BLAmygPosD1_netrel", "VSMatrixPosD1_Fm_Stim_In_netrel",
-		"VSMatrixPosD2_Marker_Fm_VTAp_netrel", "VSMatrixPosD2_Deep_Mod_Fm_VSMatrixPosD1_netrel",
-		"VSMatrixPosD2_Fm_Stim_In_netrel", "VSMatrixNegD2_Marker_Fm_VTAp_netrel",
-		"VSMatrixNegD2_Deep_Mod_Fm_BLAmygNegD2_netrel", "VSMatrixNegD2_Fm_Stim_In_netrel",
-		"VSMatrixNegD1_Marker_Fm_VTAp_netrel", "VSMatrixNegD1_Deep_Mod_Fm_VSMatrixNegD2_netrel",
-		"VSMatrixNegD1_Fm_Stim_In_netrel", "PPTg_Fm_CEmPos_netrel", "LHbRMTg_Marker_Fm_PosPV_netrel",
-		"LHbRMTg_Marker_Fm_NegPV_netrel", "LHbRMTg_Marker_Fm_VSPatchPosD1_netrel",
-		"LHbRMTg_Marker_Fm_VSPatchPosD2_netrel", "LHbRMTg_Marker_Fm_VSPatchNegD2_netrel",
-		"LHbRMTg_Marker_Fm_VSPatchNegD1_netrel", "LHbRMTg_Marker_Fm_VSMatrixPosD1_netrel",
-		"LHbRMTg_Marker_Fm_VSMatrixPosD2_netrel", "LHbRMTg_Marker_Fm_VSMatrixNegD2_netrel",
-		"LHbRMTg_Marker_Fm_VSMatrixNegD1_netrel", "VTAp_Marker_Fm_PPTg_p_netrel", "VTAp_Marker_Fm_LHbRMTg_netrel",
-		"VTAp_Marker_Fm_PosPV_netrel", "VTAp_Marker_Fm_VSPatchPosD1_netrel", "VTAp_Marker_Fm_VSPatchPosD2_netrel",
-		"VTAp_Marker_Fm_VSPatchNegD1_netrel", "VTAp_Marker_Fm_VSPatchNegD2_netrel", "VTAn_Marker_Fm_LHbRMTg_netrel",
-		"VTAn_Marker_Fm_NegPV_netrel", "VTAn_Marker_Fm_VSPatchNegD2_netrel", "VTAn_Marker_Fm_VSPatchNegD1_netrel",
-		"VTAn_Marker_Fm_PPTg_n_netrel", "PPTg_n_Fm_CEmPos_netrel", "netmax",
-	}
-	dt.SetMetaData("name", "EpochOutputData")
-	dt.SetMetaData("desc", "TrialGp-level output data")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-	sch := etable.Schema{
-		{Name: "Batch", Type: etensor.INT},
-		{Name: "TrialGp", Type: etensor.INT},
-		{Name: "TrainMode", Type: etensor.STRING},
-	}
-	for _, colName := range colNames {
-		sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64})
-	}
-	dt.SetFromSchema(sch, 0)
 }
 
 func (ss *Sim) ConfigOutputData() {
@@ -792,7 +703,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	input := tv.AddNewTab(etview.KiT_TableView, "StdInputData").(*etview.TableView)
 	input.SetName("StdInputData")
-	input.SetTable(ss.TrainEnv.StdInputData, nil)
+	input.SetTable(ss.Env.StdInputData, nil)
 
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "CycleOutputData").(*eplot.Plot2D)
 	ss.CycleDataPlot = ss.ConfigCycleOutputDataPlot(plt, ss.CycleOutputData)
@@ -804,7 +715,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Stepper.Stop()
 		if !ss.InitHasRun {
-			ss.InitSim(&ss.TrainEnv)
+			ss.InitSim()
 		}
 		answeredInitWts := true // hack to workaround lack of a true modal dialog
 		if ss.SimHasRun {
@@ -823,8 +734,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		for answeredInitWts == false {
 			time.Sleep(1 * time.Second)
 		}
-		_ = ss.InitRun(&ss.TrainEnv)
-		ss.UpdateView(true)
+		_ = ss.InitRun()
+		ss.UpdateView()
 		vp.SetNeedsFullRender()
 	})
 
@@ -836,7 +747,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		tbar.UpdateActions()
 		if !ss.InitHasRun {
 			fmt.Println("Initializing...")
-			ss.InitSim(&ss.TrainEnv)
+			ss.InitSim()
 		}
 		if !ss.Stepper.Active() {
 			if ss.Stopped() {
@@ -997,8 +908,8 @@ func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
 		tbar.UpdateActions()
 		if !ss.SimHasRun {
 			fmt.Println("Initializing...")
-			ss.InitSim(&ss.TrainEnv)
-			_ = ss.InitRun(&ss.TrainEnv)
+			ss.InitSim()
+			_ = ss.InitRun()
 		}
 		if ss.Stopped() {
 			ss.SimHasRun = true
@@ -1136,7 +1047,7 @@ func (ss *Sim) RunEpochName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.BlockCt.Cur, ss.TrainEnv.TrialGpCt.Cur) + ".wts.gz"
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.Env.BlockCt.Cur, ss.Env.TrialGpCt.Cur) + ".wts.gz"
 }
 
 // LogFileName returns default log file name
@@ -1149,12 +1060,12 @@ func (ss *Sim) LogFileName(lognm string) string {
 
 // LogTrnEpc adds data from current epoch to the TrnEpcLog table.
 // computes epoch averages prior to logging.
-func (ss *Sim) LogTrnEpc(_ *PVLVEnv) {
+func (ss *Sim) LogTrnEpc() {
 	ss.TrialTypeEpochFirst.GoUpdate()
 }
 
 // Try to make a more descriptive legend. Does not work
-func (ss *Sim) UpdateEpochFirst(ev *PVLVEnv) {
+func (ss *Sim) UpdateEpochFirst() {
 	plt := ss.TrialTypeEpochFirst
 	for cpi := range plt.Cols {
 		cp := plt.Cols[cpi]
@@ -1176,242 +1087,6 @@ func (ss *Sim) UpdateEpochFirst(ev *PVLVEnv) {
 	}
 }
 
-func (ss *Sim) ConfigTrnEpcLog(dt *etable.Table) {
-	dt.SetMetaData("name", "TrnEpcLog")
-	dt.SetMetaData("desc", "Record of performance over epochs of training")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	sch := etable.Schema{
-		{"Block", etensor.INT64, nil, nil},
-		{"TrialGp", etensor.INT64, nil, nil},
-		{"SSE", etensor.FLOAT64, nil, nil},
-		{"AvgSSE", etensor.FLOAT64, nil, nil},
-		{"PctErr", etensor.FLOAT64, nil, nil},
-		{"PctCor", etensor.FLOAT64, nil, nil},
-		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"DA", etensor.FLOAT64, nil, nil},
-		{"AbsDA", etensor.FLOAT64, nil, nil},
-		{"RewPred", etensor.FLOAT64, nil, nil},
-		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
-	}
-	dt.SetFromSchema(sch, 0)
-}
-
-func (ss *Sim) ConfigTrnEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "TrialGp Plot"
-	plt.Params.XAxisCol = "TrialGp"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
-	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("PctErr", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("DA", eplot.Off, eplot.FixMin, -1, eplot.FixMax, 1)
-	plt.SetColParams("AbsDA", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("RewPred", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("PerTrlMSec", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-
-	return plt
-}
-
-//////////////////////////////////////////////
-//  TstTrlLog
-
-// LogTstTrl adds data from current trial to the TstTrlLog table.
-// log always contains number of testing items
-func (ss *Sim) LogTstTrl(dt *etable.Table) {
-
-	trl := ss.TrainEnv.AlphaCycle.Cur
-	row := trl
-
-	if dt.Rows <= row {
-		dt.SetNumRows(row + 1)
-	}
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.TstTrlPlot.GoUpdate()
-}
-
-func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
-	dt.SetMetaData("name", "TstTrlLog")
-	dt.SetMetaData("desc", "Record of testing per input pattern")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	nt := ss.TrainEnv.AlphaCycle.Max
-	sch := etable.Schema{
-		{"Block", etensor.INT64, nil, nil},
-		{"TrialGp", etensor.INT64, nil, nil},
-		{"AlphaCycle", etensor.INT64, nil, nil},
-		{"TrialName", etensor.STRING, nil, nil},
-		{"Err", etensor.FLOAT64, nil, nil},
-		{"SSE", etensor.FLOAT64, nil, nil},
-		{"AvgSSE", etensor.FLOAT64, nil, nil},
-		{"CosDiff", etensor.FLOAT64, nil, nil},
-		{"DA", etensor.FLOAT64, nil, nil},
-		{"AbsDA", etensor.FLOAT64, nil, nil},
-		{"RewPred", etensor.FLOAT64, nil, nil},
-	}
-	for _, lnm := range ss.TstRecLays {
-		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		sch = append(sch, etable.Column{Name: lnm, Type: etensor.FLOAT64, CellShape: ly.Shp.Shp})
-	}
-	dt.SetFromSchema(sch, nt)
-}
-
-func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Test AlphaCycle Plot"
-	plt.Params.XAxisCol = "AlphaCycle"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("AlphaCycle", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("TrialName", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Err", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
-	plt.SetColParams("SSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("DA", eplot.On, eplot.FixMin, -1, eplot.FixMax, 1)
-	plt.SetColParams("AbsDA", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("RewPred", eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
-
-	for _, lnm := range ss.TstRecLays {
-		plt.SetColParams(lnm, eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	}
-	return plt
-}
-
-//////////////////////////////////////////////
-//  TstEpcLog
-
-func (ss *Sim) LogTstEpc(dt *etable.Table) {
-	row := dt.Rows
-	dt.SetNumRows(row + 1)
-
-	// trl := ss.TstTrlLog
-	// tix := etable.NewIdxView(trl)
-	epc := ss.TrainEnv.TrialGpCt.Prv // ?
-
-	// note: this shows how to use agg methods to compute summary data from another
-	// data table, instead of incrementing on the Sim
-	dt.SetCellFloat("Block", row, float64(ss.TrainEnv.BlockCt.Cur))
-	dt.SetCellFloat("TrialGp", row, float64(epc))
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.TstEpcPlot.GoUpdate()
-}
-
-func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
-	dt.SetMetaData("name", "TstEpcLog")
-	dt.SetMetaData("desc", "Summary stats for testing trials")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	dt.SetFromSchema(etable.Schema{
-		{"Block", etensor.INT64, nil, nil},
-		{"TrialGp", etensor.INT64, nil, nil},
-	}, 0)
-}
-
-func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "SIR Testing TrialGp Plot"
-	plt.Params.XAxisCol = "TrialGp"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("TrialGp", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	return plt
-}
-
-//////////////////////////////////////////////
-//  RunLog
-
-// LogRun adds data from current run to the RunLog table.
-func (ss *Sim) LogRun(dt *etable.Table) {
-	//run := ss.TrainEnv.BlockCt.Cur // this is NOT triggered by increment yet -- use Cur
-	//row := dt.Rows
-	//dt.SetNumRows(row + 1)
-	//
-	//epclog := ss.TrnEpcLog
-	//epcix := etable.NewIdxView(epclog)
-	//// compute mean over last N epochs for run level
-	//nlast := 1
-	//if nlast > epcix.Len()-1 {
-	//	nlast = epcix.Len() - 1
-	//}
-	//epcix.Idxs = epcix.Idxs[epcix.Len()-nlast:]
-	//
-	//params := "Std"
-	//// if ss.AvgLGain != 2.5 {
-	//// 	params += fmt.Sprintf("_AvgLGain=%v", ss.AvgLGain)
-	//// }
-	//// if ss.InputNoise != 0 {
-	//// 	params += fmt.Sprintf("_InVar=%v", ss.InputNoise)
-	//// }
-	//
-	//dt.SetCellFloat("Block", row, float64(run))
-	//dt.SetCellString("Params", row, params)
-	////dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
-	//dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
-	//dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
-	//dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
-	//dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
-	//dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
-	//
-	//runix := etable.NewIdxView(dt)
-	//spl := split.GroupBy(runix, []string{"Params"})
-	//split.Desc(spl, "FirstZero")
-	//split.Desc(spl, "PctCor")
-	//ss.RunStats = spl.AggsToTable(etable.AddAggName)
-	//
-	//// note: essential to use Go version of update when called from another goroutine
-	//ss.RunPlot.GoUpdate()
-	//if ss.RunFile != nil {
-	//	if row == 0 {
-	//		dt.WriteCSVHeaders(ss.RunFile, etable.Tab)
-	//	}
-	//	dt.WriteCSVRow(ss.RunFile, row, etable.Tab)
-	//}
-}
-
-func (ss *Sim) ConfigRunLog(dt *etable.Table) {
-	dt.SetMetaData("name", "RunLog")
-	dt.SetMetaData("desc", "Record of performance at end of training")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	dt.SetFromSchema(etable.Schema{
-		{"Block", etensor.INT64, nil, nil},
-		{"Params", etensor.STRING, nil, nil},
-		{"FirstZero", etensor.FLOAT64, nil, nil},
-		{"SSE", etensor.FLOAT64, nil, nil},
-		{"AvgSSE", etensor.FLOAT64, nil, nil},
-		{"PctErr", etensor.FLOAT64, nil, nil},
-		{"PctCor", etensor.FLOAT64, nil, nil},
-		{"CosDiff", etensor.FLOAT64, nil, nil},
-	}, 0)
-}
-
-func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "SIR Block Plot"
-	plt.Params.XAxisCol = "Block"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Block", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("FirstZero", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0) // default plot
-	plt.SetColParams("SSE", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("PctErr", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("PctCor", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	return plt
-}
-
 func (ss *Sim) SetRunParams() error {
 	var err error = nil
 	if ss.RunParams == nil || ss.RunParamsNm != ss.RunParams.Nm {
@@ -1431,7 +1106,7 @@ func (ss *Sim) SetRunParams() error {
 				return err
 			} else {
 				ss.RunBlockParams = newBlockParams
-				ss.TrainEnv.CurBlockParams = ss.RunBlockParams
+				ss.Env.CurBlockParams = ss.RunBlockParams
 				ss.RunBlockParamsNm = ss.RunBlockParams.Nm
 				return nil
 			}
@@ -1440,9 +1115,10 @@ func (ss *Sim) SetRunParams() error {
 	return nil
 }
 
-// InitRunBlock intializes a new run of the model, using the TrainEnv.BlockCt counter
+// InitRunBlock intializes a new run of the model, using the Env.BlockCt counter
 // for the new run value
-func (ss *Sim) InitRun(ev *PVLVEnv) error {
+func (ss *Sim) InitRun() error {
+	ev := &ss.Env
 	err := ss.SetRunParams()
 	if err != nil {
 		return err
@@ -1456,7 +1132,7 @@ func (ss *Sim) InitRun(ev *PVLVEnv) error {
 		ss.TrialTypeEpochFirstLogged[key] = false
 	}
 	ss.ConfigTrialTypeTables(len(tgNmMap)) // max number of rows for entire sequence, for TrialTypeEpochFirst only
-	err = ss.InitRunBlock(ev, true)
+	err = ss.InitRunBlock(true)
 	if err != nil {
 		fmt.Println("ERROR: InitRunBlock failed")
 	}
@@ -1464,16 +1140,16 @@ func (ss *Sim) InitRun(ev *PVLVEnv) error {
 	return nil
 }
 
-// InitRunBlock intializes a new run of the model, using the TrainEnv.BlockCt counter
+// InitRunBlock intializes a new run of the model, using the Env.BlockCt counter
 // for the new run value
-func (ss *Sim) InitRunBlock(ev *PVLVEnv, firstInSeq bool) (err error) {
+func (ss *Sim) InitRunBlock(firstInSeq bool) (err error) {
+	ev := &ss.Env
 	err = ss.SetRunParams()
 	if err != nil {
 		return err
 	}
 	ss.Time.Reset()
 	ss.Net.InitActs()
-	ss.InitStats()
 	ss.TimeLogEpoch = 0
 	ev.Init(ss)
 	if firstInSeq || ss.TrialTypeDataPerBlock {
@@ -1516,13 +1192,13 @@ func (ss *Sim) TrainMultiRun() bool {
 	allDone := false
 	//nRows := 0
 	var err error
-	ev := &ss.TrainEnv
+	ev := &ss.Env
 	seqSteps := ss.GetRunSteps(ss.RunParams)
 	activateStep := func(i int, blockParams *data.RunBlockParams) {
 		ev.CurBlockParams = blockParams
 		ss.RunBlockParams = ev.CurBlockParams
 		ss.RunBlockParamsNm = ss.RunBlockParams.Nm
-		err = ss.InitRunBlock(ev, i > 0)
+		err = ss.InitRunBlock(i > 0)
 		if err != nil {
 			fmt.Println("ERROR: InitRunBlock failed in activateStep")
 		}
@@ -1536,13 +1212,13 @@ func (ss *Sim) TrainMultiRun() bool {
 			break
 		}
 		activateStep(i, seqStep)
-		ss.TrainMultiGroup(ev, true)
+		ss.TrainMultiGroup(true)
 		//if allDone || ss.Stepper.StopRequested() || ss.Stopped() {
 		if allDone || ss.Stopped() {
 			break
 		}
 		if ss.ViewOn && ss.TrainUpdt >= leabra.Run {
-			ss.UpdateView(true)
+			ss.UpdateView()
 		}
 		ss.Stepper.StepPoint(int(RunBlock))
 	}
@@ -1554,7 +1230,8 @@ func (ss *Sim) TrainMultiRun() bool {
 // end Run
 
 // Multiple trial types
-func (ss *Sim) TrainMultiGroup(ev *PVLVEnv, seqRun bool) {
+func (ss *Sim) TrainMultiGroup(seqRun bool) {
+	ev := &ss.Env
 	if !seqRun {
 		ev.CurBlockParams = ss.RunBlockParams
 	}
@@ -1570,22 +1247,16 @@ func (ss *Sim) TrainMultiGroup(ev *PVLVEnv, seqRun bool) {
 // end MultiTrial
 
 // Single trial group (with multiple trial types)
-func (ss *Sim) MasterRun(ev *PVLVEnv) {
-	ss.TrainMultiGroup(ev, false)
-}
-
-type SimState struct {
-	ss *Sim
-	ev *PVLVEnv
+func (ss *Sim) MasterRun() {
+	ss.TrainMultiGroup(false)
 }
 
 // CheckStopCondition is called from within the Stepper.
 // Since CheckStopCondition is called with the Stepper's lock held,
 // it must not call any Stepper methods that set the lock. Rather, Stepper variables
 // should be set directly, if need be.
-func CheckStopCondition(st interface{}, _ int) bool {
-	ss := st.(SimState).ss
-	ev := st.(SimState).ev
+func (ss *Sim) CheckStopCondition(_ int) bool {
+	ev := &ss.Env
 	ret := false
 	switch ss.StopStepCondition {
 	case SSNone:
@@ -1605,11 +1276,10 @@ func CheckStopCondition(st interface{}, _ int) bool {
 }
 
 // NotifyPause is called from within the Stepper, with the Stepper's lock held.
-// Stepper variables should be set directly, rather than called Stepper methods,
+// Stepper variables should be set directly, rather than calling Stepper methods,
 // which would try to take the lock and then deadlock.
-func NotifyPause(simState interface{}) {
-	ss := simState.(SimState).ss
-	if int(ss.StepGrain) != ss.Stepper.Grain() {
+func (ss *Sim) NotifyPause() {
+	if int(ss.StepGrain) != ss.Stepper.StepGrain {
 		ss.Stepper.StepGrain = int(ss.StepGrain)
 	}
 	if ss.StepsToRun != ss.OrigSteps { // User has changed the step count while running
@@ -1618,93 +1288,13 @@ func NotifyPause(simState interface{}) {
 	}
 	ss.IsRunning = false
 	ss.ToolBar.UpdateActions()
-	ss.UpdateView(true)
+	ss.UpdateView()
 	ss.Win.Viewport.SetNeedsFullRender()
 }
 
 // end TrialGp and functions
 
 // Monitors //
-
-// SaveLogFiles and functions
-func (ss *Sim) SaveLogFiles() {
-	//if ss.TrnEpcLog != nil {
-	//	_ = ss.TrnEpcLog.SaveCSV("BVPVLVEpochLog.csv", etable.Delims(etable.Comma), true)
-	//}
-	/* globals added to hardvars:
-	Program::RunState run_state; // our program's run state
-	int ret_val;
-	// args: global script parameters (arguments)
-	LeabraNetwork* network;
-	// vars: global (non-parameter) variables
-	//String tag;
-	//bool log_trials;
-	//String log_dir;
-	//String log_file_nm;
-	//DataTable* epoch_output_data;
-	//DataTable* trial_output_data;
-	//DataTable* all_trial_data;
-	*/
-	// tag = _pos_cond_inhib_PVLVMaster (String) -- init from MasterStartup
-	// log_trials = false
-	// log_dir = ""
-	// log_file_nm = ""
-	// epoch_output_data = ss.AnalysisData.EpochOutputData
-	// ss.AnalysisData.TrialOutputData
-	// ss.AnalysisData.AllTrialData
-	// vars: global (non-parameter) variables
-
-	//if ss.AnalysisData.EpochOutputData. {
-	//	return
-	//}
-	//logFileNm := ss.AnalysisData.EpochOutputData.SaveDataLog(".trn_epc.dat")
-}
-
-// end SaveLogFiles functions
-
-// TrialAnalysis and its functions
-func (ss *Sim) TrialAnalysis(ev *PVLVEnv) {
-	//if !ss.Interactive {
-	//	ss.AllTrialData.ResetData()
-	//	ss.FirstRun = true
-	//	ss.FirstTimeRunLog = true
-	//}
-	//ss.AllTrialData.ClearDataFlag()
-	//if ss.existingDataAnalysis {
-	//	ss.AnalyzeTicksExistingData(ev)
-	//} else {
-	//	if ss.Interactive {
-	//		ss.GetNewData(ev)
-	//	}
-	//	if ss.DoAnalysis {
-	//		ss.AnalyzeTicks(ev)
-	//	}
-	//}
-}
-
-func (ss *Sim) GetNewData() {
-	//trlRows := ss.AnalysisData.TrialOutputData.Rows
-	//oldRows := 0
-	//if ss.AnalysisData.AllTrialData.Rows == 0 {
-	//	ss.AnalysisData.AllTrialData.Cop
-	//}
-}
-
-func (ss *Sim) GetExistingData(ev *PVLVEnv) {
-
-}
-
-func (ss *Sim) ConfigGroupSpec(ev *PVLVEnv) {
-
-}
-
-func (ss *Sim) AnalyzeTicks(ev *PVLVEnv) {
-
-}
-
-func (ss *Sim) AnalyzeTicksExistingData(ev *PVLVEnv) {
-
-}
 
 func IMax(x, y int) int {
 	if x > y {
@@ -1835,7 +1425,8 @@ func (ss *Sim) SetTrialTypeDataXLabels() (nRows int) {
 	return nRows
 }
 
-func (ss *Sim) LogTrialTypeData(ev *PVLVEnv) {
+func (ss *Sim) LogTrialTypeData() {
+	ev := &ss.Env
 	dt := ss.TrialTypeData
 	efdt := ss.TrialTypeEpochFirstLog
 	row, _ := ss.TrialTypeSet[ev.AlphaTrialName]
@@ -1902,7 +1493,8 @@ func (ss *Sim) ClearCycleData() {
 	}
 }
 
-func (ss *Sim) LogCycleData(ev *PVLVEnv) {
+func (ss *Sim) LogCycleData() {
+	ev := &ss.Env
 	var val float64
 	dt := ss.CycleOutputData
 	row := ev.GlobalStep
@@ -1933,24 +1525,12 @@ func (ss *Sim) LogCycleData(ev *PVLVEnv) {
 	}
 }
 
-func (ss *Sim) TimeAggTickData(ev *PVLVEnv) {
-}
-
 // end TrialAnalysis functions
 
-func (ss *Sim) EpochMonitor(ev *PVLVEnv) {
-	ss.LogTrnEpc(ev)
+func (ss *Sim) EpochMonitor() {
+	ss.LogTrnEpc()
 	ss.TimeLogEpoch += 1
 	ss.TimeLogEpochAll += 1
-}
-
-//func (ss *Sim) TrialStats(ev *PVLVEnv, accum bool) {
-//	fmt.Println(trialType, tick)
-//}
-
-// InitStats initializes all the statistics, especially important for the
-// cumulative epoch stats -- called at start of new run
-func (ss *Sim) InitStats() {
 }
 
 // CmdArgs processes command-line parameters.
@@ -1977,7 +1557,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	}
 
 	ss.NoGui = nogui
-	ss.InitSim(&ss.TrainEnv)
+	ss.InitSim()
 
 	if note != "" {
 		fmt.Printf("note: %s\n", note)

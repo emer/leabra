@@ -132,11 +132,6 @@ func (ev *PVLVEnv) Defaults() {
 
 }
 
-func (ev *PVLVEnv) Validate() error {
-	// TODO implement this
-	return nil
-}
-
 // EpochStart
 func (ev *PVLVEnv) EpochStart(ss *Sim) {
 	for colNm := range ss.TrialTypeEpochFirstLogged {
@@ -146,8 +141,6 @@ func (ev *PVLVEnv) EpochStart(ss *Sim) {
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	ev.TrialCt.Init()
 	ss.Net.ThrTimerReset()
-	// TODO implement ev.ResetTrialMonData()
-	// TODO implement ev.ResetTrainTime()
 }
 
 // end EpochStart (no internal functions)
@@ -155,7 +148,7 @@ func (ev *PVLVEnv) EpochStart(ss *Sim) {
 // EpochEnd
 func (ev *PVLVEnv) EpochEnd(ss *Sim) {
 	//ss.TrialAnalysis(ev)
-	ss.EpochMonitor(ev)
+	ss.EpochMonitor()
 	if ev.TrialGpCt.Cur%ev.CurBlockParams.SaveWtsInterval == 0 && ev.TrialGpCt.Cur > 0 {
 		ev.SaveWeights(ss)
 	}
@@ -169,13 +162,6 @@ func (ev *PVLVEnv) SaveWeights(_ *Sim) {
 }
 
 // end SaveWeights
-
-// SaveOutputData
-func (ev *PVLVEnv) SaveOutputData(_ *Sim) {
-	// TODO implement SaveOutputData (BIG HAIRY THING)
-}
-
-// end SaveOutputData
 
 // ContextModel
 type ContextModel int
@@ -333,7 +319,6 @@ func (ev *PVLVEnv) SetTableTrialGpListFmDefnTable() {
 			nRepeats++
 		}
 		for i := 0; i < nRepeats; i++ {
-			// TODO:Should prevent making too many rows, but could still make (one?) too few due to rounding errors
 			if ev.TrialInstances != nil &&
 				(ev.TrialInstances.Length() < ev.CurBlockParams.TrialGpsPerEpoch) {
 				// was SetRow_CurEpoch
