@@ -185,20 +185,20 @@ func (ss *Sim) ApplyPVInputs() {
 }
 
 // SingleTrial and functions -- SingleTrial has been consolidated into this
-// An epoch is a set of trials, whose length is set by the current RunBlockParams record
-func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
-	epochDone := false
+// A block is a set of trials, whose length is set by the current RunBlockParams record
+func (ev *PVLVEnv) RunOneBlock(ss *Sim) {
+	blockDone := false
 	var curTG *data.TrialInstance
-	ev.EpochStart(ss)
-	ev.SetActiveTrialList(ss) // sets up one epoch's worth of data
-	epochDone = ev.TrialCt.Cur >= ev.TrialCt.Max
-	for !epochDone {
+	ev.BlockStart(ss)
+	ev.SetActiveTrialList(ss) // sets up one block's worth of data
+	blockDone = ev.TrialCt.Cur >= ev.TrialCt.Max
+	for !blockDone {
 		if ev.TrialInstances.AtEnd() {
 			panic(fmt.Sprintf("ran off end of TrialInstances list"))
 		}
 		curTG = ev.TrialInstances.ReadNext()
 		ev.AlphaCycle.Max = curTG.AlphaTicksPerTrialGp
-		epochDone = ev.RunOneTrial(ss, curTG) // run one instantiated trial type (aka "trial group")
+		blockDone = ev.RunOneTrial(ss, curTG) // run one instantiated trial type (aka "trial group")
 		if ss.ViewOn && ss.TrainUpdt == leabra.Trial {
 			ss.UpdateView()
 		}
@@ -207,8 +207,8 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 		}
 	}
 	ev.TrialGpCt.Incr()
-	ev.EpochEnded = true
-	ev.EpochEnd(ss) // run monitoring and analysis, maybe save weights
+	ev.BlockEnded = true
+	ev.BlockEnd(ss) // run monitoring and analysis, maybe save weights
 	if ss.Stepper.StepPoint(int(TrialGroup)) {
 		return
 	}
@@ -218,7 +218,7 @@ func (ev *PVLVEnv) RunOneEpoch(ss *Sim) {
 }
 
 // run through a complete trial, consisting of a number of ticks as specified in the Trial spec
-func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone bool) {
+func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (blockDone bool) {
 	var train bool
 	trialDone := false
 	ss.Net.ClearModActs(&ss.Time)
@@ -235,13 +235,13 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (epochDone
 		}
 	}
 	ss.Net.ClearMSNTraces(&ss.Time)
-	epochDone = ev.TrialCt.Incr()
+	blockDone = ev.TrialCt.Incr()
 	ss.TrialEnd(ev, train)
 	//ss.LogTrialData(ev) // accumulate
 	if ss.ViewOn && ss.TrainUpdt == leabra.Trial {
 		ss.UpdateView()
 	}
-	return epochDone
+	return blockDone
 }
 
 // AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
