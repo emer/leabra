@@ -68,9 +68,14 @@ func (pj *AmygModPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 
 func (pj *AmygModPrjn) Defaults() {
 	pj.Prjn.Defaults()
+	pj.SetScale = false
+	pj.InitWtVal = 0.1
+	pj.DALRGain = 1.0
+	pj.DALRBase = 1.0
 	pj.DALrnThr = 0.0
 	pj.ActDeltaThr = 0.05
 	pj.ActLrnThr = 0.05
+	pj.ActLrnMod = true
 }
 
 // Compute DA-modulated weight changes for amygdala layers

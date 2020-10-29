@@ -66,12 +66,12 @@ func AddLHbRMTgLayer(nt *Network, name string) *LHbRMTgLayer {
 
 func (ly *LHbRMTgLayer) Defaults() {
 	ly.Layer.Defaults()
-	ly.PVNegDiscount = 0.8
-	ly.Act.Clamp.Range.Min = -2.0
-	ly.Act.Clamp.Range.Max = 2.0
 	ly.Gains.All = 1.0
 	ly.Gains.VSPatchPosD1 = 1.0
 	ly.Gains.VSPatchPosD2 = 1.0
+	ly.PVNegDiscount = 0.8
+	ly.Act.Clamp.Range.Min = -2.0
+	ly.Act.Clamp.Range.Max = 2.0
 	ly.Gains.VSPatchPosDisinhib = 0.2
 	ly.Gains.VSMatrixPosD1 = 1.0
 	ly.Gains.VSMatrixPosD2 = 1.0
