@@ -113,6 +113,7 @@ func AddMSNLayer(nt *Network, name string, nY, nX, nNeurY, nNeurX int, cpmt Stri
 func (tp *MSNTraceParams) Defaults() {
 	tp.Deriv = true
 	tp.Decay = 1
+	tp.GateLRScale = 0.7
 }
 
 // LrnFactor returns multiplicative factor for level of msn activation.  If Deriv

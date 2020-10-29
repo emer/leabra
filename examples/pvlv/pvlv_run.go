@@ -186,7 +186,7 @@ func (ss *Sim) ApplyPVInputs() {
 
 // SingleTrial and functions -- SingleTrial has been consolidated into this
 // A block is a set of trials, whose length is set by the current RunBlockParams record
-func (ev *PVLVEnv) RunOneBlock(ss *Sim) {
+func (ev *PVLVEnv) RunOneTrialGp(ss *Sim) {
 	blockDone := false
 	var curTG *data.TrialInstance
 	ev.BlockStart(ss)
@@ -283,7 +283,7 @@ func (ev *PVLVEnv) TrainEnd(ss *Sim) {
 	if ev.CurBlockParams.SaveFinalWts {
 		ev.SaveWeights(ss)
 	}
-	ss.Stop()
+	ss.Stepper.Stop()
 }
 
 // end TrainEnd

@@ -249,7 +249,7 @@ func (ss *Sim) Config() {
 }
 
 func (ss *Sim) ConfigEnv() {
-	ss.Env.Init(ss)
+	ss.Env.Init(ss, true)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -306,8 +306,9 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters() string {
 	ev := &ss.Env
-	return fmt.Sprintf("Block:\t%d\tTrialGp:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
-		ev.BlockCt.Cur, ev.TrialGpCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur, ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
+	return fmt.Sprintf("Block:\t%d(%s)\tTrialGp:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
+		ev.BlockCt.Cur, ev.CurBlockParams.TrialGroupNm, ev.TrialGpCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur,
+		ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
 }
 
 func (ss *Sim) UpdateView() {
@@ -552,25 +553,6 @@ func (ss *Sim) ConfigTrialTypeBlockFirstPlot(plt *eplot.Plot2D, dt *etable.Table
 	return plt
 }
 
-func (ss *Sim) ConfigHistoryGraph(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "History Graph"
-	plt.Params.XAxisCol = "GroupName"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("GroupName", eplot.On, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("LHbRMTg_act", eplot.On, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	return plt
-}
-
-func (ss *Sim) ConfigRealTimeData(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
-	plt.Params.Title = "Real Time Data"
-	plt.Params.XAxisCol = "GroupNumber"
-	plt.SetTable(dt)
-	plt.SetColParams("GroupNumber", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("VTAAct", eplot.On, eplot.FixMin, -1, eplot.FixMax, 1)
-	return plt
-}
-
 func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
 	pos := nv.Scene().Camera.Pose.Pos
@@ -581,20 +563,12 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.Record(ss.Counters())
 }
 
-func (ss *Sim) Running() bool {
-	return ss.Stepper.Active()
-}
-
 func (ss *Sim) Stopped() bool {
 	return ss.Stepper.RunState == stepper.Stopped
 }
 
 func (ss *Sim) Paused() bool {
 	return ss.Stepper.RunState == stepper.Paused
-}
-
-func (ss *Sim) Stop() {
-	ss.Stepper.Stop()
 }
 
 var CemerWtsFname = ""
@@ -1123,7 +1097,7 @@ func (ss *Sim) InitRunBlock(firstInSeq bool) (err error) {
 	ss.Time.Reset()
 	ss.Net.InitActs()
 	ss.TimeLogBlock = 0
-	ev.Init(ss)
+	ev.Init(ss, firstInSeq)
 	if firstInSeq || ss.TrialTypeDataPerBlock {
 		_ = ss.SetTrialTypeDataXLabels()
 	}
@@ -1169,7 +1143,7 @@ func (ss *Sim) ExecuteRun() bool {
 		ev.CurBlockParams = blockParams
 		ss.RunBlockParams = ev.CurBlockParams
 		ss.RunBlockParamsNm = ss.RunBlockParams.Nm
-		err = ss.InitRunBlock(i > 0)
+		err = ss.InitRunBlock(i == 0)
 		if err != nil {
 			fmt.Println("ERROR: InitRunBlock failed in activateStep")
 		}
@@ -1206,9 +1180,10 @@ func (ss *Sim) ExecuteBlocks(seqRun bool) {
 	}
 	nDone := 0
 	for i := 0; i < ev.CurBlockParams.NIters; i++ {
-		ev.RunOneBlock(ss)
+		ev.RunOneTrialGp(ss)
 		nDone++
 	}
+	ev.BlockCt.Incr()
 }
 
 // end MultiTrial

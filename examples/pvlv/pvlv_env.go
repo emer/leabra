@@ -87,15 +87,17 @@ func (ev *PVLVEnv) New(ss *Sim) {
 // RunParams fields: seq_step_1...5 from Run.vars
 // RunBlockParams fields: env_params_table, fixed_prob, ... lrs_bump_step, n_batches, batch_start, load_exp, pain_exp
 // Trial fields: trial_gp_name, percent_of_total, ...
-func (ev *PVLVEnv) Init(ss *Sim) (ok bool) {
+func (ev *PVLVEnv) Init(ss *Sim, firstBlock bool) (ok bool) {
 	ev.CurBlockParams = ss.RunBlockParams
 	ev.TrialGroupParams, ok = ss.GetTrialBlockParams(ev.CurBlockParams.TrialGroupNm)
 	if !ok {
 		fmt.Printf("TrialGroupParams lookup failed for %v\n", ev.CurBlockParams.TrialGroupNm)
 		return ok
 	}
-	ev.BlockCt.Init()
-	ev.BlockCt.Max = ss.MaxBlocks
+	if firstBlock {
+		ev.BlockCt.Init()
+		ev.BlockCt.Max = ss.MaxBlocks
+	}
 	ev.TrialGpCt.Init()
 	ev.TrialGpCt.Max = ev.CurBlockParams.NIters
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
@@ -230,13 +232,13 @@ func (ev *PVLVEnv) State(Nm string) etensor.Tensor {
 	}
 }
 
-func (ev *PVLVEnv) Step() bool {
-	ev.TrialGpCt.Same() // good idea to just reset all non-inner-most counters at start
-	if ev.AlphaCycle.Incr() {
-		ev.TrialGpCt.Incr()
-	}
-	return true
-}
+//func (ev *PVLVEnv) Step() bool {
+//	ev.TrialGpCt.Same() // good idea to just reset all non-inner-most counters at start
+//	if ev.AlphaCycle.Incr() {
+//		ev.TrialGpCt.Incr()
+//	}
+//	return true
+//}
 
 func (ev *PVLVEnv) Action(_ string, _ etensor.Tensor) {
 	// nop
