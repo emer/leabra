@@ -1187,9 +1187,6 @@ class Sim(pygiv.ClassViewObj):
         nv = netview.NetView()
         tv.AddTab(nv, "NetView")
         nv.Var = "Act"
-        # nv.Params.ColorMap = "Jet" // default is ColdHot
-        # which fares pretty well in terms of discussion here:
-        # https://matplotlib.org/tutorials/colors/colormaps.html
         nv.SetNet(ss.Net)
         ss.NetView = nv
 

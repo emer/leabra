@@ -286,6 +286,26 @@ class Sim(pygiv.ClassViewObj):
         """
         ss.Params.OpenJSON("ra25_std.params")
 
+    def New(ss):
+        """
+        New creates new blank elements and initializes defaults
+        """
+        ss.Net = leabra.Network()
+        ss.Pats = etable.Table()
+        ss.TrnEpcLog = etable.Table()
+        ss.TstEpcLog = etable.Table()
+        ss.TstTrlLog = etable.Table()
+        ss.TstCycLog = etable.Table()
+        ss.RunLog = etable.Table()
+        ss.RunStats = etable.Table()
+        ss.Params = ParamSets
+        ss.RndSeed = 1
+        ss.ViewOn = True
+        ss.TrainUpdt = leabra.AlphaCycle
+        ss.TestUpdt = leabra.Cycle
+        ss.TestInterval = 5
+        ss.LayStatNms = go.Slice_string(["Hidden1", "Hidden2", "Output"])
+
     def Config(ss):
         """
         Config configures all the elements using the standard functions
@@ -1187,14 +1207,8 @@ class Sim(pygiv.ClassViewObj):
         nv = netview.NetView()
         tv.AddTab(nv, "NetView")
         nv.Var = "Act"
-        # nv.Params.ColorMap = "Jet" // default is ColdHot
-        # which fares pretty well in terms of discussion here:
-        # https://matplotlib.org/tutorials/colors/colormaps.html
         nv.SetNet(ss.Net)
         ss.NetView = nv
-
-        nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) # more "head on" than default which is more "top down"
-        nv.Scene().Camera.LookAt(mat32.Vec3(0, 0, 0), mat32.Vec3(0, 1, 0))
 
         plt = eplot.Plot2D()
         tv.AddTab(plt, "TrnEpcPlot")

@@ -276,21 +276,32 @@ class Sim(pygiv.ClassViewObj):
         self.SetTags("RndSeed", 'view:"-" desc:"the current random seed"')
         self.LastEpcTime = int()
         self.SetTags("LastEpcTime", 'view:"-" desc:"timer for last epoch"')
-        self.vp  = 0 
-        self.SetTags("vp", 'view:"-" desc:"viewport"')
 
-    def InitParams(ss):
+    def New(ss):
         """
-        Sets the default set of parameters -- Base is always applied, and others can be optionally
-        selected to apply on top of that
+        New creates new blank elements and initializes defaults
         """
-        ss.Params.OpenJSON("ra25_std.params")
+        ss.Net = leabra.Network()
+        ss.Pats = etable.Table()
+        ss.TrnEpcLog = etable.Table()
+        ss.TstEpcLog = etable.Table()
+        ss.TstTrlLog = etable.Table()
+        ss.TstCycLog = etable.Table()
+        ss.RunLog = etable.Table()
+        ss.RunStats = etable.Table()
+        ss.Params = ParamSets
+        ss.RndSeed = 1
+        ss.ViewOn = True
+        ss.TrainUpdt = leabra.AlphaCycle
+        ss.TestUpdt = leabra.Cycle
+        ss.TestInterval = 5
+        ss.LayStatNms = go.Slice_string(["Hidden1", "Hidden2", "Output"])
 
     def Config(ss):
         """
         Config configures all the elements using the standard functions
         """
-        ss.InitParams()
+
         ss.OpenPats()
         ss.ConfigEnv()
         ss.ConfigNet(ss.Net)
@@ -361,7 +372,10 @@ class Sim(pygiv.ClassViewObj):
 
         net.Defaults()
         ss.SetParams("Network", ss.LogSetParams) # only set Network params
-        net.Build()
+        err = net.Build()
+        if err != 0:
+            log.Println(err)
+            return
         net.InitWts()
 
     def Init(ss):
@@ -382,7 +396,7 @@ class Sim(pygiv.ClassViewObj):
         NewRndSeed gets a new random seed based on current time -- otherwise uses
         the same random seed for every run
         """
-        ss.RndSeed = int(datetime.now(timezone.utc).timestamp())
+        ss.RndSeed = time.Now().UnixNano()
 
     def Counters(ss, train):
         """
@@ -403,23 +417,23 @@ class Sim(pygiv.ClassViewObj):
 
     def AlphaCyc(ss, train):
         """
-        AlphaCyc runs one alpha-cycle (100 msec, 4 quarters) of processing.
+    # ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
+        AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)             of processing.
         External inputs must have already been applied prior to calling,
         using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
+
+    # update prior weight changes at start, so any DWt values remain visible at end
+    # you might want to do this less frequently to achieve a mini-batch update
+    # in which case, move it out to the TrainTrial method where the relevant
+    # counters are being dealt with.
         If train is true, then learning DWt or WtFmDWt calls are made.
         Handles netview updating within scope of AlphaCycle
         """
 
-        if ss.Win != 0:
-            ss.Win.PollEvents() # this is essential for GUI responsiveness while running
-        viewUpdt = ss.TrainUpdt.value
+        viewUpdt = ss.TrainUpdt
         if not train:
-            viewUpdt = ss.TestUpdt.value
+            viewUpdt = ss.TestUpdt
 
-        # update prior weight changes at start, so any DWt values remain visible at end
-        # you might want to do this less frequently to achieve a mini-batch update
-        # in which case, move it out to the TrainTrial method where the relevant
-        # counters are being dealt with.
         if train:
             ss.Net.WtFmDWt()
 
@@ -432,15 +446,17 @@ class Sim(pygiv.ClassViewObj):
                     ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
                 ss.Time.CycleInc()
                 if ss.ViewOn:
-                    if viewUpdt == leabra.Cycle:
+                    switch viewUpdt:
+                    if leabra.Cycle:
                         if cyc != ss.Time.CycPerQtr-1: # will be updated by quarter
                             ss.UpdateView(train)
-                    if viewUpdt == leabra.FastSpike:
+                    if leabra.FastSpike:
                         if (cyc+1)%10 == 0:
                             ss.UpdateView(train)
             ss.Net.QuarterFinal(ss.Time)
             ss.Time.QuarterInc()
             if ss.ViewOn:
+                switch :
                 if viewUpdt <= leabra.Quarter:
                     ss.UpdateView(train)
                 if viewUpdt == leabra.Phase:
@@ -453,7 +469,6 @@ class Sim(pygiv.ClassViewObj):
             ss.UpdateView(train)
         if ss.TstCycPlot != 0 and not train:
             ss.TstCycPlot.GoUpdate() # make sure up-to-date at end
-
 
     def ApplyInputs(ss, en):
         """
@@ -481,12 +496,11 @@ class Sim(pygiv.ClassViewObj):
 
         # Key to query counters FIRST because current state is in NEXT epoch
         # if epoch counter has changed
-        epc = env.CounterCur(ss.TrainEnv, env.Epoch)
-        chg = env.CounterChg(ss.TrainEnv, env.Epoch)
+        epc, _, chg = ss.TrainEnv.Counter(env.Epoch)
 
         if chg:
             ss.LogTrnEpc(ss.TrnEpcLog)
-            if ss.ViewOn and ss.TrainUpdt.value > leabra.AlphaCycle:
+            if ss.ViewOn and ss.TrainUpdt > leabra.AlphaCycle:
                 ss.UpdateView(True)
             if ss.TestInterval > 0 and epc%ss.TestInterval == 0: # note: epc is *next* so won't trigger first time
                 ss.TestAll()
@@ -560,8 +574,7 @@ class Sim(pygiv.ClassViewObj):
         """
         out = leabra.Layer(ss.Net.LayerByName("Output"))
         ss.TrlCosDiff = float(out.CosDiff.Cos)
-        ss.TrlSSE = out.SSE(0.5) # 0.5 = per-unit tolerance -- right side of .5
-        ss.TrlAvgSSE = ss.TrlSSE / len(out.Neurons)
+        ss.TrlSSE, ss.TrlAvgSSE = out.MSE(0.5)
         if ss.TrlSSE > 0:
             ss.TrlErr = 1
         else:
@@ -623,7 +636,6 @@ class Sim(pygiv.ClassViewObj):
             if ss.ToolBar != 0:
                 ss.ToolBar.UpdateActions()
             vp.SetNeedsFullRender()
-            ss.UpdateClassView()
 
     def SaveWeights(ss, filename):
         """
@@ -638,9 +650,9 @@ class Sim(pygiv.ClassViewObj):
         """
         ss.TestEnv.Step()
 
-        chg = env.CounterChg(ss.TestEnv, env.Epoch)
+        _, _, chg = ss.TestEnv.Counter(env.Epoch)
         if chg:
-            if ss.ViewOn and ss.TestUpdt.value > leabra.AlphaCycle:
+            if ss.ViewOn and ss.TestUpdt > leabra.AlphaCycle:
                 ss.UpdateView(False)
             ss.LogTstEpc(ss.TstEpcLog)
             if returnOnChg:
@@ -670,7 +682,7 @@ class Sim(pygiv.ClassViewObj):
         ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
         while True:
             ss.TestTrial(True)
-            chg = env.CounterChg(ss.TestEnv, env.Epoch)
+            _, _, chg = ss.TestEnv.Counter(env.Epoch)
             if chg or ss.StopNow:
                 break
 
@@ -698,12 +710,14 @@ class Sim(pygiv.ClassViewObj):
         if setMsg = true then we output a message for each param that was set.
         """
         if sheet == "":
+
             ss.Params.ValidateSheets(go.Slice_string(["Network", "Sim"]))
-        ss.SetParamsSet("Base", sheet, setMsg)
+        err = ss.SetParamsSet("Base", sheet, setMsg)
         if ss.ParamSet != "" and ss.ParamSet != "Base":
             sps = ss.ParamSet.split()
-            for ps in sps:
-                ss.SetParamsSet(ps, sheet, setMsg)
+            for ps in sps :
+                err = ss.SetParamsSet(ps, sheet, setMsg)
+        return err
 
     def SetParamsSet(ss, setNm, sheet, setMsg):
         """
@@ -712,16 +726,20 @@ class Sim(pygiv.ClassViewObj):
         otherwise just the named sheet
         if setMsg = true then we output a message for each param that was set.
         """
-        pset = ss.Params.SetByNameTry(setNm)
+        pset, err = ss.Params.SetByNameTry(setNm)
+        if err != 0:
+            return err
         if sheet == "" or sheet == "Network":
-            if "Network" in pset.Sheets:
-                netp = pset.SheetByNameTry("Network")
+            netp, ok = pset.Sheets["Network"]
+            if ok:
                 ss.Net.ApplyParams(netp, setMsg)
 
         if sheet == "" or sheet == "Sim":
-            if "Sim" in pset.Sheets:
-                simp= pset.SheetByNameTry("Sim")
-                pyparams.ApplyParams(ss, simp, setMsg)
+            simp, ok = pset.Sheets["Sim"]
+            if ok:
+                simp.Apply(ss, setMsg)
+
+        return err
 
     def ConfigPats(ss):
         dt = ss.Pats
@@ -748,10 +766,12 @@ class Sim(pygiv.ClassViewObj):
         """
         ValsTsr gets value tensor of given name, creating if not yet made
         """
-        if name in ss.ValsTsrs:
-            return ss.ValsTsrs[name]
-        tsr = etensor.Float32()
-        ss.ValsTsrs[name] = tsr
+        if ss.ValsTsrs == 0:
+            ss.ValsTsrs = make({})
+        tsr, ok = ss.ValsTsrs[name]
+        if not ok:
+            tsr = etensor.Float32()
+            ss.ValsTsrs[name] = tsr
         return tsr
 
     def RunName(ss):
@@ -1165,7 +1185,6 @@ class Sim(pygiv.ClassViewObj):
         ss.Win = win
 
         vp = win.WinViewport2D()
-        ss.vp = vp
         updt = vp.UpdateStart()
 
         mfr = win.SetMainFrame()
@@ -1178,47 +1197,32 @@ class Sim(pygiv.ClassViewObj):
         split.Dim = mat32.X
         split.SetStretchMax()
 
-        cv = ss.NewClassView("sv")
-        cv.AddFrame(split)
-        cv.Config()
+        sv = giv.AddNewStructView(split, "sv")
+        sv.SetStruct(ss)
 
         tv = gi.AddNewTabView(split, "tv")
 
-        nv = netview.NetView()
-        tv.AddTab(nv, "NetView")
+        nv = *netview.NetView(tv.AddNewTab(netview.KiT_NetView, "NetView"))
         nv.Var = "Act"
-        # nv.Params.ColorMap = "Jet" // default is ColdHot
-        # which fares pretty well in terms of discussion here:
-        # https://matplotlib.org/tutorials/colors/colormaps.html
         nv.SetNet(ss.Net)
         ss.NetView = nv
 
-        nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) # more "head on" than default which is more "top down"
-        nv.Scene().Camera.LookAt(mat32.Vec3(0, 0, 0), mat32.Vec3(0, 1, 0))
-
-        plt = eplot.Plot2D()
-        tv.AddTab(plt, "TrnEpcPlot")
+        plt = *eplot.Plot2D(tv.AddNewTab(eplot.KiT_Plot2D, "TrnEpcPlot"))
         ss.TrnEpcPlot = ss.ConfigTrnEpcPlot(plt, ss.TrnEpcLog)
 
-        plt = eplot.Plot2D()
-        tv.AddTab(plt, "TstTrlPlot")
+        plt = *eplot.Plot2D(tv.AddNewTab(eplot.KiT_Plot2D, "TstTrlPlot"))
         ss.TstTrlPlot = ss.ConfigTstTrlPlot(plt, ss.TstTrlLog)
 
-        plt = eplot.Plot2D()
-        tv.AddTab(plt, "TstCycPlot")
+        plt = *eplot.Plot2D(tv.AddNewTab(eplot.KiT_Plot2D, "TstCycPlot"))
         ss.TstCycPlot = ss.ConfigTstCycPlot(plt, ss.TstCycLog)
 
-        plt = eplot.Plot2D()
-        tv.AddTab(plt, "TstEpcPlot")
+        plt = *eplot.Plot2D(tv.AddNewTab(eplot.KiT_Plot2D, "TstEpcPlot"))
         ss.TstEpcPlot = ss.ConfigTstEpcPlot(plt, ss.TstEpcLog)
 
-        plt = eplot.Plot2D()
-        tv.AddTab(plt, "RunPlot")
+        plt = *eplot.Plot2D(tv.AddNewTab(eplot.KiT_Plot2D, "RunPlot"))
         ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
 
-        split.SetSplitsList(go.Slice_float32([.2, .8]))
-
-        recv = win.This()
+        split.SetSplits(.2, .8)
         
         tbar.AddAction(gi.ActOpts(Label="Init", Icon="update", Tooltip="Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc=UpdtFuncNotRunning), recv, InitCB)
 
@@ -1255,29 +1259,60 @@ class Sim(pygiv.ClassViewObj):
         mmen = win.MainMenu
         mmen.ConfigMenus(go.Slice_string([appnm, "File", "Edit", "Window"]))
 
-        amen = gi.Action(win.MainMenu.ChildByName(appnm, 0))
+        amen = *gi.Action(win.MainMenu.ChildByName(appnm, 0))
         amen.Menu.AddAppMenu(win)
 
-        emen = gi.Action(win.MainMenu.ChildByName("Edit", 1))
+        emen = *gi.Action(win.MainMenu.ChildByName("Edit", 1))
         emen.Menu.AddCopyCutPaste(win)
 
         # note: Command in shortcuts is automatically translated into Control for
         # Linux, Windows or Meta for MacOS
         # fmen := win.MainMenu.ChildByName("File", 0).(*gi.Action)
         # fmen.Menu.AddAction(gi.ActOpts{Label: "Open", Shortcut: "Command+O"},
-        #   win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-        #       FileViewOpenSVG(vp)
-        #   })
+        #     win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        #         FileViewOpenSVG(vp)
+        #     })
         # fmen.Menu.AddSeparator("csep")
         # fmen.Menu.AddAction(gi.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
-        #   win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-        #       win.Close()
-        #   })
+        #     win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        #         win.Close()
+        #     })
+
+        inQuitPrompt = False
+        gi.SetQuitReqFunc(func:
+            if inQuitPrompt:
+                return
+            inQuitPrompt = True
+            gi.PromptDialog(vp, gi.DlgOpts(Title= "Really Quit?",
+                Prompt= "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"), gi.AddOk, gi.AddCancel,
+                win.This(), funcrecv, send, sig, data:
+                    if sig == int64(gi.DialogAccepted):
+                        gi.Quit()
+                    else:
+                        inQuitPrompt = False))
+
+        # gi.SetQuitCleanFunc(func() {
+        #     print("Doing final Quit cleanup here..\n")
+        # })
+
+        inClosePrompt = False
+        win.SetCloseReqFunc(funcw:
+            if inClosePrompt:
+                return
+            inClosePrompt = True
+            gi.PromptDialog(vp, gi.DlgOpts(Title= "Really Close Window?",
+                Prompt= "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"), gi.AddOk, gi.AddCancel,
+                win.This(), funcrecv, send, sig, data:
+                    if sig == int64(gi.DialogAccepted):
+                        gi.Quit()
+                    else:
+                        inClosePrompt = False))
+
+        win.SetCloseCleanFunc(funcw:
+            go gi.Quit())# once main window is closed, quit
 
         win.MainMenuUpdated()
-        vp.UpdateEndNoSig(updt)
-        win.GoStartEventLoop()
-
+        return win
 
 # TheSim is the overall state for this simulation
 TheSim = Sim()

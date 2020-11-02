@@ -276,15 +276,6 @@ class Sim(pygiv.ClassViewObj):
         self.SetTags("RndSeed", 'view:"-" desc:"the current random seed"')
         self.LastEpcTime = int()
         self.SetTags("LastEpcTime", 'view:"-" desc:"timer for last epoch"')
-        self.vp  = 0 
-        self.SetTags("vp", 'view:"-" desc:"viewport"')
-
-    def InitParams(ss):
-        """
-        Sets the default set of parameters -- Base is always applied, and others can be optionally
-        selected to apply on top of that
-        """
-        ss.Params.OpenJSON("ra25_std.params")
 
     def Config(ss):
         """
@@ -1092,7 +1083,7 @@ class Sim(pygiv.ClassViewObj):
         nlast = 5
         if nlast > epcix.Len()-1:
             nlast = epcix.Len() - 1
-        epcix.Idxs = epcix.Idxs[epcix.Len()-nlast:]
+        epcix.Idxs = go.Slice_int(epcix.Idxs[epcix.Len()-nlast:])
 
         params = ss.RunName() # includes tag
 
