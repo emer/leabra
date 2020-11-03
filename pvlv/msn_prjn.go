@@ -60,6 +60,7 @@ func (pj *MSNPrjn) Defaults() {
 	pj.Learn.Norm.On = false
 	pj.Learn.Momentum.On = false
 	pj.Learn.WtBal.On = false
+	pj.MaxVSActMod = 0.5
 }
 
 func (pj *MSNPrjn) Build() error {

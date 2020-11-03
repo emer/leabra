@@ -61,9 +61,6 @@ func (ly *BlAmygLayer) Defaults() {
 	ly.PosGain = 0.1
 
 	ly.Act.Init.Vm = 0.55
-	ly.Act.Gbar.L = 0.6
-	ly.Act.Erev.L = 0.55
-	ly.Act.Erev.I = 0.4
 }
 
 func (ly *BlAmygLayer) GetMonitorVal(data []string) float64 {
