@@ -86,6 +86,7 @@ type Sim struct {
 	//AnalysisParams               params.Set        `view:"no-inline" desc:"??"`
 	Env PVLVEnv `desc:"environment -- PVLV environment"`
 	//TestEnv                      PVLVEnv           `desc:"Testing environment -- PVLV environment"`
+	devMenuSetup                 bool              `view:"-" desc:"stepping menu layout. Default is one button, true means original \"wide\" setup"`
 	StepsToRun                   int               `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
 	nStepsBox                    *gi.SpinBox       `view:"-"`
 	OrigSteps                    int               `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
@@ -735,51 +736,64 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		ss.Win.WinViewport2D().SetNeedsFullRender()
 	})
 
-	tbar.AddSeparator("stepSep")
-	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step to end of:")
-	stepLabel.SetProp("font-size", "large")
+	if ss.devMenuSetup {
+		tbar.AddSeparator("stepSep")
+		stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step to end of:")
+		stepLabel.SetProp("font-size", "large")
 
-	tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "step-fwd", Tooltip: "Step to the end of a Cycle.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Cycle, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "step-fwd", Tooltip: "Step to the end of a Cycle.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(Cycle, tbar)
+		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "step-fwd", Tooltip: "Step to the end of a Quarter.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(Quarter, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "step-fwd", Tooltip: "Step to the end of a Quarter.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(Quarter, tbar)
+		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Minus Phase.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettleMinus, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Minus Phase.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(SettleMinus, tbar)
+		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(SettlePlus, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(SettlePlus, tbar)
+		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(AlphaCycle, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(AlphaCycle, tbar)
+		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Select-->", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
-		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
-		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.RunSteps(ss.StepGrain, tbar)
-	})
+		tbar.AddAction(gi.ActOpts{Label: "Selected grain -->", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(ss.StepGrain, tbar)
+		})
+	} else {
+		tbar.AddAction(gi.ActOpts{Label: "StepRun", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
+			UpdateFunc: func(act *gi.Action) {
+				act.SetActiveStateUpdt(!ss.IsRunning)
+			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.RunSteps(ss.StepGrain, tbar)
+		})
+		stepLabel := gi.AddNewLabel(tbar, "stepLabel", "StepGrain:")
+		stepLabel.SetProp("font-size", "large")
+
+	}
+
 	sg := gi.AddNewComboBox(tbar, "grainMenu")
 	sg.Editable = false
 	var stepKeys []string
@@ -795,7 +809,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 	sg.SetCurVal(ss.StepGrain.String())
 
-	nLabel := gi.AddNewLabel(tbar, "n", "N:")
+	nLabel := gi.AddNewLabel(tbar, "n", "StepN:")
 	nLabel.SetProp("font-size", "large")
 	ss.nStepsBox = gi.AddNewSpinBox(tbar, "nStepsSpinbox")
 	stepsProps := ki.Props{"has-min": true, "min": 1, "has-max": false, "step": 1, "pagestep": 10}
@@ -1488,6 +1502,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	flag.BoolVar(&nogui, "nogui", false, "if not passing any other args and want to run nogui, use nogui")
 	flag.BoolVar(&verbose, "verbose", false, "give more feedback during initialization")
 	flag.BoolVar(&threads, "threads", false, "use per-layer threads")
+	flag.BoolVar(&ss.devMenuSetup, "wide-step-menus", false, "Use wide (development) stepping menu setup")
 	flag.Parse()
 
 	if !nogui {
