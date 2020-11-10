@@ -736,45 +736,45 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 
 	tbar.AddSeparator("stepSep")
-	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step:")
+	stepLabel := gi.AddNewLabel(tbar, "stepLabel", "Step to end of:")
 	stepLabel.SetProp("font-size", "large")
 
-	tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "run", Tooltip: "Step to the end of a Cycle.",
+	tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "step-fwd", Tooltip: "Step to the end of a Cycle.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.RunSteps(Cycle, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "run", Tooltip: "Step to the end of a Quarter.",
+	tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "step-fwd", Tooltip: "Step to the end of a Quarter.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.RunSteps(Quarter, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "run", Tooltip: "Step to the end of the Minus Phase.",
+	tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Minus Phase.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.RunSteps(SettleMinus, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "run", Tooltip: "Step to the end of the Plus Phase.",
+	tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.RunSteps(SettlePlus, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "run", Tooltip: "Step to the end of an Alpha Cycle.",
+	tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.RunSteps(AlphaCycle, tbar)
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Grain:", Icon: "run", Tooltip: "Step by the selected granularity.",
+	tbar.AddAction(gi.ActOpts{Label: "Select-->", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
 		UpdateFunc: func(act *gi.Action) {
 			act.SetActiveStateUpdt(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
