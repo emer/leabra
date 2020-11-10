@@ -190,6 +190,9 @@ func (ss *Sim) New() {
 		ss.MasterTrialBlockParams = data.AllTrialBlocks()
 		ss.Env = PVLVEnv{Nm: "Env", Dsc: "run environment"}
 		ss.Env.New(ss)
+		ss.StepsToRun = 1
+		ss.StepGrain = SGTrial
+		ss.StopStepCondition = SSNone
 		ss.Stepper = stepper.New()
 		ss.Stepper.StopCheckFn = ss.CheckStopCondition
 		ss.Stepper.PauseNotifyFn = ss.NotifyPause
@@ -216,9 +219,6 @@ func (ss *Sim) Defaults() {
 	ss.TrialAnalysisTimeLogInterval = 1
 	ss.TrialAnalUpdateCmpGraphs = true
 	ss.TrialTypeDataPerBlock = true
-	ss.StepsToRun = 1
-	ss.StepGrain = SGTrial
-	ss.StopStepCondition = SSNone
 	ss.StopConditionTrialNameString = "_t3"
 	ss.ViewOn = true
 	ss.RndSeed = 1
@@ -887,7 +887,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 }
 
 func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
-	//fmt.Printf("SS=%d, widget=%d\n", ss.StepsToRun, int(ss.nStepsBox.Value))
+	//fmt.Printf("ss.StepsToRun=%d, widget=%d, stepper=%d\n", ss.StepsToRun, int(ss.nStepsBox.Value), ss.Stepper.StepsPer)
 	if !ss.IsRunning {
 		ss.IsRunning = true
 		tbar.UpdateActions()
@@ -896,11 +896,16 @@ func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
 			ss.InitSim()
 			_ = ss.InitRun()
 		}
+		if int(ss.nStepsBox.Value) != ss.StepsToRun ||
+			int(ss.nStepsBox.Value) != ss.Stepper.StepsPer ||
+			ss.StepsToRun != ss.Stepper.StepsPer ||
+			ss.Stepper.StepGrain != int(ss.StepGrain) {
+			ss.StepsToRun = int(ss.nStepsBox.Value)
+			ss.OrigSteps = ss.StepsToRun
+			ss.Stepper.ResetParams(ss.StepsToRun, int(ss.StepGrain))
+		}
 		if ss.Stopped() {
 			ss.SimHasRun = true
-			if int(ss.nStepsBox.Value) != ss.StepsToRun { // shouldn't be necessary, and does it do anything?
-				ss.StepsToRun = int(ss.nStepsBox.Value)
-			}
 			ss.OrigSteps = ss.StepsToRun
 			ss.Stepper.Start(int(grain), ss.StepsToRun)
 			ss.ToolBar.UpdateActions()
@@ -1502,7 +1507,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	flag.BoolVar(&nogui, "nogui", false, "if not passing any other args and want to run nogui, use nogui")
 	flag.BoolVar(&verbose, "verbose", false, "give more feedback during initialization")
 	flag.BoolVar(&threads, "threads", false, "use per-layer threads")
-	flag.BoolVar(&ss.devMenuSetup, "wide-step-menus", false, "Use wide (development) stepping menu setup")
+	flag.BoolVar(&ss.devMenuSetup, "wide-step-menus", false, "use wide (development) stepping menu setup")
 	flag.Parse()
 
 	if !nogui {
