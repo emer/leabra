@@ -759,21 +759,21 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			UpdateFunc: func(act *gi.Action) {
 				act.SetActiveStateUpdt(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.RunSteps(SettleMinus, tbar)
+			ss.RunSteps(AlphaMinus, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
 			UpdateFunc: func(act *gi.Action) {
 				act.SetActiveStateUpdt(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.RunSteps(SettlePlus, tbar)
+			ss.RunSteps(AlphaPlus, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
 			UpdateFunc: func(act *gi.Action) {
 				act.SetActiveStateUpdt(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.RunSteps(AlphaCycle, tbar)
+			ss.RunSteps(AlphaFull, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Selected grain -->", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",

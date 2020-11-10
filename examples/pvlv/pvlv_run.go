@@ -19,11 +19,11 @@ type StepGrain int
 const (
 	Cycle StepGrain = iota
 	Quarter
-	SettleMinus
-	SettlePlus
-	AlphaCycle
-	SGTrial // Trial
-	TrialGroup
+	AlphaMinus
+	AlphaPlus
+	AlphaFull
+	SGTrial    // Trial
+	TrialGroup //Epoch
 	RunBlock
 	StepGrainN
 )
@@ -227,7 +227,7 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (blockDone
 		train = !ev.IsTestTrial(curTrial)
 		ev.RunOneAlphaCycle(ss, curTrial)
 		trialDone = ev.AlphaCycle.Incr()
-		if ss.Stepper.StepPoint(int(AlphaCycle)) {
+		if ss.Stepper.StepPoint(int(AlphaFull)) {
 			return
 		}
 		if ss.ViewOn && ss.TrainUpdt <= leabra.Quarter {
@@ -255,7 +255,7 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
 	ev.SetState()
 	ss.ApplyInputs()
 	ss.SettleMinus(train)
-	if ss.Stepper.StepPoint(int(SettleMinus)) {
+	if ss.Stepper.StepPoint(int(AlphaMinus)) {
 		return
 	}
 	ss.ApplyInputs()
@@ -268,7 +268,7 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
 		ss.UpdateView()
 	}
 	ss.LogTrialTypeData()
-	_ = ss.Stepper.StepPoint(int(SettlePlus))
+	_ = ss.Stepper.StepPoint(int(AlphaPlus))
 }
 
 // brought over from cemer. This was named StepStopTest in cemer
