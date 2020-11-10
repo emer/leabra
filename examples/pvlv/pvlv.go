@@ -87,6 +87,7 @@ type Sim struct {
 	Env PVLVEnv `desc:"environment -- PVLV environment"`
 	//TestEnv                      PVLVEnv           `desc:"Testing environment -- PVLV environment"`
 	StepsToRun                   int               `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
+	nStepsBox                    *gi.SpinBox       `view:"-"`
 	OrigSteps                    int               `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
 	StepGrain                    StepGrain         `view:"-" desc:"granularity for the Step command"`
 	StopStepCondition            StopStepCond      `desc:"granularity for conditional stop"`
@@ -796,12 +797,12 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	nLabel := gi.AddNewLabel(tbar, "n", "N:")
 	nLabel.SetProp("font-size", "large")
-	nStepsBox := gi.AddNewSpinBox(tbar, "nString")
+	ss.nStepsBox = gi.AddNewSpinBox(tbar, "nStepsSpinbox")
 	stepsProps := ki.Props{"has-min": true, "min": 1, "has-max": false, "step": 1, "pagestep": 10}
-	nStepsBox.SetProps(stepsProps, true)
-	nStepsBox.SetValue(1)
-	nStepsBox.SpinBoxSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		ss.StepsToRun = int(nStepsBox.Value)
+	ss.nStepsBox.SetProps(stepsProps, true)
+	ss.nStepsBox.SetValue(1)
+	ss.nStepsBox.SpinBoxSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		ss.StepsToRun = int(ss.nStepsBox.Value)
 	})
 
 	vp.UpdateEndNoSig(updt)
@@ -872,6 +873,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 }
 
 func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
+	//fmt.Printf("SS=%d, widget=%d\n", ss.StepsToRun, int(ss.nStepsBox.Value))
 	if !ss.IsRunning {
 		ss.IsRunning = true
 		tbar.UpdateActions()
@@ -882,6 +884,9 @@ func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
 		}
 		if ss.Stopped() {
 			ss.SimHasRun = true
+			if int(ss.nStepsBox.Value) != ss.StepsToRun { // shouldn't be necessary, and does it do anything?
+				ss.StepsToRun = int(ss.nStepsBox.Value)
+			}
 			ss.OrigSteps = ss.StepsToRun
 			ss.Stepper.Start(int(grain), ss.StepsToRun)
 			ss.ToolBar.UpdateActions()
