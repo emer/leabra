@@ -24,18 +24,19 @@ func _() {
 	_ = x[Trial-8]
 	_ = x[Tick-9]
 	_ = x[Sequence-10]
-	_ = x[Block-11]
-	_ = x[Epoch-12]
-	_ = x[Run-13]
-	_ = x[Expt-14]
-	_ = x[Scene-15]
-	_ = x[Episode-16]
-	_ = x[TimeScalesN-17]
+	_ = x[Condition-11]
+	_ = x[Block-12]
+	_ = x[Epoch-13]
+	_ = x[Run-14]
+	_ = x[Expt-15]
+	_ = x[Scene-16]
+	_ = x[Episode-17]
+	_ = x[TimeScalesN-18]
 }
 
-const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleEventTrialTickSequenceBlockEpochRunExptSceneEpisodeTimeScalesN"
+const _TimeScales_name = "CycleFastSpikeQuarterPhaseBetaCycleAlphaCycleThetaCycleEventTrialTickSequenceConditionBlockEpochRunExptSceneEpisodeTimeScalesN"
 
-var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 65, 69, 77, 82, 87, 90, 94, 99, 106, 117}
+var _TimeScales_index = [...]uint8{0, 5, 14, 21, 26, 35, 45, 55, 60, 65, 69, 77, 86, 91, 96, 99, 103, 108, 115, 126}
 
 func (i TimeScales) String() string {
 	if i < 0 || i >= TimeScales(len(_TimeScales_index)-1) {

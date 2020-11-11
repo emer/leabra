@@ -607,7 +607,7 @@ class Sim(pygiv.ClassViewObj):
             if ss.TestInterval > 0 and epc%ss.TestInterval == 0: # note: epc is *next* so won't trigger first time
                 ss.TestAll()
             learned = (ss.NZeroStop > 0 and ss.NZero >= ss.NZeroStop)
-            if ss.TrainEnv.Table.Table == ss.TrainAB and (learned or epc == ss.MaxEpcs/2):
+            if ss.TrainEnv.Table.Table.MetaData["name"] == "TrainAB" and (learned or epc == ss.MaxEpcs/2):
                 ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAC)
                 learned = False
             if learned or epc >= ss.MaxEpcs: # done with training..
@@ -631,7 +631,7 @@ class Sim(pygiv.ClassViewObj):
         ss.LogRun(ss.RunLog)
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
-            print("Saving Weights to: %v\n" % fnm)
+            print("Saving Weights to: %s\n" % fnm)
             ss.Net.SaveWtsJSON(gi.FileName(fnm))
 
     def NewRun(ss):
@@ -1196,7 +1196,6 @@ class Sim(pygiv.ClassViewObj):
         plt.Params.XAxisCol = "TrialName"
         plt.Params.Type = eplot.Bar
         plt.SetTable(dt) # this sets defaults so set params after
-        plt.Params.BarWidth = 5
         plt.Params.XAxisRot = 45
         # order of params: on, fixMin, min, fixMax, max
         plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)

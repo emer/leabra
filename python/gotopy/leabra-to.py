@@ -11,6 +11,8 @@
 
 import os, sys, subprocess
 
+debug = False
+
 # these are defined below
 inserts = []
 replaces = []
@@ -46,16 +48,18 @@ def repls(txt):
     return txt
     
 def inserttxt(txt, ati, ins):
-    print("\n##########\nins:")
-    print(ins)
+    if debug:
+        print("\n##########\nins:")
+        print(ins)
     for i, v in enumerate(ins):
         txt.insert(ati+i, v)
 
 def repltxt(txt, ati, ftxt, itxt):
-    print("\n##########\nrepl:")
-    print(ftxt)
-    print("with:")
-    print(itxt)
+    if debug:
+        print("\n##########\nrepl:")
+        print(ftxt)
+        print("with:")
+        print(itxt)
     nf = len(ftxt)
     ni = len(itxt)
     for i, v in enumerate(itxt):
@@ -100,8 +104,9 @@ def diffs(txt):
             if j <= deli:
                 continue
             if ft[0] == v:
-                print("\n##########\ndel:")
-                print(ft)
+                if debug:
+                    print("\n##########\ndel:")
+                    print(ft)
                 del nln[ni:ni+len(ft)]
                 ni -= len(ft)
                 deli = j
