@@ -20,11 +20,10 @@ const (
 	Cycle StepGrain = iota
 	Quarter
 	AlphaMinus
-	AlphaPlus
 	AlphaFull
 	SGTrial    // Trial
-	TrialGroup //Epoch
-	RunBlock
+	TrialBlock // Block
+	Condition
 	StepGrainN
 )
 
@@ -185,8 +184,8 @@ func (ss *Sim) ApplyPVInputs() {
 }
 
 // SingleTrial and functions -- SingleTrial has been consolidated into this
-// A block is a set of trials, whose length is set by the current RunBlockParams record
-func (ev *PVLVEnv) RunOneTrialGp(ss *Sim) {
+// A block is a set of trials, whose length is set by the current ConditionParams record
+func (ev *PVLVEnv) RunOneTrialBlk(ss *Sim) {
 	blockDone := false
 	var curTG *data.TrialInstance
 	ev.BlockStart(ss)
@@ -206,10 +205,10 @@ func (ev *PVLVEnv) RunOneTrialGp(ss *Sim) {
 			return
 		}
 	}
-	ev.TrialGpCt.Incr()
+	ev.TrialBlockCt.Incr()
 	ev.BlockEnded = true
 	ev.BlockEnd(ss) // run monitoring and analysis, maybe save weights
-	if ss.Stepper.StepPoint(int(TrialGroup)) {
+	if ss.Stepper.StepPoint(int(TrialBlock)) {
 		return
 	}
 	if ss.ViewOn && ss.TrainUpdt >= leabra.Epoch {
@@ -268,7 +267,7 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
 		ss.UpdateView()
 	}
 	ss.LogTrialTypeData()
-	_ = ss.Stepper.StepPoint(int(AlphaPlus))
+	//_ = ss.Stepper.StepPoint(int(AlphaPlus))
 }
 
 // brought over from cemer. This was named StepStopTest in cemer
@@ -280,7 +279,7 @@ func (ev *PVLVEnv) TrialNameStopTest(_ *Sim) bool {
 
 // TrainEnd
 func (ev *PVLVEnv) TrainEnd(ss *Sim) {
-	if ev.CurBlockParams.SaveFinalWts {
+	if ev.CurConditionParams.SaveFinalWts {
 		ev.SaveWeights(ss)
 	}
 	ss.Stepper.Stop()

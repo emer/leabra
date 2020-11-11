@@ -74,13 +74,13 @@ const LogPrec = 4
 // selected to apply on top of that
 
 type Sim struct {
-	RunParamsNm      string               `inactive:"+" desc:"Name of the current run. Use menu above to set"`
-	RunParams        *data.RunParams      `desc:"For sequences of blocks"`
-	RunBlockParamsNm string               `inactive:"+" desc:"name of current RunBlockParams"`
-	RunBlockParams   *data.RunBlockParams `desc:"for running Train directly"`
-	Tag              string               `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Params           params.Sets          `view:"no-inline" desc:"pvlv-specific network parameters"`
-	ParamSet         string
+	RunParamsNm       string                `inactive:"+" desc:"Name of the current run. Use menu above to set"`
+	RunParams         *data.RunParams       `desc:"For sequences of conditions"`
+	ConditionParamsNm string                `inactive:"+" desc:"name of current ConditionParams"`
+	ConditionParams   *data.ConditionParams `desc:"pointer to current ConditionParams"`
+	Tag               string                `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Params            params.Sets           `view:"no-inline" desc:"pvlv-specific network parameters"`
+	ParamSet          string
 	//StableParams                 params.Set        `view:"no-inline" desc:"shouldn't need to change these'"`
 	//MiscParams                   params.Set        `view:"no-inline" desc:"misc params -- network specs"`
 	//AnalysisParams               params.Set        `view:"no-inline" desc:"??"`
@@ -105,8 +105,8 @@ type Sim struct {
 	CycleOutputData              *etable.Table       `view:"no-inline" desc:"Cycle-level output data"`
 	CycleDataPlot                *eplot.Plot2D       `view:"no-inline" desc:"Fine-grained trace data"`
 	CycleOutputMetadata          map[string][]string `view:"-"`
-	TimeLogBlock                 int                 `desc:"current trial group within current run phase"`
-	TimeLogBlockAll              int                 `desc:"current trial group across all phases of the run"`
+	TimeLogBlock                 int                 `desc:"current block within current run phase"`
+	TimeLogBlockAll              int                 `desc:"current block across all phases of the run"`
 	Time                         leabra.Time         `desc:"leabra timing parameters and state"`
 	ViewOn                       bool                `desc:"whether to update the network view while running"`
 	TrainUpdt                    leabra.TimeScales   `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
@@ -149,11 +149,10 @@ type Sim struct {
 	InputShapes               map[string][]int            `view:"-"`
 
 	// master lists of various kinds of parameters
-	MasterRunParams        data.RunParamsMap      `view:"no-inline" desc:"master list of RunParams records"`
-	MasterRunBlockParams   data.RunBlockParamsMap `view:"no-inline" desc:"master list of RunBlockParams records"`
-	MasterTrialBlockParams data.TrialBlockMap     `desc:"master list of BlockParams (sets of trial groups) records"`
-	MaxRunBlocks           int                    `view:"-" desc:"Maximum number of blocks to run"`
-	MaxBlocks              int                    `view:"-" desc:"maximum number of block runs to perform"` // for non-GUI runs
+	MasterRunParams        data.RunParamsMap       `view:"no-inline" desc:"master list of RunParams records"`
+	MasterConditionParams  data.ConditionParamsMap `view:"no-inline" desc:"master list of ConditionParams records"`
+	MasterTrialBlockParams data.TrialBlockMap      `desc:"master list of BlockParams (sets of trial groups) records"`
+	MaxConditions          int                     `view:"-" desc:"maximum number of conditions to run through"` // for non-GUI runs
 	simOneTimeInit         sync.Once
 }
 
@@ -185,7 +184,7 @@ func (ss *Sim) New() {
 	ss.GlobalTrialTypeSet = map[string]int{}
 	ss.simOneTimeInit.Do(func() {
 		ss.ValidateRunParams()
-		ss.MasterRunBlockParams = data.AllRunBlockParams()
+		ss.MasterConditionParams = data.AllConditionParams()
 		ss.MasterRunParams = data.AllRunParams()
 		ss.MasterTrialBlockParams = data.AllTrialBlocks()
 		ss.Env = PVLVEnv{Nm: "Env", Dsc: "run environment"}
@@ -288,9 +287,9 @@ func (ss *Sim) InitSim() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = ss.InitRunBlock(true)
+	err = ss.InitCondition(true)
 	if err != nil {
-		fmt.Println("ERROR: InitRunBlock failed in InitSim")
+		fmt.Println("ERROR: InitCondition failed in InitSim")
 	}
 	ss.Net.InitWts()
 	ss.InitHasRun = true
@@ -308,8 +307,8 @@ func (ss *Sim) NewRndSeed() {
 // and add a few tabs at the end to allow for expansion..
 func (ss *Sim) Counters() string {
 	ev := &ss.Env
-	return fmt.Sprintf("Block:\t%d(%s)\tTrialGp:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
-		ev.BlockCt.Cur, ev.CurBlockParams.TrialGroupNm, ev.TrialGpCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur,
+	return fmt.Sprintf("Condition:\t%d(%s)\tBlock:\t%03d\tTrial:\t%02d\tAlpha:\t%01d\tCycle:\t%03d\t\tName:\t%12v\t\t\t",
+		ev.ConditionCt.Cur, ev.CurConditionParams.TrialBlkNm, ev.TrialBlockCt.Cur, ev.TrialCt.Cur, ev.AlphaCycle.Cur,
 		ss.Time.Cycle, ev.AlphaTrialName) //, ev.USTimeInStr)
 }
 
@@ -762,12 +761,12 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.RunSteps(AlphaMinus, tbar)
 		})
 
-		tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
-			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
-			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-			ss.RunSteps(AlphaPlus, tbar)
-		})
+		//tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
+		//	UpdateFunc: func(act *gi.Action) {
+		//		act.SetActiveStateUpdt(!ss.IsRunning)
+		//	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+		//	ss.RunSteps(AlphaPlus, tbar)
+		//})
 
 		tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
 			UpdateFunc: func(act *gi.Action) {
@@ -1039,7 +1038,7 @@ func (ss *Sim) RunBlockName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunBlockName(ss.Env.BlockCt.Cur, ss.Env.TrialGpCt.Cur) + ".wts.gz"
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunBlockName(ss.Env.ConditionCt.Cur, ss.Env.TrialBlockCt.Cur) + ".wts.gz"
 }
 
 // LogFileName returns default log file name
@@ -1067,16 +1066,16 @@ func (ss *Sim) SetRunParams() error {
 			return err
 		} else {
 			ss.RunParams = newSeqParams
-			newBlockParams, found := ss.GetRunBlockParams(ss.RunParams.Block1Nm)
+			newBlockParams, found := ss.GetConditionParams(ss.RunParams.Cond1Nm)
 			if !found {
-				err = errors.New(fmt.Sprintf("RunParams step 1 \"%v\" was not found!", ss.RunParams.Block1Nm))
+				err = errors.New(fmt.Sprintf("RunParams step 1 \"%v\" was not found!", ss.RunParams.Cond1Nm))
 				gi.PromptDialog(nil, gi.DlgOpts{Title: "RunParams step not found", Prompt: err.Error()}, gi.AddOk, gi.NoCancel, nil, nil)
 				ss.RunParams = oldSeqParams
 				return err
 			} else {
-				ss.RunBlockParams = newBlockParams
-				ss.Env.CurBlockParams = ss.RunBlockParams
-				ss.RunBlockParamsNm = ss.RunBlockParams.Nm
+				ss.ConditionParams = newBlockParams
+				ss.Env.CurConditionParams = ss.ConditionParams
+				ss.ConditionParamsNm = ss.ConditionParams.Nm
 				return nil
 			}
 		}
@@ -1084,7 +1083,7 @@ func (ss *Sim) SetRunParams() error {
 	return nil
 }
 
-// InitRunBlock intializes a new run of the model, using the Env.BlockCt counter
+// InitCondition intializes a new run of the model, using the Env.ConditionCt counter
 // for the new run value
 func (ss *Sim) InitRun() error {
 	ev := &ss.Env
@@ -1101,18 +1100,18 @@ func (ss *Sim) InitRun() error {
 		ss.TrialTypeBlockFirstLogged[key] = false
 	}
 	ss.ConfigTrialTypeTables(len(tgNmMap)) // max number of rows for entire sequence, for TrialTypeBlockFirst only
-	err = ss.InitRunBlock(true)
+	err = ss.InitCondition(true)
 	if err != nil {
-		fmt.Println("ERROR: InitRunBlock failed")
+		fmt.Println("ERROR: InitCondition failed")
 	}
 	ss.UpdateView()
 	ss.Win.Viewport.SetNeedsFullRender()
 	return nil
 }
 
-// InitRunBlock intializes a new run of the model, using the Env.BlockCt counter
+// InitCondition intializes a new run of the model, using the Env.ConditionCt counter
 // for the new run value
-func (ss *Sim) InitRunBlock(firstInSeq bool) (err error) {
+func (ss *Sim) InitCondition(firstInSeq bool) (err error) {
 	ev := &ss.Env
 	err = ss.SetRunParams()
 	if err != nil {
@@ -1128,30 +1127,30 @@ func (ss *Sim) InitRunBlock(firstInSeq bool) (err error) {
 	return nil
 }
 
-func (ss *Sim) GetRunSteps(runParams *data.RunParams) *[5]*data.RunBlockParams {
+func (ss *Sim) GetRunConditions(runParams *data.RunParams) *[5]*data.ConditionParams {
 	var found bool
-	runSteps := &[5]*data.RunBlockParams{}
-	runSteps[0], found = ss.GetRunBlockParams(runParams.Block1Nm)
+	conditions := &[5]*data.ConditionParams{}
+	conditions[0], found = ss.GetConditionParams(runParams.Cond1Nm)
 	if !found {
-		fmt.Println("RunBlock", runParams.Block1Nm, "was not found")
+		fmt.Println("Condition", runParams.Cond1Nm, "was not found")
 	}
-	runSteps[1], found = ss.GetRunBlockParams(runParams.Block2Nm)
+	conditions[1], found = ss.GetConditionParams(runParams.Cond2Nm)
 	if !found {
-		fmt.Println("RunBlock", runParams.Block2Nm, "was not found")
+		fmt.Println("Condition", runParams.Cond2Nm, "was not found")
 	}
-	runSteps[2], found = ss.GetRunBlockParams(runParams.Block3Nm)
+	conditions[2], found = ss.GetConditionParams(runParams.Cond3Nm)
 	if !found {
-		fmt.Println("RunBlock", runParams.Block3Nm, "was not found")
+		fmt.Println("Condition", runParams.Cond3Nm, "was not found")
 	}
-	runSteps[3], found = ss.GetRunBlockParams(runParams.Block4Nm)
+	conditions[3], found = ss.GetConditionParams(runParams.Cond4Nm)
 	if !found {
-		fmt.Println("RunBlock", runParams.Block4Nm, "was not found")
+		fmt.Println("Condition", runParams.Cond4Nm, "was not found")
 	}
-	runSteps[4], found = ss.GetRunBlockParams(runParams.Block5Nm)
+	conditions[4], found = ss.GetConditionParams(runParams.Cond5Nm)
 	if !found {
-		fmt.Println("RunBlock", runParams.Block5Nm, "was not found")
+		fmt.Println("Condition", runParams.Cond5Nm, "was not found")
 	}
-	return runSteps
+	return conditions
 }
 
 // Run
@@ -1162,24 +1161,24 @@ func (ss *Sim) ExecuteRun() bool {
 	allDone := false
 	var err error
 	ev := &ss.Env
-	seqSteps := ss.GetRunSteps(ss.RunParams)
-	activateStep := func(i int, blockParams *data.RunBlockParams) {
-		ev.CurBlockParams = blockParams
-		ss.RunBlockParams = ev.CurBlockParams
-		ss.RunBlockParamsNm = ss.RunBlockParams.Nm
-		err = ss.InitRunBlock(i == 0)
+	conditions := ss.GetRunConditions(ss.RunParams)
+	activateCondition := func(i int, blockParams *data.ConditionParams) {
+		ev.CurConditionParams = blockParams
+		ss.ConditionParams = ev.CurConditionParams
+		ss.ConditionParamsNm = ss.ConditionParams.Nm
+		err = ss.InitCondition(i == 0)
 		if err != nil {
-			fmt.Println("ERROR: InitRunBlock failed in activateStep")
+			fmt.Println("ERROR: InitCondition failed in activateCondition")
 		}
 		ss.Win.WinViewport2D().SetNeedsFullRender()
 	}
 	ss.TimeLogBlockAll = 0
-	for i, seqStep := range seqSteps {
-		if seqStep.Nm == "NullStep" {
+	for i, condition := range conditions {
+		if condition.Nm == "NullStep" {
 			allDone = true
 			break
 		}
-		activateStep(i, seqStep)
+		activateCondition(i, condition)
 		ss.ExecuteBlocks(true)
 		if allDone || ss.Stopped() {
 			break
@@ -1187,7 +1186,7 @@ func (ss *Sim) ExecuteRun() bool {
 		if ss.ViewOn && ss.TrainUpdt >= leabra.Run {
 			ss.UpdateView()
 		}
-		ss.Stepper.StepPoint(int(RunBlock))
+		ss.Stepper.StepPoint(int(Condition))
 	}
 	ss.Stepper.Stop()
 	ss.IsRunning = false
@@ -1200,14 +1199,14 @@ func (ss *Sim) ExecuteRun() bool {
 func (ss *Sim) ExecuteBlocks(seqRun bool) {
 	ev := &ss.Env
 	if !seqRun {
-		ev.CurBlockParams = ss.RunBlockParams
+		ev.CurConditionParams = ss.ConditionParams
 	}
 	nDone := 0
-	for i := 0; i < ev.CurBlockParams.NIters; i++ {
-		ev.RunOneTrialGp(ss)
+	for i := 0; i < ev.CurConditionParams.NIters; i++ {
+		ev.RunOneTrialBlk(ss)
 		nDone++
 	}
-	ev.BlockCt.Incr()
+	ev.ConditionCt.Incr()
 }
 
 // end MultiTrial
@@ -1262,7 +1261,7 @@ func IMax(x, y int) int {
 }
 
 func (ss *Sim) RunSeqTrialTypes(rs *data.RunParams) (map[string]string, int, error) {
-	steps := ss.GetRunSteps(rs)
+	steps := ss.GetRunConditions(rs)
 	ticksPerGroup := 0
 	var err error
 	types := map[string]string{}
@@ -1298,29 +1297,29 @@ func (ss *Sim) RunSeqTrialTypes(rs *data.RunParams) (map[string]string, int, err
 	return fullStepMap, ticksPerGroup, err
 }
 
-func (ss *Sim) GetBlockTrialTypes(rp *data.RunBlockParams) (map[string]string, int, error) {
+func (ss *Sim) GetBlockTrialTypes(rp *data.ConditionParams) (map[string]string, int, error) {
 	var err error
 	ticks := 0
 	cases := map[string]string{}
-	ep, found := ss.MasterTrialBlockParams[rp.TrialGroupNm]
+	ep, found := ss.MasterTrialBlockParams[rp.TrialBlkNm]
 	valMap := map[pvlv.Valence]string{pvlv.POS: "+", pvlv.NEG: "-"}
 	if !found {
-		err := errors.New(fmt.Sprintf("TrialGroupParams %s was not found",
-			rp.TrialGroupNm))
+		err := errors.New(fmt.Sprintf("TrialBlockParams %s was not found",
+			rp.TrialBlkNm))
 		return nil, 0, err
 	}
 	for _, tg := range ep {
 		tSuffix := ""
 		oSuffix := "_omit"
 		val := tg.ValenceContext
-		if strings.Contains(tg.TrialGpName, "_test") {
+		if strings.Contains(tg.TrialBlkName, "_test") {
 			tSuffix = "_test"
 		}
-		parts := strings.Split(tg.TrialGpName, "_")
+		parts := strings.Split(tg.TrialBlkName, "_")
 		if parts[1] == "NR" {
 			oSuffix = ""
 		}
-		longNm := fmt.Sprintf("%s_%s", tg.TrialGpName, val)
+		longNm := fmt.Sprintf("%s_%s", tg.TrialBlkName, val)
 		shortNm := tg.CS + valMap[val]
 		if strings.Contains(longNm, "_test") {
 			parts := strings.Split(longNm, "_")
@@ -1355,7 +1354,7 @@ func (ss *Sim) SetTrialTypeDataXLabels() (nRows int) {
 
 	if ss.TrialTypeDataPerBlock {
 		types := map[string]string{}
-		types, ticksPerGroup, _ = ss.GetBlockTrialTypes(ss.RunBlockParams)
+		types, ticksPerGroup, _ = ss.GetBlockTrialTypes(ss.ConditionParams)
 		for long, short := range types {
 			for i := 0; i < ticksPerGroup; i++ {
 				is := strconv.Itoa(i)
@@ -1499,7 +1498,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxBlocks, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
+	flag.IntVar(&ss.MaxConditions, "runs", 10, "maximum number of conditions to run")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "blklog", true, "if true, save train block log to file")
@@ -1547,7 +1546,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
-	fmt.Printf("Running %d Runs\n", ss.MaxBlocks)
+	fmt.Printf("Running %d Conditions\n", ss.MaxConditions)
 	ss.ExecuteRun()
 	return verbose, threads
 }
@@ -1559,15 +1558,15 @@ func (ss *Sim) GetTrialBlockParams(nm string) (*data.TrialBlockRecs, bool) {
 	return ret, ok
 }
 
-// GetBlockTrial returns the nth TrialGroupParams record in the currently set TrialGroupParams in the environment.
-func (ev *PVLVEnv) GetBlockTrial(n int) *data.TrialGroupParams {
-	ret := ev.TrialGroupParams.Records.Get(n).(*data.TrialGroupParams)
+// GetBlockTrial returns the nth TrialBlockParams record in the currently set TrialBlockParams in the environment.
+func (ev *PVLVEnv) GetBlockTrial(n int) *data.TrialBlockParams {
+	ret := ev.TrialBlockParams.Records.Get(n).(*data.TrialBlockParams)
 	return ret
 }
 
-// GetRunBlockParams returns a pointer to a RunBlockParams, and indicates an error if not found.
-func (ss *Sim) GetRunBlockParams(nm string) (*data.RunBlockParams, bool) {
-	ret, found := ss.MasterRunBlockParams[nm]
+// GetConditionParams returns a pointer to a ConditionParams, and indicates an error if not found.
+func (ss *Sim) GetConditionParams(nm string) (*data.ConditionParams, bool) {
+	ret, found := ss.MasterConditionParams[nm]
 	return &ret, found
 }
 
@@ -1578,10 +1577,10 @@ func (ss *Sim) GetRunParams(nm string) (*data.RunParams, bool) {
 }
 
 // ValidateRunParams goes through all defined RunParams and makes sure all names are valid, calling down all the
-// way to the TrialGroup level.
+// way to the TrialBlock level.
 func (ss *Sim) ValidateRunParams() {
 	allSeqs := data.AllRunParams()
-	allRunBlocks := data.AllRunBlockParams()
+	allRunBlocks := data.AllConditionParams()
 	allBlocks := data.AllTrialBlocks()
 runsLoop:
 	for seqNm, pSeq := range allSeqs {
@@ -1589,14 +1588,14 @@ runsLoop:
 			fmt.Printf("ERROR: Name field \"%s\" does not match key for RunParams \"%s\"\n",
 				pSeq.Nm, seqNm)
 		}
-		blockNms := []string{pSeq.Block1Nm, pSeq.Block2Nm, pSeq.Block3Nm, pSeq.Block4Nm, pSeq.Block5Nm}
+		blockNms := []string{pSeq.Cond1Nm, pSeq.Cond2Nm, pSeq.Cond3Nm, pSeq.Cond4Nm, pSeq.Cond5Nm}
 		for i, blockNm := range blockNms {
 			if blockNm == "NullStep" || blockNm == "" {
 				continue runsLoop
 			}
 			pRun, found := allRunBlocks[blockNm]
 			if !found {
-				fmt.Printf("ERROR: Invalid run name \"%s\" in RunParams \"%s\" step %d\n",
+				fmt.Printf("ERROR: Invalid block name \"%s\" in ConditionParams \"%s\" step %d\n",
 					blockNm, seqNm, i+1)
 			} else {
 				ss.ValidateBlockParams(blockNm, &pRun, allBlocks)
@@ -1605,17 +1604,17 @@ runsLoop:
 	}
 }
 
-// ValidateBlockParams goes through all defined RunBlockParams and makes sure all names are valid, calling down all the
-// way to the TrialGroup level.
-func (ss *Sim) ValidateBlockParams(nm string, pRun *data.RunBlockParams, allBlocks data.TrialBlockMap) {
-	if nm != pRun.Nm {
-		fmt.Printf("ERROR: Name field \"%s\" does not match key for RunBlockParams \"%s\"\n",
-			pRun.Nm, nm)
+// ValidateBlockParams goes through all defined ConditionParams and makes sure all names are valid, calling down all the
+// way to the TrialBlock level.
+func (ss *Sim) ValidateBlockParams(nm string, pCondition *data.ConditionParams, allBlocks data.TrialBlockMap) {
+	if nm != pCondition.Nm {
+		fmt.Printf("ERROR: Name field \"%s\" does not match key for ConditionParams \"%s\"\n",
+			pCondition.Nm, nm)
 	}
-	blockNm := pRun.TrialGroupNm
+	blockNm := pCondition.TrialBlkNm
 	_, found := allBlocks[blockNm]
 	if !found {
-		fmt.Printf("ERROR: Invalid run block name \"%s\" in RunBlockParams \"%s\"\n",
+		fmt.Printf("ERROR: Invalid block name \"%s\" in ConditionParams \"%s\"\n",
 			blockNm, nm)
 	}
 }
