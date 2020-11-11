@@ -23,26 +23,26 @@ import (
 )
 
 type PVLVEnv struct {
-	Nm               string                  `inactive:"+" desc:"name of this environment"`
-	Dsc              string                  `inactive:"+" desc:"description of this environment"`
-	PVLVParams       *params.Params          `desc:"PVLV-specific params"`
-	GlobalStep       int                     `desc:"cycle counter, cleared by Init, otherwise increments on every Cycle"`
-	MultiRunCt       env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-run sequence"`
-	BlockCt          env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-trial group run"`
-	TrialGpCt        env.Ctr                 `inactive:"+" view:"inline" desc:"trial group within a block"`
-	TrialCt          env.Ctr                 `inactive:"+" view:"inline" desc:"trial group within a set of trial groups"`
-	AlphaCycle       env.Ctr                 `inactive:"+" view:"inline" desc:"step within a trial"`
-	AlphaTrialName   string                  `inactive:"+" desc:"name of current alpha trial step"`
-	USTimeInStr      string                  `inactive:"+" desc:"decoded value of USTimeIn"`
-	TrialGroupParams *data.TrialBlockRecs    `desc:"AKA trial group list. A set of trial groups to be run together"`
-	TrialInstances   *data.TrialInstanceRecs //*TrialInstanceList `view:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
-	StdInputData     *etable.Table           `desc:"Completely instantiated input data for a single block"`
-	ContextModel     ContextModel            `inactive:"+" desc:"One at a time, conjunctive, or a mix"`
-	SeqRun           bool                    `view:"-" desc:"running from a top-level sequence?"`
-	CurBlockParams   *data.RunBlockParams    `view:"-" desc:"params for currently executing block, whether from selection or sequence"`
-	TrialsPerBlock   int                     `inactive:"+"`
-	DataLoopOrder    data.DataLoopOrder      `inactive:"+"`
-	BlockEnded       bool                    `view:"-"`
+	Nm                 string                  `inactive:"+" desc:"name of this environment"`
+	Dsc                string                  `inactive:"+" desc:"description of this environment"`
+	PVLVParams         *params.Params          `desc:"PVLV-specific params"`
+	GlobalStep         int                     `desc:"cycle counter, cleared by Init, otherwise increments on every Cycle"`
+	MultiRunCt         env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-run sequence"`
+	ConditionCt        env.Ctr                 `inactive:"+" view:"inline" desc:"top-level counter for multi-trial group run"`
+	TrialBlockCt       env.Ctr                 `inactive:"+" view:"inline" desc:"trial group within a block"`
+	TrialCt            env.Ctr                 `inactive:"+" view:"inline" desc:"trial group within a set of trial groups"`
+	AlphaCycle         env.Ctr                 `inactive:"+" view:"inline" desc:"step within a trial"`
+	AlphaTrialName     string                  `inactive:"+" desc:"name of current alpha trial step"`
+	USTimeInStr        string                  `inactive:"+" desc:"decoded value of USTimeIn"`
+	TrialBlockParams   *data.TrialBlockRecs    `desc:"AKA trial group list. A set of trial groups to be run together"`
+	TrialInstances     *data.TrialInstanceRecs //*TrialInstanceList `view:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
+	StdInputData       *etable.Table           `desc:"Completely instantiated input data for a single block"`
+	ContextModel       ContextModel            `inactive:"+" desc:"One at a time, conjunctive, or a mix"`
+	SeqRun             bool                    `view:"-" desc:"running from a top-level sequence?"`
+	CurConditionParams *data.ConditionParams   `view:"-" desc:"params for currently executing block, whether from selection or sequence"`
+	TrialsPerBlock     int                     `inactive:"+"`
+	DataLoopOrder      data.DataLoopOrder      `inactive:"+"`
+	BlockEnded         bool                    `view:"-"`
 
 	// Input data tensors
 	TsrStimIn    etensor.Float64
@@ -65,9 +65,9 @@ func (ev *PVLVEnv) Name() string { return ev.Nm }
 func (ev *PVLVEnv) Desc() string { return ev.Dsc }
 
 func (ev *PVLVEnv) New(ss *Sim) {
-	ev.CurBlockParams = ss.RunBlockParams
-	ev.BlockCt.Scale = env.Block
-	ev.TrialGpCt.Scale = env.Epoch // We don't really have the right term available
+	ev.CurConditionParams = ss.ConditionParams
+	ev.ConditionCt.Scale = env.Epoch // We don't really have the right term available
+	ev.TrialBlockCt.Scale = env.Block
 	ev.AlphaCycle.Scale = env.Trial
 	ev.InputShapes = &ss.InputShapes
 	ev.ContextModel = ss.ContextModel // lives in MiscParams in cemer
@@ -83,26 +83,26 @@ func (ev *PVLVEnv) New(ss *Sim) {
 }
 
 // From looking at the running cemer model, the chain is as follows:
-// RunParams(=pos_acq) -> RunBlockParams(=pos_acq_b50) -> PVLVEnv.vars["env_params_table"](=PosAcq_B50)
+// RunParams(=pos_acq) -> ConditionParams(=pos_acq_b50) -> PVLVEnv.vars["env_params_table"](=PosAcq_B50)
 // RunParams fields: seq_step_1...5 from Run.vars
-// RunBlockParams fields: env_params_table, fixed_prob, ... lrs_bump_step, n_batches, batch_start, load_exp, pain_exp
+// ConditionParams fields: env_params_table, fixed_prob, ... lrs_bump_step, n_batches, batch_start, load_exp, pain_exp
 // Trial fields: trial_gp_name, percent_of_total, ...
-func (ev *PVLVEnv) Init(ss *Sim, firstBlock bool) (ok bool) {
-	ev.CurBlockParams = ss.RunBlockParams
-	ev.TrialGroupParams, ok = ss.GetTrialBlockParams(ev.CurBlockParams.TrialGroupNm)
+func (ev *PVLVEnv) Init(ss *Sim, firstCondition bool) (ok bool) {
+	ev.CurConditionParams = ss.ConditionParams
+	ev.TrialBlockParams, ok = ss.GetTrialBlockParams(ev.CurConditionParams.TrialBlkNm)
 	if !ok {
-		fmt.Printf("TrialGroupParams lookup failed for %v\n", ev.CurBlockParams.TrialGroupNm)
+		fmt.Printf("TrialBlockParams lookup failed for %v\n", ev.CurConditionParams.TrialBlkNm)
 		return ok
 	}
-	if firstBlock {
-		ev.BlockCt.Init()
-		ev.BlockCt.Max = ss.MaxBlocks
+	if firstCondition {
+		ev.ConditionCt.Init()
+		ev.ConditionCt.Max = ss.MaxConditions
 	}
-	ev.TrialGpCt.Init()
-	ev.TrialGpCt.Max = ev.CurBlockParams.NIters
+	ev.TrialBlockCt.Init()
+	ev.TrialBlockCt.Max = ev.CurConditionParams.NIters
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	ev.TrialCt.Init()
-	ev.TrialCt.Max = ev.CurBlockParams.BlocksPerIter
+	ev.TrialCt.Max = ev.CurConditionParams.BlocksPerIter
 	ev.AlphaCycle.Init()
 	ev.ContextModel = ss.ContextModel // lives in MiscParams in cemer
 	return ok
@@ -151,7 +151,7 @@ func (ev *PVLVEnv) BlockStart(ss *Sim) {
 func (ev *PVLVEnv) BlockEnd(ss *Sim) {
 	//ss.TrialAnalysis(ev)
 	ss.BlockMonitor()
-	if ev.TrialGpCt.Cur%ev.CurBlockParams.SaveWtsInterval == 0 && ev.TrialGpCt.Cur > 0 {
+	if ev.TrialBlockCt.Cur%ev.CurConditionParams.SaveWtsInterval == 0 && ev.TrialBlockCt.Cur > 0 {
 		ev.SaveWeights(ss)
 	}
 }
@@ -178,7 +178,7 @@ const (
 var KiT_ContextModel = kit.Enums.AddEnum(ContextModelN, kit.NotBitFlag, nil)
 
 func (ev *PVLVEnv) Counters() []env.TimeScales {
-	return []env.TimeScales{env.Block, env.Epoch, env.Trial}
+	return []env.TimeScales{env.Epoch, env.Block, env.Trial}
 }
 
 func (ev *PVLVEnv) Actions() env.Elements {
@@ -233,9 +233,9 @@ func (ev *PVLVEnv) State(Nm string) etensor.Tensor {
 }
 
 //func (ev *PVLVEnv) Step() bool {
-//	ev.TrialGpCt.Same() // good idea to just reset all non-inner-most counters at start
+//	ev.TrialBlockCt.Same() // good idea to just reset all non-inner-most counters at start
 //	if ev.AlphaCycle.Incr() {
-//		ev.TrialGpCt.Incr()
+//		ev.TrialBlockCt.Incr()
 //	}
 //	return true
 //}
@@ -247,9 +247,9 @@ func (ev *PVLVEnv) Action(_ string, _ etensor.Tensor) {
 func (ev *PVLVEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
 	switch scale {
 	case env.Block:
-		return ev.BlockCt.Query()
+		return ev.ConditionCt.Query()
 	case env.Epoch:
-		return ev.TrialGpCt.Query()
+		return ev.TrialBlockCt.Query()
 	case env.Trial:
 		return ev.AlphaCycle.Query()
 	}
@@ -264,14 +264,14 @@ func (ev *PVLVEnv) SetActiveTrialList(ss *Sim) {
 	ev.TrialInstances.Reset()
 	pctTotalSum := 0.0
 
-	ev.TrialGroupParams.Reset()
-	for !ev.TrialGroupParams.AtEnd() {
-		pctTotalSum += ev.TrialGroupParams.ReadNext().PercentOfTotal
+	ev.TrialBlockParams.Reset()
+	for !ev.TrialBlockParams.AtEnd() {
+		pctTotalSum += ev.TrialBlockParams.ReadNext().PercentOfTotal
 	}
 
-	ev.TrialGroupParams.Reset()
-	for !ev.TrialGroupParams.AtEnd() {
-		tg := ev.TrialGroupParams.ReadNext()
+	ev.TrialBlockParams.Reset()
+	for !ev.TrialBlockParams.AtEnd() {
+		tg := ev.TrialBlockParams.ReadNext()
 		baseNumber := tg.PercentOfTotal
 		normProb := baseNumber / pctTotalSum
 		tg.PercentOfTotal = normProb
@@ -279,7 +279,7 @@ func (ev *PVLVEnv) SetActiveTrialList(ss *Sim) {
 
 	ev.SetTableTrialGpListFmDefnTable()
 
-	if ev.CurBlockParams.PermuteTrialGps {
+	if ev.CurConditionParams.PermuteTrialGps {
 		ev.TrialInstances.Permute()
 		ev.TrialInstances.Reset()
 	}
@@ -295,37 +295,37 @@ func (ev *PVLVEnv) SetTableTrialGpListFmDefnTable() {
 	exactNOmits := 0
 	nOmitCount := 0
 
-	ev.TrialGroupParams.SetOrder(ev.DataLoopOrder)
-	for !ev.TrialGroupParams.AtEnd() {
-		curBlockParams := ev.TrialGroupParams.ReadNext()
+	ev.TrialBlockParams.SetOrder(ev.DataLoopOrder)
+	for !ev.TrialBlockParams.AtEnd() {
+		curBlockParams := ev.TrialBlockParams.ReadNext()
 		//var curTrial int
 
-		nRepeatsF = curBlockParams.PercentOfTotal * float64(ev.CurBlockParams.BlocksPerIter)
+		nRepeatsF = curBlockParams.PercentOfTotal * float64(ev.CurConditionParams.BlocksPerIter)
 		// fix rounding error from int arithmetic
 		nRepeats = int(nRepeatsF + 0.001)
 		if nRepeats < 1 && curBlockParams.PercentOfTotal > 0.0 {
 			nRepeats = 1
 		}
 		// should do each at least once (unless user intended 0.0f)
-		if ev.CurBlockParams.FixedProb || strings.Contains(curBlockParams.TrialGpName, "AutoTstEnv") {
+		if ev.CurConditionParams.FixedProb || strings.Contains(curBlockParams.TrialBlkName, "AutoTstEnv") {
 			if curBlockParams.USProb != 0.0 && curBlockParams.USProb != 1.0 {
 				exactOmitProportion = true
-				exactNOmits = int(math.Round(float64(ev.CurBlockParams.BlocksPerIter) * curBlockParams.PercentOfTotal * (1.0 - curBlockParams.USProb)))
+				exactNOmits = int(math.Round(float64(ev.CurConditionParams.BlocksPerIter) * curBlockParams.PercentOfTotal * (1.0 - curBlockParams.USProb)))
 				nOmitCount = 0
 			} else {
 				exactOmitProportion = false
 			}
 		}
-		if ev.TrialGroupParams.AtEnd() && ev.TrialInstances.Cur()+nRepeats < ev.TrialCt.Max {
+		if ev.TrialBlockParams.AtEnd() && ev.TrialInstances.Cur()+nRepeats < ev.TrialCt.Max {
 			nRepeats++
 		}
 		for i := 0; i < nRepeats; i++ {
 			if ev.TrialInstances != nil &&
-				(ev.TrialInstances.Length() < ev.CurBlockParams.BlocksPerIter) {
+				(ev.TrialInstances.Length() < ev.CurConditionParams.BlocksPerIter) {
 				// was SetRow_CurEpoch
 				rfFlgTemp := false
 				probUSOmit := 0.0
-				trialGpName := curBlockParams.TrialGpName + "_" + curBlockParams.ValenceContext.String()
+				trialGpName := curBlockParams.TrialBlkName + "_" + curBlockParams.ValenceContext.String()
 				if !strings.Contains(trialGpName, "NR") { // nonreinforced (NR) trials NEVER get reinforcement
 					rfFlgTemp = true // actual Rf can be different each eco_trial
 					if !exactOmitProportion {
@@ -393,7 +393,7 @@ func (ev *PVLVEnv) SetTableTrialGpListFmDefnTable() {
 			}
 		}
 	}
-	ev.TrialGroupParams.Sequential() // avoid confusion?
+	ev.TrialBlockParams.Sequential() // avoid confusion?
 }
 
 func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *data.TrialInstance, stimNum int) {

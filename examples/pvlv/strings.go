@@ -11,17 +11,16 @@ func _() {
 	_ = x[Cycle-0]
 	_ = x[Quarter-1]
 	_ = x[AlphaMinus-2]
-	_ = x[AlphaPlus-3]
-	_ = x[AlphaFull-4]
-	_ = x[SGTrial-5]
-	_ = x[TrialGroup-6]
-	_ = x[RunBlock-7]
-	_ = x[StepGrainN-8]
+	_ = x[AlphaFull-3]
+	_ = x[SGTrial-4]
+	_ = x[TrialBlock-5]
+	_ = x[Condition-6]
+	_ = x[StepGrainN-7]
 }
 
-const _StepGrain_name = "CycleQuarterAlphaMinusAlphaPlusAlphaFullTrialEpochRunBlockStepGrainN"
+const _StepGrain_name = "CycleQuarterAlphaMinusAlphaFullTrialBlockConditionStepGrainN"
 
-var _StepGrain_index = [...]uint8{0, 5, 12, 22, 31, 40, 45, 50, 58, 68}
+var _StepGrain_index = [...]uint8{0, 5, 12, 22, 31, 36, 41, 50, 60}
 
 func (i StepGrain) String() string {
 	if i < 0 || i >= StepGrain(len(_StepGrain_index)-1) {

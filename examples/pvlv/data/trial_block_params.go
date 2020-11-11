@@ -9,9 +9,9 @@ import (
 )
 
 // TrialGp : block-level state
-// aka TrialGroup
-type TrialGroupParams struct {
-	TrialGpName         string    `desc:"name"`
+// aka TrialBlock
+type TrialBlockParams struct {
+	TrialBlkName        string    `desc:"name"`
 	PercentOfTotal      float64   `desc:"Percent of all trials for this type"`
 	ValenceContext      p.Valence `desc:"Positive or negative reward valence"`
 	USProb              float64   `desc:"Probability of US"`
@@ -33,7 +33,7 @@ type TrialGroupParams struct {
 
 type TrialBlockMap map[string]TrialBlock
 
-type TrialBlock []*TrialGroupParams
+type TrialBlock []*TrialBlockParams
 
 type TrialBlockRecs struct {
 	Recs
@@ -52,7 +52,7 @@ func (epl *TrialBlock) Length() int {
 }
 
 func (epl *TrialBlock) Append(ins interface{}) IRecs {
-	ret := append(*epl, ins.(*TrialGroupParams))
+	ret := append(*epl, ins.(*TrialBlockParams))
 	return &ret
 }
 
@@ -60,8 +60,8 @@ func (epl *TrialBlock) Get(i int) interface{} {
 	return (*epl)[i]
 }
 
-func (eps *TrialBlockRecs) ReadNext() *TrialGroupParams {
-	return eps.Recs.ReadNext().(*TrialGroupParams)
+func (eps *TrialBlockRecs) ReadNext() *TrialBlockParams {
+	return eps.Recs.ReadNext().(*TrialBlockParams)
 }
 
 // imported from PVLVEnv->EnvBlockParams_Group in cemer
@@ -69,7 +69,7 @@ func AllTrialBlocks() TrialBlockMap {
 	sets := map[string]TrialBlock{
 		"PosAcq_B50": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -89,7 +89,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.5,
@@ -111,7 +111,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"USDebug": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      1.0,
 				ValenceContext:      p.POS,
 				USProb:              1.0,
@@ -133,7 +133,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcq_A50": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      1.0,
 				ValenceContext:      p.POS,
 				USProb:              0.5,
@@ -155,7 +155,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"US0": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      1.0,
 				ValenceContext:      p.POS,
 				USProb:              0.01,
@@ -177,7 +177,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosReacq": {
 			{
-				TrialGpName:         "A_Rf_reacq",
+				TrialBlkName:        "A_Rf_reacq",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -197,7 +197,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf_reacq",
+				TrialBlkName:        "B_Rf_reacq",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              0.500,
@@ -219,7 +219,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcqPreSecondOrder": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -239,7 +239,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.500,
@@ -261,7 +261,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcq_B100": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -281,7 +281,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -303,7 +303,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcq_B25": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -323,7 +323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.250,
@@ -345,7 +345,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosNeg": {
 			{
-				TrialGpName:         "Z_Rf",
+				TrialBlkName:        "Z_Rf",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.NEG,
 				USProb:              0.250,
@@ -365,7 +365,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Z_Rf",
+				TrialBlkName:        "Z_Rf",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -385,7 +385,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Z_Rf_tst",
+				TrialBlkName:        "Z_Rf_tst",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -405,7 +405,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "W_Rf",
+				TrialBlkName:        "W_Rf",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -425,7 +425,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "W_Rf",
+				TrialBlkName:        "W_Rf",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -445,7 +445,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "W_Rf_tst",
+				TrialBlkName:        "W_Rf_tst",
 				PercentOfTotal:      0.167,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -467,7 +467,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosOrNegAcq": {
 			{
-				TrialGpName:         "Z_Rf",
+				TrialBlkName:        "Z_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -487,7 +487,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Z_Rf",
+				TrialBlkName:        "Z_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -509,7 +509,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"Overexpectation_train": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -529,7 +529,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -549,7 +549,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf",
+				TrialBlkName:        "C_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -569,7 +569,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -589,7 +589,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -611,7 +611,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"OverexpectationCompound": {
 			{
-				TrialGpName:         "AX_Rf",
+				TrialBlkName:        "AX_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -631,7 +631,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -651,7 +651,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "CY_Rf",
+				TrialBlkName:        "CY_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -671,7 +671,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -691,7 +691,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -713,7 +713,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"Overexpectation_test": {
 			{
-				TrialGpName:         "A_NR_test",
+				TrialBlkName:        "A_NR_test",
 				PercentOfTotal:      0.250,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -733,7 +733,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR_test",
+				TrialBlkName:        "B_NR_test",
 				PercentOfTotal:      0.250,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -753,7 +753,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_NR_test",
+				TrialBlkName:        "C_NR_test",
 				PercentOfTotal:      0.250,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -773,7 +773,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_R_test",
+				TrialBlkName:        "X_R_test",
 				PercentOfTotal:      0.250,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -795,7 +795,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcqEarlyUS_test": {
 			{
-				TrialGpName:         "A_Rf_late",
+				TrialBlkName:        "A_Rf_late",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -815,7 +815,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf_early",
+				TrialBlkName:        "A_Rf_early",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -837,7 +837,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosOrienting": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -857,7 +857,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -879,7 +879,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcqMagnitude": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -899,7 +899,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -921,7 +921,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcqMagnitudeChange": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -941,7 +941,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -963,7 +963,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegAcqMagnitude": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -983,7 +983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -1005,7 +1005,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegAcqMagnitudeChange": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -1025,7 +1025,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -1047,7 +1047,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosExtinct": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1067,7 +1067,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1089,7 +1089,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosCondInhib": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.650,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1109,7 +1109,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.350,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1131,7 +1131,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosCondInhib_test": {
 			{
-				TrialGpName:         "A_NR_test",
+				TrialBlkName:        "A_NR_test",
 				PercentOfTotal:      0.330,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1151,7 +1151,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR_test",
+				TrialBlkName:        "AX_NR_test",
 				PercentOfTotal:      0.330,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1171,7 +1171,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR_test",
+				TrialBlkName:        "X_NR_test",
 				PercentOfTotal:      0.330,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1193,7 +1193,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosSecondOrderCond": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.950,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1213,7 +1213,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AC_NR",
+				TrialBlkName:        "AC_NR",
 				PercentOfTotal:      0.050,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1235,7 +1235,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegAcq": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -1255,7 +1255,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              0.250,
@@ -1277,7 +1277,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegExtinct": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -1297,7 +1297,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              0.500,
@@ -1319,7 +1319,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegCondInhib": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -1339,7 +1339,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "DU_NR",
+				TrialBlkName:        "DU_NR",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -1361,7 +1361,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegCondInhib_test": {
 			{
-				TrialGpName:         "D_NR_test",
+				TrialBlkName:        "D_NR_test",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -1381,7 +1381,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "DU_NR_test",
+				TrialBlkName:        "DU_NR_test",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -1401,7 +1401,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "U_NR_test",
+				TrialBlkName:        "U_NR_test",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -1423,7 +1423,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"CondExp": {
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1443,7 +1443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1463,7 +1463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1483,7 +1483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1503,7 +1503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1523,7 +1523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1543,7 +1543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1563,7 +1563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1583,7 +1583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1603,7 +1603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1623,7 +1623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1643,7 +1643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1663,7 +1663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1683,7 +1683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1703,7 +1703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1723,7 +1723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1743,7 +1743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1763,7 +1763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1783,7 +1783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1803,7 +1803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1823,7 +1823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1843,7 +1843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1863,7 +1863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1883,7 +1883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1903,7 +1903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1923,7 +1923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1943,7 +1943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -1963,7 +1963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -1983,7 +1983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2003,7 +2003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2023,7 +2023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2043,7 +2043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2063,7 +2063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2083,7 +2083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2103,7 +2103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2123,7 +2123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2143,7 +2143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2163,7 +2163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2183,7 +2183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2203,7 +2203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2223,7 +2223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2243,7 +2243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2263,7 +2263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2283,7 +2283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2303,7 +2303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2323,7 +2323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2343,7 +2343,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2363,7 +2363,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2383,7 +2383,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2403,7 +2403,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2423,7 +2423,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2443,7 +2443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2463,7 +2463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2483,7 +2483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2503,7 +2503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2523,7 +2523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2543,7 +2543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2563,7 +2563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2583,7 +2583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2603,7 +2603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2623,7 +2623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2643,7 +2643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2663,7 +2663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2683,7 +2683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2703,7 +2703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2723,7 +2723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2743,7 +2743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2763,7 +2763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2783,7 +2783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2803,7 +2803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2823,7 +2823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2843,7 +2843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2863,7 +2863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -2883,7 +2883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2903,7 +2903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2923,7 +2923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2943,7 +2943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2963,7 +2963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -2983,7 +2983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3003,7 +3003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3023,7 +3023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3043,7 +3043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3063,7 +3063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3083,7 +3083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3103,7 +3103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3123,7 +3123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3143,7 +3143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3163,7 +3163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3183,7 +3183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3203,7 +3203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3223,7 +3223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3243,7 +3243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3263,7 +3263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3283,7 +3283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3303,7 +3303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3323,7 +3323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3343,7 +3343,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3363,7 +3363,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3383,7 +3383,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3403,7 +3403,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3423,7 +3423,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3443,7 +3443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3463,7 +3463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3483,7 +3483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3503,7 +3503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3523,7 +3523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3543,7 +3543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3563,7 +3563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3583,7 +3583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3603,7 +3603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3623,7 +3623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3643,7 +3643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3663,7 +3663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3683,7 +3683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3703,7 +3703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3723,7 +3723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3743,7 +3743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3763,7 +3763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3783,7 +3783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3803,7 +3803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3823,7 +3823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3843,7 +3843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3863,7 +3863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3883,7 +3883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3903,7 +3903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3923,7 +3923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -3943,7 +3943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3963,7 +3963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -3983,7 +3983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4003,7 +4003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4023,7 +4023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4043,7 +4043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4063,7 +4063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4083,7 +4083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4103,7 +4103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4123,7 +4123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4143,7 +4143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4163,7 +4163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4183,7 +4183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4203,7 +4203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4223,7 +4223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4243,7 +4243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4263,7 +4263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4283,7 +4283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4303,7 +4303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4323,7 +4323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4343,7 +4343,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4363,7 +4363,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4383,7 +4383,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4403,7 +4403,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4423,7 +4423,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4443,7 +4443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4463,7 +4463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4483,7 +4483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4503,7 +4503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4523,7 +4523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4543,7 +4543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4563,7 +4563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4583,7 +4583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4603,7 +4603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4623,7 +4623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4643,7 +4643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4663,7 +4663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4683,7 +4683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4703,7 +4703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4723,7 +4723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4743,7 +4743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4763,7 +4763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4783,7 +4783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4803,7 +4803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4823,7 +4823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4843,7 +4843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4863,7 +4863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -4883,7 +4883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4903,7 +4903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4923,7 +4923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4943,7 +4943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4963,7 +4963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -4983,7 +4983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5003,7 +5003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5023,7 +5023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5043,7 +5043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5063,7 +5063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5083,7 +5083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5103,7 +5103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5123,7 +5123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5143,7 +5143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5163,7 +5163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5183,7 +5183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5203,7 +5203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5223,7 +5223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5243,7 +5243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5263,7 +5263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5283,7 +5283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5303,7 +5303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5323,7 +5323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5343,7 +5343,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5363,7 +5363,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5383,7 +5383,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5403,7 +5403,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5423,7 +5423,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5443,7 +5443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5463,7 +5463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5483,7 +5483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5503,7 +5503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5523,7 +5523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5543,7 +5543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5563,7 +5563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5583,7 +5583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5603,7 +5603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5623,7 +5623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5643,7 +5643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5663,7 +5663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5683,7 +5683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5703,7 +5703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5723,7 +5723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5743,7 +5743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5763,7 +5763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5783,7 +5783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5803,7 +5803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5823,7 +5823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5843,7 +5843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5863,7 +5863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5883,7 +5883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -5903,7 +5903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5923,7 +5923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5943,7 +5943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5963,7 +5963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -5983,7 +5983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6003,7 +6003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6023,7 +6023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6043,7 +6043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6063,7 +6063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_NR",
+				TrialBlkName:        "A_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6083,7 +6083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6103,7 +6103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6123,7 +6123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6143,7 +6143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6163,7 +6163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6183,7 +6183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6203,7 +6203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6223,7 +6223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6243,7 +6243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6263,7 +6263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6283,7 +6283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6303,7 +6303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6323,7 +6323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6343,7 +6343,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6363,7 +6363,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_NR",
+				TrialBlkName:        "B_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6383,7 +6383,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6403,7 +6403,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6423,7 +6423,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6443,7 +6443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6463,7 +6463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6483,7 +6483,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6503,7 +6503,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6523,7 +6523,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6543,7 +6543,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6563,7 +6563,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6583,7 +6583,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6603,7 +6603,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6623,7 +6623,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6643,7 +6643,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6663,7 +6663,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6683,7 +6683,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6703,7 +6703,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6723,7 +6723,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6743,7 +6743,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6763,7 +6763,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6783,7 +6783,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6803,7 +6803,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6823,7 +6823,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6843,7 +6843,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6863,7 +6863,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6883,7 +6883,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6903,7 +6903,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6923,7 +6923,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6943,7 +6943,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -6963,7 +6963,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -6983,7 +6983,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7003,7 +7003,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7023,7 +7023,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7043,7 +7043,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7063,7 +7063,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7083,7 +7083,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7103,7 +7103,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7123,7 +7123,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7143,7 +7143,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_NR",
+				TrialBlkName:        "Y_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7163,7 +7163,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7183,7 +7183,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7203,7 +7203,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7223,7 +7223,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7243,7 +7243,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7263,7 +7263,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf",
+				TrialBlkName:        "Y_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7283,7 +7283,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7303,7 +7303,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf",
+				TrialBlkName:        "X_Rf",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7323,7 +7323,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR",
+				TrialBlkName:        "X_NR",
 				PercentOfTotal:      0.003,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7345,7 +7345,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosAcq_contextA": {
 			{
-				TrialGpName:         "A_Rf_cntxtA",
+				TrialBlkName:        "A_Rf_cntxtA",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7367,7 +7367,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosExtinct_contextB": {
 			{
-				TrialGpName:         "A_Rf_cntxtB",
+				TrialBlkName:        "A_Rf_cntxtB",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7389,7 +7389,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosRenewal_contextA": {
 			{
-				TrialGpName:         "A_Rf_cntxtA",
+				TrialBlkName:        "A_Rf_cntxtA",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7409,7 +7409,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf_cntxtB",
+				TrialBlkName:        "A_Rf_cntxtB",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7431,7 +7431,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosBlocking_A_training": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7453,7 +7453,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosBlocking": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7473,7 +7473,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AB_Rf",
+				TrialBlkName:        "AB_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7495,7 +7495,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosBlocking_test": {
 			{
-				TrialGpName:         "B_Rf_test",
+				TrialBlkName:        "B_Rf_test",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7517,7 +7517,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosBlocking2_test": {
 			{
-				TrialGpName:         "A_Rf_test",
+				TrialBlkName:        "A_Rf_test",
 				PercentOfTotal:      0.5,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7537,7 +7537,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf_test",
+				TrialBlkName:        "B_Rf_test",
 				PercentOfTotal:      0.5,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7559,7 +7559,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegBlocking_E_training": {
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7581,7 +7581,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegBlocking": {
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7601,7 +7601,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "ED_Rf",
+				TrialBlkName:        "ED_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7623,7 +7623,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegBlocking_test": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7645,7 +7645,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"AutoTstEnv_test": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7664,7 +7664,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Context:             "A",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              0.500,
@@ -7685,7 +7685,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosSumAcq": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7705,7 +7705,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf",
+				TrialBlkName:        "C_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7725,7 +7725,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7747,7 +7747,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegSumAcq": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7767,7 +7767,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_Rf",
+				TrialBlkName:        "E_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7787,7 +7787,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "F_Rf",
+				TrialBlkName:        "F_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7809,7 +7809,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosCondInhib_BY": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -7829,7 +7829,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR",
+				TrialBlkName:        "AX_NR",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7849,7 +7849,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_NR",
+				TrialBlkName:        "BY_NR",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -7871,7 +7871,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegCondInhib_FV": {
 			{
-				TrialGpName:         "D_Rf",
+				TrialBlkName:        "D_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              1.000,
@@ -7891,7 +7891,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "DU_NR",
+				TrialBlkName:        "DU_NR",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7911,7 +7911,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "FV_NR",
+				TrialBlkName:        "FV_NR",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7933,7 +7933,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"NegSumCondInhib_test": {
 			{
-				TrialGpName:         "D_NR_test",
+				TrialBlkName:        "D_NR_test",
 				PercentOfTotal:      0.171,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7953,7 +7953,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "E_NR_test",
+				TrialBlkName:        "E_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7973,7 +7973,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "U_NR_test",
+				TrialBlkName:        "U_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -7993,7 +7993,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "DU_NR_test",
+				TrialBlkName:        "DU_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -8013,7 +8013,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "EU_NR_test",
+				TrialBlkName:        "EU_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -8033,7 +8033,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "EV_NR_test",
+				TrialBlkName:        "EV_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.NEG,
 				USProb:              0.000,
@@ -8055,7 +8055,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosSumCondInhib_test": {
 			{
-				TrialGpName:         "A_NR_test",
+				TrialBlkName:        "A_NR_test",
 				PercentOfTotal:      0.171,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8075,7 +8075,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_NR_test",
+				TrialBlkName:        "C_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8095,7 +8095,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_NR_test",
+				TrialBlkName:        "X_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8115,7 +8115,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AX_NR_test",
+				TrialBlkName:        "AX_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8135,7 +8135,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "CX_NR_test",
+				TrialBlkName:        "CX_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8155,7 +8155,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "CY_NR_test",
+				TrialBlkName:        "CY_NR_test",
 				PercentOfTotal:      0.166,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8177,7 +8177,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"Unblocking_train": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8197,7 +8197,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf",
+				TrialBlkName:        "C_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8217,7 +8217,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8239,7 +8239,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"UnblockingValue": {
 			{
-				TrialGpName:         "AX_Rf",
+				TrialBlkName:        "AX_Rf",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8259,7 +8259,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "CZ_Rf",
+				TrialBlkName:        "CZ_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8279,7 +8279,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8299,7 +8299,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf",
+				TrialBlkName:        "C_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8319,7 +8319,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8341,7 +8341,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"UnblockingValue_test": {
 			{
-				TrialGpName:         "A_Rf_test",
+				TrialBlkName:        "A_Rf_test",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8361,7 +8361,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf_test",
+				TrialBlkName:        "C_Rf_test",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8381,7 +8381,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf_test",
+				TrialBlkName:        "X_Rf_test",
 				PercentOfTotal:      0.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8401,7 +8401,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Z_Rf_test",
+				TrialBlkName:        "Z_Rf_test",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8423,7 +8423,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"Unblocking_trainUS": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8443,7 +8443,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "C_Rf",
+				TrialBlkName:        "C_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8463,7 +8463,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.333,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8485,7 +8485,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"UnblockingIdentity": {
 			{
-				TrialGpName:         "AX_Rf",
+				TrialBlkName:        "AX_Rf",
 				PercentOfTotal:      0.300,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8505,7 +8505,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "BY_Rf",
+				TrialBlkName:        "BY_Rf",
 				PercentOfTotal:      0.300,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8525,7 +8525,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8545,7 +8545,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      0.200,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8567,7 +8567,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"UnblockingIdentity_test": {
 			{
-				TrialGpName:         "A_Rf_test",
+				TrialBlkName:        "A_Rf_test",
 				PercentOfTotal:      0.251,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8587,7 +8587,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "B_Rf_test",
+				TrialBlkName:        "B_Rf_test",
 				PercentOfTotal:      0.251,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8607,7 +8607,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "X_Rf_test",
+				TrialBlkName:        "X_Rf_test",
 				PercentOfTotal:      0.251,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8627,7 +8627,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "Y_Rf_test",
+				TrialBlkName:        "Y_Rf_test",
 				PercentOfTotal:      0.248,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8649,7 +8649,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosUpUnblocking_A_training": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8671,7 +8671,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosUpUnblocking": {
 			{
-				TrialGpName:         "A_Rf",
+				TrialBlkName:        "A_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8691,7 +8691,7 @@ func AllTrialBlocks() TrialBlockMap {
 				Location:            "",
 			},
 			{
-				TrialGpName:         "AB_Rf",
+				TrialBlkName:        "AB_Rf",
 				PercentOfTotal:      0.500,
 				ValenceContext:      p.POS,
 				USProb:              1.000,
@@ -8713,7 +8713,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"PosUpUnblocking_test": {
 			{
-				TrialGpName:         "B_Rf",
+				TrialBlkName:        "B_Rf",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              0.000,
@@ -8735,7 +8735,7 @@ func AllTrialBlocks() TrialBlockMap {
 		},
 		"BlankTemplate": {
 			{
-				TrialGpName:         "",
+				TrialBlkName:        "",
 				PercentOfTotal:      1.000,
 				ValenceContext:      p.POS,
 				USProb:              1.000,

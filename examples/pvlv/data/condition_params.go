@@ -4,15 +4,15 @@
 
 package data
 
-// RunBlockParams contains settings for one portion of a Run. A RunBlockParams refers to a single RunBlockParams, along with
+// ConditionParams contains settings for one portion of a Run. A ConditionParams refers to a single ConditionParams, along with
 // other information such as the number of times to run each instantiated Block. A single Block can be referenced by many RunBlocks.
-type RunBlockParams struct {
+type ConditionParams struct {
 	Nm              string `desc:"identifier for this type of configuration"`
 	Desc            string `desc:"description of this configuration"`
-	TrialGroupNm    string `desc:"trial group name"`
+	TrialBlkNm      string `desc:"trial group name"`
 	FixedProb       bool   `desc:"fixed probability for each trial group"`
 	NIters          int    `desc:"number of iterations to run"`
-	BlocksPerIter   int    `desc:"number of trial groups (1 group = one behavioral trial = sequence of CS, US) in each iteration -- needs to be higher if there are stochastic variables (probabilities)."`
+	BlocksPerIter   int    `desc:"number of blocks (1 block = one behavioral trial = sequence of CS, US) in each iteration -- needs to be higher if there are stochastic variables (probabilities)."`
 	PermuteTrialGps bool   `desc:"permute list of fully-instantiated trials after generation"`
 	SaveFinalWts    bool   `desc:"save final weights after training"`
 	SaveWtsInterval int    `desc:"how frequently to save weights during training (in blocks)"`
@@ -25,14 +25,14 @@ type RunBlockParams struct {
 	LrsNSteps       int    `desc:"number of steps in the learning rate schedule"`
 	LrsBumpStep     int    `desc:"if positive (3 is typical), then bump up the learning rate at this step in the schedule -- can help improve final performance level"`
 }
-type RunBlockParamsMap map[string]RunBlockParams
+type ConditionParamsMap map[string]ConditionParams
 
-func AllRunBlockParams() RunBlockParamsMap {
-	sets := map[string]RunBlockParams{
+func AllConditionParams() ConditionParamsMap {
+	sets := map[string]ConditionParams{
 		"RunMaster": {
 			Nm:              "RunMaster",
 			Desc:            "default values for basic training parameters -- this is a 'master' param set -- make changes here and all others in group will auto-update",
-			TrialGroupNm:    "PosAcq",
+			TrialBlkNm:      "PosAcq",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -51,7 +51,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NullStep": {
 			Nm:              "NullStep",
 			Desc:            "use for unused steps in sequences",
-			TrialGroupNm:    "BlankTemplate",
+			TrialBlkNm:      "BlankTemplate",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -70,7 +70,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"AutomatedTesting": {
 			Nm:              "AutomatedTesting",
 			Desc:            "This is the startup paramset for automated testing. The individual elements will get reset based on the sub Paramsets",
-			TrialGroupNm:    "PosAcq",
+			TrialBlkNm:      "PosAcq",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -89,7 +89,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"USDebug": {
 			Nm:              "USDebug",
 			Desc:            "For debugging, 100% reward, CS A",
-			TrialGroupNm:    "USDebug",
+			TrialBlkNm:      "USDebug",
 			FixedProb:       true,
 			NIters:          51,
 			BlocksPerIter:   8,
@@ -108,7 +108,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_B50": {
 			Nm:              "PosAcq_B50",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50%",
-			TrialGroupNm:    "PosAcq_B50",
+			TrialBlkNm:      "PosAcq_B50",
 			FixedProb:       true,
 			NIters:          51,
 			BlocksPerIter:   8,
@@ -127,7 +127,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_A50": {
 			Nm:              "PosAcq_A50",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS at 50%",
-			TrialGroupNm:    "PosAcq_A50",
+			TrialBlkNm:      "PosAcq_A50",
 			FixedProb:       true,
 			NIters:          51,
 			BlocksPerIter:   10,
@@ -146,7 +146,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"US0": {
 			Nm:              "US0",
 			Desc:            "No US at all",
-			TrialGroupNm:    "US0",
+			TrialBlkNm:      "US0",
 			FixedProb:       true,
 			NIters:          5,
 			BlocksPerIter:   100,
@@ -165,7 +165,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcqPreSecondOrder": {
 			Nm:              "PosAcqPreSecondOrder",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50%",
-			TrialGroupNm:    "PosAcqPreSecondOrder",
+			TrialBlkNm:      "PosAcqPreSecondOrder",
 			FixedProb:       true,
 			NIters:          51,
 			BlocksPerIter:   8,
@@ -184,7 +184,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_B50Cont": {
 			Nm:              "PosAcq_B50Cont",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 50% reinf, continue using prior weights",
-			TrialGroupNm:    "PosReacq",
+			TrialBlkNm:      "PosReacq",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -203,7 +203,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_B100": {
 			Nm:              "PosAcq_B100",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, B at 100%",
-			TrialGroupNm:    "PosAcq_B100",
+			TrialBlkNm:      "PosAcq_B100",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -222,7 +222,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_B100Cont": {
 			Nm:              "PosAcq_B100Cont",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS -- continue w/ wts",
-			TrialGroupNm:    "PosAcq_B100_cont",
+			TrialBlkNm:      "PosAcq_B100_cont",
 			FixedProb:       true,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -241,7 +241,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcqEarlyUS_test": {
 			Nm:              "PosAcqEarlyUS_test",
 			Desc:            "Testing session: after pos_acq trng, deliver US early or late",
-			TrialGroupNm:    "PosAcqEarlyUS_test",
+			TrialBlkNm:      "PosAcqEarlyUS_test",
 			FixedProb:       true,
 			NIters:          5,
 			BlocksPerIter:   2,
@@ -260,7 +260,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_B25": {
 			Nm:              "PosAcq_B25",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS",
-			TrialGroupNm:    "PosAcq_B25",
+			TrialBlkNm:      "PosAcq_B25",
 			FixedProb:       true,
 			NIters:          200,
 			BlocksPerIter:   8,
@@ -279,7 +279,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosExtinct": {
 			Nm:              "PosExtinct",
 			Desc:            "Pavlovian extinction: A_NRf_POS",
-			TrialGroupNm:    "PosExtinct",
+			TrialBlkNm:      "PosExtinct",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -298,7 +298,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosCondInhib": {
 			Nm:              "PosCondInhib",
 			Desc:            "conditioned inhibition training: AX_NRf_POS, A_Rf_POS interleaved",
-			TrialGroupNm:    "PosCondInhib",
+			TrialBlkNm:      "PosCondInhib",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   8,
@@ -317,7 +317,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosSecondOrderCond": {
 			Nm:              "PosSecondOrderCond",
 			Desc:            "second order conditioning training: AB_NRf_POS, A_Rf_POS interleaved; A = 1st order, F = 2nd order CS",
-			TrialGroupNm:    "PosSecondOrderCond",
+			TrialBlkNm:      "PosSecondOrderCond",
 			FixedProb:       false,
 			NIters:          10,
 			BlocksPerIter:   50,
@@ -336,7 +336,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosCondInhib_test": {
 			Nm:              "PosCondInhib_test",
 			Desc:            "Testing session: A_NRf_POS, AX_NRf_POS, and X_NRf_POS cases",
-			TrialGroupNm:    "PosCondInhib_test",
+			TrialBlkNm:      "PosCondInhib_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   6,
@@ -355,7 +355,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegAcq": {
 			Nm:              "NegAcq",
 			Desc:            "Pavlovian conditioning w/ negatively-valenced US: D_Rf_NEG",
-			TrialGroupNm:    "NegAcq",
+			TrialBlkNm:      "NegAcq",
 			FixedProb:       false,
 			NIters:          76,
 			BlocksPerIter:   10,
@@ -374,7 +374,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegAcqFixedProb": {
 			Nm:              "NegAcqFixedProb",
 			Desc:            "Pavlovian conditioning w/ negatively-valenced US: A_Rf_NEG",
-			TrialGroupNm:    "NegAcq",
+			TrialBlkNm:      "NegAcq",
 			FixedProb:       true,
 			NIters:          150,
 			BlocksPerIter:   8,
@@ -393,7 +393,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcqOmit": {
 			Nm:              "PosAcqOmit",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			TrialGroupNm:    "PosAcqOmit",
+			TrialBlkNm:      "PosAcqOmit",
 			FixedProb:       false,
 			NIters:          10,
 			BlocksPerIter:   0,
@@ -412,7 +412,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegCondInh": {
 			Nm:              "NegCondInh",
 			Desc:            "condition inhibition w/ negatively-valenced US: CZ_NRf_NEG, C_Rf_NEG interleaved; i.e.,  Z = security signal",
-			TrialGroupNm:    "NegCondInhib",
+			TrialBlkNm:      "NegCondInhib",
 			FixedProb:       false,
 			NIters:          75,
 			BlocksPerIter:   10,
@@ -431,7 +431,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegCondInh_test": {
 			Nm:              "NegCondInh_test",
 			Desc:            "condition inhibition w/ negatively-valenced US: CZ_NRf_NEG, C_Rf_NEG interleaved; i.e.,  Z = security signal",
-			TrialGroupNm:    "NegCondInhib_test",
+			TrialBlkNm:      "NegCondInhib_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   6,
@@ -450,7 +450,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegExtinct": {
 			Nm:              "NegExtinct",
 			Desc:            "Pavlovian conditioning w/ negatively-valenced US: A_Rf_NEG",
-			TrialGroupNm:    "NegExtinct",
+			TrialBlkNm:      "NegExtinct",
 			FixedProb:       false,
 			NIters:          75,
 			BlocksPerIter:   8,
@@ -469,7 +469,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcq_contextA": {
 			Nm:              "PosAcq_contextA",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			TrialGroupNm:    "PosAcq_contextA",
+			TrialBlkNm:      "PosAcq_contextA",
 			FixedProb:       false,
 			NIters:          26,
 			BlocksPerIter:   10,
@@ -488,7 +488,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosExtinct_contextB": {
 			Nm:              "PosExtinct_contextB",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			TrialGroupNm:    "PosExtinct_contextB",
+			TrialBlkNm:      "PosExtinct_contextB",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   10,
@@ -507,7 +507,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosRenewal_contextA": {
 			Nm:              "PosRenewal_contextA",
 			Desc:            "Pavlovian conditioning w/ positively-valenced US: A_Rf_POS, A_Rf_POS_omit trials, interleaved",
-			TrialGroupNm:    "PosRenewal_contextA",
+			TrialBlkNm:      "PosRenewal_contextA",
 			FixedProb:       false,
 			NIters:          1,
 			BlocksPerIter:   2,
@@ -526,7 +526,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosBlocking_A_training": {
 			Nm:              "PosBlocking_A_training",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "PosBlocking_A_training",
+			TrialBlkNm:      "PosBlocking_A_training",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   1,
@@ -545,7 +545,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosBlocking": {
 			Nm:              "PosBlocking",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "PosBlocking",
+			TrialBlkNm:      "PosBlocking",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   2,
@@ -564,7 +564,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosBlocking_test": {
 			Nm:              "PosBlocking_test",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "PosBlocking_test",
+			TrialBlkNm:      "PosBlocking_test",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   1,
@@ -583,7 +583,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosBlocking2_test": {
 			Nm:              "PosBlocking2_test",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "PosBlocking2_test",
+			TrialBlkNm:      "PosBlocking2_test",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   2,
@@ -602,7 +602,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegBlocking_E_training": {
 			Nm:              "NegBlocking_E_training",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "NegBlocking_E_training",
+			TrialBlkNm:      "NegBlocking_E_training",
 			FixedProb:       false,
 			NIters:          300,
 			BlocksPerIter:   1,
@@ -621,7 +621,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegBlocking": {
 			Nm:              "NegBlocking",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "NegBlocking",
+			TrialBlkNm:      "NegBlocking",
 			FixedProb:       false,
 			NIters:          200,
 			BlocksPerIter:   2,
@@ -640,7 +640,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegBlocking_test": {
 			Nm:              "NegBlocking_test",
 			Desc:            "Blocking experiment",
-			TrialGroupNm:    "NegBlocking_test",
+			TrialBlkNm:      "NegBlocking_test",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   1,
@@ -659,7 +659,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcqMag": {
 			Nm:              "PosAcqMag",
 			Desc:            "Magnitude experiment",
-			TrialGroupNm:    "PosAcqMagnitude",
+			TrialBlkNm:      "PosAcqMagnitude",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   8,
@@ -678,7 +678,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosSumAcq": {
 			Nm:              "PosSumAcq",
 			Desc:            "Conditioned Inhibition - A+, C+",
-			TrialGroupNm:    "PosSumAcq",
+			TrialBlkNm:      "PosSumAcq",
 			FixedProb:       false,
 			NIters:          450,
 			BlocksPerIter:   3,
@@ -697,7 +697,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosSumCondInhib": {
 			Nm:              "PosSumCondInhib",
 			Desc:            "Conditioned Inhibition - AX-, A+",
-			TrialGroupNm:    "PosCondInhib_BY",
+			TrialBlkNm:      "PosCondInhib_BY",
 			FixedProb:       false,
 			NIters:          300,
 			BlocksPerIter:   3,
@@ -716,7 +716,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosSum_test": {
 			Nm:              "PosSum_test",
 			Desc:            "Conditioned Inhibition Summation Test",
-			TrialGroupNm:    "PosSumCondInhib_test",
+			TrialBlkNm:      "PosSumCondInhib_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   6,
@@ -735,7 +735,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegSumAcq": {
 			Nm:              "NegSumAcq",
 			Desc:            "Conditioned Inhibition - D-, E-",
-			TrialGroupNm:    "NegSumAcq",
+			TrialBlkNm:      "NegSumAcq",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   3,
@@ -754,7 +754,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegSumCondInhib": {
 			Nm:              "NegSumCondInhib",
 			Desc:            "Conditioned Inhibition - DU, D-",
-			TrialGroupNm:    "NegCondInhib_FV",
+			TrialBlkNm:      "NegCondInhib_FV",
 			FixedProb:       false,
 			NIters:          100,
 			BlocksPerIter:   3,
@@ -773,7 +773,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegSum_test": {
 			Nm:              "NegSum_test",
 			Desc:            "Conditioned Inhibition Summation Test",
-			TrialGroupNm:    "NegSumCondInhib_test",
+			TrialBlkNm:      "NegSumCondInhib_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   6,
@@ -792,7 +792,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"Unblocking_train": {
 			Nm:              "Unblocking_train",
 			Desc:            "A+++,B+++,C+",
-			TrialGroupNm:    "Unblocking_train",
+			TrialBlkNm:      "Unblocking_train",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   2,
@@ -811,7 +811,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"UnblockingValue": {
 			Nm:              "UnblockingValue",
 			Desc:            "AX+++,CZ+++",
-			TrialGroupNm:    "UnblockingValue",
+			TrialBlkNm:      "UnblockingValue",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   1,
@@ -830,7 +830,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"UnblockingValue_test": {
 			Nm:              "UnblockingValue_test",
 			Desc:            "A,X,C,Z",
-			TrialGroupNm:    "UnblockingValue_test",
+			TrialBlkNm:      "UnblockingValue_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   1,
@@ -849,7 +849,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"Unblocking_trainUS": {
 			Nm:              "Unblocking_trainUS",
 			Desc:            "A+++ (water) ,B+++ (food)",
-			TrialGroupNm:    "Unblocking_trainUS",
+			TrialBlkNm:      "Unblocking_trainUS",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   15,
@@ -868,7 +868,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"UnblockingIdentity": {
 			Nm:              "UnblockingIdentity",
 			Desc:            "AX+++(water),BY+++(water)",
-			TrialGroupNm:    "UnblockingIdentity",
+			TrialBlkNm:      "UnblockingIdentity",
 			FixedProb:       false,
 			NIters:          25,
 			BlocksPerIter:   20,
@@ -887,7 +887,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"UnblockingIdentity_test": {
 			Nm:              "UnblockingIdentity_test",
 			Desc:            "A,X,B,Y",
-			TrialGroupNm:    "UnblockingIdentity_test",
+			TrialBlkNm:      "UnblockingIdentity_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   4,
@@ -906,7 +906,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosAcqMagChange": {
 			Nm:              "PosAcqMagChange",
 			Desc:            "Magnitude experiment",
-			TrialGroupNm:    "PosAcqMagnitudeChange",
+			TrialBlkNm:      "PosAcqMagnitudeChange",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   4,
@@ -925,7 +925,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegAcqMag": {
 			Nm:              "NegAcqMag",
 			Desc:            "Magnitude experiment",
-			TrialGroupNm:    "NegAcqMagnitude",
+			TrialBlkNm:      "NegAcqMagnitude",
 			FixedProb:       false,
 			NIters:          51,
 			BlocksPerIter:   8,
@@ -944,7 +944,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"NegAcqMagChange": {
 			Nm:              "NegAcqMagChange",
 			Desc:            "Magnitude experiment",
-			TrialGroupNm:    "NegAcqMagnitudeChange",
+			TrialBlkNm:      "NegAcqMagnitudeChange",
 			FixedProb:       false,
 			NIters:          50,
 			BlocksPerIter:   4,
@@ -963,7 +963,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"Overexpect_train": {
 			Nm:              "Overexpect_train",
 			Desc:            "Overexpectation training (A+, B+, C+, X+, Y-)",
-			TrialGroupNm:    "Overexpectation_train",
+			TrialBlkNm:      "Overexpectation_train",
 			FixedProb:       false,
 			NIters:          150,
 			BlocksPerIter:   5,
@@ -982,7 +982,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"OverexpectCompound": {
 			Nm:              "OverexpectCompound",
 			Desc:            "Overexpectation compound training (AX+, BY-, CX+, X+, Y-)",
-			TrialGroupNm:    "OverexpectationCompound",
+			TrialBlkNm:      "OverexpectationCompound",
 			FixedProb:       false,
 			NIters:          150,
 			BlocksPerIter:   5,
@@ -1001,7 +1001,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"Overexpect_test": {
 			Nm:              "Overexpect_test",
 			Desc:            "Overexpectation test ( A-, B-, C-, X-)",
-			TrialGroupNm:    "Overexpectation_test",
+			TrialBlkNm:      "Overexpectation_test",
 			FixedProb:       false,
 			NIters:          5,
 			BlocksPerIter:   5,
@@ -1020,7 +1020,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosNeg": {
 			Nm:              "PosNeg",
 			Desc:            "Positive negative test - W equally reinforced with reward + punishment",
-			TrialGroupNm:    "PosNeg",
+			TrialBlkNm:      "PosNeg",
 			FixedProb:       false,
 			NIters:          150,
 			BlocksPerIter:   6,
@@ -1039,7 +1039,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PosOrNegAcq": {
 			Nm:              "PosOrNegAcq",
 			Desc:            "Positive negative acquisition - with reward or punishment on interleaved trials according to user-set probabilities",
-			TrialGroupNm:    "PosOrNegAcq",
+			TrialBlkNm:      "PosOrNegAcq",
 			FixedProb:       false,
 			NIters:          150,
 			BlocksPerIter:   6,
@@ -1058,7 +1058,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"CondExp": {
 			Nm:              "CondExp",
 			Desc:            "",
-			TrialGroupNm:    "CondExp",
+			TrialBlkNm:      "CondExp",
 			FixedProb:       false,
 			NIters:          0,
 			BlocksPerIter:   296,
@@ -1077,7 +1077,7 @@ func AllRunBlockParams() RunBlockParamsMap {
 		"PainExp": {
 			Nm:              "PainExp",
 			Desc:            "",
-			TrialGroupNm:    "CondExp",
+			TrialBlkNm:      "CondExp",
 			FixedProb:       false,
 			NIters:          0,
 			BlocksPerIter:   48,
