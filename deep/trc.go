@@ -32,6 +32,13 @@ func (dr *Drivers) Add(laynms ...string) {
 	}
 }
 
+// AddOne adds one new driver -- python does not work with varargs
+func (dr *Drivers) AddOne(laynm string) {
+	d := &Driver{}
+	d.Driver = laynm
+	*dr = append(*dr, d)
+}
+
 // TRCParams provides parameters for how the plus-phase (outcome) state of thalamic relay cell
 // (e.g., Pulvinar) neurons is computed from the corresponding driver neuron Burst activation.
 type TRCParams struct {
