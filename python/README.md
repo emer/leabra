@@ -14,7 +14,7 @@ Because the Go and Python versions of this ra25 demo are essentially identical i
 
 First, you have to install the Go version of emergent: [Wiki Install](https://github.com/emer/emergent/wiki/Install), and follow the [GoGi Python README](https://github.com/goki/gi/blob/master/python/README.md) installation instructions, and make sure everything works with the standard GoGi `widgets` example.
 
-Python version 3 (3.6 has been well tested) is recommended.
+Python version 3 (3.6, 3.8 have been well tested) is recommended.
 
 ```sh
 $ cd ~/go/src/github.com/emer/leabra/python    # or $GOPATH if go not in ~/go
