@@ -18,7 +18,6 @@ def etensor_to_numpy(et):
     """
     returns a numpy ndarray constructed from the given etensor.Tensor.
     data is copied into the numpy ndarray -- it is not a view.
-    unfortunately it is not especially fast, using element-wise copy.
     """
     nar = 0
     if et.DataType() == etensor.UINT8:
@@ -62,48 +61,48 @@ def numpy_to_etensor(nar):
     """
     returns an etensor.Tensor constructed from the given etensor.Tensor
     data is copied into the Tensor -- it is not a view.
-    unfortunately it is not especially fast, using element-wise copy.
     """
     et = 0
+    narf = np.reshape(nar, -1) # flat view
     if nar.dtype == np.uint8:
         et = etensor.NewUint8(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.int8:
         et = etensor.NewInt8(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.uint16:
         et = etensor.NewUint16(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.int16:
         et = etensor.NewInt16(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.uint32:
         et = etensor.NewUint32(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.int32:
         et = etensor.NewInt32(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.uint64:
         et = etensor.NewUint64(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.int64:
         et = etensor.NewInt64(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.float32:
         et = etensor.NewFloat32(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.float64:
         et = etensor.NewFloat64(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype.type is np.string_ or nar.dtype.type is np.str_:
         et = etensor.NewString(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.int_ or nar.dtype == np.intc:
         et = etensor.NewInt(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        et.Values.copy(np.ravel(nar))
+        et.Values.copy(narf)
     elif nar.dtype == np.bool_:
         et = etensor.NewBits(go.Slice_int(list(nar.shape)), go.nil, go.nil)
-        rnar = np.ravel(nar)
+        rnar = narf
         sz = len(rnar)
         for i in range(sz):
             et.Set1D(i, rnar[i])
@@ -111,6 +110,92 @@ def numpy_to_etensor(nar):
         raise TypeError("numpy ndarray with type %s cannot be converted" % (nar.dtype))
         return 0
     return et
+
+#########################
+#  Copying
+    
+def copy_etensor_to_numpy(nar, et):
+    """
+    copies data from etensor.Tensor (et, source) to existing numpy ndarray (nar, dest).
+    """
+    narf = np.reshape(nar, -1)
+    etv = et
+    if et.DataType() == etensor.UINT8:
+        etv = etensor.Uint8(et).Values
+    elif et.DataType() == etensor.INT8:
+        etv = etensor.Int8(et).Values
+    elif et.DataType() == etensor.UINT16:
+        etv = etensor.Uint16(et).Values
+    elif et.DataType() == etensor.INT16:
+        etv = etensor.Int16(et).Values
+    elif et.DataType() == etensor.UINT32:
+        etv = etensor.Uint32(et).Values
+    elif et.DataType() == etensor.INT32:
+        etv = etensor.Int32(et).Values
+    elif et.DataType() == etensor.UINT64:
+        etv = etensor.Uint64(et).Values
+    elif et.DataType() == etensor.INT64:
+        etv = etensor.Int64(et).Values
+    elif et.DataType() == etensor.FLOAT32:
+        etv = etensor.Float32(et).Values
+    elif et.DataType() == etensor.FLOAT64:
+        etv = etensor.Float64(et).Values
+    elif et.DataType() == etensor.STRING:
+        etv = etensor.String(et).Values
+    elif et.DataType() == etensor.INT:
+        etv = etensor.Int(et).Values
+    elif et.DataType() == etensor.BOOL:
+        etb = etensor.Bits(et)
+        sz = min(etb.Len(), len(narf))
+        for i in range(sz):
+            narf[i] = etb.Value1D(i)
+        return
+    else:
+        raise TypeError("tensor with type %s cannot be copied" % (et.DataType().String()))
+        return 0
+    np.copyto(narf, etv, casting='unsafe')
+
+def copy_numpy_to_etensor(et, nar):
+    """
+    copies data from numpy ndarray (nar, source) to existing etensor.Tensor (et, dest) 
+    """
+    narf = np.reshape(nar, -1)
+    etv = et
+    if et.DataType() == etensor.UINT8:
+        etv = etensor.Uint8(et).Values
+    elif et.DataType() == etensor.INT8:
+        etv = etensor.Int8(et).Values
+    elif et.DataType() == etensor.UINT16:
+        etv = etensor.Uint16(et).Values
+    elif et.DataType() == etensor.INT16:
+        etv = etensor.Int16(et).Values
+    elif et.DataType() == etensor.UINT32:
+        etv = etensor.Uint32(et).Values
+    elif et.DataType() == etensor.INT32:
+        etv = etensor.Int32(et).Values
+    elif et.DataType() == etensor.UINT64:
+        etv = etensor.Uint64(et).Values
+    elif et.DataType() == etensor.INT64:
+        etv = etensor.Int64(et).Values
+    elif et.DataType() == etensor.FLOAT32:
+        etv = etensor.Float32(et).Values
+    elif et.DataType() == etensor.FLOAT64:
+        etv = etensor.Float64(et).Values
+    elif et.DataType() == etensor.STRING:
+        etv = etensor.String(et).Values
+    elif et.DataType() == etensor.INT:
+        etv = etensor.Int(et).Values
+    elif et.DataType() == etensor.BOOL:
+        etb = etensor.Bits(et)
+        sz = min(etb.Len(), len(narf))
+        for i in range(sz):
+            narf[i] = etb.Value1D(i)
+        return
+    else:
+        raise TypeError("tensor with type %s cannot be copied" % (et.DataType().String()))
+        return 0
+    etv.copy(narf)  # go slice copy, not python copy = clone
+
 
 ##########################################
 # Tables
@@ -173,8 +258,8 @@ def etable_to_py(et):
         cn = et.ColNames[ci]
         nar = etensor_to_numpy(dc)
         pt.AddCol(nar, cn)
-        for k in et.MetaData:
-            pt.MetaData[k] = et.MetaData[k]
+        # for k in et.MetaData:
+        #     pt.MetaData[k] = et.MetaData[k]
     return pt
         
 def etable_to_torch(et):
