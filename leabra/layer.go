@@ -236,7 +236,7 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 	if pj.IsOff() {
 		return fmt.Errorf("projection is off")
 	}
-	for ri := range ly.Neurons {
+	for ri := 0; ri < nn; ri++ {
 		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
@@ -282,7 +282,7 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 	if pj.IsOff() {
 		return fmt.Errorf("projection is off")
 	}
-	for si := range ly.Neurons {
+	for si := 0; si < nn; si++ {
 		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
 	}
 	return nil

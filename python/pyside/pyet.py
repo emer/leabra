@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# code for converting etensor and etable to / from various python data formats
-# including numpy, pandas, and pytorch `TensorDataset`,
+# code for converting etensor.Tensor and etable.Table to / from
+# various python data formats including numpy, pandas, and pytorch `TensorDataset`,
 # which has the same structure as an `etable`, and is used in the
 # `pytorch` neural network framework.
 
@@ -200,12 +200,12 @@ def copy_numpy_to_etensor(et, nar):
 ##########################################
 # Tables
     
-class PyEtable(object):
+class eTable(object):
     """
-    PyEtable is a Python version of the Go etable.Table, with slices of columns 
+    pyet.eTable is a Python version of the Go etable.Table, with slices of columns 
     as numpy ndarrays, and corresponding column names, along with a coordinated
     dictionary of names to col indexes.  This is returned by basic
-    etable_to_py() function to convert all data from an etable,
+    etable_to_py() function to convert all data from an etable.Table,
     and can then be used to convert into other python datatable / frame 
     structures.
     """
@@ -217,7 +217,7 @@ class PyEtable(object):
         self.MetaData = {}
 
     def __str__(dt):
-        return "Columns: %s\nRows: %d Cols:\n%s\n" % (dt.ColNames, dt.Rows, dt.Cols)
+        return "Columns: %s\nRows: %d Cols:\n%s\n" % (dt.ColNameMap, dt.Rows, dt.Cols)
         
     def UpdateColNameMap(dt):
         """
@@ -242,15 +242,36 @@ class PyEtable(object):
         if name in dt.ColNameMap:
             return dt.Cols[dt.ColNameMap[name]]
         raise LookupError("column named: %s not found" % (name))
+        
+    def MergeCols(dt, st_nm, n):
+        """
+        MergeCols merges n sequential columns into a multidimensional array, starting at given column name
+        Resulting columns are all stored at st_nm
+        """
+        sti = dt.ColNameMap[st_nm]
+        cls = dt.Cols[sti:sti+n]
+        nc = np.column_stack(cls)
+        dt.Cols[sti] = nc
+        del dt.Cols[sti+1:sti+n]
+        del dt.ColNames[sti+1:sti+n]
+        dt.UpdateColNameMap()
+        
+    def ReshapeCol(dt, colnm, shp):
+        """
+        ReshapeCol reshapes column to given shape
+        """
+        ci = dt.ColNameMap[colnm]
+        dc = dt.Cols[ci]
+        dt.Cols[ci] = dc.reshape(shp)
 
 def etable_to_py(et):
     """
-    returns a PyEtable python version of given etable.Table.
-    The PyEtable can then be converted into other standard Python formats,
+    returns a pyet.eTable python version of given etable.Table.
+    The eTable can then be converted into other standard Python formats,
     but most of them don't quite capture exactly the same information, so
-    the PyEtable can be handy to keep around.
+    the eTable can be handy to keep around.
     """
-    pt = PyEtable()
+    pt = eTable()
     pt.Rows = et.Rows
     nc = len(et.Cols)
     for ci in range(nc):
@@ -258,14 +279,58 @@ def etable_to_py(et):
         cn = et.ColNames[ci]
         nar = etensor_to_numpy(dc)
         pt.AddCol(nar, cn)
-        # for k in et.MetaData:
-        #     pt.MetaData[k] = et.MetaData[k]
+    for md in et.MetaData:
+        pt.MetaData[md[0]] = md[1]
     return pt
         
+def py_to_etable(pt):
+    """
+    returns an etable.Table version of given pyet.eTable.
+    """
+    et = etable.Table()
+    et.Rows = pt.Rows
+    nc = len(pt.Cols)
+    for ci in range(nc):
+        pc = pt.Cols[ci]
+        cn = pt.ColNames[ci]
+        tsr = numpy_to_etensor(pc)
+        et.AddCol(tsr, cn)
+    for md in pt.MetaData:
+        et.SetMetaData(md, pt.MetaData[md])
+    return et
+
+def copy_etable_to_py(pt, et):
+    """
+    copies values in columns of same name from etable.Table to pyet.eTable
+    """
+    nc = len(pt.Cols)
+    for ci in range(nc):
+        pc = pt.Cols[ci]
+        cn = pt.ColNames[ci]
+        try:
+            dc = et.ColByNameTry(cn)
+            copy_etensor_to_numpy(pc, dc)
+        except:
+            pass
+
+def copy_py_to_etable(et, pt):
+    """
+    copies values in columns of same name from pyet.eTable to etable.Table
+    """
+    nc = len(et.Cols)
+    for ci in range(nc):
+        dc = et.Cols[ci]
+        cn = et.ColNames[ci]
+        try:
+            pc = pt.ColByName(cn)
+            copy_numpy_to_etensor(dc, pc)
+        except:
+            pass
+    
 def etable_to_torch(et):
     """
     returns a torch.utils.data.TensorDataset constructed from the numeric columns
-    of the given PyEtable (string columns are not allowed in TensorDataset)
+    of the given pyet.eTable (string columns are not allowed in TensorDataset)
     """
     tsrs = []
     nc = len(et.Cols)
@@ -281,11 +346,38 @@ def etable_to_torch(et):
     ds = data_utils.TensorDataset(*tsrs)
     return ds
 
-def etable_to_pandas(et):
+def etable_to_pandas(et, skip_tensors=False):
     """
     returns a pandas DataFrame constructed from the columns
-    of the given PyEtable, spreading tensor cells over sequential
-    1d columns.
+    of the given pyet.eTable, spreading tensor cells over sequential
+    1d columns, if they aren't skipped over.
     """
-    pass
-        
+    ed = {} 
+    nc = len(et.Cols)
+    for ci in range(nc):
+        dc = et.Cols[ci]
+        cn = et.ColNames[ci]
+        if dc.ndim == 1:
+            ed[cn] = dc
+            continue
+        if skip_tensors:
+            continue
+        csz = int(dc.size / et.Rows)  # cell size
+        rs = dc.reshape([et.Rows, csz])
+        for i in range(csz):
+            cnn = "%s_%d" % (cn, i)
+            ed[cnn] = rs[:,i]
+    df = pd.DataFrame(data=ed)
+    return df
+
+def pandas_to_etable(df):
+    """
+    returns a pyet.eTable constructed from given pandas DataFrame
+    """
+    pt = eTable()
+    pt.Rows = len(df.index)
+    for cn in df.columns:
+        dc = df.loc[:, cn].values
+        pt.AddCol(dc, cn)
+    return pt
+    
