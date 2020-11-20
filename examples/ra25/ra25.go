@@ -821,7 +821,6 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	}
 	ss.LastEpcTime = time.Now()
 
-	dt.SetCellTensorFloat1D()
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("SSE", row, ss.EpcSSE)
