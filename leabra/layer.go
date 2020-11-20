@@ -906,6 +906,20 @@ func (ly *Layer) DecayState(decay float32) {
 	}
 }
 
+// DecayStatePool decays activation state by given proportion in given sub-pool index (0 based)
+func (ly *Layer) DecayStatePool(pool int, decay float32) {
+	pi := int32(pool + 1) // 1 based
+	pl := &ly.Pools[pi]
+	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		ly.Act.DecayState(nrn, decay)
+	}
+	pl.Inhib.Decay(decay)
+}
+
 // HardClamp hard-clamps the activations in the layer -- called during AlphaCycInit for hard-clamped Input layers
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {

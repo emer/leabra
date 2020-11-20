@@ -129,9 +129,9 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":         "0.04", // .04 > .1
+					"Prjn.Learn.Lrate":         "0.04", // .04 > .1 > .02
 					"Prjn.WtInit.Var":          "0.1",
-					"Prjn.Trace.GateNoGoPosLR": "0.1",  // 0.1 default
+					"Prjn.Trace.GateNoGoPosLR": "1",    // 0.1 default
 					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
 					"Prjn.Trace.Decay":         "1.0",  // 1.0 default
 					"Prjn.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..
@@ -140,8 +140,8 @@ var ParamSets = params.Sets{
 			{Sel: "MatrixLayer", Desc: "exploring these options",
 				Params: params.Params{
 					"Layer.Act.XX1.Gain":       "100",
-					"Layer.Inhib.Layer.Gi":     "1.9",
-					"Layer.Inhib.Layer.FB":     "0.5",
+					"Layer.Inhib.Layer.Gi":     "2.2", // 2.2 > 1.8 > 2.4
+					"Layer.Inhib.Layer.FB":     "1",   // 1 > .5
 					"Layer.Inhib.Pool.On":      "true",
 					"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9
 					"Layer.Inhib.Pool.FB":      "0",
@@ -152,19 +152,19 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "1.8",
-					"Layer.Inhib.Layer.FB":     "0.5",
+					"Layer.Inhib.Layer.Gi":     "1.8", // 1.8 > 2.0
+					"Layer.Inhib.Layer.FB":     "1",   // 1.0 > 0.5
 					"Layer.Inhib.Pool.On":      "false",
 					"Layer.Inhib.ActAvg.Init":  ".2",
 					"Layer.Inhib.ActAvg.Fixed": "true",
 					"Layer.Act.Dt.GTau":        "3",
 					"Layer.Gate.GeGain":        "3",
-					"Layer.Gate.NoGo":          "1",
-					"Layer.Gate.Thr":           "0.2",
+					"Layer.Gate.NoGo":          "1.25", // was 1 default
+					"Layer.Gate.Thr":           "0.25", // .2 default
 				}},
 			{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "2.4", // 2.4 > 2.2 > 1.8
+					"Layer.Inhib.Layer.Gi":     "2.4", // 2.4 > 2.2 > 1.8 > 2.6
 					"Layer.Inhib.Layer.FB":     "0.5",
 					"Layer.Inhib.Layer.FBTau":  "3", // otherwise a bit jumpy
 					"Layer.Inhib.Pool.On":      "false",
@@ -208,8 +208,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#RWPred", Desc: "keep it guessing",
 				Params: params.Params{
-					"Layer.PredRange.Min": "0.01",
-					"Layer.PredRange.Max": "0.99",
+					"Layer.PredRange.Min": "0.05", // single most important param!  was .01 -- need penalty..
+					"Layer.PredRange.Max": "0.95",
 				}},
 		},
 	}},
@@ -376,8 +376,8 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc := da.(*rl.RWDaLayer)
 	snc.SetName("SNc")
 
-	inp := net.AddLayer2D("Input", 1, 7, emer.Input)
-	ctrl := net.AddLayer2D("CtrlInput", 1, 3, emer.Input)
+	inp := net.AddLayer2D("Input", 1, 4, emer.Input)
+	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
 	out := net.AddLayer2D("Output", 1, 4, emer.Target)
 	hid := net.AddLayer2D("Hidden", 7, 7, emer.Hidden)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
@@ -386,7 +386,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	hid.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "CtrlInput", XAlign: relpos.Left, Space: 2})
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 2, 2, 2, 1, 3, 1, 7)
+	mtxGo, mtxNoGo, gpe, gpi, cini, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 4)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
@@ -404,8 +404,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	fmin.Scale.Set(1, 1)
 	fmin.Wrap = true
 
-	net.ConnectLayersPrjn(inp, rp, full, emer.Forward, &rl.RWPrjn{})
-	// net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
+	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
+	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
+	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
 
 	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
 	pj.SetClass("MatrixPrjn")
@@ -415,6 +416,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("PFCFixed")
 
 	net.ConnectLayers(inp, hid, full, emer.Forward)
+	net.ConnectLayers(ctrl, hid, full, emer.Forward)
 	net.BidirConnectLayers(hid, out, full)
 	pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
 	pj.SetClass("FmPFCOutD")
@@ -547,7 +549,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
 	// going to the same layers, but good practice and cheap anyway
 
-	lays := []string{"Input", "Output"}
+	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		pats := en.State(ly.Nm)
@@ -555,10 +557,6 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 			continue
 		}
 		ly.ApplyExt(pats)
-		if lnm == "Input" {
-			ly = ss.Net.LayerByName("CtrlInput").(leabra.LeabraLayer).AsLeabra()
-			ly.ApplyExt(pats)
-		}
 	}
 }
 
@@ -571,7 +569,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	} else {
 		en = &ss.TestEnv
 	}
-	if en.Act != Recall { // only reward on recall trials!
+	if en.Act != Recall1 && en.Act != Recall2 { // only reward on recall trials!
 		return
 	}
 	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
@@ -1238,8 +1236,8 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
 
-	labs := []string{"    S I R A B C D ", "  S I R A B C D   S I R A B C D ", "  S I R A B C D  S I R A B C D",
-		"S I R A B C D  S I R A B C D ", "S I R A B C D  S I R A B C D", "   A B C D ", "    S I R "}
+	labs := []string{"    A B C D ", "  A B C D   A B C D ", "  A B C D  A B C D",
+		"A B C D  A B C D ", "A B C D  A B C D", "   A B C D ", "  S1 S2 I R1 R2 "}
 	nv.ConfigLabels(labs)
 
 	lays := []string{"Input", "PFCmnt", "PFCmntD", "PFCout", "PFCoutD", "Output", "CtrlInput"}

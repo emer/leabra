@@ -24,11 +24,17 @@ func (gp *PFCGateParams) Defaults() {
 
 // PFCMaintParams for PFC maintenance functions
 type PFCMaintParams struct {
-	UseDyn   bool `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
-	MaxMaint int  `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
+	UseDyn        bool    `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
+	MaintGain     float32 `min:"0" def:"0.8" desc:"multiplier on maint current"`
+	OutClearMaint bool    `def:"false" desc:"on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases.."`
+	Clear         float32 `min:"0" max:"1" def:"0" desc:"how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.  "`
+	MaxMaint      int     `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
 }
 
 func (mp *PFCMaintParams) Defaults() {
+	mp.MaintGain = 0.8
+	mp.OutClearMaint = false // theoretically should be true, but actually was false due to bug
+	mp.Clear = 0
 	mp.MaxMaint = 100
 }
 
@@ -185,7 +191,12 @@ func (ly *PFCDeepLayer) Gating(ltime *leabra.Time) {
 		if gs.Act > 0 { // use GPiThal threshold, so anything > 0
 			gs.Cnt = 0           // this is the "just gated" signal
 			if ly.Gate.OutGate { // time to clear out maint
-				ly.ClearMaint(gi)
+				if ly.Maint.OutClearMaint {
+					ly.ClearMaint(gi)
+				}
+			} else {
+				pfcs := ly.SuperPFC().AsLeabra()
+				pfcs.DecayStatePool(gi, ly.Maint.Clear)
 			}
 		}
 		// test for over-duration maintenance -- allow for active gating to override
@@ -204,6 +215,8 @@ func (ly *PFCDeepLayer) ClearMaint(pool int) {
 	gs := &pfcm.GateStates[pool] // 0 based
 	if gs.Cnt >= 1 {             // important: only for established maint, not just gated..
 		gs.Cnt = -1 // reset
+		pfcs := pfcm.SuperPFC().AsLeabra()
+		pfcs.DecayStatePool(pool, pfcm.Maint.Clear)
 	}
 }
 
@@ -255,7 +268,7 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 			sy := uy % syN // inner loop is s
 			si := pi*snn + sy*sxN + ux
 			snr := &sly.Neurons[si]
-			pnr.Maint = snr.Act
+			pnr.Maint = ly.Maint.MaintGain * snr.Act
 		}
 		if ly.Maint.UseDyn {
 			pnr.MaintGe = pnr.Maint * ly.Dyns.Value(dtyp, float32(gs.Cnt-1))
