@@ -7,7 +7,7 @@
 
 # note: from below here should be updated for standalone etorch vs. leabra
 
-from leabra import go, etorch, gi, netview
+from etorch import go, etorch, gi, netview
 
 import torch
 
@@ -20,19 +20,14 @@ class State(object):
         self.record = True # set to False to turn off recording
         self.rec_wts = False # set to True to turn on recording of prjn-level weight state
         self.trace = False # print out dimensions of what is recorded -- useful for initial config
-        self.layers = {} # dict of layer-level state vectors
         self.wtmap = {}  # dict of names for prjn weights
         self.net = 0 # network that we save to
     
-    def init_net(self, net):
+    def set_net(self, net):
         """
-        init initializes from etorch.Network, once it has been configured
+        set_net sets the etorch.Network to display to
         """
         self.net = net
-        for li in net.Layers:
-            ly = etorch.Layer(handle=li)
-            self.layers[ly.Name()+".Act"] = torch.FloatTensor(ly.Shp.Len())
-            self.layers[ly.Name()+".Net"] = torch.FloatTensor(ly.Shp.Len())
     
     def rec(self, x, var):
         """
@@ -42,51 +37,34 @@ class State(object):
             return
         if self.trace:
             print(var, x.size())
-        if var in self.layers:
-            st = self.layers[var]
-            st[:] = torch.flatten(x)[:]  # element-wise copy, re-using existing memory
 
-    def update(self):
-        """
-        update copies saved state values into etorch.Network, for display
-        """
-        if not self.record:
-            return
         sd = self.nn.state_dict()
         net = self.net
-
-        def copy_lay(ly, var):
-            tst = self.layers[ly.Name() + "." + var]
-            nst = ly.States[var]
-            nst.Values.copy(tst)
         
-        for li in net.Layers:
-            ly = etorch.Layer(handle=li)
-            copy_lay(ly, "Act")
-            copy_lay(ly, "Net")
-            if self.rec_wts:
-                for pi in ly.RcvPrjns:
-                    pj = etorch.Prjn(handle=pi)
-                    pnm = pj.Name()
-                    if not pnm in self.wtmap:
-                        continue
-                    wnm = self.wtmap[pnm]
-                    wts = sd[wnm + ".weight"]
-                    pst = pj.States["Wt"]
-                    pst.Values.copy(torch.flatten(wts))
-                    bnm = wnm + ".bias"
-                    if bnm in sd:
-                        bst = sd[bnm]
-                        lst = ly.States["Bias"]
-                        lst.Values.copy(torch.flatten(bst))
-
-    def report(self):
-        """
-        report prints out the state dimensions
-        """
-        for k, tt in self.layers:
-            print("layer: ", k, "size: ", tt.size())
+        nmv = var.split(".")
+        vnm = nmv[-1]
+        lnm = ".".join(nmv[:-1])
+        ly = etorch.Layer(net.LayerByName(lnm))
+        nst = ly.States[vnm]
+        nst.Values.copy(torch.flatten(x))
         
+        if not self.rec_wts:
+            return
+            
+        for pi in ly.RcvPrjns:
+            pj = etorch.Prjn(handle=pi)
+            pnm = pj.Name()
+            if not pnm in self.wtmap:
+                continue
+            wnm = self.wtmap[pnm]
+            wts = sd[wnm + ".weight"]
+            pst = pj.States["Wt"]
+            pst.Values.copy(torch.flatten(wts))
+            bnm = wnm + ".bias"
+            if bnm in sd:
+                bst = sd[bnm]
+                lst = ly.States["Bias"]
+                lst.Values.copy(torch.flatten(bst))
                         
 class NetView(object):
     """
@@ -136,7 +114,7 @@ class NetView(object):
 
     def update(ss):
         """
-        call update to update display -- must call State.update() to get state first
+        call update to update display
         """
         ss.NetView.Record("") # note: can include any kind of textual state information here to display too
         ss.NetView.GoUpdate()
