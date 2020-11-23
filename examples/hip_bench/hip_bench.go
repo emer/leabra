@@ -28,6 +28,8 @@ import (
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
 	_ "github.com/emer/etable/etview" // include to get gui views
+	"github.com/emer/etable/metric"
+	"github.com/emer/etable/simat"
 	"github.com/emer/etable/split"
 	"github.com/emer/leabra/hip"
 	"github.com/emer/leabra/leabra"
@@ -119,6 +121,7 @@ type Sim struct {
 	RunLog       *etable.Table               `view:"no-inline" desc:"summary log of each run"`
 	RunStats     *etable.Table               `view:"no-inline" desc:"aggregate stats on all runs"`
 	TstStats     *etable.Table               `view:"no-inline" desc:"testing stats"`
+	SimMats      map[string]*simat.SimMat    `view:"no-inline" desc:"similarity matrix results for layers"`
 	Params       params.Sets                 `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string                      `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
 	Tag          string                      `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params)"`
@@ -155,38 +158,40 @@ type Sim struct {
 	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero Mem err"`
 
 	// internal state - view:"-"
-	SumSSE       float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumAvgSSE    float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	SumCosDiff   float64          `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
-	CntErr       int              `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
-	Win          *gi.Window       `view:"-" desc:"main GUI window"`
-	NetView      *netview.NetView `view:"-" desc:"the network viewer"`
-	ToolBar      *gi.ToolBar      `view:"-" desc:"the master toolbar"`
-	TrnTrlPlot   *eplot.Plot2D    `view:"-" desc:"the training trial plot"`
-	TrnEpcPlot   *eplot.Plot2D    `view:"-" desc:"the training epoch plot"`
-	TstEpcPlot   *eplot.Plot2D    `view:"-" desc:"the testing epoch plot"`
-	TstTrlPlot   *eplot.Plot2D    `view:"-" desc:"the test-trial plot"`
-	TstCycPlot   *eplot.Plot2D    `view:"-" desc:"the test-cycle plot"`
-	RunPlot      *eplot.Plot2D    `view:"-" desc:"the run plot"`
-	RunStatsPlot *eplot.Plot2D    `view:"-" desc:"the run stats plot"`
-	TrnEpcFile   *os.File         `view:"-" desc:"log file"`
-	TrnEpcHdrs   bool             `view:"-" desc:"headers written"`
-	TstEpcFile   *os.File         `view:"-" desc:"log file"`
-	TstEpcHdrs   bool             `view:"-" desc:"headers written"`
-	RunFile      *os.File         `view:"-" desc:"log file"`
-	TmpVals      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
-	LayStatNms   []string         `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
-	TstNms       []string         `view:"-" desc:"names of test tables"`
-	TstStatNms   []string         `view:"-" desc:"names of test stats"`
-	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
-	PreTrainWts  []byte           `view:"-" desc:"pretrained weights file"`
-	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
-	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
-	IsRunning    bool             `view:"-" desc:"true if sim is running"`
-	StopNow      bool             `view:"-" desc:"flag to stop running"`
-	NeedsNewRun  bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
-	RndSeed      int64            `view:"-" desc:"the current random seed"`
-	LastEpcTime  time.Time        `view:"-" desc:"timer for last epoch"`
+	SumSSE       float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumAvgSSE    float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	SumCosDiff   float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
+	CntErr       int                         `view:"-" inactive:"+" desc:"sum of errs to increment as we go through epoch"`
+	Win          *gi.Window                  `view:"-" desc:"main GUI window"`
+	NetView      *netview.NetView            `view:"-" desc:"the network viewer"`
+	ToolBar      *gi.ToolBar                 `view:"-" desc:"the master toolbar"`
+	TrnTrlPlot   *eplot.Plot2D               `view:"-" desc:"the training trial plot"`
+	TrnEpcPlot   *eplot.Plot2D               `view:"-" desc:"the training epoch plot"`
+	TstEpcPlot   *eplot.Plot2D               `view:"-" desc:"the testing epoch plot"`
+	TstTrlPlot   *eplot.Plot2D               `view:"-" desc:"the test-trial plot"`
+	TstCycPlot   *eplot.Plot2D               `view:"-" desc:"the test-cycle plot"`
+	RunPlot      *eplot.Plot2D               `view:"-" desc:"the run plot"`
+	RunStatsPlot *eplot.Plot2D               `view:"-" desc:"the run stats plot"`
+	TrnEpcFile   *os.File                    `view:"-" desc:"log file"`
+	TrnEpcHdrs   bool                        `view:"-" desc:"headers written"`
+	TstEpcFile   *os.File                    `view:"-" desc:"log file"`
+	TstEpcHdrs   bool                        `view:"-" desc:"headers written"`
+	RunFile      *os.File                    `view:"-" desc:"log file"`
+	TmpVals      []float32                   `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
+	LayStatNms   []string                    `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
+	TstNms       []string                    `view:"-" desc:"names of test tables"`
+	SimMatStats  []string                    `view:"-" desc:"names of sim mat stats"`
+	TstStatNms   []string                    `view:"-" desc:"names of test stats"`
+	ValsTsrs     map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
+	SaveWts      bool                        `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+	PreTrainWts  []byte                      `view:"-" desc:"pretrained weights file"`
+	NoGui        bool                        `view:"-" desc:"if true, runing in no GUI mode"`
+	LogSetParams bool                        `view:"-" desc:"if true, print message for all params that are set"`
+	IsRunning    bool                        `view:"-" desc:"true if sim is running"`
+	StopNow      bool                        `view:"-" desc:"flag to stop running"`
+	NeedsNewRun  bool                        `view:"-" desc:"flag to initialize NewRun if last one finished"`
+	RndSeed      int64                       `view:"-" desc:"the current random seed"`
+	LastEpcTime  time.Time                   `view:"-" desc:"timer for last epoch"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -213,6 +218,7 @@ func (ss *Sim) New() {
 	ss.TstCycLog = &etable.Table{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
+	ss.SimMats = make(map[string]*simat.SimMat)
 	ss.Params = ParamSets // in def_params -- current best params
 	// ss.Params = OrigParamSets // original, previous model
 	// ss.Params = SavedParamsSets // current user-saved gui params
@@ -223,9 +229,10 @@ func (ss *Sim) New() {
 	ss.TestInterval = 1
 	ss.LogSetParams = false
 	ss.MemThr = 0.34
-	ss.LayStatNms = []string{"ECin", "DG", "CA3", "CA1"}
+	ss.LayStatNms = []string{"ECin", "ECout", "DG", "CA3", "CA1"}
 	ss.TstNms = []string{"AB", "AC", "Lure"}
 	ss.TstStatNms = []string{"Mem", "TrgOnWasOff", "TrgOffWasOn"}
+	ss.SimMatStats = []string{"Within", "Between"}
 
 	ss.Defaults()
 }
@@ -1129,6 +1136,19 @@ func (ss *Sim) ConfigPats() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
+// ValsTsr gets value tensor of given name, creating if not yet made
+func (ss *Sim) ValsTsr(name string) *etensor.Float32 {
+	if ss.ValsTsrs == nil {
+		ss.ValsTsrs = make(map[string]*etensor.Float32)
+	}
+	tsr, ok := ss.ValsTsrs[name]
+	if !ok {
+		tsr = &etensor.Float32{}
+		ss.ValsTsrs[name] = tsr
+	}
+	return tsr
+}
+
 // RunName returns a name for this run that combines Tag and Params -- add this to
 // any file names that are saved.
 func (ss *Sim) RunName() string {
@@ -1370,6 +1390,13 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 
+	for _, lnm := range ss.LayStatNms {
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
+		tsr := ss.ValsTsr(lnm)
+		ly.UnitValsTensor(tsr, "Act")
+		dt.SetCellTensor(lnm+"Act", row, tsr)
+	}
+
 	// note: essential to use Go version of update when called from another goroutine
 	ss.TstTrlPlot.GoUpdate()
 }
@@ -1400,11 +1427,11 @@ func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
 	for _, lnm := range ss.LayStatNms {
 		sch = append(sch, etable.Column{lnm + " ActM.Avg", etensor.FLOAT64, nil, nil})
 	}
-	// sch = append(sch, etable.Schema{
-	// 	{"InAct", etensor.FLOAT64, inLay.Shp.Shp, nil},
-	// 	{"OutActM", etensor.FLOAT64, outLay.Shp.Shp, nil},
-	// 	{"OutActP", etensor.FLOAT64, outLay.Shp.Shp, nil},
-	// }...)
+	for _, lnm := range ss.LayStatNms {
+		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
+		sch = append(sch, etable.Column{lnm + "Act", etensor.FLOAT64, ly.Shp.Shp, nil})
+	}
+
 	dt.SetFromSchema(sch, nt)
 }
 
@@ -1413,7 +1440,6 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	plt.Params.XAxisCol = "TrialName"
 	plt.Params.Type = eplot.Bar
 	plt.SetTable(dt) // this sets defaults so set params after
-	plt.Params.BarWidth = 5
 	plt.Params.XAxisRot = 45
 	// order of params: on, fixMin, min, fixMax, max
 	plt.SetColParams("Run", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
@@ -1432,19 +1458,66 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	for _, lnm := range ss.LayStatNms {
 		plt.SetColParams(lnm+" ActM.Avg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 	}
+	for _, lnm := range ss.LayStatNms {
+		plt.SetColParams(lnm+" Act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	}
 
-	// plt.SetColParams("InAct", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	// plt.SetColParams("OutActM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
-	// plt.SetColParams("OutActP", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	return plt
 }
 
 //////////////////////////////////////////////
 //  TstEpcLog
 
+// RepsAnalysis analyzes representations
+func (ss *Sim) RepsAnalysis() {
+	acts := etable.NewIdxView(ss.TstTrlLog)
+	for _, lnm := range ss.LayStatNms {
+		sm, ok := ss.SimMats[lnm]
+		if !ok {
+			sm = &simat.SimMat{}
+			ss.SimMats[lnm] = sm
+		}
+		sm.TableCol(acts, lnm+"Act", "TrialName", true, metric.Correlation64)
+	}
+}
+
+// SimMatStat returns within, between for sim mat statistics
+func (ss *Sim) SimMatStat(lnm string) (float64, float64) {
+	sm := ss.SimMats[lnm]
+	smat := sm.Mat
+	nitm := smat.Dim(0)
+	ncat := nitm / len(ss.TstNms)
+	win_sum := float64(0)
+	win_n := 0
+	btn_sum := float64(0)
+	btn_n := 0
+	for y := 0; y < nitm; y++ {
+		for x := 0; x < y; x++ {
+			val := smat.FloatVal([]int{y, x})
+			same := (y / ncat) == (x / ncat)
+			if same {
+				win_sum += val
+				win_n++
+			} else {
+				btn_sum += val
+				btn_n++
+			}
+		}
+	}
+	if win_n > 0 {
+		win_sum /= float64(win_n)
+	}
+	if btn_n > 0 {
+		btn_sum /= float64(btn_n)
+	}
+	return win_sum, btn_sum
+}
+
 func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	row := dt.Rows
 	dt.SetNumRows(row + 1)
+
+	ss.RepsAnalysis()
 
 	trl := ss.TstTrlLog
 	tix := etable.NewIdxView(trl)
@@ -1485,6 +1558,17 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 		tst := ss.TstStats.CellString("TestNm", ri)
 		for _, ts := range ss.TstStatNms {
 			dt.SetCellFloat(tst+" "+ts, row, ss.TstStats.CellFloat(ts, ri))
+		}
+	}
+
+	for _, lnm := range ss.LayStatNms {
+		win, btn := ss.SimMatStat(lnm)
+		for _, ts := range ss.SimMatStats {
+			if ts == "Within" {
+				dt.SetCellFloat(lnm+" "+ts, row, win)
+			} else {
+				dt.SetCellFloat(lnm+" "+ts, row, btn)
+			}
 		}
 	}
 
@@ -1537,6 +1621,11 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 			sch = append(sch, etable.Column{tn + " " + ts, etensor.FLOAT64, nil, nil})
 		}
 	}
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			sch = append(sch, etable.Column{lnm + " " + ts, etensor.FLOAT64, nil, nil})
+		}
+	}
 	dt.SetFromSchema(sch, 0)
 }
 
@@ -1557,10 +1646,15 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 	for _, tn := range ss.TstNms {
 		for _, ts := range ss.TstStatNms {
 			if ts == "Mem" {
-				plt.SetColParams(tn+" "+ts, eplot.On, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+				plt.SetColParams(tn+" "+ts, eplot.On, eplot.FixMin, 0, eplot.FixMax, 1)
 			} else {
-				plt.SetColParams(tn+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1) // default plot
+				plt.SetColParams(tn+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 			}
+		}
+	}
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			plt.SetColParams(lnm+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		}
 	}
 	return plt
@@ -1664,6 +1758,12 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 			dt.SetCellFloat(nm, row, agg.Mean(epcix, nm)[0])
 		}
 	}
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			nm := lnm + " " + ts
+			dt.SetCellFloat(nm, row, agg.Mean(epcix, nm)[0])
+		}
+	}
 
 	ss.LogRunStats()
 
@@ -1699,6 +1799,11 @@ func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 			sch = append(sch, etable.Column{tn + " " + ts, etensor.FLOAT64, nil, nil})
 		}
 	}
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			sch = append(sch, etable.Column{lnm + " " + ts, etensor.FLOAT64, nil, nil})
+		}
+	}
 	dt.SetFromSchema(sch, 0)
 }
 
@@ -1725,6 +1830,11 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 			}
 		}
 	}
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			plt.SetColParams(lnm+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+		}
+	}
 	return plt
 }
 
@@ -1742,6 +1852,11 @@ func (ss *Sim) LogRunStats() {
 	}
 	split.Desc(spl, "FirstZero")
 	split.Desc(spl, "NEpochs")
+	for _, lnm := range ss.LayStatNms {
+		for _, ts := range ss.SimMatStats {
+			split.Desc(spl, lnm+" "+ts)
+		}
+	}
 	ss.RunStats = spl.AggsToTable(etable.AddAggName)
 	if ss.RunStatsPlot != nil {
 		ss.ConfigRunStatsPlot(ss.RunStatsPlot, ss.RunStats)
