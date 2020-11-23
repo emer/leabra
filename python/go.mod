@@ -7,7 +7,7 @@ require (
 	github.com/anthonynsimon/bild v0.13.0
 	github.com/apache/arrow/go/arrow v0.0.0-20201121231650-0e8be3caa4a6
 	github.com/aymerick/douceur v0.2.0
-	github.com/emer/emergent v1.1.13
+	github.com/emer/emergent v1.1.14
 	github.com/emer/etable v1.0.18
 	github.com/emer/etorch v1.0.0
 	github.com/emer/leabra v1.1.15
