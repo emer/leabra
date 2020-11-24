@@ -1571,7 +1571,9 @@ class Sim(pygiv.ClassViewObj):
                 dt.SetCellFloat(tst+" "+ts, row, ss.TstStats.CellFloat(ts, ri))
 
         for lnm in ss.LayStatNms :
-            win, btn = ss.SimMatStat(lnm)
+            # win, btn = ss.SimMatStat(lnm)
+            win = 0
+            btn = 0
             for ts in ss.SimMatStats :
                 if ts == "Within":
                     dt.SetCellFloat(lnm+" "+ts, row, win)

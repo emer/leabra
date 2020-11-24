@@ -9,11 +9,11 @@ require (
 	github.com/aymerick/douceur v0.2.0
 	github.com/emer/emergent v1.1.14
 	github.com/emer/etable v1.0.18
-	github.com/emer/etorch v1.0.0
-	github.com/emer/leabra v1.1.15
+	github.com/emer/etorch v1.0.3
+	github.com/emer/leabra v1.1.17
 	github.com/emer/vision v1.1.6
 	github.com/go-gl/mathgl v1.0.0
-	github.com/go-python/gopy v0.3.2
+	github.com/go-python/gopy v0.3.4
 	github.com/goki/gi v1.1.0
 	github.com/goki/ki v1.0.5
 	github.com/goki/mat32 v1.0.2

@@ -12,6 +12,9 @@ all: prereq gen
 .PHONY: prereq gen all build install install-pkg install-exe clean
 
 prereq:
+	@echo "Installing go prerequisites:"
+	- go get golang.org/x/tools/cmd/goimports  # this installs into ~/go/bin
+	- go get github.com/go-python/gopy 
 	@echo "Installing python prerequisites -- ignore err if already installed:"
 	- $(PIP) install -r requirements.txt
 	@echo
