@@ -728,7 +728,7 @@ func (ss *Sim) ConfigPats() {
 
 	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
 	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, etable.Headers)
+	dt.SaveCSV("random_5x5_25_gen.tsv", etable.Tab, etable.Headers)
 }
 
 func (ss *Sim) OpenPats() {

@@ -27,3 +27,15 @@ $ pyleabra -i ra25.py   # pyleabra was installed during make install into /usr/l
 
 The `pyleabra` executable combines standard python and the full Go emergent and GoGi gui packages -- see the information in the GoGi python readme for more technical information about this.
 
+# Sharing install
+
+To make a compiled version available to others, you just need the `dist/leabra-1.1.15.tar.gz` file and the `pyleabra` executable:
+
+```sh
+$ ./pyleabra -m pip install leabra-1.1.15.tar.gz
+$ ./pyleabra -m pip install numpy  # numpy is needed
+$ cp pyleabra /usr/local/bin/
+```
+
+These steps might require `sudo` permissions.
+
