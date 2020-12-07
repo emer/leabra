@@ -31,6 +31,7 @@ var Net *leabra.Network
 var Pats *etable.Table
 var EpcLog *etable.Table
 var Thread = false // much slower for small net
+var Silent = false // non-verbose mode -- just reports result
 
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
@@ -104,7 +105,7 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 func ConfigPats(dt *etable.Table, pats, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
-	fmt.Printf("shape: %v\n", shp)
+	// fmt.Printf("shape: %v\n", shp)
 
 	dt.SetFromSchema(etable.Schema{
 		{"Name", etensor.STRING, nil, nil},
@@ -210,8 +211,12 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 		epcLog.SetCellFloat("Out ActAvg", epc, float64(outLay.Pools[0].ActAvg.ActPAvgEff))
 	}
 	tmr.Stop()
-	fmt.Printf("Took %6.4g secs for %v epochs, avg per epc: %6.4g\n", tmr.TotalSecs(), epcs, tmr.TotalSecs()/float64(epcs))
-	net.TimerReport()
+	if Silent {
+		fmt.Printf("%6.3g\n", tmr.TotalSecs())
+	} else {
+		fmt.Printf("Took %6.4g secs for %v epochs, avg per epc: %6.4g\n", tmr.TotalSecs(), epcs, tmr.TotalSecs()/float64(epcs))
+		net.TimerReport()
+	}
 }
 
 func main() {
@@ -230,9 +235,12 @@ func main() {
 	flag.IntVar(&epochs, "epochs", 2, "number of epochs to run")
 	flag.IntVar(&pats, "pats", 10, "number of patterns per epoch")
 	flag.IntVar(&units, "units", 100, "number of units per layer -- uses NxN where N = sqrt(units)")
+	flag.BoolVar(&Silent, "silent", false, "only report the final time")
 	flag.Parse()
 
-	fmt.Printf("Running bench with: %v threads, %v epochs, %v pats, %v units\n", threads, epochs, pats, units)
+	if !Silent {
+		fmt.Printf("Running bench with: %v threads, %v epochs, %v pats, %v units\n", threads, epochs, pats, units)
+	}
 
 	Net = &leabra.Network{}
 	ConfigNet(Net, threads, units)

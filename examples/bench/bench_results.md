@@ -7,6 +7,8 @@ Results are total time for 1, 2, 4 threads, on my macbook.
 ## C++ Emergent
 
 ```
+* Size     1 thr   2 thr    4 thr
+---------------------------------
 * SMALL:   2.383   2.248    2.042
 * MEDIUM:  2.535   1.895    1.263
 * LARGE:  19.627   8.559    8.105
@@ -19,11 +21,13 @@ Results are total time for 1, 2, 4 threads, on my macbook.
 Basically the same results as below, except a secs or so faster due to faster macbook pro. Layer.Act.Gbar.L = 0.2 instead of new default of 0.1 makes a *huge* difference!  
 
 ```
+* Size     1 thr  2 thr  4 thr
+---------------------------------
 * SMALL:   1.27   3.53   3.64
 * MEDIUM:  1.61   2.31   2.09
 * LARGE:   9.56   7.48   5.44
 * HUGE:   19.17   13.3   9.62
-* GINOR:  23.61   17.94   13.24
+* GINOR:  23.61  17.94  13.24
 ```
 
 ```
