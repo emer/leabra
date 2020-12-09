@@ -96,11 +96,11 @@ func (ly *VTALayer) Defaults() {
 
 func (dag *VTADAGains) Defaults() {
 	dag.DA = 1.0
-	dag.PPTg = 1.0
+	dag.PPTg = 1.1
 	dag.LHb = 1.0
 	dag.PV = 1.0
-	dag.PVIBurstShunt = 1.05
-	dag.PVIAntiBurstShunt = 1.0
+	dag.PVIBurstShunt = 1.9
+	dag.PVIAntiBurstShunt = 2
 	dag.PVIDipShunt = 0.0
 	dag.PVIAntiDipShunt = 0.0
 

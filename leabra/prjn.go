@@ -85,15 +85,14 @@ func (pj *Prjn) SynVarProps() map[string]string {
 // (1D, flat indexes). Returns -1 if synapse not found between these two neurons.
 // Requires searching within connections for receiving unit.
 func (pj *Prjn) SynIdx(sidx, ridx int) int {
-	nc := int(pj.RConN[ridx])
-	st := int(pj.RConIdxSt[ridx])
+	nc := int(pj.SConN[sidx])
+	st := int(pj.SConIdxSt[sidx])
 	for ci := 0; ci < nc; ci++ {
-		si := int(pj.RConIdx[st+ci])
-		if si != sidx {
+		ri := int(pj.SConIdx[st+ci])
+		if ri != ridx {
 			continue
 		}
-		rsi := pj.RSynIdx[st+ci]
-		return int(rsi)
+		return int(st + ci)
 	}
 	return -1
 }

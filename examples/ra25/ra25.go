@@ -416,7 +416,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView(train)
 	}
-	if !train {
+	if ss.TstCycPlot != nil && !train {
 		ss.TstCycPlot.GoUpdate() // make sure up-to-date at end
 	}
 }
@@ -728,7 +728,7 @@ func (ss *Sim) ConfigPats() {
 
 	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
 	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, etable.Headers)
+	dt.SaveCSV("random_5x5_25_gen.tsv", etable.Tab, etable.Headers)
 }
 
 func (ss *Sim) OpenPats() {
@@ -836,7 +836,9 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
-	ss.TrnEpcPlot.GoUpdate()
+	if ss.TrnEpcPlot != nil {
+		ss.TrnEpcPlot.GoUpdate()
+	}
 	if ss.TrnEpcFile != nil {
 		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
@@ -927,7 +929,9 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 	dt.SetCellTensor("OutActP", row, ovt)
 
 	// note: essential to use Go version of update when called from another goroutine
-	ss.TstTrlPlot.GoUpdate()
+	if ss.TstTrlPlot != nil {
+		ss.TstTrlPlot.GoUpdate()
+	}
 }
 
 func (ss *Sim) ConfigTstTrlLog(dt *etable.Table) {
@@ -1022,7 +1026,9 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	ss.TstErrStats = allsp.AggsToTable(etable.AddAggName)
 
 	// note: essential to use Go version of update when called from another goroutine
-	ss.TstEpcPlot.GoUpdate()
+	if ss.TstEpcPlot != nil {
+		ss.TstEpcPlot.GoUpdate()
+	}
 }
 
 func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
@@ -1075,7 +1081,7 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
-	if cyc%10 == 0 { // too slow to do every cyc
+	if ss.TstCycPlot != nil && cyc%10 == 0 { // too slow to do every cyc
 		// note: essential to use Go version of update when called from another goroutine
 		ss.TstCycPlot.GoUpdate()
 	}
@@ -1151,7 +1157,9 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	ss.RunStats = spl.AggsToTable(etable.AddAggName)
 
 	// note: essential to use Go version of update when called from another goroutine
-	ss.RunPlot.GoUpdate()
+	if ss.RunPlot != nil {
+		ss.RunPlot.GoUpdate()
+	}
 	if ss.RunFile != nil {
 		if row == 0 {
 			dt.WriteCSVHeaders(ss.RunFile, etable.Tab)
@@ -1228,9 +1236,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
 	nv.Var = "Act"
-	// nv.Params.ColorMap = "Jet" // default is ColdHot
-	// which fares pretty well in terms of discussion here:
-	// https://matplotlib.org/tutorials/colors/colormaps.html
 	nv.SetNet(ss.Net)
 	ss.NetView = nv
 

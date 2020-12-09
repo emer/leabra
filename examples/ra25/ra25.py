@@ -290,7 +290,6 @@ class Sim(pygiv.ClassViewObj):
         """
         Config configures all the elements using the standard functions
         """
-
         ss.InitParams()
         ss.OpenPats()
         ss.ConfigEnv()
@@ -383,7 +382,7 @@ class Sim(pygiv.ClassViewObj):
         NewRndSeed gets a new random seed based on current time -- otherwise uses
         the same random seed for every run
         """
-        ss.RndSeed = datetime.now(timezone.utc)
+        ss.RndSeed = int(datetime.now(timezone.utc).timestamp())
 
     def Counters(ss, train):
         """
@@ -737,7 +736,7 @@ class Sim(pygiv.ClassViewObj):
 
         patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
         patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-        dt.SaveCSV("random_5x5_25_gen.csv", etable.Comma, etable.Headers)
+        dt.SaveCSV("random_5x5_25_gen.tsv", etable.Tab, etable.Headers)
 
     def OpenPats(ss):
         dt = ss.Pats
@@ -1093,7 +1092,7 @@ class Sim(pygiv.ClassViewObj):
         nlast = 5
         if nlast > epcix.Len()-1:
             nlast = epcix.Len() - 1
-        epcix.Idxs = go.Slice_int(epcix.Idxs[epcix.Len()-nlast:])
+        epcix.Idxs = epcix.Idxs[epcix.Len()-nlast:]
 
         params = ss.RunName() # includes tag
 

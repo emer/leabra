@@ -1,22 +1,26 @@
-# leabra in Go emergent
+# Leabra in Go emergent
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/emer/leabra)](https://goreportcard.com/report/github.com/emer/leabra)
 [![GoDoc](https://godoc.org/github.com/emer/leabra?status.svg)](https://godoc.org/github.com/emer/leabra)
 [![Travis](https://travis-ci.com/emer/leabra.svg?branch=master)](https://travis-ci.com/emer/leabra)
 
-This is the Go implementation of the Leabra algorithm for biologically-based models of cognition, based on the [Go emergent](https://github.com/emer/emergent) framework (with Python interface).
+This is the Go implementation of the Leabra algorithm for biologically-based models of cognition, based on the [Go emergent](https://github.com/emer/emergent) framework (with optional Python interface).
 
 See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installation instructions, and the [Wiki Rationale](https://github.com/emer/emergent/wiki/Rationale) and [History](https://github.com/emer/emergent/wiki/History) pages for a more detailed rationale for the new version of emergent, and a history of emergent (and its predecessors).
 
 See the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  See the [etable wiki](https://github.com/emer/etable/wiki) for docs and example code for the widely-used etable data table structure, and the `family_trees` example in the CCN textbook sims which has good examples of many standard network representation analysis techniques (PCA, cluster plots, RSA).
 
+See [python README](https://github.com/emer/leabra/blob/master/python/README.md) and [Python Wiki](https://github.com/emer/emergent/wiki/Python) for info on using Python to run models.
+
 # Current Status / News
+
+* Nov 2020: Full Python conversions of CCN sims complete, and [eTorch](https://github.com/emer/etorch) for viewing and interacting with PyTorch models.
 
 * April 2020: GoGi GUI version 1.0 released, and updated install instructions to use go.mod modules for most users.
 
 * 12/30/2019: Version 1.0.0 Released! -- [CCN textbook simulations](https://github.com/CompCogNeuro/sims) are done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.
 
-* 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/leabra25ra` code using Python, including the GUI etc.
+* 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/ra25` code using Python, including the GUI etc.
 
 # Design
 

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-from leabra import go, gi, giv
+from leabra import go, gi, giv, kit, units
 from enum import Enum
 
 class ClassViewObj(object):
@@ -95,6 +95,9 @@ class ClassViewInline(object):
                 lbl.Tooltip = dsc
             if isinstance(val, go.GoClass):
                 fnm = self.Name + ":" + nm
+                if kit.IfaceIsNil(val):
+                    print("Field %s is Nil in ClassView for obj: %s" % (fnm, str(self.Class)))
+                    continue
                 vv = giv.ToValueView(val, tags)
                 giv.SetSoloValueIface(vv, val)
                 vw = self.Lay.AddNewChild(vv.WidgetType(), fnm)
@@ -113,6 +116,7 @@ class ClassViewInline(object):
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
+                giv.SetSoloValueIface(vv, val) # always update in case it might have changed
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
@@ -174,6 +178,9 @@ class ClassView(object):
                 lbl.Tooltip = dsc
             if isinstance(val, go.GoClass):
                 fnm = self.Name + ":" + nm
+                if kit.IfaceIsNil(val):
+                    print("Field %s is Nil in ClassView for obj: %s" % (fnm, str(self.Class)))
+                    continue
                 vv = giv.ToValueView(val, tags)
                 giv.SetSoloValueIface(vv, val)
                 vw = self.Frame.AddNewChild(vv.WidgetType(), fnm)
@@ -192,6 +199,7 @@ class ClassView(object):
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
+                giv.SetSoloValueIface(vv, val) # always update in case it might have changed
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
@@ -251,7 +259,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
         vw.ComboSig.Connect(frame, SetEnumCB)
     elif isinstance(val, ClassViewObj):
         if HasTagValue(tags, "view", "inline"):
-            sv = val.NewClassViewInline(fnm)
+            sv = val.NewClassViewInline(ctxt + "_" + nm)  # new full name
             sv.Config()
             frame.AddChild(sv.Lay)
             vw = sv.Lay
@@ -293,7 +301,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
         vw.TextFieldSig.Connect(frame, SetStrValCB)
         mv = TagValue(tags, "width")
         if mv != "":
-            vw.SetProp("width", units.NewCh(float(width)))
+            vw.SetProp("width", mv + "ch")
     if HasTagValue(tags, "inactive", "+"):
         vw.SetInactive()
     return vw

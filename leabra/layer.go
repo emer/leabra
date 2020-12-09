@@ -233,7 +233,10 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 	if pj == nil {
 		return err
 	}
-	for ri := range ly.Neurons {
+	if pj.IsOff() {
+		return fmt.Errorf("projection is off")
+	}
+	for ri := 0; ri < nn; ri++ {
 		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
@@ -276,7 +279,10 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 	if pj == nil {
 		return err
 	}
-	for si := range ly.Neurons {
+	if pj.IsOff() {
+		return fmt.Errorf("projection is off")
+	}
+	for si := 0; si < nn; si++ {
 		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
 	}
 	return nil
@@ -898,6 +904,20 @@ func (ly *Layer) DecayState(decay float32) {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Decay(decay)
 	}
+}
+
+// DecayStatePool decays activation state by given proportion in given sub-pool index (0 based)
+func (ly *Layer) DecayStatePool(pool int, decay float32) {
+	pi := int32(pool + 1) // 1 based
+	pl := &ly.Pools[pi]
+	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		ly.Act.DecayState(nrn, decay)
+	}
+	pl.Inhib.Decay(decay)
 }
 
 // HardClamp hard-clamps the activations in the layer -- called during AlphaCycInit for hard-clamped Input layers

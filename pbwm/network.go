@@ -268,6 +268,40 @@ func AddPBWM(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nNeu
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//  Python versions
+
+// AddDorsalBGPy adds MatrixGo, NoGo, GPe, GPiThal, and CIN layers, with given optional prefix.
+// nY = number of pools in Y dimension, nMaint + nOut are pools in X dimension,
+// and each pool has nNeurY, nNeurX neurons.  Appropriate PoolOneToOne connections
+// are made to drive GPiThal, with BgFixed class name set so
+// they can be styled appropriately (no learning, WtRnd.Mean=0.8, Var=0)
+// Py is Python version, returns layers as a slice
+func AddDorsalBGPy(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX int) []leabra.LeabraLayer {
+	mtxGo, mtxNoGo, gpe, gpi, cin := AddDorsalBG(nt, prefix, nY, nMaint, nOut, nNeurY, nNeurX)
+	return []leabra.LeabraLayer{mtxGo, mtxNoGo, gpe, gpi, cin}
+}
+
+// AddPFCPy adds paired PFCmnt, PFCout and associated Deep layers,
+// with given optional prefix.
+// nY = number of pools in Y dimension, nMaint, nOut are pools in X dimension,
+// and each pool has nNeurY, nNeurX neurons.
+// dynMaint is true for maintenance-only dyn, else full set of 5 dynamic maintenance types.
+// Appropriate OneToOne connections are made between PFCmntD -> PFCout.
+// Py is Python version, returns layers as a slice
+func AddPFCPy(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX int, dynMaint bool) []leabra.LeabraLayer {
+	pfcMnt, pfcMntD, pfcOut, pfcOutD := AddPFC(nt, prefix, nY, nMaint, nOut, nNeurY, nNeurX, dynMaint)
+	return []leabra.LeabraLayer{pfcMnt, pfcMntD, pfcOut, pfcOutD}
+}
+
+// AddPBWMPy adds a DorsalBG and PFC with given params
+// Defaults to simple case of basic maint dynamics in Deep
+// Py is Python version, returns layers as a slice
+func AddPBWMPy(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX int) []leabra.LeabraLayer {
+	mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD := AddPBWM(nt, prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX)
+	return []leabra.LeabraLayer{mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
 //////////////////////////////////////////////////////////////////////////////////////

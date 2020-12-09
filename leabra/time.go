@@ -206,6 +206,10 @@ const (
 	// Sequence is a sequential group of Trials (not always needed).
 	Sequence
 
+	// Condition is a collection of Blocks that share the same set of parameters.
+	// This is intermediate between Block and Run levels.
+	Condition
+
 	// Block is a collection of Trials, Sequences or Events, often used in experiments
 	// when conditions are varied across blocks.
 	Block

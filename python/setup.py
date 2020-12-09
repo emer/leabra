@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="emergent",
-    version="1.1.0",
+    name="leabra",
+    version="1.1.15",
     author="emergent",
     author_email="oreilly@ucdavis.edu",
     description="Python interface to emergent neural network simulation system, in Go",

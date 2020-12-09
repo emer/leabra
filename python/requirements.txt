@@ -1,0 +1,7 @@
+pybindgen
+setuptools
+wheel
+numpy
+pandas
+torch
+

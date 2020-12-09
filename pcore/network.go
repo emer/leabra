@@ -200,3 +200,16 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 
 	return
 }
+
+// AddBGPy adds MtxGo, No, CIN, GPeOut, GPeIn, GPeTA, STNp, STNs, GPi, and VThal layers,
+// with given optional prefix.
+// Assumes that a 4D structure will be used, with Pools representing separable gating domains.
+// Only Matrix has more than 1 unit per Pool by default.
+// Appropriate PoolOneToOne connections are made between layers,
+// using standard styles.
+// space is the spacing between layers (2 typical)
+// Py is Python version, returns layers as a slice
+func AddBGPy(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, space float32) []leabra.LeabraLayer {
+	mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal := AddBG(nt, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
+	return []leabra.LeabraLayer{mtxGo, mtxNo, cin, gpeOut, gpeIn, gpeTA, stnp, stns, gpi, vthal}
+}

@@ -165,9 +165,11 @@ func (nt *Network) InitWts() {
 	// fmt.Printf("sym: %v\n", dur)
 }
 
-// InitScalesFmPoolTile initializes synapse-specific scale parameters from
-// prjn.PoolTile projection TopoWts methods.
-func (nt *Network) InitScalesFmPoolTile() {
+// InitTopoScales initializes synapse-specific scale parameters from
+// prjn types that support them, with flags set to support it,
+// includes: prjn.PoolTile prjn.Circle.
+// call before InitWts if using Topo wts
+func (nt *Network) InitTopoScales() {
 	scales := &etensor.Float32{}
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
@@ -179,14 +181,22 @@ func (nt *Network) InitScalesFmPoolTile() {
 				continue
 			}
 			pat := p.Pattern()
-			ptile, ok := pat.(*prjn.PoolTile)
-			if !ok {
-				continue
+			switch pt := pat.(type) {
+			case *prjn.PoolTile:
+				if !pt.HasTopoWts() {
+					continue
+				}
+				pj := p.(LeabraPrjn).AsLeabra()
+				slay := p.SendLay()
+				pt.TopoWts(slay.Shape(), ly.Shape(), scales)
+				pj.SetScalesRPool(scales)
+			case *prjn.Circle:
+				if !pt.TopoWts {
+					continue
+				}
+				pj := p.(LeabraPrjn).AsLeabra()
+				pj.SetScalesFunc(pt.GaussWts)
 			}
-			pj := p.(LeabraPrjn).AsLeabra()
-			slay := p.SendLay()
-			ptile.TopoWts(slay.Shape(), ly.Shape(), scales)
-			pj.SetScalesRPool(scales)
 		}
 	}
 }

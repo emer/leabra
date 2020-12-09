@@ -44,6 +44,11 @@ func (sd *SendDA) Add(laynm ...string) {
 	*sd = append(*sd, laynm...)
 }
 
+// AddOne adds one layer name to list -- python version -- doesn't support varargs
+func (sd *SendDA) AddOne(laynm string) {
+	*sd = append(*sd, laynm)
+}
+
 // AddAllBut adds all layers in network except those in exlude list
 func (sd *SendDA) AddAllBut(net emer.Network, excl []string) {
 	ln := (*emer.LayNames)(sd)

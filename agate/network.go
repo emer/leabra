@@ -136,3 +136,16 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	}
 	return
 }
+
+// AddPFCPy adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// and OutLayer which is gated by BG.
+// Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
+// Optionally creates a TRC Pulvinar for Super.
+// Standard Deep CTCtxtPrjn PoolOneToOne Super -> CT projection, and
+// 1to1 projections Super -> Maint and Maint -> Out class PFCFixed are created by default.
+// CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
+// Py is Python version, returns layers as a slice
+func AddPFCPy(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) []emer.Layer {
+	super, ct, maint, out, pulv := AddPFC(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX, pulvLay)
+	return []emer.Layer{super, ct, maint, out, pulv}
+}
