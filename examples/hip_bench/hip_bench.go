@@ -109,6 +109,7 @@ type Sim struct {
 	TrainAC      *etable.Table               `view:"no-inline" desc:"AC training patterns to use"`
 	TestAB       *etable.Table               `view:"no-inline" desc:"AB testing patterns to use"`
 	TestAC       *etable.Table               `view:"no-inline" desc:"AC testing patterns to use"`
+	PreTrainLure *etable.Table               `view:"no-inline" desc:"Lure pretrain patterns to use"`
 	TestLure     *etable.Table               `view:"no-inline" desc:"Lure testing patterns to use"`
 	TrainAll     *etable.Table               `view:"no-inline" desc:"all training patterns -- for pretrain"`
 	TrnTrlLog    *etable.Table               `view:"no-inline" desc:"training trial-level log data"`
@@ -204,6 +205,7 @@ func (ss *Sim) New() {
 	ss.TrainAC = &etable.Table{}
 	ss.TestAB = &etable.Table{}
 	ss.TestAC = &etable.Table{}
+	ss.PreTrainLure = &etable.Table{}
 	ss.TestLure = &etable.Table{}
 	ss.TrainAll = &etable.Table{}
 	ss.TrnTrlLog = &etable.Table{}
@@ -213,13 +215,13 @@ func (ss *Sim) New() {
 	ss.TstCycLog = &etable.Table{}
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
-	ss.Params = ParamSets // in def_params -- current best params
-	// ss.Params = OrigParamSets // original, previous model
+	ss.Params = ParamSets // in def_params -- current best params, zycyc
+	//ss.Params = OrigParamSets // original, previous model
 	// ss.Params = SavedParamsSets // current user-saved gui params
-	ss.RndSeed = 2
+	ss.RndSeed = 2 // zycyc was 2, 20 sees weired results in MedHip020
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
-	ss.TestUpdt = leabra.AlphaCycle
+	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 1
 	ss.LogSetParams = false
 	ss.MemThr = 0.34
@@ -232,9 +234,8 @@ func (ss *Sim) New() {
 
 func (pp *PatParams) Defaults() {
 	pp.ListSize = 20 // 10 is too small to see issues..
-	pp.MinDiffPct = 0.5
-	pp.CtxtFlipPct = .25
-	pp.DriftPct = .2
+	pp.MinDiffPct = 0.5 // zycyc: was 0.5
+	pp.CtxtFlipPct = .25 // zycyc: was .25
 }
 
 func (hp *HipParams) Defaults() {
@@ -289,7 +290,7 @@ func (ss *Sim) ConfigEnv() {
 	if ss.MaxEpcs == 0 { // allow user override
 		ss.MaxEpcs = 30
 		ss.NZeroStop = 1
-		ss.PreTrainEpcs = 5 // seems sufficient?
+		ss.PreTrainEpcs = 5 // seems sufficient? increase?
 	}
 
 	ss.TrainEnv.Nm = "TrainEnv"
@@ -361,7 +362,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("HippoCHL")
 
-	if true { // toggle for bcm vs. ppath
+	if true { // toggle for bcm vs. ppath, zycyc: must use false for orig_param, true for def_param
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
 		pj.SetClass("PPath")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
@@ -369,9 +370,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	} else {
 		// so far, this is sig worse, even with error-driven MinusQ1 case (which is better than off)
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
-		pj.SetClass("PPath")
+		pj.SetClass("HippoCHL")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
-		pj.SetClass("PPath")
+		pj.SetClass("HippoCHL")
 	}
 
 	// always use this for now:
@@ -411,6 +412,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 }
 
 func (ss *Sim) ReConfigNet() {
+	ss.Update()
 	ss.ConfigPats()
 	ss.Net = &leabra.Network{} // start over with new network
 	ss.ConfigNet(ss.Net)
@@ -1117,13 +1119,17 @@ func (ss *Sim) ConfigPats() {
 	patgen.MixPats(ss.TestAC, ss.PoolVocab, "Input", []string{"A", "empty", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 	patgen.MixPats(ss.TestAC, ss.PoolVocab, "ECout", []string{"A", "C", "ctxt5", "ctxt6", "ctxt7", "ctxt8"})
 
+	patgen.InitPats(ss.PreTrainLure, "PreTrainLure", "PreTrainLure Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
+	patgen.MixPats(ss.PreTrainLure, ss.PoolVocab, "Input", []string{"lA", "lB", "ctxt9", "ctxt10", "ctxt11", "ctxt12"}) // arbitrary ctxt here
+	patgen.MixPats(ss.PreTrainLure, ss.PoolVocab, "ECout", []string{"lA", "lB", "ctxt9", "ctxt10", "ctxt11", "ctxt12"})    // arbitrary ctxt here
+
 	patgen.InitPats(ss.TestLure, "TestLure", "TestLure Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TestLure, ss.PoolVocab, "Input", []string{"lA", "empty", "ctxt9", "ctxt10", "ctxt11", "ctxt12"}) // arbitrary ctxt here
 	patgen.MixPats(ss.TestLure, ss.PoolVocab, "ECout", []string{"lA", "lB", "ctxt9", "ctxt10", "ctxt11", "ctxt12"})    // arbitrary ctxt here
 
 	ss.TrainAll = ss.TrainAB.Clone()
 	ss.TrainAll.AppendRows(ss.TrainAC)
-	ss.TrainAll.AppendRows(ss.TestLure)
+	ss.TrainAll.AppendRows(ss.PreTrainLure)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -2075,13 +2081,18 @@ var SimProps = ki.Props{
 	},
 }
 
+// zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-// var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
-var OuterLoopParams = []string{"MedHip"} //, "BigHip"}
+//var OuterLoopParams = []string{"DGPCon0.2", "DGPCon0.25", "DGPCon0.3"}
+//var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
+var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-// var InnerLoopParams = []string{"List020", "List040", "List050", "List060", "List070", "List080"} // , "List100"}
-var InnerLoopParams = []string{"List040", "List080", "List120", "List160", "List200"} // , "List100"}
+//var InnerLoopParams = []string{"CA3PCon0.2", "CA3PCon0.25", "CA3PCon0.3"}
+//var InnerLoopParams = []string{"List080"}
+var InnerLoopParams = []string{"List020", "List040"}
+//var InnerLoopParams = []string{"List020", "List040", "List060", "List080"} // , "List100"}
+//var InnerLoopParams = []string{"List020", "List040", "List080", "List120", "List160", "List200"} // , "List100"}
 //var InnerLoopParams = []string{"List010", "List020", "List030", "List040", "List50"} // , "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
@@ -2091,6 +2102,8 @@ func (ss *Sim) TwoFactorRun() {
 	if usetag != "" {
 		usetag += "_"
 	}
+	//ss.SetParamsSet("BigHip", "", ss.LogSetParams)
+	//ss.SetParamsSet("List080", "", ss.LogSetParams)
 	for _, otf := range OuterLoopParams {
 		for _, inf := range InnerLoopParams {
 			ss.Tag = usetag + otf + "_" + inf

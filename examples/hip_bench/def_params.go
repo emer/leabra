@@ -24,10 +24,11 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Norm.On":      "false",
 					"Prjn.Learn.WtBal.On":     "true",  // better
 					"Prjn.Learn.XCal.SetLLrn": "false", // bcm = better!  now avail
+					//"Prjn.Learn.XCal.LLrn":    "0.01",    // 0 = turn off BCM
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.05", // .01 > .05? > .1?
+					"Prjn.CHL.Hebb":          "0.01", // .01 > .05? > .1?
 					"Prjn.Learn.Lrate":       "0.2",  // .2 probably better? .4 was prev default
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
@@ -35,16 +36,17 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Prjn prjns",
 				Params: params.Params{
+					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
-					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
+					//"Prjn.Learn.XCal.SetLLrn": "false", // bcm = almost no diff zycyc
 					// moss=4, delta=4, lr=0.2, test = 3 are best
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "2.0", // 4 > 6 > 2 (fails)
-					"Prjn.WtScale.Rel": "2.0", // Rel=4, Abs=1 fails entirely.  could try diff combos
+					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
+					// "Prjn.WtScale.Rel": "2.0", // Rel=4, Abs=1 fails entirely.  could try diff combos
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
@@ -74,10 +76,10 @@ var ParamSets = params.Sets{
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
 					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!
-					"Prjn.CHL.Hebb":          ".5",   // .5 > 1 overall
-					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
-					"Prjn.CHL.MinusQ1":       "true", // dg self err?
-					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
+					"Prjn.CHL.Hebb":          "0.25",   // .5 > 1 overall; zycyc .25 seems good
+					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ? .1 better zycyc
+					"Prjn.CHL.MinusQ1":       "true", // dg self err? doesn't matter zycyc
+					"Prjn.Learn.Lrate":       "0.2",  // .4 > .3 > .2; zycyc .4 learns faster, .2 remembers more
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -117,6 +119,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.Pool.Gi":     "2.4", // 2.4 > 2.2 > 2.6 > 2.8 -- 2.4 better *for small net* but not for larger!
 					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
+					//"Layer.Learn.AvgL.ModMin": "0.01", // zycyc
 				}},
 		},
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base

@@ -22,13 +22,13 @@ var OrigParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On":  "false",
 					"Prjn.Learn.Norm.On":      "false",
 					"Prjn.Learn.WtBal.On":     "false",
-					"Prjn.Learn.XCal.SetLLrn": "true", // bcm is now active -- control
-					"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM
+					"Prjn.Learn.XCal.SetLLrn": "false", // bcm is now active -- control
+					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
 					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.4", // note: 0.2 can sometimes take a really long time to learn
+					"Prjn.Learn.Lrate":       "0.2", // note: 0.2 can sometimes take a really long time to learn
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -79,6 +79,10 @@ var OrigParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":     "2.0",
 					"Layer.Inhib.Pool.On":     "true",
 				}},
+			//{Sel: "#ECout", Desc: "very sparsevery sparse = high inibhition",
+			//	Params: params.Params{
+			//		"Layer.Learn.AvgL.ModMin": "0.05", // zycyc
+			//	}},
 			{Sel: "#DG", Desc: "very sparse = high inibhition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
@@ -95,6 +99,7 @@ var OrigParamSets = params.Sets{
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.Gi":     "2.2",
 					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Learn.AvgL.ModMin": "0.01", // zycyc
 				}},
 		},
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
