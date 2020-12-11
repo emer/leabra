@@ -106,7 +106,7 @@ type Sim struct {
 	Net          *leabra.Network             `view:"no-inline"`
 	Hip          HipParams                   `desc:"hippocampus sizing parameters"`
 	Pat          PatParams                   `desc:"parameters for the input patterns"`
-	PoolVocab    map[string]*etensor.Float32 `view:"no-inline" desc:"pool patterns vocabulary"`
+	PoolVocab    patgen.Vocab                `view:"no-inline" desc:"pool patterns vocabulary"`
 	TrainAB      *etable.Table               `view:"no-inline" desc:"AB training patterns to use"`
 	TrainAC      *etable.Table               `view:"no-inline" desc:"AC training patterns to use"`
 	TestAB       *etable.Table               `view:"no-inline" desc:"AB testing patterns to use"`
@@ -221,10 +221,10 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.SimMats = make(map[string]*simat.SimMat)
-	ss.Params = ParamSets // in def_params -- current best params, zycyc
-	// ss.Params = OrigParamSets // original, previous model
+	ss.Params = ParamSets // in def_params -- current best params, zycyc test
+	//ss.Params = OrigParamSets // original, previous model
 	// ss.Params = SavedParamsSets // current user-saved gui params
-	ss.RndSeed = 2 // zycyc was 2, 20 sees weired results in MedHip020
+	ss.RndSeed = 2
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
@@ -241,8 +241,8 @@ func (ss *Sim) New() {
 
 func (pp *PatParams) Defaults() {
 	pp.ListSize = 20 // 10 is too small to see issues..
-	pp.MinDiffPct = 0.5 // zycyc: was 0.5
-	pp.CtxtFlipPct = .25 // zycyc: was .25
+	pp.MinDiffPct = 0.5
+	pp.CtxtFlipPct = .25
 }
 
 func (hp *HipParams) Defaults() {
@@ -1473,7 +1473,7 @@ func (ss *Sim) ConfigTstTrlPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 		plt.SetColParams(lnm+" ActM.Avg", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 0.5)
 	}
 	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" Act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+		plt.SetColParams(lnm+"Act", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
 	}
 
 	return plt
@@ -2212,17 +2212,10 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-//var OuterLoopParams = []string{"DGPCon0.2", "DGPCon0.25", "DGPCon0.3"}
-//var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
-var OuterLoopParams = []string{"SmallHip", "MedHip"} //, "BigHip"}
+var OuterLoopParams = []string{"MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-//var InnerLoopParams = []string{"CA3PCon0.2", "CA3PCon0.25", "CA3PCon0.3"}
-//var InnerLoopParams = []string{"List080"}
-var InnerLoopParams = []string{"List020", "List040"}
-//var InnerLoopParams = []string{"List020", "List040", "List060", "List080"} // , "List100"}
-//var InnerLoopParams = []string{"List020", "List040", "List080", "List120", "List160", "List200"} // , "List100"}
-//var InnerLoopParams = []string{"List010", "List020", "List030", "List040", "List50"} // , "List100"}
+var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {

@@ -2,9 +2,9 @@ This project supports testing of the hippocampus model, systematically varying d
 
 It is both for optimizing parameters and also testing new learning ideas in the hippocampus.
 
-# Best Params for AB-AC, Feb 2020
+# Best Params for AB-AC, Dec 2020
 
-This is the first pass of parameter optimization, starting from original params inherited from C++ emergent `hip` model, and used in the Comp Cog Neuro textbook, etc.
+This is the second pass of parameter optimization, starting from original params inherited from C++ emergent `hip` model, and used in the Comp Cog Neuro textbook, etc.
 
 Dramatic improvements in learning performance were achieved by optimizing the following parameters and adding the following mechanisms:
 
@@ -59,31 +59,18 @@ And here are the diffs to the standard `hip.go` from `leabra/examples/hip` imple
 
 ## Performance
 
-The graphs below show number of epochs to get to 100% perfect performance, for the first AB list (First Zero) and both AB and AC lists (NEpochs), and also for the memory performance at the end of training, showing how much of the AB list is still remembered after full training on the AC list.  The new params show robust learning up to list sizes of 200 *each* for AB, AC lists, in the medium sized network, although the AB items are almost completely interfered away after learning the AC list.  In comparison, the original params failed quickly above 20 items.
+The graphs below show number of epochs to get to 100% perfect performance, for the first AB list (First Zero) and both AB and AC lists (NEpochs), and also for the memory performance at the end of training, showing how much of the AB list is still remembered after full training on the AC list.  The new params show robust learning up to list sizes of 100 *each* for AB, AC lists, in the medium sized network, although the AB items are almost completely interfered away after learning the AC list.  In comparison, the original params had slower learning and poorer AB memory.
 
 All models have 7x7 EC pools with A, B/C item pools and 4 additional Context pools that differentiate the AB / AC lists.  The `SmallHip` has 20x20 = 400 CA3, DG = 1.5x = 600, and 10x10=100 CA1 pools (i.e., original textbook model size) while `MedHip` has 30x30 = 900 CA3, DG = 1.5x = 1350, and 15x15 = 225 CA1 pools.
 
-### Current best params from 2/2020, list sizes 40-200
+### Current best params from 12/2020, list sizes 20-100
 
-<img src="fig_hipbench_best2-20_40-200_epc.png" alt="Current best params from 2/2020, learning epochs, list sizes 40-200"  width="640" />
+<img src="def_learning.png" alt="Current best params from 12/2020, learning epochs, list sizes 20-100"  width="640" />
 
-<img src="fig_hipbench_best2-20_40-200_mem.png" alt="Current best params from 2/2020, item memory, list sizes 40-200"  width="640" />
+<img src="def_memory.png" alt="Current best params from 12/2020, item memory, list sizes 20-100"  width="640" />
 
-### List sizes 20-80 (comparison with orig)
+### Original params runned in 12/2020, list sizes 20-100
 
-#### Best Learning
+<img src="orig_learning.png" alt="Original params runned in 2/2020, learning epochs, list sizes 20-100"  width="640" />
 
-<img src="fig_hipbench_best2-20_20-80_epc.png" alt="Current best params from 2/2020, learning epochs, list sizes 20-80 (for comparison with orig)" width="640" />
-
-#### Orig Learning
-
-<img src="fig_hipbench_origpars_20-80_epc.png" alt="Original params, learning epochs, list sizes 20-80" width="640" />
-
-#### Best Memory
-
-<img src="fig_hipbench_best2-20_20-80_mem.png" alt="Current best params from 2/2020, item memory, list sizes 20-80 (for comparison with orig)"  width="640" />
-
-#### Orig Memory
-
-<img src="fig_hipbench_origpars_20-80_mem.png" alt="Original params, item memory, list sizes 20-80"  width="640" />
-
+<img src="orig_memory.png" alt="Original params runned in 2/2020, item memory, list sizes 20-100"  width="640" />
