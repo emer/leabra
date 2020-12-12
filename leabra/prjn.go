@@ -436,6 +436,9 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 			// now we need to find the reciprocal synapse on rpj!
 			// look in ri for sending connections
 			rsi := ri
+			if len(rpj.SConN) == 0 {
+				continue
+			}
 			rsnc := rpj.SConN[rsi]
 			if rsnc == 0 {
 				continue
