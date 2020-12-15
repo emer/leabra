@@ -17,7 +17,7 @@ The entry point for the whole program is the `main()` function, in `pvlv.go`. Ju
 
 ### Command-line switches
 
-See the [command line options](https://github.com/emer/leabra/blob/master/examples/pvlv/README.md#appendix:-command-line-parameters) appendix of the PVLV textbook application documentation for a description of the available command-line switches.
+See the [command line options](https://github.com/emer/leabra/blob/master/examples/pvlv/README.md#appendix-command-line-parameters) appendix of the PVLV textbook application documentation for a description of the available command-line switches.
 
 The PVLV model uses the [`Stepper`](https://github.com/emer/emergent/blob/master/stepper/README.md) package to control running of the application.
 
