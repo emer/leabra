@@ -24,16 +24,19 @@ type AvgMaxModLayer interface {
 	AvgMaxMod(*leabra.Time)
 }
 
+// ModReceiver has one method to integrate incoming modulation, and another
 type ModReceiver interface {
-	ModsFmInc(ltime *leabra.Time)
-	ReceiveMods(sender ModSender, scale float32)
+	ReceiveMods(sender ModSender, scale float32) // copy incoming modulation values into the layer's own ModNet variable
+	ModsFmInc(ltime *leabra.Time)                // set modulation levels
 }
 
+// ModSender has methods for sending modulation, and setting the value to be sent.
 type ModSender interface {
 	SendMods(ltime *leabra.Time)
 	ModSendValue(ni int32) float32
 }
 
+// ModLayer is a layer that RECEIVES modulatory input
 type ModLayer struct {
 	leabra.Layer
 	ModNeurs     []ModNeuron     `desc:"neuron-level modulation state"`
@@ -48,12 +51,14 @@ var _ IModLayer = (*ModLayer)(nil)
 
 var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, nil)
 
+// ModPool is similar to a standard Pool structure, and uses the same code to compute running statistics.
 type ModPool struct {
 	ModNetStats      minmax.AvgMax32
 	ModSent          float32 `desc:"modulation level transmitted to receiver layers"`
 	ModSendThreshold float32 `desc:"threshold for sending modulation. values below this are not added to the pool-level total"`
 }
 
+// DaModParams specifies parameters shared by all layers that receive dopaminergic modulatory input.
 type DaModParams struct {
 	On        bool    `desc:"whether to use dopamine modulation"`
 	RecepType DaRType `inactive:"+" desc:"dopamine receptor type, D1 or D2"`
@@ -61,6 +66,7 @@ type DaModParams struct {
 	DipGain   float32 `desc:"multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext"`
 }
 
+// ModParams contains values that control a receiving layer's response to modulatory inputs
 type ModParams struct {
 	Minus            float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
 	Plus             float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
@@ -74,6 +80,8 @@ type ModParams struct {
 	IsPVReceiver     bool    `desc:"does this layer receive a direct PV input?"`
 }
 
+// ModRcvrParams specifies the name of a layer that receives modulatory input, and a scale factor--critical for inputs from
+// large layers such as BLA.
 type ModRcvrParams struct {
 	RcvName string  `desc:"name of receiving layer"`
 	Scale   float32 `desc:"scale factor for modulation to this receiver"`
@@ -81,6 +89,7 @@ type ModRcvrParams struct {
 
 var KiT_ModParams = kit.Types.AddType(&ModParams{}, nil)
 
+// Modulators are modulatory neurotransmitters. Currently ACh and SE are only placeholders.
 type Modulators struct {
 	DA  float32 `desc:"current dopamine level for this layer"`
 	ACh float32 `desc:"current acetylcholine level for this layer"`
@@ -89,6 +98,7 @@ type Modulators struct {
 
 var KiT_Modulators = kit.Types.AddType(&Modulators{}, nil)
 
+// ModNeuron encapsulates the variables used by all layers that receive modulatory input
 type ModNeuron struct {
 	Modulators `desc:"neuron-level modulator activation"`
 	ModAct     float32 `desc:"activity level for modulation"`
@@ -105,7 +115,7 @@ func (ly *ModLayer) AsMod() *ModLayer {
 	return ly
 }
 
-// Get a pointer to the generic Leabra portion of the layer
+// AsLeabra gets a pointer to the generic Leabra portion of the layer
 func (ly *ModLayer) AsLeabra() *leabra.Layer {
 	return &ly.Layer
 }
@@ -133,14 +143,14 @@ func (dm *ModParams) Gain(da, gain float32, plusPhase bool) float32 {
 	}
 }
 
-// DaRType for D1R and D2R dopamine receptors
+// Dopamine receptor type, for D1R and D2R dopamine receptors
 type DaRType int
 
 const (
-	// D1R primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum
+	// D1R: primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum
 	D1R DaRType = iota
 
-	// D2R primarily expresses Dopamine D2 Receptors -- dopamine is inhibitory and bursts of dopamine lead to decreases in synaptic weight, while dips lead to increases -- indirect pathway in dorsal striatum
+	// D2R: primarily expresses Dopamine D2 Receptors -- dopamine is inhibitory and bursts of dopamine lead to decreases in synaptic weight, while dips lead to increases -- indirect pathway in dorsal striatum
 	D2R
 
 	DaRTypeN
@@ -148,7 +158,7 @@ const (
 
 var KiT_DaRType = kit.Enums.AddEnum(DaRTypeN, kit.NotBitFlag, nil)
 
-// Retrieve a value for a trace of some quantity, possibly more than just a variable
+// GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
 func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 	var val float32
 	var err error
@@ -284,10 +294,12 @@ func (ly *ModLayer) Defaults() {
 	}
 }
 
+// UpdateParams passes on an UpdateParams call to the layer's underlying Leabra layer.
 func (ly *ModLayer) UpdateParams() {
 	ly.Layer.UpdateParams()
 }
 
+// InitActs sets modulation state variables to their default values for a layer, including its pools.
 func (ly *ModLayer) InitActs() {
 	ly.Layer.InitActs()
 	for ni := range ly.ModNeurs {
@@ -302,12 +314,14 @@ func (ly *ModLayer) InitActs() {
 	ly.Modulators.InitActs()
 }
 
+// InitActs zeroes activation levels for a set of modulator variables.
 func (ml *Modulators) InitActs() {
 	ml.ACh = 0
 	ml.DA = 0
 	ml.SE = 0
 }
 
+// InitActs sets modulation state variables to their default values for one neuron.
 func (mnr *ModNeuron) InitActs() {
 	mnr.ModAct = 0
 	mnr.ModLevel = 1
@@ -317,17 +331,14 @@ func (mnr *ModNeuron) InitActs() {
 	mnr.Modulators.InitActs()
 }
 
+// ClearModLevels resets modulation state variables to their default values for an entire layer.
 func (ly *ModLayer) ClearModLevels() {
 	for ni := range ly.ModNeurs {
-		mnr := &ly.ModNeurs[ni]
-		mnr.ModAct = 0
-		mnr.ModLevel = 1
-		mnr.ModNet = 0
-		mnr.ModLrn = 1
-		mnr.PVAct = 0
+		ly.ModNeurs[ni].InitActs()
 	}
 }
 
+// AddModReceiver adds a receiving layer to the list of modulatory target layers for a sending layer.
 func (ly *ModLayer) AddModReceiver(rcvr ModReceiver, scale float32) {
 	ly.IsModSender = true
 	rly := rcvr.(IModLayer).AsMod()
@@ -335,10 +346,13 @@ func (ly *ModLayer) AddModReceiver(rcvr ModReceiver, scale float32) {
 	ly.ModReceivers = append(ly.ModReceivers, ModRcvrParams{rly.Name(), scale})
 }
 
+// ModSendValue returns the value of ModSent for one modulatory pool, specified by ni.
 func (ly *ModLayer) ModSendValue(ni int32) float32 {
 	return ly.ModPools[ni].ModSent
 }
 
+// SendMods calculates the level of modulation to send to receivers, based on subpool activations, and calls
+// ReceiveMods for the receivers to process sent values.
 func (ly *ModLayer) SendMods(_ *leabra.Time) {
 	for pi := range ly.ModPools {
 		mpl := &ly.ModPools[pi]
@@ -357,6 +371,7 @@ func (ly *ModLayer) SendMods(_ *leabra.Time) {
 	}
 }
 
+// ReceiveMods computes ModNet, based on the value from the sender, times a scale value.
 func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -369,6 +384,13 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 	}
 }
 
+// ModsFmInc sets ModLrn and ModLevel based on individual neuron activation and incoming ModNet values.
+//
+// If ModNet is below threshold, ModLrn is set to 0, and ModLevel is set to either 0 or 1 depending on the value of the
+//ModNetThreshold parameter.
+//
+// If ModNet is above threshold, ModLrn for each neuron is set to the ratio of its ModNet input to its subpool
+// activation value, with special cases for extreme values.
 func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
@@ -403,6 +425,8 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	}
 }
 
+// ClearModActs clears modulatory activation values. This is critical for getting clean results from one trial to
+// the next.
 func (ly *ModLayer) ClearModActs() {
 	for ni := range ly.ModNeurs {
 		mnr := &ly.ModNeurs[ni]
@@ -415,6 +439,7 @@ func (ly *ModLayer) ClearModActs() {
 	}
 }
 
+// GScaleFmAvgAct sets the value of GScale on incoming projections, based on sending layer subpool activations.
 func (ly *ModLayer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
@@ -474,10 +499,13 @@ func (ly *ModLayer) DALrnFmDA(da float32) float32 {
 }
 
 // Functions for rl.DALayer
+
+// GetDA returns the level of dopaminergic activation for an entire layer.
 func (ly *ModLayer) GetDA() float32 {
 	return ly.DA
 }
 
+// SetDA sets the level of dopaminergic activation for an entire layer.
 func (ly *ModLayer) SetDA(da float32) {
 	ly.DA = da
 	for ni := range ly.ModNeurs {
@@ -488,6 +516,7 @@ func (ly *ModLayer) SetDA(da float32) {
 
 // end rl.DALayer
 
+// AvgMaxMod runs the standard activation statistics calculation as used for other pools on a layer's ModPools.
 func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 	for pi := range ly.ModPools {
 		mpl := &ly.ModPools[pi]
@@ -508,6 +537,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 	}
 }
 
+// ActFmG calculates activation from net input, applying modulation values.
 func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
