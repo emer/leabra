@@ -24,16 +24,16 @@ type AvgMaxModLayer interface {
 	AvgMaxMod(*leabra.Time)
 }
 
-// ModReceiver has one method to integrate incoming modulation, and another
-type ModReceiver interface {
-	ReceiveMods(sender ModSender, scale float32) // copy incoming modulation values into the layer's own ModNet variable
-	ModsFmInc(ltime *leabra.Time)                // set modulation levels
-}
-
 // ModSender has methods for sending modulation, and setting the value to be sent.
 type ModSender interface {
 	SendMods(ltime *leabra.Time)
 	ModSendValue(ni int32) float32
+}
+
+// ModReceiver has one method to integrate incoming modulation, and another
+type ModReceiver interface {
+	ReceiveMods(sender ModSender, scale float32) // copy incoming modulation values into the layer's own ModNet variable
+	ModsFmInc(ltime *leabra.Time)                // set modulation levels
 }
 
 // ModLayer is a layer that RECEIVES modulatory input
