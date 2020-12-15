@@ -54,7 +54,7 @@ There are a total of 32 localist units representing the VS:
 
 #### Other layers
 - Ventral Tegmental Area (VTA): Two single-unit nuclei, one each for appetitive and aversive stimuli.
-  - Lateral Habenula / Rostromedial Tegmental Nucleus (LHbRMTg): One unit, with inhibitory connections to both sides of the VTA.
+- Lateral Habenula / Rostromedial Tegmental Nucleus (LHbRMTg): One unit, with inhibitory connections to both sides of the VTA.
 - Pedunculopontine Tegmentum (PPTg): A single unit that relays a positively-rectified version of CEm output to the VTA
 
 ### Connectivity
