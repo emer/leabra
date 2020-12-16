@@ -1187,13 +1187,25 @@ func (ly *Layer) CosDiffFmActs() {
 
 	ly.Learn.CosDiff.AvgVarFmCos(&ly.CosDiff.Avg, &ly.CosDiff.Var, ly.CosDiff.Cos)
 
-	if ly.Typ != emer.Hidden {
+	if ly.LeabraLay.IsTarget() {
 		ly.CosDiff.AvgLrn = 0 // no BCM for non-hidden layers
 		ly.CosDiff.ModAvgLLrn = 0
 	} else {
 		ly.CosDiff.AvgLrn = 1 - ly.CosDiff.Avg
 		ly.CosDiff.ModAvgLLrn = ly.Learn.AvgL.ErrModFmLayErr(ly.CosDiff.AvgLrn)
 	}
+}
+
+// IsTarget returns true if this layer is a Target layer.
+// By default, returns true for layers of Type == emer.Target
+// Other Target layers include the TRCLayer in deep predictive learning.
+// This is used for turning off BCM hebbian learning,
+// in CosDiffFmActs to set the CosDiff.ModAvgLLrn value
+// for error-modulated level of hebbian learning.
+// It is also used in WtBal to not apply it to target layers.
+// In both cases, Target layers are purely error-driven.
+func (ly *Layer) IsTarget() bool {
+	return ly.Typ == emer.Target
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

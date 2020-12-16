@@ -132,6 +132,10 @@ func (ly *TRCLayer) Class() string {
 	return "TRC " + ly.Cls
 }
 
+func (ly *TRCLayer) IsTarget() bool {
+	return true // We are a Target-like layer: don't use BCM hebbian learning!
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // Drivers
 
@@ -347,9 +351,6 @@ func (ly *TRCLayer) SetDriverActs() {
 		}
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Cycle
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *TRCLayer) GFmInc(ltime *leabra.Time) {
