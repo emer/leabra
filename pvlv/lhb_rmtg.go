@@ -197,6 +197,7 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 	}
 }
 
+// GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
 func (ly *LHbRMTgLayer) GetMonitorVal(data []string) float64 {
 	var val float32
 	valType := data[0]
