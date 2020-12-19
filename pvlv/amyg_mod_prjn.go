@@ -10,18 +10,22 @@ import (
 	"github.com/emer/leabra/leabra"
 )
 
+// IAmygPrjn has one method, AsAmygModPrjn, which recasts the projection as a moddulatory projection
 type IAmygPrjn interface {
-	AsAmygModPrjn() *AmygModPrjn
+	AsAmygModPrjn() *AmygModPrjn // recast the projection as a moddulatory projection
 }
 
+// AsAmygModPrjn returns a pointer to the modulatory variables for an amygdala projection
 func (pj *AmygModPrjn) AsAmygModPrjn() *AmygModPrjn {
 	return pj
 }
 
+// ISetScalePrjn initializes weights, including special scale calculations
 type ISetScalePrjn interface {
 	InitWts()
 }
 
+// AmygModPrjn holds parameters and state variables for modulatory projections to amygdala layers
 type AmygModPrjn struct {
 	leabra.Prjn
 	SetScale    bool        `desc:"only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically-supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)"`
@@ -37,9 +41,12 @@ type AmygModPrjn struct {
 	DaMod       DaModParams `desc:"parameters for dopaminergic modulation"`
 }
 
+// These null variables serve as a check that AmygModPrjn actually implements the IAmygPrjn and ISetScalePrjn interfaces
+// If any methods are not implemented, these statements will not compile
 var _ IAmygPrjn = (*AmygModPrjn)(nil)
 var _ ISetScalePrjn = (*AmygModPrjn)(nil)
 
+// InitWts sets initial weights, possibly including SetScale calculations
 func (pj *AmygModPrjn) InitWts() {
 	if pj.SetScale {
 		pj.SetScalesFunc(pj.GaussScale)
@@ -78,7 +85,7 @@ func (pj *AmygModPrjn) Defaults() {
 	pj.ActLrnMod = true
 }
 
-// Compute DA-modulated weight changes for amygdala layers
+// DWt computes DA-modulated weight changes for amygdala layers
 func (pj *AmygModPrjn) DWt() {
 	if !pj.Learn.Learn {
 		return

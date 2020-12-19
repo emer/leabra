@@ -50,6 +50,7 @@ func (nt *Network) Cycle(ltime *leabra.Time) {
 	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }
 
+//
 func (nt *Network) CycleImpl(ltime *leabra.Time) {
 	nt.QuarterInitPrvs(ltime)
 	nt.SendGDelta(ltime) // also does integ
@@ -126,19 +127,33 @@ func (nt *Network) SynVarProps() map[string]string {
 
 // For special layer types
 
-// Add a positive or negative valence VTA layer
+// AddVTALayer adds a positive or negative Valence VTA layer
 func (nt *Network) AddVTALayer(name string, val Valence) *VTALayer {
 	return AddVTALayer(nt, name, val)
 }
 
 // AddMatrixLayer adds a MSNLayer of given size, with given name.
+//
+// Geometry is 4D.
+//
 // nY = number of pools in Y dimension, nX is pools in X dimension,
-// and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)
+// and each pool has nNeurY * nNeurX neurons.
+//
+// cpmt specifies patch or matrix StriatalCompartment
+//
+//da parameter gives the DaReceptor type (DaRType) (D1R = Go, D2R = NoGo)
 func (nt *Network) AddMSNLayer(name string, nY, nX, nNeurY, nNeurX int, cpmt StriatalCompartment, da DaRType) *MSNLayer {
 	return AddMSNLayer(nt, name, nY, nX, nNeurY, nNeurX, cpmt, da)
 }
 
-// Add a CentroLateral Amygdala layer with specified 2D geometry, acquisition/extinction, valence, and DA receptor type
+// AddCElAmygLayer adds a CentroLateral Amygdala layer with specified 4D geometry, acquisition/extinction, valence, and DA receptor type
+//
+// Geometry is 4D.
+//
+// nY = number of pools in Y dimension, nX is pools in X dimension,
+// and each pool has nNeurY * nNeurX neurons.  da parameter gives the DaReceptor type (D1R = Go, D2R = NoGo).
+// acqExt (AcqExt) specifies whether this layer is involved with acquisition or extinction.
+// val is positive (appetitive) or negative (aversive) Valence.
 func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 	acqExt AcqExt, val Valence, dar DaRType) *CElAmygLayer {
 	ly := CElAmygLayer{CElTyp: CElAmygLayerType{AcqExt: acqExt, Valence: val}}
@@ -150,6 +165,7 @@ func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 	return &ly
 }
 
+// AddBlAmygLayer adds a Basolateral Amygdala layer with specified 4D geometry, acquisition/extinction, valence, and DA receptor type
 func (nt *Network) AddBlAmygLayer(name string, nY, nX, nNeurY, nNeurX int, val Valence, dar DaRType, lTyp emer.LayerType) *BlAmygLayer {
 	ly := BlAmygLayer{Valence: val}
 	ly.DaMod.RecepType = dar

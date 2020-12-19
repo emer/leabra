@@ -12,14 +12,17 @@ import (
 	"strconv"
 )
 
+// IBlAmygLayer has one method, AsBlAmygLayer, that returns a pointer to the layer specifically as a BLA layer.
 type IBlAmygLayer interface {
 	AsBlAmygLayer() *BlAmygLayer
 }
 
+// AsBlAmygLayer returns a pointer to the layer specifically as a BLA layer.
 func (ly *BlAmygLayer) AsBlAmygLayer() *BlAmygLayer {
 	return ly
 }
 
+// BlAmygLayer contains values specific to BLA layers, including Interlayer Inhibition (ILI)
 type BlAmygLayer struct {
 	ModLayer `desc:"modulation state"`
 	Valence  Valence               `desc:"positive or negative valence"`
@@ -63,6 +66,7 @@ func (ly *BlAmygLayer) Defaults() {
 	ly.Act.Init.Vm = 0.55
 }
 
+// GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
 func (ly *BlAmygLayer) GetMonitorVal(data []string) float64 {
 	var val float32
 	var err error

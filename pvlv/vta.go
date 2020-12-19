@@ -106,7 +106,7 @@ func (dag *VTADAGains) Defaults() {
 
 }
 
-// For monitoring during run. Includes values beyond the scope of neuron fields.
+// GetMonitorVal is for monitoring during run. Includes values beyond the scope of neuron fields.
 func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 	var val float32
 	valType := data[0]

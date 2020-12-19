@@ -111,18 +111,30 @@ type LeabraLayer interface {
 	// ApplyExt* method call.
 	UpdateExtFlags()
 
-	// AlphaCycInit handles all initialization at start of new input pattern, including computing
-	// netinput scaling from running average activation etc.
+	// IsTarget returns true if this layer is a Target layer.
+	// By default, returns true for layers of Type == emer.Target
+	// Other Target layers include the TRCLayer in deep predictive learning.
+	// This is used for turning off BCM hebbian learning,
+	// in CosDiffFmActs to set the CosDiff.ModAvgLLrn value
+	// for error-modulated level of hebbian learning.
+	// It is also used in WtBal to not apply it to target layers.
+	// In both cases, Target layers are purely error-driven.
+	IsTarget() bool
+
+	// AlphaCycInit handles all initialization at start of new input pattern,
+	// including computing netinput scaling from running average activation etc.
 	// should already have presented the external input to the network at this point.
 	AlphaCycInit()
 
-	// AvgLFmAvgM updates AvgL long-term running average activation that drives BCM Hebbian learning
+	// AvgLFmAvgM updates AvgL long-term running average activation that
+	// drives BCM Hebbian learning
 	AvgLFmAvgM()
 
 	// GScaleFmAvgAct computes the scaling factor for synaptic conductance input
 	// based on sending layer average activation.
-	// This attempts to automatically adjust for overall differences in raw activity coming into the units
-	// to achieve a general target of around .5 to 1 for the integrated G values.
+	// This attempts to automatically adjust for overall differences in raw
+	// activity coming into the units to achieve a general target
+	// of around .5 to 1 for the integrated G values.
 	GScaleFmAvgAct()
 
 	// GenNoise generates random noise for all neurons
@@ -174,8 +186,9 @@ type LeabraLayer interface {
 	// QuarterFinal does updating after end of a quarter
 	QuarterFinal(ltime *Time)
 
-	// CosDiffFmActs computes the cosine difference in activation state between minus and plus phases.
-	// this is also used for modulating the amount of BCM hebbian learning
+	// CosDiffFmActs computes the cosine difference in activation state
+	// between minus and plus phases.
+	// This is also used for modulating the amount of BCM hebbian learning
 	CosDiffFmActs()
 
 	// DWt computes the weight change (learning) -- calls DWt method on sending projections

@@ -620,16 +620,12 @@ func (pj *Prjn) WtBalFmWt() {
 	}
 
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if rlay.Typ == emer.Target {
+	if rlay.LeabraLay.IsTarget() {
 		return
 	}
 	for ri := range rlay.Neurons {
 		nc := int(pj.RConN[ri])
-		if nc <= 1 {
-			continue
-		}
-		rn := &rlay.Neurons[ri]
-		if rn.HasFlag(NeurHasTarg) { // todo: ensure that Pulvinar has this set, or do something else
+		if nc < 1 {
 			continue
 		}
 		wb := &pj.WbRecv[ri]
