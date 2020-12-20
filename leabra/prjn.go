@@ -14,6 +14,7 @@ import (
 
 	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/weights"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/indent"
@@ -59,6 +60,10 @@ func (pj *Prjn) UpdateParams() {
 	pj.Learn.Update()
 	pj.Learn.LrateInit = pj.Learn.Lrate
 }
+
+func (pj *Prjn) SetClass(cls string) emer.Prjn         { pj.Cls = cls; return pj }
+func (pj *Prjn) SetPattern(pat prjn.Pattern) emer.Prjn { pj.Pat = pat; return pj }
+func (pj *Prjn) SetType(typ emer.PrjnType) emer.Prjn   { pj.Typ = typ; return pj }
 
 // AllParams returns a listing of all parameters in the Layer
 func (pj *Prjn) AllParams() string {
