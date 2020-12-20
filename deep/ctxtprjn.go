@@ -39,7 +39,7 @@ func (pj *CTCtxtPrjn) Defaults() {
 	pj.Prjn.Defaults()
 	if pj.FmSuper {
 		pj.Learn.Learn = false
-		pj.WtInit.Mean = 0.8
+		pj.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
 		pj.WtInit.Var = 0
 	}
 }
