@@ -126,6 +126,7 @@ type Sim struct {
 	Params       params.Sets                 `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string                      `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set"`
 	Tag          string                      `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params)"`
+	BatchRun	 int                         `desc:"current batch run number, for generating different seed"`
 	MaxRuns      int                         `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int                         `desc:"maximum number of epochs to run per model run"`
 	PreTrainEpcs int                         `desc:"number of epochs to run for pretraining"`
@@ -178,6 +179,7 @@ type Sim struct {
 	TstEpcFile   *os.File                    `view:"-" desc:"log file"`
 	TstEpcHdrs   bool                        `view:"-" desc:"headers written"`
 	RunFile      *os.File                    `view:"-" desc:"log file"`
+	RunHdrs		 bool                        `view:"-" desc:"headers written"`
 	TmpVals      []float32                   `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
 	LayStatNms   []string                    `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
 	TstNms       []string                    `view:"-" desc:"names of test tables"`
@@ -249,8 +251,8 @@ func (hp *HipParams) Defaults() {
 	// size
 	hp.ECSize.Set(2, 3)
 	hp.ECPool.Set(7, 7)
-	hp.CA1Pool.Set(10, 10)
-	hp.CA3Size.Set(20, 20)
+	hp.CA1Pool.Set(15, 15) // using MedHip now
+	hp.CA3Size.Set(30, 30) // using MedHip now
 	hp.DGRatio = 1.5
 
 	// ratio
@@ -266,6 +268,7 @@ func (hp *HipParams) Defaults() {
 func (ss *Sim) Defaults() {
 	ss.Hip.Defaults()
 	ss.Pat.Defaults()
+	ss.BatchRun = 0 // for initializing envs if using Gui
 	ss.Time.CycPerQtr = 25 // note: key param - 25 seems like it is actually fine?
 	ss.Update()
 }
@@ -312,8 +315,8 @@ func (ss *Sim) ConfigEnv() {
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
 
-	ss.TrainEnv.Init(0)
-	ss.TestEnv.Init(0)
+	ss.TrainEnv.Init(ss.BatchRun)
+	ss.TestEnv.Init(ss.BatchRun)
 }
 
 // SetEnv select which set of patterns to train on: AB or AC
@@ -323,7 +326,7 @@ func (ss *Sim) SetEnv(trainAC bool) {
 	} else {
 		ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAB)
 	}
-	ss.TrainEnv.Init(0)
+	ss.TrainEnv.Init(ss.BatchRun)
 }
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
@@ -545,7 +548,8 @@ func (ss *Sim) AlphaCyc(train bool) {
 		case 1: // Second, Third Quarters: CA1 is driven by CA3 recall
 			ca1FmECin.WtScale.Abs = 0
 			ca1FmCa3.WtScale.Abs = 1
-			if train {
+			//ca3FmDg.WtScale.Rel = dgwtscale //zycyc, orig
+			if train { // def
 				ca3FmDg.WtScale.Rel = dgwtscale
 			} else {
 				ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDelTest // testing
@@ -657,9 +661,9 @@ func (ss *Sim) TrainTrial() {
 
 // PreTrainTrial runs one trial of pretraining using TrainEnv
 func (ss *Sim) PreTrainTrial() {
-	if ss.NeedsNewRun {
-		ss.NewRun()
-	}
+	//if ss.NeedsNewRun {
+	//	ss.NewRun()
+	//}
 
 	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
 
@@ -904,9 +908,9 @@ func (ss *Sim) SetDgCa3Off(net *leabra.Network, off bool) {
 func (ss *Sim) PreTrain() {
 	ss.SetDgCa3Off(ss.Net, true)
 	ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAll)
-	// todo: pretrain on all patterns!
 	ss.StopNow = false
 	curRun := ss.TrainEnv.Run.Cur
+	ss.TrainEnv.Init(curRun) // need this after changing num of rows in tables
 	for {
 		ss.PreTrainTrial()
 		if ss.StopNow || ss.TrainEnv.Run.Cur != curRun {
@@ -1104,9 +1108,9 @@ func (ss *Sim) ConfigPats() {
 		ctxtNm := fmt.Sprintf("ctxt%d", i+1)
 		tsr, _ := patgen.AddVocabRepeat(ss.PoolVocab, ctxtNm, npats, "ctxt", list)
 		patgen.FlipBitsRows(tsr, ctxtflip, ctxtflip, 1, 0)
-		// todo: also support drifting
-		// solution 2: drift based on last trial (will require sequential learning)
-		// patgen.VocabDrift(ss.PoolVocab, ss.NFlipBits, "ctxt"+strconv.Itoa(i+1))
+		//todo: also support drifting
+		//solution 2: drift based on last trial (will require sequential learning)
+		//patgen.VocabDrift(ss.PoolVocab, ss.NFlipBits, "ctxt"+strconv.Itoa(i+1))
 	}
 
 	ecY := hp.ECSize.Y
@@ -1185,7 +1189,7 @@ func (ss *Sim) WeightsFileName() string {
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
+	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
 }
 
 //////////////////////////////////////////////
@@ -1536,6 +1540,7 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	trl := ss.TstTrlLog
 	tix := etable.NewIdxView(trl)
 	epc := ss.TrainEnv.Epoch.Prv // ?
+	params := ss.RunName() // includes tag
 
 	if ss.LastEpcTime.IsZero() {
 		ss.EpcPerTrlMSec = 0
@@ -1549,6 +1554,7 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	// note: this shows how to use agg methods to compute summary data from another
 	// data table, instead of incrementing on the Sim
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
+	dt.SetCellString("Params", row, params)
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
 	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
@@ -1624,6 +1630,7 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 
 	sch := etable.Schema{
 		{"Run", etensor.INT64, nil, nil},
+		{"Params", etensor.STRING, nil, nil},
 		{"Epoch", etensor.INT64, nil, nil},
 		{"PerTrlMSec", etensor.FLOAT64, nil, nil},
 		{"SSE", etensor.FLOAT64, nil, nil},
@@ -1782,7 +1789,6 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 			dt.SetCellFloat(nm, row, agg.Mean(epcix, nm)[0])
 		}
 	}
-
 	ss.LogRunStats()
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1790,12 +1796,14 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 		ss.RunPlot.GoUpdate()
 	}
 	if ss.RunFile != nil {
-		if row == 0 {
+		if !ss.RunHdrs {
 			dt.WriteCSVHeaders(ss.RunFile, etable.Tab)
+			ss.RunHdrs = true
 		}
 		dt.WriteCSVRow(ss.RunFile, row, etable.Tab)
 	}
 }
+
 
 func (ss *Sim) ConfigRunLog(dt *etable.Table) {
 	dt.SetMetaData("name", "RunLog")
@@ -2212,10 +2220,12 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"MedHip", "BigHip"}
+var OuterLoopParams = []string{"BigHip"}
+//var OuterLoopParams = []string{"MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
+var InnerLoopParams = []string{"List020", "List040"}
+//var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {
@@ -2224,18 +2234,16 @@ func (ss *Sim) TwoFactorRun() {
 	if usetag != "" {
 		usetag += "_"
 	}
-	//ss.SetParamsSet("BigHip", "", ss.LogSetParams)
-	//ss.SetParamsSet("List080", "", ss.LogSetParams)
 	for _, otf := range OuterLoopParams {
 		for _, inf := range InnerLoopParams {
 			ss.Tag = usetag + otf + "_" + inf
-			rand.Seed(ss.RndSeed) // each run starts at same seed..
+			rand.Seed(ss.RndSeed + int64(ss.BatchRun)) // TODO: non-parallel running should resemble parallel running results, now not
 			ss.SetParamsSet(otf, "", ss.LogSetParams)
 			ss.SetParamsSet(inf, "", ss.LogSetParams)
 			ss.ReConfigNet() // note: this applies Base params to Network
 			ss.ConfigEnv()
 			ss.StopNow = false
-			ss.PreTrain()
+			ss.PreTrain() //zycyc
 			ss.NewRun()
 			ss.Train()
 		}
@@ -2252,6 +2260,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
+	flag.IntVar(&ss.BatchRun, "run", 0, "current batch run")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do")
 	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
@@ -2271,7 +2280,7 @@ func (ss *Sim) CmdArgs() {
 
 	if saveEpcLog {
 		var err error
-		fnm := ss.LogFileName("epc")
+		fnm := ss.LogFileName(strconv.Itoa(ss.BatchRun)+"epc")
 		ss.TstEpcFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
@@ -2283,7 +2292,7 @@ func (ss *Sim) CmdArgs() {
 	}
 	if saveRunLog {
 		var err error
-		fnm := ss.LogFileName("run")
+		fnm := ss.LogFileName(strconv.Itoa(ss.BatchRun)+"run")
 		ss.RunFile, err = os.Create(fnm)
 		if err != nil {
 			log.Println(err)
@@ -2296,9 +2305,10 @@ func (ss *Sim) CmdArgs() {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
-	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	fmt.Printf("Batch No. %d\n", ss.BatchRun)
+	fmt.Printf("Running %d Runs\n", ss.MaxRuns - ss.BatchRun)
 	// ss.Train()
 	ss.TwoFactorRun()
-	fnm := ss.LogFileName("runs")
-	ss.RunStats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers)
+	//fnm := ss.LogFileName("runs")
+	//ss.RunStats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers) // not usable for batch runs
 }
