@@ -69,8 +69,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1", // .1 = .2 > .5 > 1 !
-					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04
+					"Prjn.WtScale.Rel": "2", // 2 > 1 > .5 = .1
+					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
@@ -203,19 +203,19 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "List120", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List125", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
-					"PatParams.ListSize": "120",
+					"PatParams.ListSize": "125",
 				}},
 		},
 	}},
-	{Name: "List160", Desc: "list size", Sheets: params.Sheets{
+	{Name: "List150", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
 				Params: params.Params{
-					"PatParams.ListSize": "160",
+					"PatParams.ListSize": "150",
 				}},
 		},
 	}},
@@ -237,7 +237,7 @@ var ParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "10",
 					"HipParams.CA3Size.Y": "20",
 					"HipParams.CA3Size.X": "20",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before
 				}},
 		},
 	}},
@@ -251,7 +251,7 @@ var ParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "15",
 					"HipParams.CA3Size.Y": "30",
 					"HipParams.CA3Size.X": "30",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before
 				}},
 		},
 	}},
@@ -265,7 +265,7 @@ var ParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "20",
 					"HipParams.CA3Size.Y": "40",
 					"HipParams.CA3Size.X": "40",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before
 				}},
 		},
 	}},

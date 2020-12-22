@@ -2220,12 +2220,12 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"BigHip"}
-//var OuterLoopParams = []string{"MedHip", "BigHip"}
+//var OuterLoopParams = []string{"BigHip"}
+var OuterLoopParams = []string{"MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List020", "List040"}
-//var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
+//var InnerLoopParams = []string{"List125", "List150", "List200"}
+var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
 // TwoFactorRun runs outer-loop crossed with inner-loop params
 func (ss *Sim) TwoFactorRun() {
@@ -2243,7 +2243,7 @@ func (ss *Sim) TwoFactorRun() {
 			ss.ReConfigNet() // note: this applies Base params to Network
 			ss.ConfigEnv()
 			ss.StopNow = false
-			ss.PreTrain() //zycyc
+			ss.PreTrain()
 			ss.NewRun()
 			ss.Train()
 		}
