@@ -93,6 +93,10 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Prjn.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
 				}},
+			{Sel: ".CTFmSuper", Desc: "initial weight = 0.5 much better than 0.8",
+				Params: params.Params{
+					"Prjn.WtInit.Mean": "0.5",
+				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi":    "2.2",
@@ -101,6 +105,10 @@ var ParamSets = params.Sets{
 			{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "0.05",
+				}},
+			{Sel: "#HiddenCTToHiddenCT", Desc: "testing",
+				Params: params.Params{
+					"Prjn.Learn.WtBal.On": "false",
 				}},
 		},
 	}},
@@ -297,6 +305,8 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
 	full := prjn.NewFull()
+	full.SelfCon = true // unclear if this makes a diff for self cons at all
+
 	net.ConnectLayers(in, hid, full, emer.Forward)
 
 	// for this small localist model with longer-term dependencies,
@@ -304,6 +314,7 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	// larger models in general do not require them, though it might be
 	// good to check
 	net.ConnectCtxtToCT(hidct, hidct, full)
+	// net.LateralConnectLayer(hidct, full) // note: this does not work AT ALL -- essential to learn from t-1
 	net.ConnectCtxtToCT(in, hidct, full)
 
 	net.Defaults()
@@ -1392,43 +1403,45 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	// 		win.Close()
 	// 	})
 
-	inQuitPrompt := false
-	gi.SetQuitReqFunc(func() {
-		if inQuitPrompt {
-			return
-		}
-		inQuitPrompt = true
-		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Quit?",
-			Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, gi.AddOk, gi.AddCancel,
-			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				if sig == int64(gi.DialogAccepted) {
-					gi.Quit()
-				} else {
-					inQuitPrompt = false
-				}
-			})
-	})
+	/*
+		inQuitPrompt := false
+		gi.SetQuitReqFunc(func() {
+			if inQuitPrompt {
+				return
+			}
+			inQuitPrompt = true
+			gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Quit?",
+				Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, gi.AddOk, gi.AddCancel,
+				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+					if sig == int64(gi.DialogAccepted) {
+						gi.Quit()
+					} else {
+						inQuitPrompt = false
+					}
+				})
+		})
 
-	// gi.SetQuitCleanFunc(func() {
-	// 	fmt.Printf("Doing final Quit cleanup here..\n")
-	// })
+		// gi.SetQuitCleanFunc(func() {
+		// 	fmt.Printf("Doing final Quit cleanup here..\n")
+		// })
 
-	inClosePrompt := false
-	win.SetCloseReqFunc(func(w *gi.Window) {
-		if inClosePrompt {
-			return
-		}
-		inClosePrompt = true
-		gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Close Window?",
-			Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, gi.AddOk, gi.AddCancel,
-			win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				if sig == int64(gi.DialogAccepted) {
-					gi.Quit()
-				} else {
-					inClosePrompt = false
-				}
-			})
-	})
+		inClosePrompt := false
+		win.SetCloseReqFunc(func(w *gi.Window) {
+			if inClosePrompt {
+				return
+			}
+			inClosePrompt = true
+			gi.PromptDialog(vp, gi.DlgOpts{Title: "Really Close Window?",
+				Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, gi.AddOk, gi.AddCancel,
+				win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+					if sig == int64(gi.DialogAccepted) {
+						gi.Quit()
+					} else {
+						inClosePrompt = false
+					}
+				})
+		})
+	*/
 
 	win.SetCloseCleanFunc(func(w *gi.Window) {
 		go gi.Quit() // once main window is closed, quit

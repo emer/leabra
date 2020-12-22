@@ -48,20 +48,17 @@ func (ps *PrjnStru) Init(prjn emer.Prjn) {
 	ps.LeabraPrj = prjn.(LeabraPrjn)
 }
 
-func (ps *PrjnStru) TypeName() string    { return "Prjn" } // always, for params..
-func (ps *PrjnStru) Class() string       { return ps.LeabraPrj.PrjnTypeName() + " " + ps.Cls }
-func (ps *PrjnStru) SetClass(cls string) { ps.Cls = cls }
+func (ps *PrjnStru) TypeName() string { return "Prjn" } // always, for params..
+func (ps *PrjnStru) Class() string    { return ps.LeabraPrj.PrjnTypeName() + " " + ps.Cls }
 func (ps *PrjnStru) Name() string {
 	return ps.Send.Name() + "To" + ps.Recv.Name()
 }
-func (ps *PrjnStru) Label() string               { return ps.Name() }
-func (ps *PrjnStru) RecvLay() emer.Layer         { return ps.Recv }
-func (ps *PrjnStru) SendLay() emer.Layer         { return ps.Send }
-func (ps *PrjnStru) Pattern() prjn.Pattern       { return ps.Pat }
-func (ps *PrjnStru) SetPattern(pat prjn.Pattern) { ps.Pat = pat }
-func (ps *PrjnStru) Type() emer.PrjnType         { return ps.Typ }
-func (ps *PrjnStru) SetType(typ emer.PrjnType)   { ps.Typ = typ }
-func (ps *PrjnStru) PrjnTypeName() string        { return ps.Typ.String() }
+func (ps *PrjnStru) Label() string         { return ps.Name() }
+func (ps *PrjnStru) RecvLay() emer.Layer   { return ps.Recv }
+func (ps *PrjnStru) SendLay() emer.Layer   { return ps.Send }
+func (ps *PrjnStru) Pattern() prjn.Pattern { return ps.Pat }
+func (ps *PrjnStru) Type() emer.PrjnType   { return ps.Typ }
+func (ps *PrjnStru) PrjnTypeName() string  { return ps.Typ.String() }
 
 func (ps *PrjnStru) IsOff() bool {
 	return ps.Off || ps.Recv.IsOff() || ps.Send.IsOff()

@@ -82,7 +82,18 @@ func AddTRCLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 	return ly
 }
 
+// ConnectSuperToCT adds a CTCtxtPrjn from given sending Super layer to a CT layer
+// This automatically sets the FmSuper flag to engage proper defaults,
+// uses a OneToOne prjn pattern, and sets the class to CTFmSuper
+func ConnectSuperToCT(nt *leabra.Network, send, recv emer.Layer) emer.Prjn {
+	pj := nt.ConnectLayersPrjn(send, recv, prjn.NewOneToOne(), CTCtxt, &CTCtxtPrjn{}).(*CTCtxtPrjn)
+	pj.SetClass("CTFmSuper")
+	pj.FmSuper = true
+	return pj
+}
+
 // ConnectCtxtToCT adds a CTCtxtPrjn from given sending layer to a CT layer
+// Use ConnectSuperToCT for main projection from corresponding superficial layer.
 func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
 	return nt.ConnectLayersPrjn(send, recv, pat, CTCtxt, &CTCtxtPrjn{})
 }
@@ -97,7 +108,7 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 	full := prjn.NewFull()
-	ConnectCtxtToCT(nt, super, ct, full)
+	ConnectSuperToCT(nt, super, ct)
 	trci := AddTRCLayer2D(nt, name+"P", shapeY, shapeX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
@@ -119,7 +130,7 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
 	pone2one := prjn.NewPoolOneToOne()
-	ConnectCtxtToCT(nt, super, ct, pone2one)
+	ConnectSuperToCT(nt, super, ct)
 	trci := AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
@@ -138,8 +149,7 @@ func AddDeepNoTRC2D(nt *leabra.Network, name string, shapeY, shapeX int) (super,
 	super = AddSuperLayer2D(nt, name, shapeY, shapeX)
 	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	full := prjn.NewFull()
-	ConnectCtxtToCT(nt, super, ct, full)
+	ConnectSuperToCT(nt, super, ct)
 	return
 }
 
@@ -150,8 +160,7 @@ func AddDeepNoTRC4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, n
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	pone2one := prjn.NewPoolOneToOne()
-	ConnectCtxtToCT(nt, super, ct, pone2one)
+	ConnectSuperToCT(nt, super, ct)
 	return
 }
 

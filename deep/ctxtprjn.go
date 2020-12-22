@@ -26,8 +26,10 @@ type CtxtSender interface {
 // CTCtxtPrjn is the "context" temporally-delayed projection into CTLayer,
 // (corticothalamic deep layer 6) where the CtxtGe excitatory input
 // is integrated only at end of Burst Quarter.
+// Set FmSuper for the main projection from corresponding Super layer.
 type CTCtxtPrjn struct {
 	leabra.Prjn           // access as .Prjn
+	FmSuper     bool      `desc:"if true, this is the projection from corresponding Superficial layer -- should be OneToOne prjn, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true"`
 	CtxtGeInc   []float32 `desc:"local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
 }
 
@@ -35,6 +37,11 @@ var KiT_CTCtxtPrjn = kit.Types.AddType(&CTCtxtPrjn{}, PrjnProps)
 
 func (pj *CTCtxtPrjn) Defaults() {
 	pj.Prjn.Defaults()
+	if pj.FmSuper {
+		pj.Learn.Learn = false
+		pj.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
+		pj.WtInit.Var = 0
+	}
 }
 
 func (pj *CTCtxtPrjn) UpdateParams() {
