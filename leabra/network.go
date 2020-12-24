@@ -666,5 +666,10 @@ var NetworkProps = ki.Props{
 				}},
 			},
 		}},
+		{"AllWtScales", ki.Props{
+			"icon":        "file-sheet",
+			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
+			"show-return": true,
+		}},
 	},
 }

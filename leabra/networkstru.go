@@ -227,6 +227,29 @@ func (nt *NetworkStru) AllParams() string {
 	return nds
 }
 
+// AllWtScales returns a listing of all WtScale parameters in the Network
+// in all Layers, Recv projections.  These are among the most important
+// and numerous of parameters (in larger networks) -- this helps keep
+// track of what they all are set to.
+func (nt *NetworkStru) AllWtScales() string {
+	str := ""
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		str += "\nLayer: " + ly.Name() + "\n"
+		rpjn := ly.RecvPrjns()
+		for _, p := range *rpjn {
+			if p.IsOff() {
+				continue
+			}
+			pj := p.(LeabraPrjn).AsLeabra()
+			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name(), pj.WtScale.Abs, pj.WtScale.Rel)
+		}
+	}
+	return str
+}
+
 // AddLayerInit is implementation routine that takes a given layer and
 // adds it to the network, and initializes and configures it properly.
 func (nt *NetworkStru) AddLayerInit(ly emer.Layer, name string, shape []int, typ emer.LayerType) {
