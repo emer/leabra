@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -41,12 +42,13 @@ type NetworkStru struct {
 	MaxPos   mat32.Vec3            `view:"-" desc:"maximum display position in network"`
 	MetaData map[string]string     `desc:"optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save"`
 
-	NThreads int                    `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
-	ThrLay   [][]emer.Layer         `view:"-" inactive:"+" desc:"layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build"`
-	ThrChans []LayFunChan           `view:"-" desc:"layer function channels, per thread"`
-	ThrTimes []timer.Time           `view:"-" desc:"timers for each thread, so you can see how evenly the workload is being distributed"`
-	FunTimes map[string]*timer.Time `view:"-" desc:"timers for each major function (step of processing)"`
-	WaitGp   sync.WaitGroup         `view:"-" desc:"network-level wait group for synchronizing threaded layer calls"`
+	NThreads    int                    `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
+	LockThreads bool                   `desc:"if set, runtime.LockOSThread() is called on the compute threads, which can be faster on large networks on some architectures -- experimentation is recommended"`
+	ThrLay      [][]emer.Layer         `view:"-" inactive:"+" desc:"layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build"`
+	ThrChans    []LayFunChan           `view:"-" desc:"layer function channels, per thread"`
+	ThrTimes    []timer.Time           `view:"-" desc:"timers for each thread, so you can see how evenly the workload is being distributed"`
+	FunTimes    map[string]*timer.Time `view:"-" desc:"timers for each major function (step of processing)"`
+	WaitGp      sync.WaitGroup         `view:"-" desc:"network-level wait group for synchronizing threaded layer calls"`
 }
 
 // InitName MUST be called to initialize the network's pointer to itself as an emer.Network
@@ -609,6 +611,7 @@ func (nt *NetworkStru) VarRange(varNm string) (min, max float32, err error) {
 
 // StartThreads starts up the computation threads, which monitor the channels for work
 func (nt *NetworkStru) StartThreads() {
+	fmt.Printf("NThreads: %d\tgo max procs: %d\tnum cpu:%d\n", nt.NThreads, runtime.GOMAXPROCS(0), runtime.NumCPU())
 	for th := 0; th < nt.NThreads; th++ {
 		go nt.ThrWorker(th) // start the worker thread for this channel
 	}
@@ -623,6 +626,9 @@ func (nt *NetworkStru) StopThreads() {
 
 // ThrWorker is the worker function run by the worker threads
 func (nt *NetworkStru) ThrWorker(tt int) {
+	if nt.LockThreads {
+		runtime.LockOSThread()
+	}
 	for fun := range nt.ThrChans[tt] {
 		thly := nt.ThrLay[tt]
 		nt.ThrTimes[tt].Start()
@@ -634,6 +640,9 @@ func (nt *NetworkStru) ThrWorker(tt int) {
 		}
 		nt.ThrTimes[tt].Stop()
 		nt.WaitGp.Done()
+	}
+	if nt.LockThreads {
+		runtime.UnlockOSThread()
 	}
 }
 
