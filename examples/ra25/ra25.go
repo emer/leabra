@@ -145,7 +145,8 @@ type Sim struct {
 	Params       params.Sets       `view:"no-inline" desc:"full collection of param sets"`
 	ParamSet     string            `desc:"which set of *additional* parameters to use -- always applies Base and optionaly this next if set -- can use multiple names separated by spaces (don't put spaces in ParamSet names!)"`
 	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	MaxRuns      int               `desc:"maximum number of model runs to perform"`
+	StartRun     int               `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
+	MaxRuns      int               `desc:"maximum number of model runs to perform (starting from StartRun)"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
 	NZeroStop    int               `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
 	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
@@ -193,7 +194,7 @@ type Sim struct {
 	IsRunning    bool                        `view:"-" desc:"true if sim is running"`
 	StopNow      bool                        `view:"-" desc:"flag to stop running"`
 	NeedsNewRun  bool                        `view:"-" desc:"flag to initialize NewRun if last one finished"`
-	RndSeed      int64                       `view:"-" desc:"the current random seed"`
+	RndSeeds     []int64                     `view:"-" desc:"a list of random seeds to use for each run"`
 	LastEpcTime  time.Time                   `view:"-" desc:"timer for last epoch"`
 }
 
@@ -215,7 +216,10 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.Params = ParamSets
-	ss.RndSeed = 1
+	ss.RndSeeds = make([]int64, 100) // make enough for plenty of runs
+	for i := 0; i < 100; i++ {
+		ss.RndSeeds[i] = int64(i) + 1 // exclude 0
+	}
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
 	ss.TestUpdt = leabra.Cycle
@@ -317,7 +321,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
 func (ss *Sim) Init() {
-	rand.Seed(ss.RndSeed)
+	ss.InitRndSeed()
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
 	ss.StopNow = false
@@ -326,10 +330,19 @@ func (ss *Sim) Init() {
 	ss.UpdateView(true)
 }
 
-// NewRndSeed gets a new random seed based on current time -- otherwise uses
-// the same random seed for every run
+// InitRndSeed initializes the random seed based on current training run number
+func (ss *Sim) InitRndSeed() {
+	run := ss.TrainEnv.Run.Cur
+	rand.Seed(ss.RndSeeds[run])
+}
+
+// NewRndSeed gets a new set of random seeds based on current time -- otherwise uses
+// the same random seeds for every run
 func (ss *Sim) NewRndSeed() {
-	ss.RndSeed = time.Now().UnixNano()
+	rs := time.Now().UnixNano()
+	for i := 0; i < 100; i++ {
+		ss.RndSeeds[i] = rs + int64(i)
+	}
 }
 
 // Counters returns a string of the current counter state
@@ -489,6 +502,7 @@ func (ss *Sim) RunEnd() {
 // NewRun intializes a new run of the model, using the TrainEnv.Run counter
 // for the new run value
 func (ss *Sim) NewRun() {
+	ss.InitRndSeed()
 	run := ss.TrainEnv.Run.Cur
 	ss.TrainEnv.Init(run)
 	ss.TestEnv.Init(run)
@@ -760,11 +774,15 @@ func (ss *Sim) ValsTsr(name string) *etensor.Float32 {
 // RunName returns a name for this run that combines Tag and Params -- add this to
 // any file names that are saved.
 func (ss *Sim) RunName() string {
+	rn := ""
 	if ss.Tag != "" {
-		return ss.Tag + "_" + ss.ParamsName()
-	} else {
-		return ss.ParamsName()
+		rn += ss.Tag + "_"
 	}
+	rn += ss.ParamsName()
+	if ss.StartRun > 0 {
+		rn += fmt.Sprintf("_%03d", ss.StartRun)
+	}
+	return rn
 }
 
 // RunEpochName returns a string with the run and epoch numbers with leading zeros, suitable
@@ -840,7 +858,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 		ss.TrnEpcPlot.GoUpdate()
 	}
 	if ss.TrnEpcFile != nil {
-		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
+		if ss.TrainEnv.Run.Cur == ss.StartRun && epc == 0 {
 			dt.WriteCSVHeaders(ss.TrnEpcFile, etable.Tab)
 		}
 		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
@@ -1479,6 +1497,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
+	flag.IntVar(&ss.StartRun, "run", 0, "starting run number -- determines the random seed -- runs counts from there -- can do all runs in parallel by launching separate jobs with each run, runs = 1")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
@@ -1522,6 +1541,9 @@ func (ss *Sim) CmdArgs() {
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
 	}
-	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
+	fmt.Printf("Running %d Runs starting at %d\n", ss.MaxRuns, ss.StartRun)
+	ss.TrainEnv.Run.Set(ss.StartRun)
+	ss.TrainEnv.Run.Max = ss.StartRun + ss.MaxRuns
+	ss.NewRun()
 	ss.Train()
 }
