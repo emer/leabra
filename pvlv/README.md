@@ -1,5 +1,3 @@
-# *WORK IN PROGRESS!*
-
 # PVLV: Primary Value, Learned Value
 
 [![GoDoc](https://godoc.org/github.com/emer/leabra/pvlv?status.svg)](https://godoc.org/github.com/emer/leabra/pvlv)
@@ -78,6 +76,29 @@ Learning in PVLV is basically Hebbian. Weight changes are calculated in Q3, mult
 
 VS matrix layers use a delayed activity trace, similar to that described in the PBWM documentation. At each learning cycle, a raw value is calculated from the change in receiving neuron activation between Q3 qnd Q0, times sending layer activation, but rather than using this value directly, it is stored in a "trace", and the previous cycle's trace value determines weight changes. The model has provisions for keeping a decaying trace value and adding that into the value for the current cycle, but at present the decay function is essentially disabled, with a "decay" value set to 1.
 
+#### Summary
+
+- The `ModLayer` interface, which has a single method, `AsMod`, is used to access modulation-specific fields for layers that send or receive modulatory connections.
+
+- The `ModSender` interface is used by layers that send modulation to other layers. It has two methods:
+
+  - `SendMods(ltime *leabra.Time)` is called from the top-level Network loop. It puts the sum of activity for all neurons in each subpool in the sending layer into the `ModSent` field, then calls `ModReceiver.ReceiveMods` on all layers in its `ModReceivers` field.
+  
+  - `ModSendValue(ni int32) float32` is called from receiving layers, and takes the index of a layer subpool in a sending layer and returns the modulation value calculated in `SendMods`.
+  
+- The `ModReceiver` interface is implemented by layers that receive modulatory inputs. It has two methods:
+
+  - `ReceiveMods(sender ModSender, scale float32)` is called by sending layers. Its implementation should call `ModSendValue`, described above, to get the value of modulatory input for one subpool in a sending layer and copy that value, times the specified scale, into the `ModNet` field of each neuron in the receiving layer.
+  
+  - `ModsFmInc(_, *leabra.Time)` is called from the top-level simulation loop on each receiving layer, and uses the modulation value in `ModNet` to calculate layer-specific effects on learning rate and activity.
+
+- There are two main classes of modulation receivers: amygdala layers, and medium spiny neurons. In most cases, a zero value for `ModNet` will completely shut off learning.
+
+  - Within amygdala layers, modulatory input can in some cases shut down learning entirely, or can multiplicatively regulate learning rate.
+  
+  - Within striatal patch layers, the effect of modulatory inputs is similar to that for amygdala layers.
+  
+  - Within striatal matrix layers, learning is based on a "trace", using activity from the previous cycle to determine learning rate. However, in the absence of any dopaminergic signal on a particular cycle, no learning will occur.
 
 # References
 
