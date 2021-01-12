@@ -201,6 +201,19 @@ func (nt *Network) InitTopoScales() {
 	}
 }
 
+// DecayState decays activation state by given proportion
+// e.g., 1 = decay completely, and 0 = decay not at all
+// This is called automatically in AlphaCycInit, but is avail
+// here for ad-hoc decay cases.
+func (nt *Network) DecayState(decay float32) {
+	for _, ly := range nt.Layers {
+		if ly.IsOff() {
+			continue
+		}
+		ly.(LeabraLayer).DecayState(decay)
+	}
+}
+
 // InitActs fully initializes activation state -- not automatically called
 func (nt *Network) InitActs() {
 	for _, ly := range nt.Layers {
@@ -665,6 +678,11 @@ var NetworkProps = ki.Props{
 					"desc": "type of projection -- direction, or other more specialized factors",
 				}},
 			},
+		}},
+		{"AllWtScales", ki.Props{
+			"icon":        "file-sheet",
+			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
+			"show-return": true,
 		}},
 	},
 }

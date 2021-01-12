@@ -439,6 +439,9 @@ func (ly *Layer) ReadWtsJSON(r io.Reader) error {
 
 // SetWts sets the weights for this layer from weights.Layer decoded values
 func (ly *Layer) SetWts(lw *weights.Layer) error {
+	if ly.IsOff() {
+		return nil
+	}
 	if lw.MetaData != nil {
 		if am, ok := lw.MetaData["ActMAvg"]; ok {
 			pv, _ := strconv.ParseFloat(am, 32)
