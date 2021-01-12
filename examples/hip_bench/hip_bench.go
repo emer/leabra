@@ -255,7 +255,7 @@ func (hp *HipParams) Defaults() {
 	hp.ECPool.Set(7, 7)
 	hp.CA1Pool.Set(15, 15) // using MedHip now
 	hp.CA3Size.Set(30, 30) // using MedHip now
-	hp.DGRatio = 1.5
+	hp.DGRatio = 2.236 // c.f. Ketz et al., 2013
 
 	// ratio
 	hp.DGPCon = 0.25 // .35 is sig worse, .2 learns faster but AB recall is worse
