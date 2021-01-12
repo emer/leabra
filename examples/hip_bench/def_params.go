@@ -22,8 +22,8 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Lrate":        "0.04",
 					"Prjn.Learn.Momentum.On":  "false",
 					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "true",  // better
-					"Prjn.Learn.XCal.SetLLrn": "false", // bcm = better!  now avail, false = default
+					"Prjn.Learn.WtBal.On":     "true",  // counteracting hogging
+					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
 					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
@@ -40,12 +40,12 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
-					// moss=4, delta=4, lr=0.2, test = 3 are best
+					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
+					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
 					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
-					// "Prjn.WtScale.Rel": "2.0", // Rel=4, Abs=1 fails entirely.  could try diff combos
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
@@ -67,18 +67,18 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
 				}},
-			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=1 slightly better than 2",
+			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=2 still the best",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "2", // 2 > 1 > .5 = .1
 					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!
+					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off. zycyc test
 					"Prjn.CHL.Hebb":          "0.2",   // .2 seems good
-					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
+					"Prjn.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
 					"Prjn.CHL.MinusQ1":       "true", // dg self err slightly better
-					"Prjn.Learn.Lrate":       "0.1",  // .1 > .2 > .4
+					"Prjn.Learn.Lrate":       "0.05",  // .05 > .1 > .2 > .4; .01 less interference more learning time - key tradeoff param, .05 best for list20-100
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -94,18 +94,18 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
-					"Layer.Act.Gbar.L":        ".1",
+					"Layer.Act.Gbar.L":        "0.1",
 					"Layer.Inhib.ActAvg.Init": "0.2",
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.Gi":     "2.0",
 					"Layer.Inhib.Pool.On":     "true",
 				}},
-			{Sel: "#DG", Desc: "very sparse = high inibhition",
+			{Sel: "#DG", Desc: "very sparse = high inhibition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
 					"Layer.Inhib.Layer.Gi":    "3.8", // 3.8 > 3.6 > 4.0 (too far -- tanks)
 				}},
-			{Sel: "#CA3", Desc: "sparse = high inibhition",
+			{Sel: "#CA3", Desc: "sparse = high inhibition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
 					"Layer.Inhib.Layer.Gi":    "2.8", // 2.8 = 3.0 really -- some better, some worse
@@ -237,7 +237,7 @@ var ParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "10",
 					"HipParams.CA3Size.Y": "20",
 					"HipParams.CA3Size.X": "20",
-					"HipParams.DGRatio":   "2.236", // 1.5 before
+					"HipParams.DGRatio":   "2.236", // 1.5 before, sqrt(5) aligns with Ketz et al. 2013
 				}},
 		},
 	}},

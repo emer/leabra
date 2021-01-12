@@ -21,8 +21,8 @@ var OrigParamSets = params.Sets{
 					"Prjn.Learn.Lrate":        "0.04",
 					"Prjn.Learn.Momentum.On":  "false",
 					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "false",
-					"Prjn.Learn.XCal.SetLLrn": "false", // bcm is now active -- control, false = default
+					"Prjn.Learn.WtBal.On":     "true", // counteracting hogging
+					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
 					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
@@ -67,34 +67,36 @@ var OrigParamSets = params.Sets{
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.005",
-					"Prjn.CHL.SAvgCor": "0.4",
-					"Prjn.Learn.Lrate": "0.1",
+					"Prjn.CHL.Hebb":    	  "0.005",
+					"Prjn.CHL.SAvgCor": 	  "0.4",
+					"Prjn.Learn.Lrate": 	  "0.1",
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
-					"Layer.Act.Gbar.L":        ".1",
+					"Layer.Act.Gbar.L":        "0.1",
 					"Layer.Inhib.ActAvg.Init": "0.2",
 					"Layer.Inhib.Layer.On":    "false",
 					"Layer.Inhib.Pool.Gi":     "2.0",
 					"Layer.Inhib.Pool.On":     "true",
 				}},
-			{Sel: "#DG", Desc: "very sparse = high inibhition",
+			{Sel: "#DG", Desc: "very sparse = high inhibition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.Layer.Gi":    "3.6",
+					"Layer.Inhib.Layer.Gi":    "3.6", // 3.8 > 3.6 > 4.0 (too far -- tanks);
 				}},
-			{Sel: "#CA3", Desc: "sparse = high inibhition",
+			{Sel: "#CA3", Desc: "sparse = high inhibition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.02",
-					"Layer.Inhib.Layer.Gi":    "2.8",
+					"Layer.Inhib.Layer.Gi":    "2.8", // 2.8 = 3.0 really -- some better, some worse
+					"Layer.Learn.AvgL.Gain":   "2.5", // stick with 2.5
 				}},
 			{Sel: "#CA1", Desc: "CA1 only Pools",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.1",
 					"Layer.Inhib.Layer.On":    "false",
-					"Layer.Inhib.Pool.Gi":     "2.2",
 					"Layer.Inhib.Pool.On":     "true",
+					"Layer.Inhib.Pool.Gi":     "2.2", // 2.4 > 2.2 > 2.6 > 2.8 -- 2.4 better *for small net* but not for larger!;
+					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
 				}},
 		},
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
@@ -214,7 +216,7 @@ var OrigParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "10",
 					"HipParams.CA3Size.Y": "20",
 					"HipParams.CA3Size.X": "20",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before, sqrt(5) aligns with Ketz et al. 2013
 				}},
 		},
 	}},
@@ -228,7 +230,7 @@ var OrigParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "15",
 					"HipParams.CA3Size.Y": "30",
 					"HipParams.CA3Size.X": "30",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before
 				}},
 		},
 	}},
@@ -242,7 +244,7 @@ var OrigParamSets = params.Sets{
 					"HipParams.CA1Pool.X": "20",
 					"HipParams.CA3Size.Y": "40",
 					"HipParams.CA3Size.X": "40",
-					"HipParams.DGRatio":   "1.5",
+					"HipParams.DGRatio":   "2.236", // 1.5 before
 				}},
 		},
 	}},
