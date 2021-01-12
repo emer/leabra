@@ -36,7 +36,7 @@ The standard Leabra BCM hebbian learning works better than the hip.CHLPrjn CPCA 
 
 The graphs below show number of epochs to get to 100% perfect performance, for the first AB list (First Zero) and both AB and AC lists (NEpochs), and also for the memory performance at the end of training, showing how much of the AB list is still remembered after full training on the AC list.  The new params show robust learning up to list sizes of 100 *each* for AB, AC lists, in the medium sized network, although the AB items are almost completely interfered away after learning the AC list.  In comparison, the original params had slower learning and poorer AB memory.
 
-All models have 7x7 EC pools with A, B/C item pools and 4 additional Context pools that differentiate the AB / AC lists.  The `BigHip` has 20x20 = 400 CA3, DG = 5x = 2000, and 10x10 = 100 CA1 pools (i.e., original textbook model size); `MedHip` has 30x30 = 900 CA3, DG = 5x = 4500, and 15x15 = 225 CA1 pools; `BigHip` has 40x40 = 1600 CA3, DG = 5x = 8000, and 20x20 = 400 CA1 pools.
+All models have 7x7 EC pools with A, B/C item pools and 4 additional Context pools that differentiate the AB / AC lists.  The `SmallHip` has 20x20 = 400 CA3, DG = 5x = 2000, and 10x10 = 100 CA1 pools (i.e., original textbook model size); `MedHip` has 30x30 = 900 CA3, DG = 5x = 4500, and 15x15 = 225 CA1 pools; `BigHip` has 40x40 = 1600 CA3, DG = 5x = 8000, and 20x20 = 400 CA1 pools.
 
 ### Current best params from 1/2021, list sizes 20-100
 
