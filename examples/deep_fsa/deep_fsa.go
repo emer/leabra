@@ -99,8 +99,8 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "2.2",
-					"Layer.Inhib.ActAvg.Init": "0.15", // works better
+					"Layer.Inhib.Layer.Gi":    "2.0",
+					"Layer.Inhib.ActAvg.Init": "0.15",
 				}},
 			{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
@@ -288,13 +288,13 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
-	in := net.AddLayer2D("Input", 1, 15, emer.Input)
+	in := net.AddLayer2D("Input", 1, 7, emer.Input)
 	hid, hidct, hidp := net.AddDeep2D("Hidden", 8, 8)
 
 	hidp.Shape().CopyShape(in.Shape())
 	hidp.(*deep.TRCLayer).Drivers.Add("Input")
 
-	trg := net.AddLayer2D("Targets", 1, 15, emer.Input) // just for visualization
+	trg := net.AddLayer2D("Targets", 1, 7, emer.Input) // just for visualization
 
 	in.SetClass("Input")
 	hidp.SetClass("Input")
@@ -1276,7 +1276,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	plt = tv.AddNewTab(eplot.KiT_Plot2D, "RunPlot").(*eplot.Plot2D)
 	ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
 
-	split.SetSplits(.3, .7)
+	split.SetSplits(.2, .8)
 
 	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc: func(act *gi.Action) {
 		act.SetActiveStateUpdt(!ss.IsRunning)
