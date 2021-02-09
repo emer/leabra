@@ -5,6 +5,7 @@
 package leabra
 
 import (
+	"bufio"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -433,7 +434,7 @@ func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
 		defer gzr.Close()
 		nt.WriteWtsJSON(gzr)
 	} else {
-		nt.WriteWtsJSON(fp)
+		nt.WriteWtsJSON(bufio.NewWriter(fp))
 	}
 	return nil
 }
@@ -457,7 +458,7 @@ func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
 		}
 		return nt.ReadWtsJSON(gzr)
 	} else {
-		return nt.ReadWtsJSON(fp)
+		return nt.ReadWtsJSON(bufio.NewReader(fp))
 	}
 }
 

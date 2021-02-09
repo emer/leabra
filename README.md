@@ -61,7 +61,7 @@ There are several changes from the original C++ emergent implementation for how 
 
 # The Leabra Algorithm
 
-Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) learning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](https://github.com/CompCogNeuro/ed4) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
+Leabra stands for *Local, Error-driven and Associative, Biologically Realistic Algorithm*, and it implements a balance between error-driven (backpropagation) and associative (Hebbian) learning on top of a biologically-based point-neuron activation function with inhibitory competition dynamics (either via inhibitory interneurons or an approximation thereof), which produce k-Winners-Take-All (kWTA) sparse distributed representations.  Extensive documentation is available from the online textbook: [Computational Cognitive Neuroscience](https://CompCogNeuro.org) which serves as a second edition to the original book: *Computational Explorations in Cognitive Neuroscience: Understanding
 the Mind by Simulating the Brain*, O'Reilly and Munakata, 2000,
 Cambridge, MA: MIT Press. [Computational Explorations..](http://psych.colorado.edu/~oreilly/comp_ex_cog_neuro.html)
 
@@ -242,7 +242,7 @@ Learning is based on running-averages of activation variables, parameterized in 
     + `srm = Send.AvgM * Recv.AvgM`
     + `dwt = XCAL(srs, srm) + Recv.AvgLLrn * XCAL(srs, Recv.AvgL)`
         + weight change is sum of two factors: error-driven based on medium-term threshold (srm), and BCM Hebbian based on long-term threshold of the recv unit (Recv.AvgL)
-    + XCAL is the "check mark" linearized BCM-style learning function (see figure) that was derived from the Urakubo Et Al (2008) STDP model, as described in more detail in the [CCN textbook](https://github.com/CompCogNeuro/ed4)
+    + XCAL is the "check mark" linearized BCM-style learning function (see figure) that was derived from the Urakubo Et Al (2008) STDP model, as described in more detail in the [CCN textbook](https://CompCogNeuro.org)
         + `XCAL(x, th) = (x < DThr) ? 0 : (x > th * DRev) ? (x - th) : (-x * ((1-DRev)/DRev))`
         + DThr = 0.0001, DRev = 0.1 defaults, and x ? y : z terminology is C syntax for: if x is true, then y, else z
 
