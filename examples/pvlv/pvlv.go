@@ -8,6 +8,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"math/rand"
+	"os"
+	_ "reflect"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/stepper"
 	_ "github.com/emer/etable/agg"
@@ -19,15 +29,6 @@ import (
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ints"
 	"github.com/goki/mat32"
-	"log"
-	"math/rand"
-	"os"
-	_ "reflect"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 
 	//"github.com/emer/leabra/pbwm"
 	"github.com/goki/ki/ki"
@@ -648,11 +649,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	ss.TrialTypeDataPlot = ss.ConfigTrialTypeDataPlot(plt, ss.TrialTypeData)
 
 	frm := gi.AddNewFrame(tv, "TrialTypeBlockFirst", gi.LayoutVert)
-	frm.SetStretchMax()
+	// frm.SetStretchMax()
 	pltCmp := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst_cmp").(*eplot.Plot2D)
-	pltCmp.SetStretchMax()
+	// pltCmp.SetStretchMax()
 	pltLower := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst").(*eplot.Plot2D)
-	pltLower.SetStretchMax()
+	// pltLower.SetStretchMax()
 	tv.AddTab(frm, "TrialTypeBlockFirst")
 	ss.TrialTypeBlockFirst = ss.ConfigTrialTypeBlockFirstPlot(pltLower, ss.TrialTypeBlockFirstLog)
 	ss.TrialTypeBlockFirstCmp = ss.ConfigTrialTypeBlockFirstPlot(pltCmp, ss.TrialTypeBlockFirstLogCmp)
@@ -812,7 +813,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	nLabel.SetProp("font-size", "large")
 	ss.nStepsBox = gi.AddNewSpinBox(tbar, "nStepsSpinbox")
 	stepsProps := ki.Props{"has-min": true, "min": 1, "has-max": false, "step": 1, "pagestep": 10}
-	ss.nStepsBox.SetProps(stepsProps, true)
+	ss.nStepsBox.SetProps(stepsProps)
 	ss.nStepsBox.SetValue(1)
 	ss.nStepsBox.SpinBoxSig.Connect(tbar.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.StepsToRun = int(ss.nStepsBox.Value)
