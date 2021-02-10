@@ -30,7 +30,6 @@ import (
 	"github.com/goki/ki/ints"
 	"github.com/goki/mat32"
 
-	//"github.com/emer/leabra/pbwm"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 
@@ -592,10 +591,10 @@ func FileViewLoadCemerWts(vp *gi.Viewport2D) {
 func (ss *Sim) ConfigGui() *gi.Window {
 	width := 1600
 	height := 1600
-	gi.SetAppName("BVPVLV")
-	gi.SetAppAbout(`A bi-valent version of the Primary Value Learned Value model of the phasic dopamine signaling system. See <a href="https://github.com/CompCogNeuro/sims/blob/master/ch7/pvlv/README.md">README.md on GitHub</a>.</p>`)
+	gi.SetAppName("pvlv")
+	gi.SetAppAbout(`Current version of the Primary Value Learned Value model of the phasic dopamine signaling system. See <a href="https://github.com/emer/leabra/blob/master/examples/pvlv/README.md">README.md on GitHub</a>.</p>`)
 
-	win := gi.NewMainWindow("bvpvlv", "BVPVLV", width, height)
+	win := gi.NewMainWindow("pvlv", "PVLV", width, height)
 	ss.Win = win
 
 	vp := win.WinViewport2D()
@@ -609,7 +608,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	split := gi.AddNewSplitView(mfr, "split")
 	split.Dim = mat32.X
-	split.SetStretchMax()
 
 	sv := giv.AddNewStructView(split, "sv")
 	sv.SetStruct(ss)
@@ -648,13 +646,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrialTypeData").(*eplot.Plot2D)
 	ss.TrialTypeDataPlot = ss.ConfigTrialTypeDataPlot(plt, ss.TrialTypeData)
 
-	frm := gi.AddNewFrame(tv, "TrialTypeBlockFirst", gi.LayoutVert)
-	// frm.SetStretchMax()
+	frm := tv.AddNewTab(gi.KiT_Frame, "TrialTypeBlockFirst").(*gi.Frame)
+	frm.Lay = gi.LayoutVert
+	frm.SetStretchMax()
 	pltCmp := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst_cmp").(*eplot.Plot2D)
-	// pltCmp.SetStretchMax()
 	pltLower := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst").(*eplot.Plot2D)
-	// pltLower.SetStretchMax()
-	tv.AddTab(frm, "TrialTypeBlockFirst")
 	ss.TrialTypeBlockFirst = ss.ConfigTrialTypeBlockFirstPlot(pltLower, ss.TrialTypeBlockFirstLog)
 	ss.TrialTypeBlockFirstCmp = ss.ConfigTrialTypeBlockFirstPlot(pltCmp, ss.TrialTypeBlockFirstLogCmp)
 
@@ -819,6 +815,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		ss.StepsToRun = int(ss.nStepsBox.Value)
 	})
 
+	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/pvlv/README.md")
+		})
+
 	vp.UpdateEndNoSig(updt)
 
 	// main menu
@@ -877,13 +878,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	})
 
 	win.MainMenuUpdated()
-
-	ss.UpdateView()
-	vp.SetNeedsFullRender()
-	ss.UpdateView()
-	vp.SetNeedsFullRender()
 	return win
-
 }
 
 func (ss *Sim) RunSteps(grain StepGrain, tbar *gi.ToolBar) {
