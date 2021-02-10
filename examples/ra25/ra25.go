@@ -1400,16 +1400,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 			ss.NewRndSeed()
 		})
 
-	tbar.AddAction(gi.ActOpts{Label: "Save Net Data", Icon: "file-save", Tooltip: "Save netview data to a file"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			giv.CallMethod(&ss.NetView.Data, "SaveJSON", vp)
-		})
-
-	tbar.AddAction(gi.ActOpts{Label: "Open Net Data", Icon: "file-save", Tooltip: "Open netview data from a file"}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			giv.CallMethod(&ss.NetView.Data, "OpenJSON", vp)
-		})
-
 	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
 		func(recv, send ki.Ki, sig int64, data interface{}) {
 			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
