@@ -464,10 +464,12 @@ func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
 	}
 }
 
+// todo: proper error handling here!
+
 // WriteWtsJSON writes the weights from this layer from the receiver-side perspective
 // in a JSON text format.  We build in the indentation logic to make it much faster and
 // more efficient.
-func (nt *NetworkStru) WriteWtsJSON(w io.Writer) {
+func (nt *NetworkStru) WriteWtsJSON(w io.Writer) error {
 	depth := 0
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("{\n"))
@@ -501,7 +503,8 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) {
 	}
 	depth--
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("}\n"))
+	_, err := w.Write([]byte("}\n"))
+	return err
 }
 
 // ReadWtsJSON reads network weights from the receiver-side perspective
