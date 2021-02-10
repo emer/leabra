@@ -431,12 +431,14 @@ func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
 	ext := filepath.Ext(string(filename))
 	if ext == ".gz" {
 		gzr := gzip.NewWriter(fp)
-		defer gzr.Close()
-		nt.WriteWtsJSON(gzr)
+		err = nt.WriteWtsJSON(gzr)
+		gzr.Close()
 	} else {
-		nt.WriteWtsJSON(bufio.NewWriter(fp))
+		bw := bufio.NewWriter(fp)
+		err = nt.WriteWtsJSON(bw)
+		bw.Flush()
 	}
-	return nil
+	return err
 }
 
 // OpenWtsJSON opens network weights (and any other state that adapts with learning)
