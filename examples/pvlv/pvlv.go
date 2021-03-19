@@ -1367,6 +1367,7 @@ func (ss *Sim) SetTrialTypeDataXLabels() (nRows int) {
 	nRows = len(names)
 	sort.Sort(names)
 	dt := ss.TrialTypeData
+	dtp := ss.TrialTypeDataPlot
 	ss.TrialTypeSet = map[string]int{}
 	for i, name := range names {
 		ss.TrialTypeSet[name] = i
@@ -1374,6 +1375,9 @@ func (ss *Sim) SetTrialTypeDataXLabels() (nRows int) {
 	}
 	dt.UpdateColNameMap()
 	dt.SetNumRows(nRows)
+	if dtp != nil {
+		dtp.Table.DeleteInvalid()
+	}
 	return nRows
 }
 
