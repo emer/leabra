@@ -128,10 +128,8 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, full, emer.Forward)
-	pj := nt.ConnectLayers(trc, super, full, emer.Back)
-	pj.SetClass("FmPulv")
-	pj = nt.ConnectLayers(trc, ct, full, emer.Back)
-	pj.SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, full, emer.Back).SetClass("FmPulv")
+	nt.ConnectLayers(trc, ct, full, emer.Back).SetClass("FmPulv")
 	return
 }
 
@@ -150,10 +148,8 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, pone2one, emer.Forward)
-	pj := nt.ConnectLayers(trc, super, pone2one, emer.Back)
-	pj.SetClass("FmPulv")
-	pj = nt.ConnectLayers(trc, ct, pone2one, emer.Back)
-	pj.SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, pone2one, emer.Back).SetClass("FmPulv")
+	nt.ConnectLayers(trc, ct, pone2one, emer.Back).SetClass("FmPulv")
 	return
 }
 
@@ -195,10 +191,8 @@ func AddDeep2DFakeCT(nt *leabra.Network, name string, shapeY, shapeX int) (super
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, full, emer.Forward)
-	pj := nt.ConnectLayers(trc, super, full, emer.Back)
-	pj.SetClass("FmPulv")
-	pj = nt.ConnectLayers(trc, ct, full, emer.Back)
-	pj.SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, full, emer.Back).SetClass("FmPulv")
+	nt.ConnectLayers(trc, ct, full, emer.Back).SetClass("FmPulv")
 	return
 }
 
@@ -218,10 +212,8 @@ func AddDeep4DFakeCT(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, 
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, pone2one, emer.Forward)
-	pj := nt.ConnectLayers(trc, super, pone2one, emer.Back)
-	pj.SetClass("FmPulv")
-	pj = nt.ConnectLayers(trc, ct, pone2one, emer.Back)
-	pj.SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, pone2one, emer.Back).SetClass("FmPulv")
+	nt.ConnectLayers(trc, ct, pone2one, emer.Back).SetClass("FmPulv")
 	return
 }
 
