@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/weights"
@@ -20,6 +19,7 @@ import (
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // leabra.Prjn is a basic Leabra projection with synaptic learning parameters
@@ -121,10 +121,10 @@ func (pj *Prjn) SynVarNum() int {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *Prjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if synIdx < 0 || synIdx >= len(pj.Syns) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < 0 || varIdx >= pj.SynVarNum() {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	sy := &pj.Syns[synIdx]
 	return sy.VarByIndex(varIdx)
@@ -153,11 +153,11 @@ func (pj *Prjn) SynVals(vals *[]float32, varNm string) error {
 
 // SynVal returns value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes).
-// Returns math32.NaN() for access errors (see SynValTry for error message)
+// Returns mat32.NaN() for access errors (see SynValTry for error message)
 func (pj *Prjn) SynVal(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.LeabraPrj.SynVarIdx(varNm)
 	if err != nil {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	synIdx := pj.SynIdx(sidx, ridx)
 	return pj.LeabraPrj.SynVal1D(vidx, synIdx)
@@ -572,7 +572,7 @@ func (pj *Prjn) DWt() {
 			dwt := bcm + err
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

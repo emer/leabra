@@ -12,13 +12,13 @@ import (
 	"unsafe"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // leabra.Network has parameters for running a basic rate-coded Leabra network
@@ -520,7 +520,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 		avg := avgFunc(thds)
 		dev := float32(0)
 		for i := range thds {
-			dev += math32.Abs(float32(thds[i].Tot) - avg)
+			dev += mat32.Abs(float32(thds[i].Tot) - avg)
 		}
 		return float32(dev) / float32(len(thds))
 	}

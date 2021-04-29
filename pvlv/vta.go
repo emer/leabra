@@ -6,11 +6,12 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/chewxy/math32"
+	"strconv"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/rl"
-	"strconv"
+	"github.com/goki/mat32"
 )
 
 // Gain constants for inputs to the VTA
@@ -203,7 +204,7 @@ func (ly *VTALayer) VTAActP(_ *leabra.Time) {
 	}
 
 	// vspospvi must be >= 0.0f
-	vsPosPVI = math32.Max(vsPosPVI, 0)
+	vsPosPVI = mat32.Max(vsPosPVI, 0)
 
 	var vsNegPVI float32 = 0
 
@@ -214,25 +215,25 @@ func (ly *VTALayer) VTAActP(_ *leabra.Time) {
 		vsNegPVI = g.PVIDipShunt * TotalAct(vsPatchNegD2Ly)
 	}
 
-	burstLHbDA := math32.Min(lhbDA, 0) // if neg, promotes bursting
-	dipLHbDA := math32.Max(lhbDA, 0)   // else, promotes dipping
+	burstLHbDA := mat32.Min(lhbDA, 0) // if neg, promotes bursting
+	dipLHbDA := mat32.Max(lhbDA, 0)   // else, promotes dipping
 
 	// absorbing PosPV value - prevents double counting
-	totBurstDA := math32.Max(g.PV*posPVAct, g.PPTg*pptgDAp)
+	totBurstDA := mat32.Max(g.PV*posPVAct, g.PPTg*pptgDAp)
 	// likewise for lhb contribution to bursting (burst_lhb_da non-positive)
-	totBurstDA = math32.Max(totBurstDA, -g.LHb*burstLHbDA)
+	totBurstDA = mat32.Max(totBurstDA, -g.LHb*burstLHbDA)
 
 	// pos PVi shunting
 	netBurstDA := totBurstDA - vsPosPVI
-	netBurstDA = math32.Max(netBurstDA, 0)
+	netBurstDA = mat32.Max(netBurstDA, 0)
 
 	totDipDA := g.LHb * dipLHbDA
 
 	// neg PVi shunting
 	netDipDA := totDipDA - vsNegPVI
-	netDipDA = math32.Max(netDipDA, 0)
+	netDipDA = mat32.Max(netDipDA, 0)
 
-	if math32.IsNaN(netBurstDA) || math32.IsNaN(netDipDA) || math32.IsNaN(lhbDA) {
+	if mat32.IsNaN(netBurstDA) || mat32.IsNaN(netDipDA) || mat32.IsNaN(lhbDA) {
 		fmt.Println("NaN in VTA")
 	}
 
@@ -285,18 +286,18 @@ func (ly *VTALayer) VTAActN(_ *leabra.Time) {
 		vsPVIn = g.PVIBurstShunt * TotalAct(vsPatchNegD2Ly)
 	}
 
-	burstLHbDAn := math32.Max(lhbDAn, 0)
-	dipLHbDAn := math32.Min(lhbDAn, 0)
+	burstLHbDAn := mat32.Max(lhbDAn, 0)
+	dipLHbDAn := mat32.Min(lhbDAn, 0)
 
 	// absorbing NegPV value - prevents double counting
 	negPVDA := negPVAct
-	negPVDA = math32.Max(negPVDA, 0)
+	negPVDA = mat32.Max(negPVDA, 0)
 
-	totBurstDA := math32.Max(g.PV*negPVDA, g.LHb*burstLHbDAn)
+	totBurstDA := mat32.Max(g.PV*negPVDA, g.LHb*burstLHbDAn)
 
 	// PVi shunting
 	netBurstDA := totBurstDA - vsPVIn
-	netBurstDA = math32.Max(netBurstDA, 0)
+	netBurstDA = mat32.Max(netBurstDA, 0)
 
 	totDipDA := g.LHb * dipLHbDAn
 

@@ -7,11 +7,12 @@ package pvlv
 import (
 	"fmt"
 	_ "fmt"
-	"github.com/chewxy/math32"
+	"reflect"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
-	"reflect"
+	"github.com/goki/mat32"
 )
 
 // TraceSyn holds extra synaptic state for trace projections
@@ -119,7 +120,7 @@ func (pj *MSNPrjn) DWt() {
 			rnAct := rn.ActP
 			//rnAct := rn.Act
 			effModLevel := mn.ModNet
-			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
+			effRnAct := mat32.Max(rnAct, mat32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)
 			switch pj.LearningRule {
 			case TraceNoThalVS:
@@ -133,7 +134,7 @@ func (pj *MSNPrjn) DWt() {
 				rawDWt = daLrn * tr // multiplied by learning rate below
 
 				newNTr := pj.Trace.MSNActLrnFactor(effRnAct) * snAct
-				decay := math32.Abs(newNTr) // decay is function of new trace
+				decay := mat32.Abs(newNTr) // decay is function of new trace
 				if decay > 1 {
 					decay = 1
 				}
@@ -225,7 +226,7 @@ func (tr *TraceSyn) SetVarByName(varNm string, val float32) error {
 func (pj *MSNPrjn) SynVal(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.SynVarIdx(varNm)
 	if err != nil {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	synIdx := pj.SynIdx(sidx, ridx)
 	return pj.LeabraPrj.SynVal1D(vidx, synIdx)
@@ -256,14 +257,14 @@ func (pj *MSNPrjn) SynVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MSNPrjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if varIdx < 0 || varIdx >= len(SynapseVarsAll) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIdx < nn {
 		return pj.Prjn.SynVal1D(varIdx, synIdx)
 	}
 	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	sy := &pj.TrSyns[synIdx]
@@ -278,7 +279,7 @@ func (ly *MSNLayer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Lay
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := math32.NaN()
+	nan := mat32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}
@@ -311,7 +312,7 @@ func (ly *MSNLayer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Lay
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := math32.NaN()
+	nan := mat32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}

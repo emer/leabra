@@ -7,10 +7,10 @@ package pcore
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/glong"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // Layer is the base layer type for PCore framework.
@@ -49,13 +49,13 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := ly.AlphaMaxLayer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = DA
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < nn {
 		return ly.AlphaMaxLayer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	return ly.DA
 }

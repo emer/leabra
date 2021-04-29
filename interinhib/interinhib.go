@@ -18,9 +18,9 @@ func (ly *Layer) InhibFmGeAct(ltime *Time) {
 package interinhib
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // InterInhib specifies inhibition between layers, where
@@ -43,7 +43,7 @@ func (il *InterInhib) Inhib(ly *leabra.Layer) {
 	if il.Add {
 		lpl.Inhib.Gi += ogi
 	} else {
-		lpl.Inhib.Gi = math32.Max(ogi, lpl.Inhib.Gi)
+		lpl.Inhib.Gi = mat32.Max(ogi, lpl.Inhib.Gi)
 	}
 }
 
@@ -61,7 +61,7 @@ func (il *InterInhib) OtherGi(net emer.Network) float32 {
 		if il.Add {
 			gi += ogi
 		} else {
-			gi = math32.Max(gi, ogi)
+			gi = mat32.Max(gi, ogi)
 		}
 	}
 	return gi

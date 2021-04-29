@@ -7,10 +7,10 @@ package rl
 import (
 	"log"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // TDRewPredLayer is the temporal differences reward prediction layer.
@@ -246,7 +246,7 @@ func (pj *TDRewPredPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

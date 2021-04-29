@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // BurstParams determine how the 5IB Burst activation is computed from
@@ -110,7 +110,7 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	np := len(ly.Pools)
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
-		laymax = math32.Max(laymax, pl.Inhib.Act.Avg)
+		laymax = mat32.Max(laymax, pl.Inhib.Act.Avg)
 	}
 	return laymax
 }
@@ -179,7 +179,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 	actMax := lpl.Inhib.Act.Max
 	actAvg := lpl.Inhib.Act.Avg
 	thr := actAvg + ly.Burst.ThrRel*(actMax-actAvg)
-	thr = math32.Max(thr, ly.Burst.ThrAbs)
+	thr = mat32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -288,18 +288,18 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if varIdx < 0 {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIdx < nn {
 		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	if varIdx >= len(SuperNeuronVars) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	snr := &ly.SuperNeurs[idx]
 	return snr.VarByIdx(varIdx)

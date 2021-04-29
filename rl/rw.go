@@ -7,11 +7,11 @@ package rl
 import (
 	"log"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/etable/minmax"
 	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // RWPredLayer computes reward prediction for a simple Rescorla-Wagner
@@ -176,7 +176,7 @@ func (pj *RWPrjn) DWt() {
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
 	lda := pj.Recv.(DALayer).GetDA()
 	if pj.DaTol > 0 {
-		if math32.Abs(lda) <= pj.DaTol {
+		if mat32.Abs(lda) <= pj.DaTol {
 			return // lda = 0 -- no learning
 		}
 	}
@@ -204,7 +204,7 @@ func (pj *RWPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

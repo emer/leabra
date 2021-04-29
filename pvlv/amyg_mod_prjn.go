@@ -5,9 +5,9 @@
 package pvlv
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // IAmygPrjn has one method, AsAmygModPrjn, which recasts the projection as a moddulatory projection
@@ -68,8 +68,8 @@ func (pj *AmygModPrjn) InitWts() {
 // given send and recv layers according to Gaussian Sigma and MaxWt.
 func (pj *AmygModPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 	scale := float32(pj.WtInit.Gen(-1))
-	scale = math32.Max(pj.SetScaleMin, scale)
-	scale = math32.Min(pj.SetScaleMax, scale)
+	scale = mat32.Max(pj.SetScaleMin, scale)
+	scale = mat32.Min(pj.SetScaleMax, scale)
 	return scale
 }
 
@@ -113,7 +113,7 @@ func (pj *AmygModPrjn) DWt() {
 			}
 			// filter any tiny spurious da signals on t2 & t4 trials - best for ext guys since
 			// they have zero dalr_base value
-			if math32.Abs(mn.DA) < pj.DALrnThr {
+			if mat32.Abs(mn.DA) < pj.DALrnThr {
 				mn.DA = 0
 			}
 
@@ -130,12 +130,12 @@ func (pj *AmygModPrjn) DWt() {
 			}
 
 			rnActDelta := mn.ModAct - rn.ActQ0
-			if math32.Abs(rnActDelta) < pj.ActDeltaThr {
+			if mat32.Abs(rnActDelta) < pj.ActDeltaThr {
 				rnActDelta = 0
 			}
 			delta := lRateEff * snAct * rnActDelta
 			// dopamine signal further modulates learning
-			daLRate := pj.DALRBase + pj.DALRGain*math32.Abs(mn.DA)
+			daLRate := pj.DALRBase + pj.DALRGain*mat32.Abs(mn.DA)
 			sy.DWt += daLRate * delta
 		}
 	}

@@ -6,18 +6,19 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/chewxy/math32"
+	"strings"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
-	"strings"
+	"github.com/goki/mat32"
 )
 
 func TotalAct(ly emer.Layer) float32 {
 	lly := ly.(leabra.LeabraLayer).AsLeabra()
 	pl := lly.Pools[0].Inhib.Act
 	res := pl.Avg * float32(pl.N)
-	if math32.IsNaN(res) {
+	if mat32.IsNaN(res) {
 		fmt.Println("NaN in TotalAct")
 	}
 	return res

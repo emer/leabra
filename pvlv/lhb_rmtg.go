@@ -6,11 +6,12 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/chewxy/math32"
+
 	"github.com/emer/emergent/emer"
 	_ "github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // Gain constants for LHbRMTg inputs
@@ -147,14 +148,14 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 
 	// net out the VS matrix D1 versus D2 pairs...WATCH the signs - double negatives!
 	vsMatrixPosNet := ly.Gains.VSMatrixPosD1*vsMatrixPosD1 - ly.Gains.VSMatrixPosD2*vsMatrixPosD2 // positive number net inhibitory!
-	//vsMatrixPosNet = math32.Max(0.0, vsMatrixPosNet); // restrict to positive net values
+	//vsMatrixPosNet = mat32.Max(0.0, vsMatrixPosNet); // restrict to positive net values
 	vsMatrixNegNet := ly.Gains.VSMatrixNegD2*vsMatrixNegD2 - ly.Gains.VSMatrixNegD1*vsMatrixNegD1 // positive number net excitatory!
-	//vsMatrixNegNet = math32.Max(0.0, vsMatrixNegNet); // restrict to positive net values
+	//vsMatrixNegNet = mat32.Max(0.0, vsMatrixNegNet); // restrict to positive net values
 
 	// don't double count pv going through the matrix guys
 	netPos := vsMatrixPosNet
 	if pvPos != 0 {
-		netPos = math32.Max(pvPos, vsMatrixPosNet)
+		netPos = mat32.Max(pvPos, vsMatrixPosNet)
 	}
 
 	netNeg := vsMatrixNegNet
@@ -162,10 +163,10 @@ func (ly *LHbRMTgLayer) ActFmG(ltime *leabra.Time) {
 	if pvNeg != 0 {
 		// below can arise when same CS can predict either pos_pv or neg_pv probalistically
 		if vsMatrixPosNet < 0 {
-			netNeg = math32.Max(netNeg, math32.Abs(vsMatrixPosNet))
+			netNeg = mat32.Max(netNeg, mat32.Abs(vsMatrixPosNet))
 			netPos = 0 // don't double-count since transferred to net_neg in this case only
 		}
-		netNeg = math32.Max(pvNeg, netNeg)
+		netNeg = mat32.Max(pvNeg, netNeg)
 	}
 
 	netLHb := netNeg - netPos + vsPatchPosNet - vsPatchNegNet

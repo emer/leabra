@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/chewxy/math32"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // NeuronVarStart is the byte offset of fields in the Neuron structure
@@ -107,7 +107,7 @@ func (nrn *Neuron) VarByIndex(idx int) float32 {
 func (nrn *Neuron) VarByName(varNm string) (float32, error) {
 	i, err := NeuronVarIdxByName(varNm)
 	if err != nil {
-		return math32.NaN(), err
+		return mat32.NaN(), err
 	}
 	return nrn.VarByIndex(i), nil
 }

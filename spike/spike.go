@@ -5,8 +5,8 @@
 package spike
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // ActParams is full set of activation params including those from base
@@ -52,7 +52,7 @@ func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
 		// add spike current if relevant
 		if sk.Spike.Exp {
 			inet2 += sk.Gbar.L * sk.Spike.ExpSlope *
-				math32.Exp((vmEff-sk.XX1.Thr)/sk.Spike.ExpSlope)
+				mat32.Exp((vmEff-sk.XX1.Thr)/sk.Spike.ExpSlope)
 		}
 		nwVm += sk.Dt.VmDt * inet2
 		nrn.Inet = inet2

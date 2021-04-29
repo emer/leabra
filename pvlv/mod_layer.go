@@ -8,12 +8,13 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/chewxy/math32"
+	"strconv"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/etable/minmax"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
-	"strconv"
+	"github.com/goki/mat32"
 )
 
 type IModLayer interface {
@@ -222,7 +223,7 @@ func (ly *ModLayer) UnitValByIdx(vidx ModNeuronVar, idx int) float32 {
 	case PVAct:
 		return ly.ModNeurs[idx].PVAct
 	default:
-		return math32.NaN()
+		return mat32.NaN()
 	}
 }
 
@@ -248,10 +249,10 @@ func (ly *ModLayer) UnitVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *ModLayer) UnitVal1D(varIdx int, idx int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < 0 || varIdx >= len(ModNeuronVarsAll) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := len(leabra.NeuronVars)
 	if varIdx < nn {
@@ -361,7 +362,7 @@ func (ly *ModLayer) SendMods(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mpl := &ly.ModPools[nrn.SubPool]
-		if math32.Abs(nrn.Act) > ly.Act.OptThresh.Send {
+		if mat32.Abs(nrn.Act) > ly.Act.OptThresh.Send {
 			mpl.ModSent += nrn.Act
 		}
 	}
@@ -412,9 +413,9 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 				}
 			} else {
 				newLrn := mnr.ModNet / plMax
-				if math32.IsInf(newLrn, 1) || math32.IsNaN(newLrn) {
+				if mat32.IsInf(newLrn, 1) || mat32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
-				} else if math32.IsInf(newLrn, -1) {
+				} else if mat32.IsInf(newLrn, -1) {
 					mnr.ModLrn = -1
 				} else {
 					mnr.ModLrn = newLrn
@@ -532,7 +533,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		}
 		mpl.ModNetStats.CalcAvg()
 		if mpl.ModNetStats.Max == 0 { // HACK!!!
-			mpl.ModNetStats.Max = math32.SmallestNonzeroFloat32
+			mpl.ModNetStats.Max = mat32.SmallestNonzeroFloat32
 		}
 	}
 }

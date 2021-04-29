@@ -7,7 +7,6 @@ package pbwm
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/mat32"
 )
@@ -26,7 +25,7 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 	case "Tr":
 		return sy.Tr
 	}
-	return math32.NaN()
+	return mat32.NaN()
 }
 
 // VarByIndex returns synapse variable by index
@@ -37,7 +36,7 @@ func (sy *TraceSyn) VarByIndex(varIdx int) float32 {
 	case 1:
 		return sy.Tr
 	}
-	return math32.NaN()
+	return mat32.NaN()
 }
 
 var TraceSynVars = []string{"NTr", "Tr"}
@@ -168,7 +167,7 @@ func (pj *MatrixTracePrjn) DWt() {
 				ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
 			}
 
-			decay := pj.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
+			decay := pj.Trace.Decay * mat32.Abs(ntr) // decay is function of new trace
 			if decay > 1 {
 				decay = 1
 			}
@@ -178,7 +177,7 @@ func (pj *MatrixTracePrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
@@ -234,14 +233,14 @@ func (pj *MatrixTracePrjn) SynVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MatrixTracePrjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if varIdx < 0 || varIdx >= len(SynVarsAll) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIdx < nn {
 		return pj.Prjn.SynVal1D(varIdx, synIdx)
 	}
 	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	sy := &pj.TrSyns[synIdx]

@@ -5,10 +5,11 @@
 package pvlv
 
 import (
-	"github.com/chewxy/math32"
+	"strconv"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
-	"strconv"
+	"github.com/goki/mat32"
 )
 
 // Primary Value input layer. Sends activation directly to its receivers, bypassing the standard mechanisms.
@@ -46,7 +47,7 @@ func (ly *PVLayer) SendPVAct() {
 		for pi := range ly.Neurons {
 			pnr := &ly.Neurons[pi] // WARNING: both layers must have the same shape!
 			mnr := &rly.ModNeurs[pi]
-			mnr.PVAct = math32.Max(pnr.Act, pnr.Ext)
+			mnr.PVAct = mat32.Max(pnr.Act, pnr.Ext)
 		}
 	}
 }

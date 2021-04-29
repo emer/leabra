@@ -5,8 +5,8 @@
 package hip
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // hip.EcCa1Prjn is for EC <-> CA1 projections, to perform error-driven
@@ -61,7 +61,7 @@ func (pj *EcCa1Prjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

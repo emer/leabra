@@ -5,11 +5,11 @@
 package agate
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/glong"
 	"github.com/emer/leabra/interinhib"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // PulseClearParams are parameters for the synchronous pulse of activation /
@@ -48,7 +48,7 @@ func (ly *MaintLayer) Defaults() {
 func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
 	lpl := &ly.Pools[0]
 	mxact := ly.InterInhibMaxAct(ltime)
-	lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
+	lpl.Inhib.Act.Avg = mat32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
 	ly.PoolInhibFmGeAct(ltime)
 	ly.InhibFmPool(ltime)

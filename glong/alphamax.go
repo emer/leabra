@@ -7,9 +7,9 @@ package glong
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // AlphaMaxLayer computes the maximum activation per neuron over the alpha cycle.
@@ -69,7 +69,7 @@ func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 			continue
 		}
 		max := &ly.AlphaMaxs[ni]
-		*max = math32.Max(*max, nrn.Act)
+		*max = mat32.Max(*max, nrn.Act)
 	}
 }
 
@@ -93,7 +93,7 @@ func (ly *AlphaMaxLayer) MaxAlphaMax() float32 {
 			continue
 		}
 		amx := ly.AlphaMaxs[ni]
-		mx = math32.Max(amx, mx)
+		mx = mat32.Max(amx, mx)
 	}
 	return mx
 }
@@ -120,13 +120,13 @@ func (ly *AlphaMaxLayer) UnitVarIdx(varNm string) (int, error) {
 func (ly *AlphaMaxLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = AlphaMax
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	return ly.AlphaMaxs[idx]
 }

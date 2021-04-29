@@ -7,11 +7,11 @@ package pbwm
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/rl"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
@@ -60,8 +60,8 @@ func (ly *CINLayer) MaxAbsRew() float32 {
 			continue
 		}
 		ly := lyi.(leabra.LeabraLayer).AsLeabra()
-		act := math32.Abs(ly.Pools[0].Inhib.Act.Max)
-		mx = math32.Max(mx, act)
+		act := mat32.Abs(ly.Pools[0].Inhib.Act.Max)
+		mx = mat32.Max(mx, act)
 	}
 	return mx
 }
@@ -112,13 +112,13 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = ACh
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	return ly.ACh
 }

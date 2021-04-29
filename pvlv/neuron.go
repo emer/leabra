@@ -6,12 +6,13 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/chewxy/math32"
+	"log"
+	"unsafe"
+
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
-	"log"
-	"unsafe"
+	"github.com/goki/mat32"
 )
 
 // UnitVarNames returns a list of variable names available on the units in this layer
@@ -87,7 +88,7 @@ func (mnr *ModNeuron) VarByName(varNm string) (float32, error) {
 	var err error
 	i, err = NeuronVarIdxByName(varNm)
 	if err != nil {
-		return math32.NaN(), err
+		return mat32.NaN(), err
 	}
 	return mnr.VarByIndex(i), nil
 }

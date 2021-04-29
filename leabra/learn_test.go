@@ -7,7 +7,7 @@ package leabra
 import (
 	"testing"
 
-	"github.com/chewxy/math32"
+	"github.com/goki/mat32"
 )
 
 func TestXCal(t *testing.T) {
@@ -24,7 +24,7 @@ func TestXCal(t *testing.T) {
 
 	for i := range tstSr {
 		ny[i] = xcal.DWt(tstSr[i], tstThrp[i])
-		dif := math32.Abs(ny[i] - cory[i])
+		dif := mat32.Abs(ny[i] - cory[i])
 		if dif > difTol { // allow for small numerical diffs
 			t.Errorf("XCal err: i: %v, Sr: %v, thrP: %v, got: %v, cor y: %v, dif: %v\n", i, tstSr[i], tstThrp[i], ny[i], cory[i], dif)
 		}

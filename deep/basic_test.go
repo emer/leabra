@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
+	"github.com/goki/mat32"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of
@@ -114,7 +114,7 @@ func TestInPats(t *testing.T) {
 
 func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 	for i := range out {
-		dif := math32.Abs(out[i] - cor[i])
+		dif := mat32.Abs(out[i] - cor[i])
 		if dif > difTol { // allow for small numerical diffs
 			t.Errorf("%v err: out: %v, cor: %v, dif: %v\n", msg, out[i], cor[i], dif)
 		}

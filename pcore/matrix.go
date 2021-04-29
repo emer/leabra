@@ -9,7 +9,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
@@ -215,16 +214,16 @@ func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
 func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := len(leabra.NeuronVars)
 	if varIdx < 0 || varIdx > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx <= nn { //
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx > nn+2 {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx == nn+1 { // DALrn
 		return ly.DALrn
@@ -342,7 +341,7 @@ func (pj *MatrixPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
@@ -398,14 +397,14 @@ func (pj *MatrixPrjn) SynVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MatrixPrjn) SynVal1D(varIdx int, synIdx int) float32 {
 	if varIdx < 0 || varIdx >= len(SynVarsAll) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := pj.Prjn.SynVarNum()
 	if varIdx < nn {
 		return pj.Prjn.SynVal1D(varIdx, synIdx)
 	}
 	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	sy := &pj.TrSyns[synIdx]

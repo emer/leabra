@@ -5,9 +5,9 @@
 package glong
 
 import (
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -182,7 +182,7 @@ func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		gnr.AlphaMax = math32.Max(gnr.AlphaMax, nrn.Act)
+		gnr.AlphaMax = mat32.Max(gnr.AlphaMax, nrn.Act)
 	}
 }
 
@@ -207,7 +207,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		mx = math32.Max(gnr.AlphaMax, mx)
+		mx = mat32.Max(gnr.AlphaMax, mx)
 	}
 	return mx
 }
@@ -247,18 +247,18 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 	if varIdx < 0 {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	if varIdx > len(NeuronVars) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	gnr := &ly.GlNeurs[idx]
 	return gnr.VarByIndex(varIdx)

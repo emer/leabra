@@ -7,7 +7,7 @@ package nxx1
 import (
 	"testing"
 
-	"github.com/chewxy/math32"
+	"github.com/goki/mat32"
 )
 
 // difTol is the numerical difference tolerance for comparing vs. target values
@@ -23,7 +23,7 @@ func TestXX1(t *testing.T) {
 
 	for i := range tstx {
 		ny[i] = xx1.NoisyXX1(tstx[i])
-		dif := math32.Abs(ny[i] - cory[i])
+		dif := mat32.Abs(ny[i] - cory[i])
 		if dif > difTol { // allow for small numerical diffs
 			t.Errorf("XX1 err: dix: %v, x: %v, y: %v, cor y: %v, dif: %v\n", i, tstx[i], ny[i], cory[i], dif)
 		}

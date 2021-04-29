@@ -7,9 +7,9 @@ package pbwm
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // pbwm.Layer is the base layer type for PBWM framework -- has variables for the
@@ -93,7 +93,7 @@ func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	case SE:
 		return ly.SE
 	}
-	return math32.NaN()
+	return mat32.NaN()
 }
 
 // UnitVarIdx returns the index of given variable within the Neuron,
@@ -119,14 +119,14 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 	if varIdx < 0 {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
 		return ly.Layer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	varIdx -= nn
 	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeurVars(varIdx), idx)

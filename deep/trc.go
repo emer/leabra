@@ -9,9 +9,9 @@ import (
 	"log"
 	"math"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // Driver describes the source of driver inputs from cortex into TRC (pulvinar)
@@ -232,7 +232,7 @@ func (ly *TRCLayer) SetDriverActs() {
 		}
 		sly, issuper := dly.LeabraLay.(*SuperLayer)
 		drvMax := dly.Pools[0].Inhib.Act.Max
-		drvInhib := math32.Min(1, drvMax/ly.TRC.MaxInhib)
+		drvInhib := mat32.Min(1, drvMax/ly.TRC.MaxInhib)
 
 		if dly.Is2D() {
 			if ly.Is2D() {
@@ -268,7 +268,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = math32.Max(max, act)
+							max = mat32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -292,7 +292,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = math32.Max(max, act)
+							max = mat32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -331,7 +331,7 @@ func (ly *TRCLayer) SetDriverActs() {
 									pi := (dpy*dpxn + dpx)
 									dpni := pi*dnun + dni
 									act := DriveAct(dpni, dly, sly, issuper)
-									max = math32.Max(max, act)
+									max = mat32.Max(max, act)
 									pmax := dly.Pools[1+pi].Inhib.Act.Max
 									if pmax > 0.5 {
 										avg += act

@@ -7,9 +7,9 @@ package deep
 import (
 	"fmt"
 
-	"github.com/chewxy/math32"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // CTLayer implements the corticothalamic projecting layer 6 deep neurons
@@ -152,13 +152,13 @@ func (ly *CTLayer) UnitVarIdx(varNm string) (int, error) {
 func (ly *CTLayer) UnitVal1D(varIdx int, idx int) float32 {
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = CtxtGes
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	if varIdx < nn {
 		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return math32.NaN()
+		return mat32.NaN()
 	}
 	return ly.CtxtGes[idx]
 }
