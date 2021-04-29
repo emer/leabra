@@ -10,6 +10,7 @@ import (
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
+	"github.com/goki/mat32"
 )
 
 // NMDAParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
@@ -35,7 +36,7 @@ func (np *NMDAParams) VmEff(vm, act float32) float32 {
 
 // GFmV returns the NMDA conductance as a function of normalized membrane potential
 func (np *NMDAParams) GFmV(v float32) float32 {
-	vbio := v*100 - 100
+	vbio := mat32.Min(v*100-100, 0) // critical to not go past 0
 	return 1 / (1 + 0.28*math32.Exp(-0.062*vbio))
 }
 

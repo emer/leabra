@@ -6,6 +6,7 @@ package glong
 
 import (
 	"github.com/chewxy/math32"
+	"github.com/goki/mat32"
 )
 
 // GABABParams control the GABAB dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
@@ -36,7 +37,7 @@ func (gp *GABABParams) Update() {
 
 // GFmV returns the GABA-B conductance as a function of normalized membrane potential
 func (gp *GABABParams) GFmV(v float32) float32 {
-	vbio := v*100 - 100
+	vbio := mat32.Max(v*100-100, -90) // critical to not go past -90
 	return 1 / (1 + math32.Exp(0.1*((vbio+90)+10)))
 }
 

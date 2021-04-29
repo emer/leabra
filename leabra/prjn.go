@@ -625,7 +625,7 @@ func (pj *Prjn) WtBalFmWt() {
 	}
 
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if rlay.LeabraLay.IsTarget() {
+	if !pj.Learn.WtBal.Targs && rlay.LeabraLay.IsTarget() {
 		return
 	}
 	for ri := range rlay.Neurons {

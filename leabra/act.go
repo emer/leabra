@@ -27,7 +27,7 @@ type ActParams struct {
 	OptThresh  OptThreshParams `view:"inline" desc:"optimization thresholds for faster processing"`
 	Init       ActInitParams   `view:"inline" desc:"initial values for key network state variables -- initialized at start of trial with InitActs or DecayActs"`
 	Dt         DtParams        `view:"inline" desc:"time and rate constants for temporal derivatives / updating of activation state"`
-	Gbar       chans.Chans     `view:"inline" desc:"[Defaults: 1, .2, 1, 1] maximal conductances levels for channels"`
+	Gbar       chans.Chans     `view:"inline" desc:"[Defaults: 1, .1, 1, 1] maximal conductances levels for channels"`
 	Erev       chans.Chans     `view:"inline" desc:"[Defaults: 1, .3, .25, .1] reversal potentials for each channel"`
 	Clamp      ClampParams     `view:"inline" desc:"how external inputs drive neural activations"`
 	Noise      ActNoiseParams  `view:"inline" desc:"how, where, when, and how much noise to add to activations"`
