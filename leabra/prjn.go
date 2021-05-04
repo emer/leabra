@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 
@@ -312,8 +311,7 @@ func (pj *Prjn) Build() error {
 //  Init methods
 
 // SetScalesRPool initializes synaptic Scale values using given tensor
-// of values which has unique values for each recv neuron within a given pool
-// i.e., recv layer must have 4D pool structure.
+// of values which has unique values for each recv neuron within a given pool.
 func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
 	rNuY := scales.Dim(0)
 	rNuX := scales.Dim(1)
@@ -321,18 +319,25 @@ func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
 	rfsz := scales.Len() / rNu
 
 	rsh := pj.Recv.Shape()
-	if rsh.NumDims() != 4 {
-		log.Printf("leabra.Prjn.SetScalesRPool: recv layer must have 4D shape")
-		return
-	}
 	rNpY := rsh.Dim(0)
 	rNpX := rsh.Dim(1)
+	r2d := false
+	if rsh.NumDims() != 4 {
+		r2d = true
+		rNpY = 1
+		rNpX = 1
+	}
 
 	for rpy := 0; rpy < rNpY; rpy++ {
 		for rpx := 0; rpx < rNpX; rpx++ {
 			for ruy := 0; ruy < rNuY; ruy++ {
 				for rux := 0; rux < rNuX; rux++ {
-					ri := rsh.Offset([]int{rpy, rpx, ruy, rux})
+					ri := 0
+					if r2d {
+						ri = rsh.Offset([]int{ruy, rux})
+					} else {
+						ri = rsh.Offset([]int{rpy, rpx, ruy, rux})
+					}
 					scst := (ruy*rNuX + rux) * rfsz
 					nc := int(pj.RConN[ri])
 					st := int(pj.RConIdxSt[ri])
