@@ -56,8 +56,9 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dlclark/regexp2 v1.4.0 h1:F1rxgk7p4uKjwIQxBs9oAXe5CqrXlCduYEJvrF4u93E=
 github.com/dlclark/regexp2 v1.4.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
-github.com/emer/emergent v1.1.26 h1:O+vGDb2X0qLZF5pbb+T51hsiqWcNgoc8qAXc/169n1c=
 github.com/emer/emergent v1.1.26/go.mod h1:XhFMJgoZeOYplTDMDUcmGPuthfTqJPbBLmXEPN6uP8Y=
+github.com/emer/emergent v1.1.27 h1:b7F1c56Ywy2KmORggARFNKwCVIYRCZv/PQgubSkcMc0=
+github.com/emer/emergent v1.1.27/go.mod h1:XhFMJgoZeOYplTDMDUcmGPuthfTqJPbBLmXEPN6uP8Y=
 github.com/emer/empi v1.0.10 h1:8Tn26WyTVLDjkeJ6jHBT3o9OU7HZmP5H9shJXXU7WUo=
 github.com/emer/empi v1.0.10/go.mod h1:QJRkECkqMO3/UeuknKEzqH+oEf6MWogBeu5LPi+Y9mU=
 github.com/emer/etable v1.0.27 h1:t/L0iYhOdkjXlT54g8t/zZPOixSMTTFgJ0Y8ba9yVBA=
