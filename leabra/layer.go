@@ -793,17 +793,22 @@ func (ly *Layer) UpdateExtFlags() {
 	}
 }
 
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-// should already have presented the external input to the network at this point.
-func (ly *Layer) AlphaCycInit() {
-	ly.LeabraLay.AvgLFmAvgM()
+// ActAvgFmAct updates the running average ActMAvg, ActPAvg, and ActPAvgEff
+// values from the current pool-level averages.
+// The ActPAvgEff value is used for updating the conductance scaling parameters,
+// if these are not set to Fixed, so calling this will change the scaling of
+// projections in the network!
+func (ly *Layer) ActAvgFmAct() {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		ly.Inhib.ActAvg.AvgFmAct(&pl.ActAvg.ActMAvg, pl.ActM.Avg)
 		ly.Inhib.ActAvg.AvgFmAct(&pl.ActAvg.ActPAvg, pl.ActP.Avg)
 		ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 	}
+}
+
+// ActQ0FmActP updates the neuron ActQ0 value from prior ActP value
+func (ly *Layer) ActQ0FmActP() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -811,7 +816,26 @@ func (ly *Layer) AlphaCycInit() {
 		}
 		nrn.ActQ0 = nrn.ActP
 	}
-	ly.LeabraLay.GScaleFmAvgAct()
+}
+
+// AlphaCycInit handles all initialization at start of new input pattern.
+// Should already have presented the external input to the network at this point.
+// If updtActAvg is true, this includes updating the running-average
+// activations for each layer / pool, and the AvgL running average used
+// in BCM Hebbian learning.
+// The input scaling is updated  based on the layer-level running average acts,
+// and this can then change the behavior of the network,
+// so if you want 100% repeatable testing results, set this to false to
+// keep the existing scaling factors (e.g., can pass a train bool to
+// only update during training).  This flag also affects the AvgL learning
+// threshold
+func (ly *Layer) AlphaCycInit(updtActAvg bool) {
+	ly.ActQ0FmActP()
+	if updtActAvg {
+		ly.LeabraLay.AvgLFmAvgM()
+		ly.ActAvgFmAct()
+		ly.LeabraLay.GScaleFmAvgAct()
+	}
 	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
 		ly.LeabraLay.GenNoise()
 	}

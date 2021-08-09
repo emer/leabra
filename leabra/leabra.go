@@ -34,9 +34,18 @@ type LeabraNetwork interface {
 	// to all the basic stuff
 	AsLeabra() *Network
 
-	// AlphaCycInitImpl handles all initialization at start of new input pattern, including computing
-	// input scaling from running average activation etc.
-	AlphaCycInitImpl()
+	// AlphaCycInit handles all initialization at start of new input pattern.
+	// Should already have presented the external input to the network at this point.
+	// If updtActAvg is true, this includes updating the running-average
+	// activations for each layer / pool, and the AvgL running average used
+	// in BCM Hebbian learning.
+	// The input scaling is updated  based on the layer-level running average acts,
+	// and this can then change the behavior of the network,
+	// so if you want 100% repeatable testing results, set this to false to
+	// keep the existing scaling factors (e.g., can pass a train bool to
+	// only update during training).  This flag also affects the AvgL learning
+	// threshold
+	AlphaCycInitImpl(updtActAvg bool)
 
 	// CycleImpl runs one cycle of activation updating:
 	// * Sends Ge increments from sending to receiving layers
@@ -121,10 +130,18 @@ type LeabraLayer interface {
 	// In both cases, Target layers are purely error-driven.
 	IsTarget() bool
 
-	// AlphaCycInit handles all initialization at start of new input pattern,
-	// including computing netinput scaling from running average activation etc.
-	// should already have presented the external input to the network at this point.
-	AlphaCycInit()
+	// AlphaCycInit handles all initialization at start of new input pattern.
+	// Should already have presented the external input to the network at this point.
+	// If updtActAvg is true, this includes updating the running-average
+	// activations for each layer / pool, and the AvgL running average used
+	// in BCM Hebbian learning.
+	// The input scaling is updated  based on the layer-level running average acts,
+	// and this can then change the behavior of the network,
+	// so if you want 100% repeatable testing results, set this to false to
+	// keep the existing scaling factors (e.g., can pass a train bool to
+	// only update during training).  This flag also affects the AvgL learning
+	// threshold
+	AlphaCycInit(updtActAvg bool)
 
 	// AvgLFmAvgM updates AvgL long-term running average activation that
 	// drives BCM Hebbian learning

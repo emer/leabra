@@ -97,10 +97,19 @@ func (nt *Network) SynVarProps() map[string]string {
 //  They just call the corresponding Impl method using the LeabraNetwork interface
 //  so that other network types can specialize any of these entry points.
 
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-func (nt *Network) AlphaCycInit() {
-	nt.EmerNet.(LeabraNetwork).AlphaCycInitImpl()
+// AlphaCycInit handles all initialization at start of new input pattern.
+// Should already have presented the external input to the network at this point.
+// If updtActAvg is true, this includes updating the running-average
+// activations for each layer / pool, and the AvgL running average used
+// in BCM Hebbian learning.
+// The input scaling is updated  based on the layer-level running average acts,
+// and this can then change the behavior of the network,
+// so if you want 100% repeatable testing results, set this to false to
+// keep the existing scaling factors (e.g., can pass a train bool to
+// only update during training).  This flag also affects the AvgL learning
+// threshold
+func (nt *Network) AlphaCycInit(updtActAvg bool) {
+	nt.EmerNet.(LeabraNetwork).AlphaCycInitImpl(updtActAvg)
 }
 
 // Cycle runs one cycle of activation updating:
@@ -260,14 +269,23 @@ func (nt *Network) InitGInc() {
 	}
 }
 
-// AlphaCycInitImpl handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-func (nt *Network) AlphaCycInitImpl() {
+// AlphaCycInit handles all initialization at start of new input pattern.
+// Should already have presented the external input to the network at this point.
+// If updtActAvg is true, this includes updating the running-average
+// activations for each layer / pool, and the AvgL running average used
+// in BCM Hebbian learning.
+// The input scaling is updated  based on the layer-level running average acts,
+// and this can then change the behavior of the network,
+// so if you want 100% repeatable testing results, set this to false to
+// keep the existing scaling factors (e.g., can pass a train bool to
+// only update during training).  This flag also affects the AvgL learning
+// threshold
+func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
 	for _, ly := range nt.Layers {
 		if ly.IsOff() {
 			continue
 		}
-		ly.(LeabraLayer).AlphaCycInit()
+		ly.(LeabraLayer).AlphaCycInit(updtActAvg)
 	}
 }
 
