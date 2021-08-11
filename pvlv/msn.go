@@ -308,7 +308,7 @@ func (ly *MSNLayer) InhibFmGeAct(ltime *leabra.Time) {
 	}
 }
 
-func (ly *MSNLayer) AlphaCycInit() {
+func (ly *MSNLayer) AlphaCycInit(updtActAvg bool) {
 	if ly.DIParams.Active {
 		for ni := range ly.DIState {
 			dis := &ly.DIState[ni]
@@ -316,5 +316,5 @@ func (ly *MSNLayer) AlphaCycInit() {
 			dis.GePrvTrl = nrn.Ge
 		}
 	}
-	ly.ModLayer.AlphaCycInit()
+	ly.ModLayer.AlphaCycInit(updtActAvg)
 }

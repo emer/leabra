@@ -90,7 +90,7 @@ func TestMakeNet(t *testing.T) {
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
 	TestNet.Build()
 	TestNet.InitWts()
-	TestNet.AlphaCycInit() // get GScale
+	TestNet.AlphaCycInit(true) // get GScale
 
 	// var buf bytes.Buffer
 	// TestNet.WriteWtsJSON(&buf)
@@ -164,7 +164,7 @@ func TestNetAct(t *testing.T) {
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
-		TestNet.AlphaCycInit()
+		TestNet.AlphaCycInit(true)
 		ltime.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
 			for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
@@ -323,7 +323,7 @@ func TestNetLearn(t *testing.T) {
 			inLay.ApplyExt(inpat)
 			outLay.ApplyExt(inpat)
 
-			TestNet.AlphaCycInit()
+			TestNet.AlphaCycInit(true)
 			ltime.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
 				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {

@@ -283,12 +283,8 @@ func (ly *GPiThalLayer) InitActs() {
 	}
 }
 
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-// should already have presented the external input to the network at this point.
-// need to clear incrementing GeRaw from prjns
-func (ly *GPiThalLayer) AlphaCycInit() {
-	ly.GateLayer.AlphaCycInit()
+func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
+	ly.GateLayer.AlphaCycInit(updtActAvg)
 	ly.LeabraLay.InitGInc()
 }
 

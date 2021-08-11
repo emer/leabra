@@ -152,11 +152,8 @@ func (ly *STNLayer) InitActs() {
 	}
 }
 
-// AlphaCycInit handles all initialization at start of new input pattern, including computing
-// input scaling from running average activation etc.
-// should already have presented the external input to the network at this point.
-func (ly *STNLayer) AlphaCycInit() {
-	ly.Layer.AlphaCycInit()
+func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
+	ly.Layer.AlphaCycInit(updtActAvg)
 	if !ly.Ca.AlphaInit {
 		return
 	}

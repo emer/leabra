@@ -84,8 +84,8 @@ func (ly *Layer) DecayState(decay float32) {
 	}
 }
 
-func (ly *Layer) AlphaCycInit() {
-	ly.Layer.AlphaCycInit()
+func (ly *Layer) AlphaCycInit(updtActAvg bool) {
+	ly.Layer.AlphaCycInit(updtActAvg)
 	ly.InitAlphaMax()
 }
 

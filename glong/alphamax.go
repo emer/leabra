@@ -49,8 +49,8 @@ func (ly *AlphaMaxLayer) InitActs() {
 	ly.InitAlphaMax()
 }
 
-func (ly *AlphaMaxLayer) AlphaCycInit() {
-	ly.Layer.AlphaCycInit()
+func (ly *AlphaMaxLayer) AlphaCycInit(updtActAvg bool) {
+	ly.Layer.AlphaCycInit(updtActAvg)
 	ly.InitAlphaMax()
 }
 
