@@ -834,8 +834,8 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 	if updtActAvg {
 		ly.LeabraLay.AvgLFmAvgM()
 		ly.ActAvgFmAct()
-		ly.LeabraLay.GScaleFmAvgAct()
 	}
+	ly.LeabraLay.GScaleFmAvgAct() // need to do this always, in case hasn't been done at all yet
 	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
 		ly.LeabraLay.GenNoise()
 	}
