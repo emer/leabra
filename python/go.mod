@@ -9,9 +9,9 @@ require (
 	github.com/aymerick/douceur v0.2.0
 	github.com/emer/emergent v1.1.36
 	github.com/emer/etable v1.0.34
-	github.com/emer/etorch v1.0.6
+	github.com/emer/etorch v1.0.8
 	github.com/emer/leabra v1.1.37
-	github.com/emer/vision v1.1.6
+	github.com/emer/vision v1.1.11
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-gl/mathgl v1.0.0
 	github.com/go-python/gopy v0.3.6
