@@ -12,7 +12,7 @@ See [etable pyet](https://github.com/emer/etable/tree/master/examples/pyet) for 
 
 First, you have to install the Go version of emergent: [Wiki Install](https://github.com/emer/emergent/wiki/Install).
 
-Python version 3 (3.6, 3.8 have been well tested) is recommended.
+Python version 3 (3.6-3.9 have been well tested) is recommended.
 
 This assumes that you are using go modules, as discussed in the wiki install page, and *that you are in the `leabra` directory where you installed leabra* (e.g., `git clone https://github.com/emer/leabra` and then `cd leabra`)
 
@@ -26,6 +26,8 @@ $ pyleabra -i ra25.py   # pyleabra was installed during make install into /usr/l
 ```
 
 The `pyleabra` executable combines standard python and the full Go emergent and GoGi gui packages -- see the information in the GoGi python readme for more technical information about this.
+
+Use `make install-win` for Windows to add the `.exe` extension and copies into `~/go/bin`.
 
 # Sharing install
 
