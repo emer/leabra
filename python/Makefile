@@ -14,7 +14,7 @@ all: prereq gen
 prereq:
 	@echo "Installing go prerequisites:"
 	- go install golang.org/x/tools/cmd/goimports  # this installs into ~/go/bin
-	- go install github.com/go-python/gopy@v0.3.8
+	- go install github.com/go-python/gopy@v0.3.9
 	@echo "Installing python prerequisites -- ignore err if already installed:"
 	- $(PIP) install -r requirements.txt
 	@echo
@@ -44,6 +44,12 @@ install-pkg:
 install-exe:
 	# install executable into /usr/local/bin
 	cp leabra/pyleabra /usr/local/bin/
+
+install-win:
+	# windows version: install executable into gopath too, add .exe
+	- mkdir -p /usr/local/bin
+	- cp leabra/pyleabra $(GOPATH)/bin/pyleabra.exe
+	- cp leabra/pyleabra C:/usr/local/bin/pyleabra.exe
 
 clean:
 	rm -rf leabra dist build */*.egg-info *.egg-info
