@@ -14,7 +14,7 @@ all: prereq gen
 prereq:
 	@echo "Installing go prerequisites:"
 	- go install golang.org/x/tools/cmd/goimports  # this installs into ~/go/bin
-	- go install github.com/go-python/gopy@v0.3.9
+	- go install github.com/go-python/gopy@v0.4.0
 	@echo "Installing python prerequisites -- ignore err if already installed:"
 	- $(PIP) install -r requirements.txt
 	@echo
