@@ -7,10 +7,10 @@ require (
 	github.com/anthonynsimon/bild v0.13.0
 	github.com/apache/arrow/go/arrow v0.0.0-20210429081429-939195183657
 	github.com/aymerick/douceur v0.2.0
-	github.com/emer/emergent v1.1.37
-	github.com/emer/etable v1.0.35
+	github.com/emer/emergent v1.1.38
+	github.com/emer/etable v1.0.36
 	github.com/emer/etorch v1.0.8
-	github.com/emer/leabra v1.1.39
+	github.com/emer/leabra v1.1.40
 	github.com/emer/vision v1.1.12
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-gl/mathgl v1.0.0
@@ -20,9 +20,7 @@ require (
 	github.com/goki/mat32 v1.0.9
 	github.com/goki/pi v1.0.14
 	github.com/goki/vci v1.0.0
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/ianbruene/go-difflib v1.2.0
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780
 	github.com/srwiley/scanx v0.0.0-20190309010443-e94503791388
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
