@@ -29,12 +29,12 @@ var ParamSets = params.Sets{
 			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
 					"Prjn.CHL.Hebb":          "0.01", // .01 > .05? > .1?
-					"Prjn.Learn.Lrate":       "0.2",  // .2 probably better? .4 was prev default, this val is not used anywhere
+					"Prjn.Learn.Lrate":       "0.2",  // .2 probably better? .4 was prev default
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
 				}},
-			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Prjn prjns",
+			{Sel: ".PPath", Desc: "performant path, new Dg error-driven EcCa1Prjn prjns",
 				Params: params.Params{
 					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
 					"Prjn.Learn.Momentum.On": "false",
@@ -58,7 +58,7 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails)
+					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails); zycyc test this
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
@@ -66,15 +66,21 @@ var ParamSets = params.Sets{
 					"Prjn.WtInit.Mean": "0.9",
 					"Prjn.WtInit.Var":  "0.01",
 					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
+					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
+			//{Sel: "#ECinToCA3", Desc: "ECin Perforant Path",
+			//	Params: params.Params{
+			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//	}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=2 still the best",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "2", // 2 > 1 > .5 = .1
 					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
+					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off. zycyc test
+					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off.
 					"Prjn.CHL.Hebb":          "0.2",   // .2 seems good
 					"Prjn.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
 					"Prjn.CHL.MinusQ1":       "true", // dg self err slightly better
@@ -91,7 +97,16 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
+					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
+			//{Sel: "#ECinToCA1", Desc: "ECin Perforant Path",
+			//	Params: params.Params{
+			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//	}},
+			//{Sel: "#ECoutToCA1", Desc: "ECout Perforant Path",
+			//	Params: params.Params{
+			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//	}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
 					"Layer.Act.Gbar.L":        "0.1",
@@ -118,6 +133,7 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.On":     "true",
 					"Layer.Inhib.Pool.Gi":     "2.4", // 2.4 > 2.2 > 2.6 > 2.8 -- 2.4 better *for small net* but not for larger!
 					"Layer.Learn.AvgL.Gain":   "2.5", // 2.5 > 2 > 3
+					//"Layer.Inhib.ActAvg.UseFirst": "false", // first activity is too low, throws off scaling, from Randy, zycyc: do we need this?
 				}},
 		},
 		// NOTE: it is essential not to put Pat / Hip params here, as we have to use Base
