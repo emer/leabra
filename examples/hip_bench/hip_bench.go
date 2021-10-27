@@ -678,6 +678,11 @@ func (ss *Sim) TrainTrial() {
 		learned := (ss.NZeroStop > 0 && ss.NZero >= ss.NZeroStop)
 		if ss.TrainEnv.Table.Table == ss.TrainAB && (learned || epc == ss.MaxEpcs/2) { // switch to AC
 			ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAC)
+
+			// set names after updating epochs to get correct names for the next env
+			ss.TrainEnv.SetTrialName()
+			ss.TrainEnv.SetGroupName()
+
 			learned = false
 		}
 		if learned || epc >= ss.MaxEpcs { // done with training..
