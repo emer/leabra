@@ -1,15 +1,15 @@
 # Hardware benchmarks
 
-## MacBook Pro 16-inch, 2021: Apple M1 Max, 64 GB LPDDR5 memory, Go 1.17.2
+## MacBook Pro 16-inch, 2021: Apple M1 Max, 64 GB LPDDR5 memory, Go 1.17.5
 
 ```
 Size     1 thr  2 thr  4 thr
 ---------------------------------
-SMALL:   0.89   2.26   2.68
-MEDIUM:  1.12   1.42   1.44
-LARGE:   7.06   5.27   4.09
-HUGE:   11.60   7.79   5.91
-GINORM: 17.0    11.8   8.13
+SMALL:   0.79   1.63   1.96
+MEDIUM:  1.03   1.18   1.20
+LARGE:   6.83   5.04   3.90
+HUGE:   10.60   7.49   5.54
+GINORM: 17.1    12.3   9.07
 
 ## MacBook Pro 16-inch, 2019: 2.4 Ghz 8-Core Intel Core i9, 64 GB 2667 Mhz DDR4 memory, Go 1.15.4
 
