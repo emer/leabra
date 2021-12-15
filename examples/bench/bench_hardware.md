@@ -10,6 +10,7 @@ MEDIUM:  1.03   1.18   1.20
 LARGE:   6.83   5.04   3.90
 HUGE:   10.60   7.49   5.54
 GINORM: 17.1    12.3   9.07
+```
 
 ## MacBook Pro 16-inch, 2019: 2.4 Ghz 8-Core Intel Core i9, 64 GB 2667 Mhz DDR4 memory, Go 1.15.4
 
