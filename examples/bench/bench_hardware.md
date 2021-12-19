@@ -1,5 +1,7 @@
 # Hardware benchmarks
 
+NOTE: generally taking the best of 2 runs.  Not sure how the mac allocates priority but it often slows things down after a short while if they're taking a lot of CPU.  Great for some things but not for this!
+
 ## MacBook Pro 16-inch, 2021: Apple M1 Max, 64 GB LPDDR5 memory, Go 1.17.5
 
 ```
@@ -12,7 +14,21 @@ HUGE:   10.60   7.49   5.54
 GINORM: 17.1    12.3   9.07
 ```
 
-## MacBook Pro 16-inch, 2019: 2.4 Ghz 8-Core Intel Core i9, 64 GB 2667 Mhz DDR4 memory, Go 1.15.4
+## MacBook Pro 16-inch, 2019: 2.4 Ghz 8-Core Intel Core i9, 64 GB 2667 Mhz DDR4 memory
+
+## Go 1.17.5 -- uses registers to pass args, is tiny bit faster
+
+```
+Size     1 thr  2 thr  4 thr
+---------------------------------
+SMALL:   1.16   3.01   3.29
+MEDIUM:  1.51   2.09   2.00
+LARGE:   9.40   7.13   5.26
+HUGE:   17.3   12.2    9.15
+GINORM: 26.1   19.8   15.3
+```
+
+## Go 1.15.4
 
 ```
 Size     1 thr  2 thr  4 thr

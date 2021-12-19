@@ -10,7 +10,7 @@ require (
 	github.com/emer/emergent v1.1.39
 	github.com/emer/etable v1.0.37
 	github.com/emer/etorch v1.0.9
-	github.com/emer/leabra v1.1.40
+	github.com/emer/leabra v1.1.42
 	github.com/emer/vision v1.1.12
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-gl/mathgl v1.0.0
