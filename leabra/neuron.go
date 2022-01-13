@@ -6,6 +6,7 @@ package leabra
 
 import (
 	"fmt"
+	"reflect"
 	"unsafe"
 
 	"github.com/goki/ki/bitflag"
@@ -79,8 +80,16 @@ var NeuronVarProps = map[string]string{
 
 func init() {
 	NeuronVarsMap = make(map[string]int, len(NeuronVars))
+	typ := reflect.TypeOf((*Neuron)(nil)).Elem()
 	for i, v := range NeuronVars {
 		NeuronVarsMap[v] = i
+		pstr := NeuronVarProps[v]
+		if fld, has := typ.FieldByName(v); has {
+			if desc, ok := fld.Tag.Lookup("desc"); ok {
+				pstr += ` desc:"` + desc + `"`
+				NeuronVarProps[v] = pstr
+			}
+		}
 	}
 }
 
