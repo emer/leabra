@@ -34,14 +34,15 @@ type LayFunChan chan func(ly LeabraLayer)
 
 // leabra.NetworkStru holds the basic structural components of a network (layers)
 type NetworkStru struct {
-	EmerNet  emer.Network          `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
-	Nm       string                `desc:"overall name of network -- helps discriminate if there are multiple"`
-	Layers   emer.Layers           `desc:"list of layers"`
-	WtsFile  string                `desc:"filename of last weights file loaded or saved"`
-	LayMap   map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
-	MinPos   mat32.Vec3            `view:"-" desc:"minimum display position in network"`
-	MaxPos   mat32.Vec3            `view:"-" desc:"maximum display position in network"`
-	MetaData map[string]string     `desc:"optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save"`
+	EmerNet    emer.Network                `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	Nm         string                      `desc:"overall name of network -- helps discriminate if there are multiple"`
+	Layers     emer.Layers                 `desc:"list of layers"`
+	WtsFile    string                      `desc:"filename of last weights file loaded or saved"`
+	LayMap     map[string]emer.Layer       `view:"-" desc:"map of name to layers -- layer names must be unique"`
+	LayTypeMap map[emer.LayerType][]string `view:"-" desc:"map of layer types -- made during Build"`
+	MinPos     mat32.Vec3                  `view:"-" desc:"minimum display position in network"`
+	MaxPos     mat32.Vec3                  `view:"-" desc:"maximum display position in network"`
+	MetaData   map[string]string           `desc:"optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save"`
 
 	NThreads    int                    `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
 	LockThreads bool                   `desc:"if set, runtime.LockOSThread() is called on the compute threads, which can be faster on large networks on some architectures -- experimentation is recommended"`
@@ -95,6 +96,15 @@ func (nt *NetworkStru) MakeLayMap() {
 	for _, ly := range nt.Layers {
 		nt.LayMap[ly.Name()] = ly
 	}
+}
+
+// LayersByType returns a list of layer names of given type(s)
+func (nt *NetworkStru) LayersByType(types ...emer.LayerType) []string {
+	var nms []string
+	for _, lt := range types {
+		nms = append(nms, nt.LayTypeMap[lt]...)
+	}
+	return nms
 }
 
 // BuildThreads constructs the layer thread allocation based on Thread setting in the layers
@@ -396,6 +406,7 @@ func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern,
 // and patterns of interconnectivity
 func (nt *NetworkStru) Build() error {
 	nt.StopThreads() // any existing..
+	nt.LayTypeMap = make(map[emer.LayerType][]string)
 	emsg := ""
 	for li, ly := range nt.Layers {
 		ly.SetIndex(li)
@@ -406,6 +417,9 @@ func (nt *NetworkStru) Build() error {
 		if err != nil {
 			emsg += err.Error() + "\n"
 		}
+		ll := nt.LayTypeMap[ly.Type()]
+		ll = append(ll, ly.Name())
+		nt.LayTypeMap[ly.Type()] = ll
 	}
 	nt.Layout()
 	nt.BuildThreads()
