@@ -153,20 +153,6 @@ func (ss *Sim) ConfigLogItems() {
 				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
-		Name:   "Correl",
-		Type:   etensor.FLOAT64,
-		FixMax: elog.DTrue,
-		Range:  minmax.F64{Max: 1},
-		Write: elog.WriteMap{
-			elog.Scope(elog.AllModes, elog.Trial): func(ctx *elog.Context) {
-				ctx.SetFloat64(ss.Stats.Float("TrlCorrel"))
-			}, elog.Scope(elog.AllModes, elog.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, elog.Trial, agg.AggMean)
-			}, elog.Scope(elog.Train, elog.Run): func(ctx *elog.Context) {
-				ix := ctx.LastNRows(elog.Train, elog.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
-			}}})
-	ss.Logs.AddItem(&elog.Item{
 		Name: "PerTrlMSec",
 		Type: etensor.FLOAT64,
 		Plot: elog.DFalse,

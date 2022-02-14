@@ -25,7 +25,6 @@ import (
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/patgen"
 	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
@@ -67,8 +66,8 @@ var ParamSets = params.Sets{
 		"NetSize": &params.Sheet{
 			{Sel: ".Hidden", Desc: "all hidden layers",
 				Params: params.Params{
-					"Layer.X": "8",
-					"Layer.Y": "8",
+					"Layer.X": "7",
+					"Layer.Y": "7",
 				}},
 		},
 		"Network": &params.Sheet{
@@ -192,6 +191,7 @@ func (ss *Sim) New() {
 	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 5
 	ss.PCAInterval = 5
+	ss.Time.Defaults()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,13 +243,13 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 
 	net.InitName(net, "RA25")
 	inp := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1 := net.AddLayer2D("Hidden1", ss.Params.LayY("Hidden1", 10), ss.Params.LayX("Hidden1", 10), emer.Hidden)
-	hid2 := net.AddLayer2D("Hidden2", ss.Params.LayY("Hidden2", 10), ss.Params.LayX("Hidden2", 10), emer.Hidden)
+	hid1 := net.AddLayer2D("Hidden1", ss.Params.LayY("Hidden1", 7), ss.Params.LayX("Hidden1", 7), emer.Hidden)
+	hid2 := net.AddLayer2D("Hidden2", ss.Params.LayY("Hidden2", 7), ss.Params.LayX("Hidden2", 7), emer.Hidden)
 	out := net.AddLayer2D("Output", 5, 5, emer.Target)
 
 	// use this to position layers relative to each other
 	// default is Above, YAlign = Front, XAlign = Center
-	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
+	// hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
 	// note: see emergent/prjn module for all the options on how to connect
 	// NewFull returns a new prjn.Full connectivity pattern
@@ -472,52 +472,6 @@ func (ss *Sim) NewRun() {
 	ss.NeedsNewRun = false
 }
 
-// InitStats initializes all the statistics.
-// called at start of new run
-func (ss *Sim) InitStats() {
-	// clear rest just to make Sim look initialized
-	ss.Stats.SetFloat("TrlErr", 0.0)
-	ss.Stats.SetString("TrlClosest", "")
-	ss.Stats.SetFloat("TrlCorrel", 0.0)
-	ss.Stats.SetFloat("TrlSSE", 0.0)
-	ss.Stats.SetFloat("TrlAvgSSE", 0.0)
-	ss.Stats.SetFloat("TrlCosDiff", 0.0)
-	ss.Stats.SetInt("FirstZero", -1) // critical to reset to -1
-	ss.Stats.SetInt("NZero", 0)
-}
-
-// StatCounters saves current counters to Stats, so they are available for logging etc
-// Also saves a string rep of them to the GUI, if the GUI is active
-func (ss *Sim) StatCounters(train bool) {
-	ev := ss.TrainEnv
-	if !train {
-		ev = ss.TestEnv
-	}
-	ss.Stats.SetInt("Run", ss.TrainEnv.Run.Cur)
-	ss.Stats.SetInt("Epoch", ss.TrainEnv.Epoch.Cur)
-	ss.Stats.SetInt("Trial", ev.Trial.Cur)
-	ss.Stats.SetString("TrialName", ev.TrialName.Cur)
-	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ss.GUI.NetViewText = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
-}
-
-// TrialStats computes the trial-level statistics.
-// Aggregation is done directly from log data.
-func (ss *Sim) TrialStats() {
-	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
-
-	sse, avgsse := out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
-	ss.Stats.SetFloat("TrlSSE", sse)
-	ss.Stats.SetFloat("TrlAvgSSE", avgsse)
-	ss.Stats.SetFloat("TrlCosDiff", float64(out.CosDiff.Cos))
-
-	if sse > 0 {
-		ss.Stats.SetFloat("TrlErr", 1)
-	} else {
-		ss.Stats.SetFloat("TrlErr", 0)
-	}
-}
-
 // TrainEpoch runs training trials for remainder of this epoch
 func (ss *Sim) TrainEpoch() {
 	ss.GUI.StopNow = false
@@ -687,6 +641,50 @@ func (ss *Sim) WeightsFileName() string {
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
 	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
+}
+
+// InitStats initializes all the statistics.
+// called at start of new run
+func (ss *Sim) InitStats() {
+	// clear rest just to make Sim look initialized
+	ss.Stats.SetFloat("TrlErr", 0.0)
+	ss.Stats.SetFloat("TrlSSE", 0.0)
+	ss.Stats.SetFloat("TrlAvgSSE", 0.0)
+	ss.Stats.SetFloat("TrlCosDiff", 0.0)
+	ss.Stats.SetInt("FirstZero", -1) // critical to reset to -1
+	ss.Stats.SetInt("NZero", 0)
+}
+
+// StatCounters saves current counters to Stats, so they are available for logging etc
+// Also saves a string rep of them to the GUI, if the GUI is active
+func (ss *Sim) StatCounters(train bool) {
+	ev := ss.TrainEnv
+	if !train {
+		ev = ss.TestEnv
+	}
+	ss.Stats.SetInt("Run", ss.TrainEnv.Run.Cur)
+	ss.Stats.SetInt("Epoch", ss.TrainEnv.Epoch.Cur)
+	ss.Stats.SetInt("Trial", ev.Trial.Cur)
+	ss.Stats.SetString("TrialName", ev.TrialName.Cur)
+	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
+	ss.GUI.NetViewText = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
+}
+
+// TrialStats computes the trial-level statistics.
+// Aggregation is done directly from log data.
+func (ss *Sim) TrialStats() {
+	out := ss.Net.LayerByName("Output").(leabra.LeabraLayer).AsLeabra()
+
+	sse, avgsse := out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	ss.Stats.SetFloat("TrlSSE", sse)
+	ss.Stats.SetFloat("TrlAvgSSE", avgsse)
+	ss.Stats.SetFloat("TrlCosDiff", float64(out.CosDiff.Cos))
+
+	if sse > 0 {
+		ss.Stats.SetFloat("TrlErr", 1)
+	} else {
+		ss.Stats.SetFloat("TrlErr", 0)
+	}
 }
 
 //////////////////////////////////////////////
@@ -927,7 +925,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
 		Active:  egui.ActiveAlways,
 		Func: func() {
-			gi.OpenURL("https://github.com/emer/axon/blob/master/examples/one2many/README.md")
+			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
 		},
 	})
 	ss.GUI.FinalizeGUI(false)
@@ -997,6 +995,8 @@ func (ss *Sim) CmdArgs() {
 	ss.TrainEnv.Run.Max = ss.StartRun + ss.MaxRuns
 	ss.NewRun()
 	ss.Train()
+
+	ss.Logs.CloseLogFiles()
 
 	if saveNetData {
 		ndfn := ss.Net.Nm + "_" + ss.RunName() + ".netdata.gz"
