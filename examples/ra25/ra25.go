@@ -758,7 +758,7 @@ func (ss *Sim) LogRunStats() {
 // PCAStats computes PCA statistics on recorded hidden activation patterns
 // from Analyze, Trial log data
 func (ss *Sim) PCAStats() {
-	ss.Stats.PCAStats(ss.Logs.IdxView(elog.Analyze, elog.Trial), "ActM", ss.Net.LayersByType(emer.Hidden))
+	ss.Stats.PCAStats(ss.Logs.IdxView(elog.Analyze, elog.Trial), "ActM", ss.Net.LayersByClass("Hidden"))
 	ss.Logs.ResetLog(elog.Analyze, elog.Trial)
 }
 
