@@ -177,7 +177,49 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 	for i := range ly.Neurons {
 		v := ly.LeabraLay.UnitVal1D(vidx, i)
 		if mat32.IsNaN(v) {
-			tsr.SetFloat1D(1, math.NaN())
+			tsr.SetFloat1D(i, math.NaN())
+		} else {
+			tsr.SetFloat1D(i, float64(v))
+		}
+	}
+	return nil
+}
+
+// UnitValsRepTensor fills in values of given variable name on unit
+// for a smaller subset of representative units in the layer, into given tensor.
+// This is used for computationally intensive stats or displays that work
+// much better with a smaller number of units.
+// The set of representative units are defined by SetRepIdxs -- all units
+// are used if no such subset has been defined.
+// If tensor is not already big enough to hold the values, it is
+// set to a 1D shape to hold all the values if subset is defined,
+// otherwise it calls UnitValsTensor and is identical to that.
+// Returns error on invalid var name.
+func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
+	nu := len(ly.RepIxs)
+	if nu == 0 {
+		return ly.UnitValsTensor(tsr, varNm)
+	}
+	if tsr == nil {
+		err := fmt.Errorf("axon.UnitValsRepTensor: Tensor is nil")
+		log.Println(err)
+		return err
+	}
+	if tsr.Len() != nu {
+		tsr.SetShape([]int{nu}, nil, []string{"Units"})
+	}
+	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	if err != nil {
+		nan := math.NaN()
+		for i := range ly.Neurons {
+			tsr.SetFloat1D(i, nan)
+		}
+		return err
+	}
+	for i, ui := range ly.RepIxs {
+		v := ly.LeabraLay.UnitVal1D(vidx, ui)
+		if mat32.IsNaN(v) {
+			tsr.SetFloat1D(i, math.NaN())
 		} else {
 			tsr.SetFloat1D(i, float64(v))
 		}

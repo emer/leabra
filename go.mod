@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
-	github.com/emer/emergent v1.1.53
+	github.com/emer/emergent v1.1.55
 	github.com/emer/empi v1.0.12
 	github.com/emer/etable v1.0.42
 	github.com/goki/gi v1.2.16
