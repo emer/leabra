@@ -19,10 +19,10 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":        "0.04",
-					"Prjn.Learn.Momentum.On":  "false",
-					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "true",  // counteracting hogging
+					"Prjn.Learn.Lrate":       "0.04",
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.WtBal.On":    "true", // counteracting hogging
 					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
 					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
@@ -74,17 +74,17 @@ var ParamSets = params.Sets{
 			//	}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=2 still the best",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "2", // 2 > 1 > .5 = .1
+					"Prjn.WtScale.Rel": "2",   // 2 > 1 > .5 = .1
 					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
 					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
 					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off.
-					"Prjn.CHL.Hebb":          "0.2",   // .2 seems good
+					"Prjn.CHL.Hebb":          "0.2",  // .2 seems good
 					"Prjn.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
 					"Prjn.CHL.MinusQ1":       "true", // dg self err slightly better
-					"Prjn.Learn.Lrate":       "0.05",  // .05 > .1 > .2 > .4; .01 less interference more learning time - key tradeoff param, .05 best for list20-100
+					"Prjn.Learn.Lrate":       "0.05", // .05 > .1 > .2 > .4; .01 less interference more learning time - key tradeoff param, .05 best for list20-100
 					"Prjn.Learn.Momentum.On": "false",
 					"Prjn.Learn.Norm.On":     "false",
 					"Prjn.Learn.WtBal.On":    "true",
@@ -282,6 +282,38 @@ var ParamSets = params.Sets{
 					"HipParams.CA3Size.Y": "40",
 					"HipParams.CA3Size.X": "40",
 					"HipParams.DGRatio":   "2.236", // 1.5 before
+				}},
+		},
+	}},
+	{Name: "EDL", Desc: "EDL or NoEDL in testing effect", Sheets: params.Sheets{
+		"TE": &params.Sheet{
+			{Sel: "TEParams", Desc: "EDL or NoEDL for testing effect",
+				Params: params.Params{
+					"TEParams.EDL": "true",
+				}},
+		},
+	}},
+	{Name: "NoEDL", Desc: "EDL or NoEDL in testing effect", Sheets: params.Sheets{
+		"TE": &params.Sheet{
+			{Sel: "TEParams", Desc: "EDL or NoEDL for testing effect",
+				Params: params.Params{
+					"TEParams.EDL": "false",
+				}},
+		},
+	}},
+	{Name: "RP", Desc: "Retrieval Practice or Restudy in testing effect", Sheets: params.Sheets{
+		"TE": &params.Sheet{
+			{Sel: "TEParams", Desc: "Retrieval Practice or Restudy in testing effect",
+				Params: params.Params{
+					"TEParams.IsRP": "true",
+				}},
+		},
+	}},
+	{Name: "RS", Desc: "Retrieval Practice or Restudy in testing effect", Sheets: params.Sheets{
+		"TE": &params.Sheet{
+			{Sel: "TEParams", Desc: "Retrieval Practice or Restudy in testing effect",
+				Params: params.Params{
+					"TEParams.IsRP": "false",
 				}},
 		},
 	}},
