@@ -523,7 +523,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca1FmCa3.WtScale.Abs = 0
 
 	dgwtscale := ca3FmDg.WtScale.Rel
-	ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel // 0 for the first quarter, comment out if NoEDL, zycyc. NoEDL key
+	ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel // 0 for the first quarter, comment out if NoEDL and orig, zycyc. NoEDL key
 
 	if train {
 		ecout.SetType(emer.Target) // clamp a plus phase during testing
