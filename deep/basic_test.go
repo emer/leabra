@@ -20,7 +20,7 @@ import (
 // C++ emergent/demo/leabra/basic_leabra_test.proj  in version 8.5.6 svn 11492
 
 // difTol is the numerical difference tolerance for comparing vs. target values
-const difTol = float32(1.0e-8)
+const difTol = float32(1.0e-5)
 
 var TestNet Network
 var InPats *etensor.Float32

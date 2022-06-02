@@ -11,7 +11,7 @@ import (
 )
 
 // difTol is the numerical difference tolerance for comparing vs. target values
-const difTol = float32(1.0e-10)
+const difTol = float32(1.0e-7)
 
 func TestXX1(t *testing.T) {
 	xx1 := Params{}

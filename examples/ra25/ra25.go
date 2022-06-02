@@ -21,6 +21,7 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/estats"
+	"github.com/emer/emergent/etime"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/patgen"
@@ -342,7 +343,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.Cycle(&ss.Time)
 			ss.StatCounters(train)
 			if !train {
-				ss.Log(elog.Test, elog.Cycle)
+				ss.Log(etime.Test, etime.Cycle)
 			}
 			ss.Time.CycleInc()
 			if ss.ViewOn {
@@ -380,7 +381,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 		ss.GUI.UpdateNetView()
 	}
 	if !train {
-		ss.GUI.UpdatePlot(elog.Test, elog.Cycle) // make sure always updated at end
+		ss.GUI.UpdatePlot(etime.Test, etime.Cycle) // make sure always updated at end
 	}
 }
 
@@ -417,7 +418,7 @@ func (ss *Sim) TrainTrial() {
 		if (ss.PCAInterval > 0) && ((epc-1)%ss.PCAInterval == 0) { // -1 so runs on first epc
 			ss.PCAStats()
 		}
-		ss.Log(elog.Train, elog.Epoch)
+		ss.Log(etime.Train, etime.Epoch)
 		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
 			ss.GUI.UpdateNetView()
 		}
@@ -440,15 +441,15 @@ func (ss *Sim) TrainTrial() {
 	ss.ApplyInputs(&ss.TrainEnv)
 	ss.AlphaCyc(true) // train
 	ss.TrialStats()
-	ss.Log(elog.Train, elog.Trial)
+	ss.Log(etime.Train, etime.Trial)
 	if (ss.PCAInterval > 0) && (epc%ss.PCAInterval == 0) {
-		ss.Log(elog.Analyze, elog.Trial)
+		ss.Log(etime.Analyze, etime.Trial)
 	}
 }
 
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
-	ss.Log(elog.Train, elog.Run)
+	ss.Log(etime.Train, etime.Run)
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %s\n", fnm)
@@ -467,8 +468,8 @@ func (ss *Sim) NewRun() {
 	ss.Net.InitWts()
 	ss.InitStats()
 	ss.StatCounters(true)
-	ss.Logs.ResetLog(elog.Train, elog.Epoch)
-	ss.Logs.ResetLog(elog.Test, elog.Epoch)
+	ss.Logs.ResetLog(etime.Train, etime.Epoch)
+	ss.Logs.ResetLog(etime.Test, etime.Epoch)
 	ss.NeedsNewRun = false
 }
 
@@ -539,7 +540,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 		if ss.ViewOn && ss.TestUpdt > leabra.AlphaCycle {
 			ss.GUI.UpdateNetView()
 		}
-		ss.Log(elog.Test, elog.Epoch)
+		ss.Log(etime.Test, etime.Epoch)
 		if returnOnChg {
 			return
 		}
@@ -548,7 +549,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.ApplyInputs(&ss.TestEnv)
 	ss.AlphaCyc(false) // !train
 	ss.TrialStats()
-	ss.Log(elog.Test, elog.Trial)
+	ss.Log(etime.Test, etime.Trial)
 	if ss.NetData != nil { // offline record net data from testing, just final state
 		ss.NetData.Record(ss.GUI.NetViewText)
 	}
@@ -695,41 +696,41 @@ func (ss *Sim) ConfigLogs() {
 	ss.Logs.CreateTables()
 	ss.Logs.SetContext(&ss.Stats, ss.Net)
 	// don't plot certain combinations we don't use
-	ss.Logs.NoPlot(elog.Train, elog.Cycle)
-	ss.Logs.NoPlot(elog.Test, elog.Run)
+	ss.Logs.NoPlot(etime.Train, etime.Cycle)
+	ss.Logs.NoPlot(etime.Test, etime.Run)
 	// note: Analyze not plotted by default
-	ss.Logs.SetMeta(elog.Train, elog.Run, "LegendCol", "Params")
+	ss.Logs.SetMeta(etime.Train, etime.Run, "LegendCol", "Params")
 }
 
 // Log is the main logging function, handles special things for different scopes
-func (ss *Sim) Log(mode elog.EvalModes, time elog.Times) {
+func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 	dt := ss.Logs.Table(mode, time)
 	row := dt.Rows
 	switch {
-	case mode == elog.Test && time == elog.Epoch:
+	case mode == etime.Test && time == etime.Epoch:
 		ss.LogTestErrors()
-	case time == elog.Cycle:
+	case time == etime.Cycle:
 		row = ss.Stats.Int("Cycle")
-	case time == elog.Trial:
+	case time == etime.Trial:
 		row = ss.Stats.Int("Trial")
 	}
 
 	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
-	if time == elog.Cycle {
-		ss.GUI.UpdateCyclePlot(elog.Test, ss.Time.Cycle)
+	if time == etime.Cycle {
+		ss.GUI.UpdateCyclePlot(etime.Test, ss.Time.Cycle)
 	} else {
 		ss.GUI.UpdatePlot(mode, time)
 	}
 
 	switch {
-	case mode == elog.Train && time == elog.Run:
+	case mode == etime.Train && time == etime.Run:
 		ss.LogRunStats()
 	}
 }
 
 // LogTestErrors records all errors made across TestTrials, at Test Epoch scope
 func (ss *Sim) LogTestErrors() {
-	sk := elog.Scope(elog.Test, elog.Trial)
+	sk := etime.Scope(etime.Test, etime.Trial)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIdxView("TestErrors")
 	ix.Filter(func(et *etable.Table, row int) bool {
@@ -745,7 +746,7 @@ func (ss *Sim) LogTestErrors() {
 
 // LogRunStats records stats across all runs, at Train Run scope
 func (ss *Sim) LogRunStats() {
-	sk := elog.Scope(elog.Train, elog.Run)
+	sk := etime.Scope(etime.Train, etime.Run)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIdxView("RunStats")
 
@@ -758,8 +759,8 @@ func (ss *Sim) LogRunStats() {
 // PCAStats computes PCA statistics on recorded hidden activation patterns
 // from Analyze, Trial log data
 func (ss *Sim) PCAStats() {
-	ss.Stats.PCAStats(ss.Logs.IdxView(elog.Analyze, elog.Trial), "ActM", ss.Net.LayersByClass("Hidden"))
-	ss.Logs.ResetLog(elog.Analyze, elog.Trial)
+	ss.Stats.PCAStats(ss.Logs.IdxView(etime.Analyze, etime.Trial), "ActM", ss.Net.LayersByClass("Hidden"))
+	ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -770,7 +771,9 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	title := "Leabra Random Associator"
 	ss.GUI.MakeWindow(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 	ss.GUI.CycleUpdateInterval = 10
-	ss.GUI.NetView.SetNet(ss.Net)
+
+	nv := ss.GUI.AddNetView("NetView")
+	nv.SetNet(ss.Net)
 
 	ss.GUI.NetView.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
 	ss.GUI.NetView.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
@@ -906,8 +909,8 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
 		Active:  egui.ActiveAlways,
 		Func: func() {
-			ss.Logs.ResetLog(elog.Train, elog.Run)
-			ss.GUI.UpdatePlot(elog.Train, elog.Run)
+			ss.Logs.ResetLog(etime.Train, etime.Run)
+			ss.GUI.UpdatePlot(etime.Train, etime.Run)
 		},
 	})
 	////////////////////////////////////////////////
@@ -977,11 +980,11 @@ func (ss *Sim) CmdArgs() {
 
 	if saveEpcLog {
 		fnm := ss.LogFileName("epc")
-		ss.Logs.SetLogFile(elog.Train, elog.Epoch, fnm)
+		ss.Logs.SetLogFile(etime.Train, etime.Epoch, fnm)
 	}
 	if saveRunLog {
 		fnm := ss.LogFileName("run")
-		ss.Logs.SetLogFile(elog.Train, elog.Run, fnm)
+		ss.Logs.SetLogFile(etime.Train, etime.Run, fnm)
 	}
 	if saveNetData {
 		ss.NetData = &netview.NetData{}
