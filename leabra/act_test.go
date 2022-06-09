@@ -11,7 +11,7 @@ import (
 )
 
 // difTol is the numerical difference tolerance for comparing vs. target values
-const difTol = float32(1.0e-8)
+const difTol = float32(1.0e-5)
 
 func TestActUpdt(t *testing.T) {
 	// note: these values have been validated against emergent v8.5.6 svn 11473 in
