@@ -17,6 +17,47 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.Norm.On":     "true",
 					"Prjn.Learn.WtBal.On":    "false",
 				}},
+			//{Sel: "Layer", Desc: "if cycperqtr=50 (i.e., 200ms theta cycle), use this setting",
+			//	Params: params.Params{
+			//		"Layer.Learn.ActAvg.SSTau": "4",
+			//		"Layer.Learn.ActAvg.STau":  "2",
+			//		"Layer.Learn.ActAvg.MTau":  "10",
+			//	}},
+			//{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			//	Params: params.Params{
+			//		"Prjn.WtScale.Rel": "0.2",
+			//	}},
+			{Sel: ".ExcitLateral", Desc: "lateral excitatory connection",
+				Params: params.Params{
+					//"Prjn.Off":         "true",
+					//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb
+					//"Prjn.Learn.XCal.SetLLrn": "true",
+					"Prjn.Learn.Learn": "true", // ??? not sure
+					"Prjn.WtScale.Abs": "0.5",
+				}},
+			//{Sel: ".InhibLateral", Desc: "random lateral inhibitory connection -- same param w/ CAN also works?! way less ABmem",
+			//	Params: params.Params{
+			//		//"Prjn.Off":         "true",
+			//		//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb
+			//		//"Prjn.Learn.XCal.SetLLrn": "true",
+			//		"Prjn.Learn.Learn": "false", // ??? not sure
+			//		"Prjn.WtInit.Mean": "0.1",   // was 0.5, too much hogging, 0.1 great -- goes with DG Rel 3.8
+			//		"Prjn.WtInit.Var":  "0",
+			//		"Prjn.WtInit.Sym":  "false",
+			//		//"Prjn.WtInit.Sym":  "false",
+			//		//"Prjn.WtScale.Abs": "0.5", // higher gives better grid
+			//	}},
+			{Sel: ".InhibLateral", Desc: "circle lateral inhibitory connection -- good params, longer time, more ABmem",
+				Params: params.Params{
+					//"Prjn.Off":         "true",
+					//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb
+					//"Prjn.Learn.XCal.SetLLrn": "true",
+					"Prjn.Learn.Learn": "false", // ??? not sure
+					"Prjn.WtInit.Mean": "0.1",   // was 0.5, too much hogging, 0.1 great -- goes with DG Rel 3.8
+					"Prjn.WtInit.Var":  "0",
+					"Prjn.WtInit.Sym":  "false",
+					//"Prjn.WtScale.Abs": "0.5", // higher gives better grid
+				}},
 			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
 					"Prjn.Learn.Lrate":       "0.04",
@@ -43,17 +84,52 @@ var ParamSets = params.Sets{
 					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
 					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
-			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
+			{Sel: "#CA1ToEC5", Desc: "extra strong from CA1 to EC5",
 				Params: params.Params{
 					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
 				}},
-			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
+			{Sel: "#InputToEC2", Desc: "one-to-one input to EC",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "true", // must learn
+					//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb not as good
+					"Prjn.Learn.XCal.SetLLrn": "true",
+					"Prjn.Learn.XCal.LLrn":    "0.1", // 0.1 works the best
+					"Prjn.Learn.Lrate":        "0.4", // 0.4 works the best
+					"Prjn.WtInit.Mean":        "0.8", // 0.8 0.5 similar
+					//"Prjn.WtInit.Var":         "0",
+					"Prjn.WtScale.Rel": "4",
+				}},
+			{Sel: "#InputToEC3", Desc: "one-to-one input to EC",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.8",
 					"Prjn.WtInit.Var":  "0.0",
 				}},
-			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
+			{Sel: "#EC2ToEC5", Desc: "one-to-one out to in",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "true",
+					//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb
+					"Prjn.Learn.XCal.SetLLrn": "true",
+					"Prjn.Learn.XCal.LLrn":    "0.01", // 0.01 > 0.05 > 0.1
+					"Prjn.Learn.Lrate":        "0.2",  // 0.2 ~= 0.04 > 0.01 > 0.4 (not work)
+					"Prjn.WtInit.Mean":        "0.8",
+					"Prjn.WtInit.Var":         "0",
+					"Prjn.WtScale.Rel":        "0.1", // 0.2 doesn't work
+					"Prjn.Learn.Momentum.On":  "false",
+					"Prjn.Learn.Norm.On":      "false",
+					"Prjn.Learn.WtBal.On":     "true",
+				}},
+			{Sel: "#EC5ToEC2", Desc: "one-to-one out to in",
+				Params: params.Params{
+					"Prjn.Learn.Learn": "true",
+					//"Prjn.Learn.XCal.MLrn":    "0", // pure hebb
+					"Prjn.Learn.XCal.SetLLrn": "true",
+					"Prjn.Learn.XCal.LLrn":    "0.2",
+					"Prjn.WtInit.Mean":        "0.8",
+					//"Prjn.WtInit.Var":         "0",
+					"Prjn.WtScale.Rel": "0.5",
+				}},
+			{Sel: "#EC5ToEC3", Desc: "one-to-one out to in",
 				Params: params.Params{
 					"Prjn.Learn.Learn": "false",
 					"Prjn.WtInit.Mean": "0.9",
@@ -68,19 +144,19 @@ var ParamSets = params.Sets{
 					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
 					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
-			//{Sel: "#ECinToCA3", Desc: "ECin Perforant Path",
-			//	Params: params.Params{
-			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
-			//	}},
+			{Sel: "#EC2ToCA3", Desc: "EC3 Perforant Path",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "1", // 02/28/2022 test, was default 1
+				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=2 still the best",
 				Params: params.Params{
 					"Prjn.WtScale.Rel": "2",   // 2 > 1 > .5 = .1
 					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
 					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
-			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
+			{Sel: "#EC2ToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off.
+					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off. key for NoDGLearn
 					"Prjn.CHL.Hebb":          "0.2",  // .2 seems good
 					"Prjn.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
 					"Prjn.CHL.MinusQ1":       "true", // dg self err slightly better
@@ -99,15 +175,15 @@ var ParamSets = params.Sets{
 					"Prjn.Learn.WtBal.On":    "true",
 					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
-			//{Sel: "#ECinToCA1", Desc: "ECin Perforant Path",
+			//{Sel: "#EC3ToCA1", Desc: "EC3 Perforant Path",
 			//	Params: params.Params{
 			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
-			//{Sel: "#ECoutToCA1", Desc: "ECout Perforant Path",
+			//{Sel: "#EC5ToCA1", Desc: "EC5 Perforant Path",
 			//	Params: params.Params{
 			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
-			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
+			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level -- now for EC3 and EC5",
 				Params: params.Params{
 					"Layer.Act.Gbar.L":        "0.1",
 					"Layer.Inhib.ActAvg.Init": "0.2",
@@ -115,10 +191,18 @@ var ParamSets = params.Sets{
 					"Layer.Inhib.Pool.Gi":     "2.0",
 					"Layer.Inhib.Pool.On":     "true",
 				}},
+			//{Sel: "#EC2", Desc: "very sparse = high inhibition",
+			//	Params: params.Params{
+			//		"Layer.Inhib.Layer.Gi":    "1.8", // more active..
+			//		"Layer.Inhib.Layer.FBTau": "3",
+			//		"Layer.Inhib.ActAvg.Init": "0.1",
+			//		"Layer.Act.Gbar.L":        "0.1",
+			//		"Layer.Act.Dt.GTau":       "3",
+			//	}},
 			{Sel: "#DG", Desc: "very sparse = high inhibition",
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Init": "0.01",
-					"Layer.Inhib.Layer.Gi":    "3.8", // 3.8 > 3.6 > 4.0 (too far -- tanks)
+					"Layer.Inhib.Layer.Gi":    "3.8", // 3.8 for circle lateral
 				}},
 			{Sel: "#CA3", Desc: "sparse = high inhibition",
 				Params: params.Params{
