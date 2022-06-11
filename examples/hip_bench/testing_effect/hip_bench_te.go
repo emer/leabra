@@ -515,9 +515,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 	// you might want to do this less frequently to achieve a mini-batch update
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.
-	if train {
-		ss.Net.WtFmDWt()
-	}
 
 	dg := ss.Net.LayerByName("DG").(leabra.LeabraLayer).AsLeabra()
 	ca1 := ss.Net.LayerByName("CA1").(leabra.LeabraLayer).AsLeabra()
@@ -631,6 +628,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
+		ss.Net.WtFmDWt()
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView(train)

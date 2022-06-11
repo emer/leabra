@@ -449,6 +449,21 @@ func (ss *Sim) ReConfigNet() {
 func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
 	ss.SetParams("", ss.LogSetParams) // all sheets
+
+	// setting hip size and list size to prevent GUI crash (from TwoFactorRun)
+	if len(os.Args) <= 1 { //GUI
+		tag := ss.Tag
+		usetag := tag
+		if usetag != "" {
+			usetag += "_"
+		}
+		otf := "MedHip"
+		inf := "List020"
+		ss.Tag = usetag + otf + "_" + inf
+		ss.SetParamsSet(otf, "", ss.LogSetParams)
+		ss.SetParamsSet(inf, "", ss.LogSetParams)
+	}
+
 	ss.ReConfigNet()
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
