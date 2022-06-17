@@ -515,9 +515,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 	// you might want to do this less frequently to achieve a mini-batch update
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.
-	if train {
-		ss.Net.WtFmDWt()
-	}
 
 	dg := ss.Net.LayerByName("DG").(leabra.LeabraLayer).AsLeabra()
 	ca1 := ss.Net.LayerByName("CA1").(leabra.LeabraLayer).AsLeabra()
@@ -631,6 +628,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
+		ss.Net.WtFmDWt()
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView(train)
@@ -1515,6 +1513,7 @@ func (ss *Sim) OpenPat(dt *etable.Table, fname, name, desc string) {
 }
 
 func (ss *Sim) ConfigPats() {
+	drate := float32(0.1)
 	hp := &ss.Hip
 	ecY := hp.ECSize.Y
 	ecX := hp.ECSize.X
@@ -1525,6 +1524,7 @@ func (ss *Sim) ConfigPats() {
 	minDiff := ss.Pat.MinDiffPct
 	nOn := patgen.NFmPct(pctAct, plY*plX)
 	ctxtflip := patgen.NFmPct(ss.Pat.CtxtFlipPct, nOn)
+	drift := patgen.NFmPct(drate, nOn)
 	patgen.AddVocabEmpty(ss.PoolVocab, "empty", npats, plY, plX)
 	patgen.AddVocabPermutedBinary(ss.PoolVocab, "A", npats, plY, plX, pctAct, minDiff)
 	patgen.AddVocabPermutedBinary(ss.PoolVocab, "B", npats, plY, plX, pctAct, minDiff)
@@ -1549,10 +1549,10 @@ func (ss *Sim) ConfigPats() {
 	patgen.AddVocabClone(ss.PoolVocab, "ctxt3s", "ctxt3")
 	patgen.AddVocabClone(ss.PoolVocab, "ctxt4s", "ctxt4")
 
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt1s"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt2s"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt3s"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt4s"], ctxtflip, ctxtflip, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt1s"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt2s"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt3s"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt4s"], drift, drift, 1, 0)
 
 	// day 3 context changes
 	patgen.AddVocabClone(ss.PoolVocab, "ctxt1t", "ctxt1s")
@@ -1560,10 +1560,10 @@ func (ss *Sim) ConfigPats() {
 	patgen.AddVocabClone(ss.PoolVocab, "ctxt3t", "ctxt3s")
 	patgen.AddVocabClone(ss.PoolVocab, "ctxt4t", "ctxt4s")
 
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt1t"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt2t"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt3t"], ctxtflip, ctxtflip, 1, 0)
-	patgen.FlipBitsRows(ss.PoolVocab["ctxt4t"], ctxtflip, ctxtflip, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt1t"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt2t"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt3t"], drift, drift, 1, 0)
+	patgen.FlipBitsRows(ss.PoolVocab["ctxt4t"], drift, drift, 1, 0)
 
 	patgen.InitPats(ss.TrainAB, "TrainAB", "TrainAB Pats", "Input", "ECout", npats, ecY, ecX, plY, plX)
 	patgen.MixPats(ss.TrainAB, ss.PoolVocab, "Input", []string{"A", "B", "ctxt1", "ctxt2", "ctxt3", "ctxt4"})

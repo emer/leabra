@@ -232,7 +232,7 @@ func (ss *Sim) New() {
 	ss.RunStats = &etable.Table{}
 	ss.SimMats = make(map[string]*simat.SimMat)
 	ss.Params = ParamSets // in def_params -- current best params, zycyc test
-	//ss.Params = OrigParamSets // original, previous model
+	//ss.Params = OrigParamSets // key for original, previous model
 	//ss.Params = SavedParamsSets // current user-saved gui params
 	ss.RndSeed = 2
 	ss.ViewOn = true
@@ -381,7 +381,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
 	pj.SetClass("HippoCHL")
 
-	if true { // toggle for bcm vs. ppath, zycyc: must use false for orig_param, true for def_param
+	if true { // key for bcm vs. ppath, zycyc: must use false for orig_param, true for def_param
 		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
 		pj.SetClass("PPath")
 		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
@@ -449,6 +449,21 @@ func (ss *Sim) ReConfigNet() {
 func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
 	ss.SetParams("", ss.LogSetParams) // all sheets
+
+	// setting hip size and list size to prevent GUI crash (from TwoFactorRun)
+	if len(os.Args) <= 1 { //GUI
+		tag := ss.Tag
+		usetag := tag
+		if usetag != "" {
+			usetag += "_"
+		}
+		otf := "MedHip"
+		inf := "List020"
+		ss.Tag = usetag + otf + "_" + inf
+		ss.SetParamsSet(otf, "", ss.LogSetParams)
+		ss.SetParamsSet(inf, "", ss.LogSetParams)
+	}
+
 	ss.ReConfigNet()
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
@@ -546,9 +561,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 				dg.UnitVals(&dgCycPat, "Act")
 				ca3.UnitVals(&ca3CycPat, "Act")
 				ca1.UnitVals(&ca1CycPat, "Act")
-				ss.dgCycPats[cyc+qtr*25] = dgCycPat
-				ss.ca3CycPats[cyc+qtr*25] = ca3CycPat
-				ss.ca1CycPats[cyc+qtr*25] = ca1CycPat
+				ss.dgCycPats[cyc+qtr*ss.Time.CycPerQtr] = dgCycPat
+				ss.ca3CycPats[cyc+qtr*ss.Time.CycPerQtr] = ca3CycPat
+				ss.ca1CycPats[cyc+qtr*ss.Time.CycPerQtr] = ca1CycPat
 			}
 			ss.Time.CycleInc()
 			if ss.ViewOn {
@@ -2375,12 +2390,12 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"BigHip"}
+var OuterLoopParams = []string{"SmallHip"}
 
 //var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List020"}
+var InnerLoopParams = []string{"List060"}
 
 //var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
