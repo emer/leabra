@@ -241,7 +241,7 @@ func (ss *Sim) New() {
 	ss.TestInterval = 1
 	ss.LogSetParams = false
 	ss.MemThr = 0.34
-	ss.LayStatNms = []string{"ECin", "ECout", "DG", "CA3", "CA1"}
+	ss.LayStatNms = []string{"Input", "ECin", "ECout", "DG", "CA3", "CA1"}
 	ss.TstNms = []string{"AB", "AC", "Lure"}
 	ss.TstStatNms = []string{"Mem", "TrgOnWasOff", "TrgOffWasOn"}
 	ss.SimMatStats = []string{"WithinAB", "WithinAC", "Between"} // zycyc bug source
@@ -623,6 +623,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
+		ss.NetView.RecordSyns()
 		ss.Net.WtFmDWt() // so testing is based on updated weights
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
@@ -2211,6 +2212,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 	})
 
+	tbar.AddAction(gi.ActOpts{Label: "New Run", Icon: "reset", Tooltip: "After PreTrain, init things and reload the pretrain weights"}, win.This(),
+		func(recv, send ki.Ki, sig int64, data interface{}) {
+			ss.NewRun()
+		})
+
 	tbar.AddSeparator("test")
 
 	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial.", UpdateFunc: func(act *gi.Action) {
@@ -2390,12 +2396,14 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-var OuterLoopParams = []string{"SmallHip"}
+var OuterLoopParams = []string{"BigHip"}
 
 //var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List060"}
+//var InnerLoopParams = []string{"List175", "List200"}
+
+var InnerLoopParams = []string{"List100", "List125", "List150", "List175", "List200"}
 
 //var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
