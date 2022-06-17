@@ -4,11 +4,12 @@ go 1.18
 
 require (
 	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2
-	github.com/emer/emergent v1.3.0
-	github.com/emer/empi v1.0.12
-	github.com/emer/etable v1.1.1
-	github.com/goki/gi v1.3.0
-	github.com/goki/ki v1.1.7
+	github.com/emer/emergent v1.3.18
+	github.com/emer/empi v1.0.13
+	github.com/emer/etable v1.1.7
+	github.com/goki/gi v1.3.5
+	github.com/goki/ki v1.1.8
+	github.com/goki/kigen v1.0.1
 	github.com/goki/mat32 v1.0.12
 )
 
@@ -36,11 +37,10 @@ require (
 	github.com/go-pdf/fpdf v0.6.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
 	github.com/goki/go-difflib v1.2.1 // indirect
-	github.com/goki/kigen v1.0.0 // indirect
 	github.com/goki/pi v1.0.18 // indirect
 	github.com/goki/prof v0.0.0-20180502205428-54bc71b5d09b // indirect
 	github.com/goki/vci v1.0.1 // indirect
-	github.com/goki/vgpu v1.0.2 // indirect
+	github.com/goki/vgpu v1.0.4 // indirect
 	github.com/goki/vulkan v0.0.0-20220512102541-6e89b8ce8542 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
