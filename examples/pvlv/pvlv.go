@@ -314,7 +314,7 @@ func (ss *Sim) Counters() string {
 
 func (ss *Sim) UpdateView() {
 	if ss.NetView != nil && ss.NetView.IsVisible() {
-		ss.NetView.Record(ss.Counters())
+		ss.NetView.Record(ss.Counters(), -1)
 		// note: essential to use Go version of update when called from another goroutine
 		ss.NetView.GoUpdate()
 	}
@@ -561,7 +561,7 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.Scene().Camera.LookAt(mat32.Vec3{Y: 0.5, Z: 1}, mat32.Vec3{Y: 1})
 	ctrs := nv.Counters()
 	ctrs.SetProp("font-family", "Go Mono")
-	nv.Record(ss.Counters())
+	nv.Record(ss.Counters(), -1)
 }
 
 func (ss *Sim) Stopped() bool {
