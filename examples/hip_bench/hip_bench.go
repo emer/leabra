@@ -491,7 +491,7 @@ func (ss *Sim) Counters(train bool) string {
 
 func (ss *Sim) UpdateView(train bool) {
 	if ss.NetView != nil && ss.NetView.IsVisible() {
-		ss.NetView.Record(ss.Counters(train))
+		ss.NetView.Record(ss.Counters(train), -1)
 		// note: essential to use Go version of update when called from another goroutine
 		ss.NetView.GoUpdate() // note: using counters is significantly slower..
 	}
@@ -511,14 +511,6 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if !train {
 		viewUpdt = ss.TestUpdt
 	}
-
-	// update prior weight changes at start, so any DWt values remain visible at end
-	// you might want to do this less frequently to achieve a mini-batch update
-	// in which case, move it out to the TrainTrial method where the relevant
-	// counters are being dealt with.
-	// if train {
-	// 	ss.Net.WtFmDWt()
-	// }
 
 	dg := ss.Net.LayerByName("DG").(leabra.LeabraLayer).AsLeabra()
 	ca1 := ss.Net.LayerByName("CA1").(leabra.LeabraLayer).AsLeabra()

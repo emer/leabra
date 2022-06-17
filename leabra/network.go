@@ -328,7 +328,7 @@ func (nt *Network) CycleImpl(ltime *Time) {
 // and integrates sent deltas into GeRaw and time-integrated Ge values
 func (nt *Network) SendGDelta(ltime *Time) {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.SendGDelta(ltime) }, "SendGDelta")
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.GFmInc(ltime) }, "GFmInc   ")
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.GFmInc(ltime) }, "GFmInc")
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
@@ -343,7 +343,7 @@ func (nt *Network) InhibFmGeAct(ltime *Time) {
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
 func (nt *Network) ActFmG(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.ActFmG(ltime) }, "ActFmG   ")
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.ActFmG(ltime) }, "ActFmG")
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
@@ -369,7 +369,7 @@ func (nt *Network) QuarterFinalImpl(ltime *Time) {
 
 // DWtImpl computes the weight change (learning) based on current running-average activation values
 func (nt *Network) DWtImpl() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt     ")
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt")
 }
 
 // WtFmDWtImpl updates the weights from delta-weight changes.

@@ -28,6 +28,7 @@ type LayerStru struct {
 	Ps        mat32.Vec3     `desc:"position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis."`
 	Idx       int            `desc:"a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers."`
 	RepIxs    []int          `desc:"indexes of representative units in the layer, for computationally expensive stats or displays"`
+	RepShp    etensor.Shape  `desc:"shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape"`
 	RcvPrjns  emer.Prjns     `desc:"list of receiving projections into this layer from other layers"`
 	SndPrjns  emer.Prjns     `desc:"list of sending projections from this layer to other layers"`
 }
@@ -69,7 +70,6 @@ func (ls *LayerStru) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
 func (ls *LayerStru) SendPrjns() *emer.Prjns     { return &ls.SndPrjns }
 func (ls *LayerStru) NSendPrjns() int            { return len(ls.SndPrjns) }
 func (ls *LayerStru) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
-func (ls *LayerStru) SetRepIdxs(idxs []int)      { ls.RepIxs = idxs }
 func (ls *LayerStru) RepIdxs() []int             { return ls.RepIxs }
 
 func (ls *LayerStru) Idx4DFrom2D(x, y int) ([]int, bool) {
@@ -120,6 +120,30 @@ func (ls *LayerStru) SetShape(shape []int) {
 		dnms = emer.LayerDimNames4D
 	}
 	ls.Shp.SetShape(shape, nil, dnms) // row major default
+}
+
+// SetRepIdxsShape sets the RepIdxs, and RepShape and as list of dimension sizes
+func (ls *LayerStru) SetRepIdxsShape(idxs, shape []int) {
+	ls.RepIxs = idxs
+	var dnms []string
+	if len(shape) == 2 {
+		dnms = emer.LayerDimNames2D
+	} else if len(shape) == 4 {
+		dnms = emer.LayerDimNames4D
+	}
+	ls.RepShp.SetShape(shape, nil, dnms) // row major default
+}
+
+// RepShape returns the shape to use for representative units
+func (ls *LayerStru) RepShape() *etensor.Shape {
+	sz := len(ls.RepIxs)
+	if sz == 0 {
+		return &ls.Shp
+	}
+	if ls.RepShp.Len() < sz {
+		ls.RepShp.SetShape([]int{sz}, nil, nil) // row major default
+	}
+	return &ls.RepShp
 }
 
 // NPools returns the number of unit sub-pools according to the shape parameters.

@@ -211,7 +211,7 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
 	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
 		nan := math.NaN()
-		for i := range ly.Neurons {
+		for i, _ := range ly.RepIxs {
 			tsr.SetFloat1D(i, nan)
 		}
 		return err

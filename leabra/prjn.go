@@ -114,6 +114,12 @@ func (pj *Prjn) SynVarNum() int {
 	return len(SynapseVars)
 }
 
+// Syn1DNum returns the number of synapses for this prjn as a 1D array.
+// This is the max idx for SynVal1D and the number of vals set by SynVals.
+func (pj *Prjn) Syn1DNum() int {
+	return len(pj.Syns)
+}
+
 // SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,

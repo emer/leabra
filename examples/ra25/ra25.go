@@ -139,24 +139,22 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net          *leabra.Network   `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	Params       emer.Params       `view:"inline" desc:"all parameter management"`
-	Tag          string            `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Pats         *etable.Table     `view:"no-inline" desc:"the training patterns to use"`
-	Stats        estats.Stats      `desc:"contains computed statistic values"`
-	Logs         elog.Logs         `desc:"Contains all the logs and information about the logs.'"`
-	StartRun     int               `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
-	MaxRuns      int               `desc:"maximum number of model runs to perform (starting from StartRun)"`
-	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
-	NZeroStop    int               `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
-	TrainEnv     env.FixedTable    `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
-	TestEnv      env.FixedTable    `desc:"Testing environment -- manages iterating over testing"`
-	Time         leabra.Time       `desc:"leabra timing parameters and state"`
-	ViewOn       bool              `desc:"whether to update the network view while running"`
-	TrainUpdt    leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`
-	TestUpdt     leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model"`
-	TestInterval int               `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
-	PCAInterval  int               `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
+	Net          *leabra.Network  `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	Params       emer.Params      `view:"inline" desc:"all parameter management"`
+	Tag          string           `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Pats         *etable.Table    `view:"no-inline" desc:"the training patterns to use"`
+	Stats        estats.Stats     `desc:"contains computed statistic values"`
+	Logs         elog.Logs        `desc:"Contains all the logs and information about the logs.'"`
+	StartRun     int              `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
+	MaxRuns      int              `desc:"maximum number of model runs to perform (starting from StartRun)"`
+	MaxEpcs      int              `desc:"maximum number of epochs to run per model run"`
+	NZeroStop    int              `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
+	TrainEnv     env.FixedTable   `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
+	TestEnv      env.FixedTable   `desc:"Testing environment -- manages iterating over testing"`
+	Time         leabra.Time      `desc:"leabra timing parameters and state"`
+	ViewUpdt     netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
+	TestInterval int              `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
+	PCAInterval  int              `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
 
 	GUI          egui.GUI         `view:"-" desc:"manages all the gui elements"`
 	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
@@ -187,9 +185,6 @@ func (ss *Sim) New() {
 	for i := 0; i < 100; i++ {
 		ss.RndSeeds[i] = int64(i) + 1 // exclude 0
 	}
-	ss.ViewOn = true
-	ss.TrainUpdt = leabra.AlphaCycle
-	ss.TestUpdt = leabra.Cycle
 	ss.TestInterval = 5
 	ss.PCAInterval = 5
 	ss.Time.Defaults()
@@ -295,7 +290,7 @@ func (ss *Sim) Init() {
 	ss.Params.SetMsg = ss.LogSetParams
 	ss.Params.SetAll()
 	ss.NewRun()
-	ss.GUI.UpdateNetView()
+	ss.ViewUpdt.Update()
 }
 
 // InitRndSeed initializes the random seed based on current training run number
@@ -323,19 +318,6 @@ func (ss *Sim) NewRndSeed() {
 // Handles netview updating within scope of AlphaCycle
 func (ss *Sim) AlphaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
-	viewUpdt := ss.TrainUpdt
-	if !train {
-		viewUpdt = ss.TestUpdt
-	}
-
-	// update prior weight changes at start, so any DWt values remain visible at end
-	// you might want to do this less frequently to achieve a mini-batch update
-	// in which case, move it out to the TrainTrial method where the relevant
-	// counters are being dealt with.
-	if train {
-		ss.Net.WtFmDWt()
-	}
-
 	ss.Net.AlphaCycInit(train)
 	ss.Time.AlphaCycStart()
 	for qtr := 0; qtr < 4; qtr++ {
@@ -346,40 +328,20 @@ func (ss *Sim) AlphaCyc(train bool) {
 				ss.Log(etime.Test, etime.Cycle)
 			}
 			ss.Time.CycleInc()
-			if ss.ViewOn {
-				switch viewUpdt {
-				case leabra.Cycle:
-					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
-						ss.GUI.UpdateNetView()
-					}
-				case leabra.FastSpike:
-					if (cyc+1)%10 == 0 {
-						ss.GUI.UpdateNetView()
-					}
-				}
-			}
+			ss.ViewUpdt.UpdateCycle(cyc)
 		}
 		ss.Net.QuarterFinal(&ss.Time)
 		ss.Time.QuarterInc()
-		if ss.ViewOn {
-			switch {
-			case viewUpdt <= leabra.Quarter:
-				ss.GUI.UpdateNetView()
-			case viewUpdt == leabra.Phase:
-				if qtr >= 2 {
-					ss.GUI.UpdateNetView()
-				}
-			}
-		}
+		ss.ViewUpdt.UpdateTime(etime.GammaCycle)
 	}
 	ss.StatCounters(train)
 
 	if train {
 		ss.Net.DWt()
+		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
+		ss.Net.WtFmDWt()
 	}
-	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
-		ss.GUI.UpdateNetView()
-	}
+	ss.ViewUpdt.UpdateTime(etime.AlphaCycle)
 	if !train {
 		ss.GUI.UpdatePlot(etime.Test, etime.Cycle) // make sure always updated at end
 	}
@@ -419,9 +381,7 @@ func (ss *Sim) TrainTrial() {
 			ss.PCAStats()
 		}
 		ss.Log(etime.Train, etime.Epoch)
-		if ss.ViewOn && ss.TrainUpdt > leabra.AlphaCycle {
-			ss.GUI.UpdateNetView()
-		}
+		ss.ViewUpdt.UpdateTime(etime.Epoch)
 		if ss.TestInterval > 0 && epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
 			ss.TestAll()
 		}
@@ -537,9 +497,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// Query counters FIRST
 	_, _, chg := ss.TestEnv.Counter(env.Epoch)
 	if chg {
-		if ss.ViewOn && ss.TestUpdt > leabra.AlphaCycle {
-			ss.GUI.UpdateNetView()
-		}
+		ss.ViewUpdt.UpdateTime(etime.Epoch)
 		ss.Log(etime.Test, etime.Epoch)
 		if returnOnChg {
 			return
@@ -551,7 +509,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.TrialStats()
 	ss.Log(etime.Test, etime.Trial)
 	if ss.NetData != nil { // offline record net data from testing, just final state
-		ss.NetData.Record(ss.GUI.NetViewText)
+		ss.NetData.Record(ss.ViewUpdt.Text, -1, 1)
 	}
 }
 
@@ -668,7 +626,7 @@ func (ss *Sim) StatCounters(train bool) {
 	ss.Stats.SetInt("Trial", ev.Trial.Cur)
 	ss.Stats.SetString("TrialName", ev.TrialName.Cur)
 	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ss.GUI.NetViewText = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
+	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
 }
 
 // TrialStats computes the trial-level statistics.
@@ -774,9 +732,11 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	nv := ss.GUI.AddNetView("NetView")
 	nv.SetNet(ss.Net)
+	ss.ViewUpdt.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
+	ss.GUI.ViewUpdt = &ss.ViewUpdt
 
-	ss.GUI.NetView.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
-	ss.GUI.NetView.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
+	nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
+	nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
 	ss.GUI.AddPlots(title, &ss.Logs)
 
 	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Init", Icon: "update",
@@ -988,7 +948,7 @@ func (ss *Sim) CmdArgs() {
 	}
 	if saveNetData {
 		ss.NetData = &netview.NetData{}
-		ss.NetData.Init(ss.Net, 200) // 200 = amount to save
+		ss.NetData.Init(ss.Net, 200, true) // 200 = amount to save
 	}
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
