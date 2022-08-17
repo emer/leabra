@@ -154,15 +154,14 @@ type Sim struct {
 	TrlSSE         float64 `inactive:"+" desc:"current trial's sum squared error"`
 	TrlAvgSSE      float64 `inactive:"+" desc:"current trial's average sum squared error"`
 	TrlCosDiff     float64 `inactive:"+" desc:"current trial's cosine difference"`
-
-	EpcSSE        float64 `inactive:"+" desc:"last epoch's total sum squared error"`
-	EpcAvgSSE     float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
-	EpcPctErr     float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE > 0 (subject to .5 unit-wise tolerance)"`
-	EpcPctCor     float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE == 0 (subject to .5 unit-wise tolerance)"`
-	EpcCosDiff    float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
-	EpcPerTrlMSec float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
-	FirstZero     int     `inactive:"+" desc:"epoch at when Mem err first went to zero"`
-	NZero         int     `inactive:"+" desc:"number of epochs in a row with zero Mem err"`
+	EpcSSE         float64 `inactive:"+" desc:"last epoch's total sum squared error"`
+	EpcAvgSSE      float64 `inactive:"+" desc:"last epoch's average sum squared error (average over trials, and over units within layer)"`
+	EpcPctErr      float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE > 0 (subject to .5 unit-wise tolerance)"`
+	EpcPctCor      float64 `inactive:"+" desc:"last epoch's percent of trials that had SSE == 0 (subject to .5 unit-wise tolerance)"`
+	EpcCosDiff     float64 `inactive:"+" desc:"last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)"`
+	EpcPerTrlMSec  float64 `inactive:"+" desc:"how long did the epoch take per trial in wall-clock milliseconds"`
+	FirstZero      int     `inactive:"+" desc:"epoch at when Mem err first went to zero"`
+	NZero          int     `inactive:"+" desc:"number of epochs in a row with zero Mem err"`
 
 	// internal state - view:"-"
 	SumSSE           float64                     `view:"-" inactive:"+" desc:"sum to increment as we go through epoch"`
@@ -231,9 +230,9 @@ func (ss *Sim) New() {
 	ss.RunLog = &etable.Table{}
 	ss.RunStats = &etable.Table{}
 	ss.SimMats = make(map[string]*simat.SimMat)
-	ss.Params = ParamSets // in def_params -- current best params, zycyc test
-	//ss.Params = OrigParamSets // key for original, previous model
-	//ss.Params = SavedParamsSets // current user-saved gui params
+	ss.Params = ParamSets // in def_params -- current best params
+	//ss.Params = OrigParamSets // key for original param in Ketz et al. 2013
+	//ss.Params = SavedParamsSets // user-saved gui params
 	ss.RndSeed = 2
 	ss.ViewOn = true
 	ss.TrainUpdt = leabra.AlphaCycle
@@ -244,13 +243,13 @@ func (ss *Sim) New() {
 	ss.LayStatNms = []string{"Input", "ECin", "ECout", "DG", "CA3", "CA1"}
 	ss.TstNms = []string{"AB", "AC", "Lure"}
 	ss.TstStatNms = []string{"Mem", "TrgOnWasOff", "TrgOffWasOn"}
-	ss.SimMatStats = []string{"WithinAB", "WithinAC", "Between"} // zycyc bug source
+	ss.SimMatStats = []string{"WithinAB", "WithinAC", "Between"}
 
 	ss.Defaults()
 }
 
 func (pp *PatParams) Defaults() {
-	pp.ListSize = 20 // 10 is too small to see issues..
+	pp.ListSize = 20
 	pp.MinDiffPct = 0.5
 	pp.CtxtFlipPct = .25
 }
@@ -259,14 +258,14 @@ func (hp *HipParams) Defaults() {
 	// size
 	hp.ECSize.Set(2, 3)
 	hp.ECPool.Set(7, 7)
-	hp.CA1Pool.Set(15, 15) // using MedHip now
-	hp.CA3Size.Set(30, 30) // using MedHip now
+	hp.CA1Pool.Set(15, 15) // using MedHip for default
+	hp.CA3Size.Set(30, 30) // using MedHip for default
 	hp.DGRatio = 2.236     // c.f. Ketz et al., 2013
 
 	// ratio
-	hp.DGPCon = 0.25 // .35 is sig worse, .2 learns faster but AB recall is worse
+	hp.DGPCon = 0.25
 	hp.CA3PCon = 0.25
-	hp.MossyPCon = 0.02 // .02 > .05 > .01 (for small net)
+	hp.MossyPCon = 0.02
 	hp.ECPctAct = 0.2
 
 	hp.MossyDel = 4     // 4 > 2 -- best is 4 del on 4 rel baseline
@@ -439,6 +438,13 @@ func (ss *Sim) ReConfigNet() {
 		ss.NetView.SetNet(ss.Net)
 		ss.NetView.Update() // issue #41 closed
 	}
+	ss.ConfigTrnCycPatSimLog(ss.TrnCycPatSimLog)
+	ss.ConfigTrnTrlLog(ss.TrnTrlLog)
+	ss.ConfigTrnEpcLog(ss.TrnEpcLog)
+	ss.ConfigTstEpcLog(ss.TstEpcLog)
+	ss.ConfigTstTrlLog(ss.TstTrlLog)
+	ss.ConfigTstCycLog(ss.TstCycLog)
+	ss.ConfigRunLog(ss.RunLog)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -449,20 +455,6 @@ func (ss *Sim) ReConfigNet() {
 func (ss *Sim) Init() {
 	rand.Seed(ss.RndSeed)
 	ss.SetParams("", ss.LogSetParams) // all sheets
-
-	// setting hip size and list size to prevent GUI crash (from TwoFactorRun)
-	if len(os.Args) <= 1 { //GUI
-		tag := ss.Tag
-		usetag := tag
-		if usetag != "" {
-			usetag += "_"
-		}
-		otf := "MedHip"
-		inf := "List020"
-		ss.Tag = usetag + otf + "_" + inf
-		ss.SetParamsSet(otf, "", ss.LogSetParams)
-		ss.SetParamsSet(inf, "", ss.LogSetParams)
-	}
 
 	ss.ReConfigNet()
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
@@ -615,7 +607,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
-		ss.NetView.RecordSyns()
+		if len(os.Args) <= 1 {
+			ss.NetView.RecordSyns()
+		}
 		ss.Net.WtFmDWt() // so testing is based on updated weights
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
@@ -1252,8 +1246,15 @@ func (ss *Sim) LogFileName(lognm string) string {
 func (ss *Sim) LogTrnCycPatSim(dt *etable.Table) {
 	epc := ss.TrainEnv.Epoch.Cur
 	trl := ss.TrainEnv.Trial.Cur
-	params := ss.RunName() // includes tag
-	spltparams := strings.Split(params, "_")
+
+	var spltparams []string
+	if len(os.Args) > 1 {
+		params := ss.RunName() // includes tag
+		spltparams = strings.Split(params, "_")
+	} else {
+		spltparams = append(spltparams, "Default")
+		spltparams = append(spltparams, strconv.Itoa(ss.Pat.ListSize))
+	}
 
 	row := dt.Rows
 	if trl == 0 { // reset at start
@@ -1399,8 +1400,15 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	epc := ss.TrainEnv.Epoch.Prv           // this is triggered by increment so use previous value
 	nt := float64(ss.TrainEnv.Table.Len()) // number of trials in view
-	params := ss.RunName()                 // includes tag
-	spltparams := strings.Split(params, "_")
+
+	var spltparams []string
+	if len(os.Args) > 1 {
+		params := ss.RunName() // includes tag
+		spltparams = strings.Split(params, "_")
+	} else {
+		spltparams = append(spltparams, "Default")
+		spltparams = append(spltparams, strconv.Itoa(ss.Pat.ListSize))
+	}
 
 	ss.EpcSSE = ss.SumSSE / nt
 	ss.SumSSE = 0
@@ -1618,6 +1626,20 @@ func (ss *Sim) RepsAnalysis() {
 	}
 }
 
+// SimMatStatFull returns full triangular matrix for sim mat statistics
+func (ss *Sim) SimMatStatFull(lnm string) *etensor.Float64 {
+	sm := ss.SimMats[lnm]
+	smat := sm.Mat
+	nitm := smat.Dim(0)
+	ncat := nitm / len(ss.TstNms) // i.e., list size
+	newTsr := etensor.NewFloat64([]int{2 * ncat, 2 * ncat}, nil, []string{"Y", "X"})
+
+	for y := 0; y < nitm*2/3; y++ { // only taking AB and AC, not Lure
+		newTsr.SubSpace([]int{y}).CopyFrom(smat.SubSpace([]int{y}))
+	}
+	return newTsr
+}
+
 // SimMatStat returns within, between for sim mat statistics
 func (ss *Sim) SimMatStat(lnm string) (float64, float64, float64) {
 	sm := ss.SimMats[lnm]
@@ -1669,8 +1691,15 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	trl := ss.TstTrlLog
 	tix := etable.NewIdxView(trl)
 	epc := ss.TrainEnv.Epoch.Prv // ?
-	params := ss.RunName()       // includes tag
-	spltparams := strings.Split(params, "_")
+
+	var spltparams []string
+	if len(os.Args) > 1 {
+		params := ss.RunName() // includes tag
+		spltparams = strings.Split(params, "_")
+	} else {
+		spltparams = append(spltparams, "Default")
+		spltparams = append(spltparams, strconv.Itoa(ss.Pat.ListSize))
+	}
 
 	if ss.LastEpcTime.IsZero() {
 		ss.EpcPerTrlMSec = 0
@@ -1725,6 +1754,11 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 			}
 		}
 	}
+	// RS Matrix
+	//for _, lnm := range ss.LayStatNms {
+	//	rsm := ss.SimMatStatFull(lnm)
+	//	dt.SetCellTensor(lnm+" RSM", row, rsm)
+	//}
 
 	// base zero on testing performance!
 	curAB := ss.TrainEnv.Table.Table == ss.TrainAB
@@ -1785,6 +1819,11 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 			sch = append(sch, etable.Column{lnm + " " + ts, etensor.FLOAT64, nil, nil})
 		}
 	}
+	// RS Matrix
+	//for _, lnm := range ss.LayStatNms {
+	//	ncat := ss.Pat.ListSize
+	//	sch = append(sch, etable.Column{lnm + " RSM", etensor.FLOAT64, []int{2 * ncat, 2 * ncat}, nil})
+	//}
 	dt.SetFromSchema(sch, 0)
 }
 
@@ -1816,6 +1855,10 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 			plt.SetColParams(lnm+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		}
 	}
+	// RS Matrix
+	//for _, lnm := range ss.LayStatNms {
+	//	plt.SetColParams(lnm+" RSM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	//}
 	return plt
 }
 
@@ -1896,8 +1939,14 @@ func (ss *Sim) LogRun(dt *etable.Table) {
 	}
 	epcix.Idxs = epcix.Idxs[epcix.Len()-nlast:]
 
-	params := ss.RunName() // includes tag
-	spltparams := strings.Split(params, "_")
+	var spltparams []string
+	if len(os.Args) > 1 {
+		params := ss.RunName() // includes tag
+		spltparams = strings.Split(params, "_")
+	} else {
+		spltparams = append(spltparams, "Default")
+		spltparams = append(spltparams, strconv.Itoa(ss.Pat.ListSize))
+	}
 
 	fzero := ss.FirstZero
 	if fzero < 0 {
@@ -2393,9 +2442,9 @@ var OuterLoopParams = []string{"BigHip"}
 //var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-//var InnerLoopParams = []string{"List175", "List200"}
+var InnerLoopParams = []string{"List175"}
 
-var InnerLoopParams = []string{"List100", "List125", "List150", "List175", "List200"}
+//var InnerLoopParams = []string{"List100", "List125", "List150", "List175", "List200"}
 
 //var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
@@ -2437,11 +2486,11 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.BatchRun, "run", 0, "current batch run")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do, i.e., subjects")
-	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 8, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveCycPatSimLog, "cycpatsimlog", false, "if true, save train cycle similarity log to file") // zycyc, pat sim key
-	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
+	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save test epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
 	flag.Parse()
