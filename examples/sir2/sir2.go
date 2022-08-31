@@ -424,7 +424,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	pj.SetClass("FmPFCOutD")
 	net.ConnectLayers(inp, out, full, emer.Forward)
 
-	snc.SendDA.AddAllBut(net, nil) // send dopamine to all layers..
+	snc.SendDA.AddAllBut(net) // send dopamine to all layers..
 
 	net.Defaults()
 	ss.SetParams("Network", false) // only set Network params
