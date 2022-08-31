@@ -198,7 +198,7 @@ For every cycle of activation updating, we compute the excitatory input conducta
     + `ffi = FFFBParams.FF * MAX(ffNetin - FFBParams.FF0, 0)`
         + feedforward component of inhibition with FF multiplier (1 by default) -- has FF0 offset and can't be negative (that's what the MAX(.. ,0) part does).
         + `avgGe` is average of Ge variable across relevant Pool of neurons, depending on what level this is being computed at, and `maxGe` is max of Ge across Pool
-    + `fbi += (1 / FFFBParams.FBTau) * (FFFBParams.FB * avgAct - fbi`
+    + `fbi += (1 / FFFBParams.FBTau) * (FFFBParams.FB * avgAct - fbi)`
         + feedback component of inhibition with FB multiplier (1 by default) -- requires time integration to dampen oscillations that otherwise occur -- FBTau = 1.4 default.
     + `Gi = FFFBParams.Gi * (ffi + fbi)`
         + total inhibitory conductance, with global Gi multiplier -- default of 1.8 typically produces good sparse distributed representations in reasonably large layers (25 units or more).
@@ -206,7 +206,7 @@ For every cycle of activation updating, we compute the excitatory input conducta
 * `Act` activation from Ge, Gi, Gl (most of code is in `leabra/act.go`, e.g., `ActParams.ActFmG` method).  When neurons are above thresholds in subsequent condition, they obey the "geLin" function which is linear in Ge:
     + `geThr = (Gi * (Erev.I - Thr) + Gbar.L * (Erev.L - Thr) / (Thr - Erev.E)`
     + `nwAct = NoisyXX1(Ge * Gbar.E - geThr)`
-        + geThr = amount of excitatory conductance required to put the neuron exactly at the firing threshold, `XX1Params.Thr` = .5 default, and NoisyXX1 is the x / (x+1) function convolved with gaussian noise kernel, where x = `XX1Parms.Gain` * Ge - geThr) and Gain is 100 by default
+        + geThr = amount of excitatory conductance required to put the neuron exactly at the firing threshold, `XX1Params.Thr` = .5 default, and NoisyXX1 is the x / (x+1) function convolved with gaussian noise kernel, where x = `XX1Parms.Gain * (Ge - geThr)` and Gain is 100 by default
     + `if Act < XX1Params.VmActThr && Vm <= X11Params.Thr: nwAct = NoisyXX1(Vm - Thr)`
         + it is important that the time to first "spike" (above-threshold activation) be governed by membrane potential Vm integration dynamics, but after that point, it is essential that activation drive directly from the excitatory conductance Ge relative to the geThr threshold.
     + `Act += (1 / DTParams.VmTau) * (nwAct - Act)`

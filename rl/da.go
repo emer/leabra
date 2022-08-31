@@ -50,9 +50,9 @@ func (sd *SendDA) AddOne(laynm string) {
 }
 
 // AddAllBut adds all layers in network except those in exlude list
-func (sd *SendDA) AddAllBut(net emer.Network, excl []string) {
+func (sd *SendDA) AddAllBut(net emer.Network, excl ...string) {
 	ln := (*emer.LayNames)(sd)
-	ln.AddAllBut(net, excl)
+	ln.AddAllBut(net, excl...)
 }
 
 // Layers that use SendDA should include a Validate check in Build as follows:
