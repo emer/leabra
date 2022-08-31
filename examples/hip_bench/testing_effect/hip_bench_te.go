@@ -628,7 +628,10 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
-		ss.Net.WtFmDWt()
+		if len(os.Args) <= 1 {
+			ss.NetView.RecordSyns()
+		}
+		ss.Net.WtFmDWt() // so testing is based on updated weights
 	}
 	if ss.ViewOn && viewUpdt == leabra.AlphaCycle {
 		ss.UpdateView(train)

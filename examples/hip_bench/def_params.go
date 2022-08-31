@@ -235,6 +235,14 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
+	{Name: "List175", Desc: "list size", Sheets: params.Sheets{
+		"Pat": &params.Sheet{
+			{Sel: "PatParams", Desc: "pattern params",
+				Params: params.Params{
+					"PatParams.ListSize": "175",
+				}},
+		},
+	}},
 	{Name: "List200", Desc: "list size", Sheets: params.Sheets{
 		"Pat": &params.Sheet{
 			{Sel: "PatParams", Desc: "pattern params",
