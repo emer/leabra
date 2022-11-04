@@ -253,7 +253,7 @@ func (ss *Sim) New() {
 	ss.LayStatNms = []string{"ECin", "DG", "CA3", "CA1"}
 	ss.TstNms = []string{"AB"}
 	ss.TstStatNms = []string{"Mem", "TrgOnWasOff", "TrgOffWasOn"}
-	ss.SimMatStats = []string{"WithinAB", "WithinAC", "Between"} // zycyc bug source
+	ss.SimMatStats = []string{"Within"} // zycyc bug source
 
 	ss.Defaults()
 }
@@ -2044,45 +2044,38 @@ func (ss *Sim) RepsAnalysis() {
 }
 
 // SimMatStat returns within, between for sim mat statistics
-func (ss *Sim) SimMatStat(lnm string) (float64, float64, float64) {
+func (ss *Sim) SimMatStat(lnm string) float64 {
 	sm := ss.SimMats[lnm]
 	smat := sm.Mat
 	nitm := smat.Dim(0)
-	ncat := nitm / len(ss.TstNms) // i.e., list size
-	win_sum_ab := float64(0)
-	win_n_ab := 0
-	win_sum_ac := float64(0)
-	win_n_ac := 0
-	btn_sum := float64(0)
-	btn_n := 0
-	for y := 0; y < nitm*2/3; y++ { // only taking AB and AC, not Lure
+	//ncat := nitm / len(ss.TstNms) // i.e., list size
+	win_sum := float64(0)
+	win_n := 0
+
+	for y := 0; y < nitm; y++ { // all items
 		for x := 0; x < y; x++ {
 			val := smat.FloatVal([]int{y, x})
-			same := (y / ncat) == (x / ncat) // i.e., same list or not
-			if same {
-				if y < nitm/3 {
-					win_sum_ab += val
-					win_n_ab++
-				} else {
-					win_sum_ac += val
-					win_n_ac++
-				}
-			} else if (y % ncat) == (x % ncat) { // between list, only when same A (i.e., TrainAB11 vs. Train AC11)!
-				btn_sum += val
-				btn_n++
-			}
+			win_sum += val
+			win_n++
 		}
 	}
-	if win_n_ab > 0 {
-		win_sum_ab /= float64(win_n_ab)
+	if win_n > 0 {
+		win_sum /= float64(win_n)
 	}
-	if win_n_ac > 0 {
-		win_sum_ac /= float64(win_n_ac)
+	return win_sum
+}
+
+// SimMatStatFull returns full triangular matrix for sim mat statistics
+func (ss *Sim) SimMatStatFull(lnm string) *etensor.Float64 {
+	sm := ss.SimMats[lnm]
+	smat := sm.Mat
+	ncat := ss.Pat.ListSize // len of matrix
+	newTsr := etensor.NewFloat64([]int{ncat, ncat}, nil, []string{"Y", "X"})
+
+	for y := 0; y < ncat; y++ { // only taking Old and Lure, not Foil
+		newTsr.SubSpace([]int{y}).CopyFrom(smat.SubSpace([]int{y}))
 	}
-	if btn_n > 0 {
-		btn_sum /= float64(btn_n)
-	}
-	return win_sum_ab, win_sum_ac, btn_sum
+	return newTsr
 }
 
 func (ss *Sim) LogTstEpc(dt *etable.Table) {
@@ -2141,16 +2134,18 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
 	}
 
 	for _, lnm := range ss.LayStatNms {
-		win_ab, win_ac, btn := ss.SimMatStat(lnm)
+		win := ss.SimMatStat(lnm)
 		for _, ts := range ss.SimMatStats {
-			if ts == "WithinAB" {
-				dt.SetCellFloat(lnm+" "+ts, row, win_ab)
-			} else if ts == "WithinAC" {
-				dt.SetCellFloat(lnm+" "+ts, row, win_ac)
-			} else {
-				dt.SetCellFloat(lnm+" "+ts, row, btn)
+			if ts == "Within" {
+				dt.SetCellFloat(lnm+" "+ts, row, win)
 			}
 		}
+	}
+
+	// RS Matrix
+	for _, lnm := range ss.LayStatNms {
+		rsm := ss.SimMatStatFull(lnm)
+		dt.SetCellTensor(lnm+" RSM", row, rsm)
 	}
 
 	// base zero on testing performance!
@@ -2214,6 +2209,13 @@ func (ss *Sim) ConfigTstEpcLog(dt *etable.Table) {
 			sch = append(sch, etable.Column{lnm + " " + ts, etensor.FLOAT64, nil, nil})
 		}
 	}
+
+	// RS Matrix
+	for _, lnm := range ss.LayStatNms {
+		ncat := ss.Pat.ListSize
+		sch = append(sch, etable.Column{lnm + " RSM", etensor.FLOAT64, []int{ncat, ncat}, nil})
+	}
+
 	dt.SetFromSchema(sch, 0)
 }
 
@@ -2249,6 +2251,12 @@ func (ss *Sim) ConfigTstEpcPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot
 			plt.SetColParams(lnm+" "+ts, eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
 		}
 	}
+
+	// RS Matrix
+	for _, lnm := range ss.LayStatNms {
+		plt.SetColParams(lnm+" RSM", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
+	}
+
 	return plt
 }
 
@@ -2668,17 +2676,6 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		}
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "fullexp", Icon: "fast-fwd", Tooltip: "Does full pretraining.", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(!ss.IsRunning)
-	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			tbar.UpdateActions()
-			go ss.shortexp()
-			//go ss.AERun()
-		}
-	})
-
 	tbar.AddSeparator("test")
 
 	tbar.AddAction(gi.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial.", UpdateFunc: func(act *gi.Action) {
@@ -2858,14 +2855,14 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
-//var OuterLoopParams = []string{"MedHip"}
+var OuterLoopParams = []string{"SmallHip"}
 
-var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
+//var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-//var InnerLoopParams = []string{"List020"}
+var InnerLoopParams = []string{"List100"}
 
-var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
+//var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
 var EDLLoopParams = []string{"EDL", "NoEDL"}
 
@@ -2948,41 +2945,6 @@ func (ss *Sim) SaveTstEpoch(Filename string) {
 	}
 }
 
-func (ss *Sim) shortexp() {
-	ss.TE.EDL = true
-	ss.Init()
-	ss.TE.EDL = true
-	ss.PreTrain()
-	ss.Train()
-	ss.RPRun()
-	//ss.SaveTstTrial("test")
-	ss.SaveTstEpoch("test")
-	ss.Init()
-	ss.TE.EDL = true
-	ss.PreTrain()
-	ss.Train()
-	ss.RestudyRun()
-	//ss.SaveTstTrial("restudy")
-	ss.SaveTstEpoch("restudy")
-
-	ss.TE.EDL = false
-	ss.Init()
-	ss.TE.EDL = false
-	ss.PreTrain()
-	ss.Train()
-	ss.RPRun()
-	//ss.SaveTstTrial("test")
-	ss.SaveTstEpoch("test")
-	ss.Init()
-	ss.TE.EDL = false
-	ss.PreTrain()
-	ss.Train()
-	ss.RestudyRun()
-	//ss.SaveTstTrial("restudy")
-	ss.SaveTstEpoch("restudy")
-
-}
-
 func (ss *Sim) CmdArgs() {
 	ss.NoGui = true
 	var nogui bool
@@ -2995,7 +2957,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.BatchRun, "run", 0, "current batch run")                    // use this to manipulate subject ID
 	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do, i.e., subjects") // must be 1 in testing effect settings
-	flag.IntVar(&ss.MaxEpcs, "epcs", 1, "maximum number of epochs to run (split between AB / AC)")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 2, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveCycPatSimLog, "cycpatsimlog", false, "if true, save train cycle similarity log to file") // zycyc, pat sim key

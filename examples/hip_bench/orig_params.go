@@ -16,12 +16,16 @@ var OrigParamSets = params.Sets{
 					"Prjn.Learn.Norm.On":     "true",
 					"Prjn.Learn.WtBal.On":    "false",
 				}},
+			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.3",
+				}},
 			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":        "0.04",
-					"Prjn.Learn.Momentum.On":  "false",
-					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "true", // counteracting hogging
+					"Prjn.Learn.Lrate":       "0.04",
+					"Prjn.Learn.Momentum.On": "false",
+					"Prjn.Learn.Norm.On":     "false",
+					"Prjn.Learn.WtBal.On":    "true", // counteracting hogging
 					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
 					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
@@ -67,9 +71,9 @@ var OrigParamSets = params.Sets{
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    	  "0.005",
-					"Prjn.CHL.SAvgCor": 	  "0.4",
-					"Prjn.Learn.Lrate": 	  "0.1",
+					"Prjn.CHL.Hebb":    "0.005",
+					"Prjn.CHL.SAvgCor": "0.4",
+					"Prjn.Learn.Lrate": "0.1",
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
