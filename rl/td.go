@@ -7,7 +7,6 @@ package rl
 import (
 	"log"
 
-	"github.com/emer/leabra/deep"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
@@ -212,7 +211,7 @@ type TDRewPredPrjn struct {
 	leabra.Prjn
 }
 
-var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, deep.PrjnProps)
+var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, leabra.PrjnProps)
 
 func (pj *TDRewPredPrjn) Defaults() {
 	pj.Prjn.Defaults()

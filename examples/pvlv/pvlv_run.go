@@ -130,13 +130,6 @@ func (ss *Sim) SettlePlus(train bool) {
 }
 
 func (ss *Sim) TrialStart(train bool) {
-	// update prior weight changes at start, so any DWt values remain visible at end
-	// you might want to do this less frequently to achieve a mini-batch update
-	// in which case, move it out to the TrainTrial method where the relevant
-	// counters are being dealt with.
-	if train {
-		ss.Net.WtFmDWt()
-	}
 	ss.Net.AlphaCycInit(train)
 	ss.Time.AlphaCycStart()
 }
@@ -263,6 +256,10 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
 	ss.SettlePlus(train)
 	if train {
 		ss.Net.DWt()
+		if ss.NetView != nil && ss.NetView.IsVisible() {
+			ss.NetView.RecordSyns()
+		}
+		ss.Net.WtFmDWt()
 	}
 	if ss.ViewOn && ss.TrainUpdt == leabra.AlphaCycle {
 		ss.UpdateView()

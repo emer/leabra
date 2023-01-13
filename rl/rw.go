@@ -65,7 +65,7 @@ type RWDaLayer struct {
 	DA        float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
-var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, deep.LayerProps)
+var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, leabra.LayerProps)
 
 func (ly *RWDaLayer) Defaults() {
 	ly.Layer.Defaults()

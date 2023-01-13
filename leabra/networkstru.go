@@ -125,22 +125,24 @@ func (nt *NetworkStru) LayersByClass(classes ...string) []string {
 // BuildThreads constructs the layer thread allocation based on Thread setting in the layers
 func (nt *NetworkStru) BuildThreads() {
 	nthr := 0
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+	for _, lyi := range nt.Layers {
+		if lyi.IsOff() {
 			continue
 		}
-		nthr = ints.MaxInt(nthr, ly.Thread())
+		ly := lyi.(LeabraLayer).AsLeabra()
+		nthr = ints.MaxInt(nthr, ly.Thr)
 	}
 	nt.NThreads = nthr + 1
 	nt.ThrLay = make([][]emer.Layer, nt.NThreads)
 	nt.ThrChans = make([]LayFunChan, nt.NThreads)
 	nt.ThrTimes = make([]timer.Time, nt.NThreads)
 	nt.FunTimes = make(map[string]*timer.Time)
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+	for _, lyi := range nt.Layers {
+		if lyi.IsOff() {
 			continue
 		}
-		th := ly.Thread()
+		ly := lyi.(LeabraLayer).AsLeabra()
+		th := ly.Thr
 		nt.ThrLay[th] = append(nt.ThrLay[th], ly)
 	}
 	for th := 0; th < nt.NThreads; th++ {
@@ -261,13 +263,14 @@ func (nt *NetworkStru) AllParams() string {
 // track of what they all are set to.
 func (nt *NetworkStru) AllWtScales() string {
 	str := ""
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+	for _, lyi := range nt.Layers {
+		if lyi.IsOff() {
 			continue
 		}
+		ly := lyi.(LeabraLayer).AsLeabra()
 		str += "\nLayer: " + ly.Name() + "\n"
-		rpjn := ly.RecvPrjns()
-		for _, p := range *rpjn {
+		rpjn := ly.RcvPrjns
+		for _, p := range rpjn {
 			if p.IsOff() {
 				continue
 			}
@@ -352,8 +355,8 @@ func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, ty
 func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
 	pj.Connect(send, recv, pat, typ)
-	recv.RecvPrjns().Add(pj)
-	send.SendPrjns().Add(pj)
+	recv.(LeabraLayer).AsLeabra().RcvPrjns.Add(pj)
+	recv.(LeabraLayer).AsLeabra().SndPrjns.Add(pj)
 	return pj
 }
 
@@ -412,8 +415,9 @@ func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) eme
 func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
 	pj.Connect(lay, lay, pat, emer.Lateral)
-	lay.RecvPrjns().Add(pj)
-	lay.SendPrjns().Add(pj)
+	ly := lay.(LeabraLayer).AsLeabra()
+	ly.RcvPrjns.Add(pj)
+	ly.SndPrjns.Add(pj)
 	return pj
 }
 

@@ -265,12 +265,12 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 	}
 	var pj emer.Prjn
 	if prjnType != "" {
-		pj, err = sendLay.SendPrjns().RecvNameTypeTry(ly.Nm, prjnType)
+		pj, err = sendLay.RecvNameTypeTry(ly.Nm, prjnType)
 		if pj == nil {
-			pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+			pj, err = sendLay.RecvNameTry(ly.Nm)
 		}
 	} else {
-		pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+		pj, err = sendLay.RecvNameTry(ly.Nm)
 	}
 	if pj == nil {
 		return err
@@ -311,12 +311,12 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 	}
 	var pj emer.Prjn
 	if prjnType != "" {
-		pj, err = recvLay.RecvPrjns().SendNameTypeTry(ly.Nm, prjnType)
+		pj, err = recvLay.SendNameTypeTry(ly.Nm, prjnType)
 		if pj == nil {
-			pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+			pj, err = recvLay.SendNameTry(ly.Nm)
 		}
 	} else {
-		pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+		pj, err = recvLay.SendNameTry(ly.Nm)
 	}
 	if pj == nil {
 		return err
@@ -342,6 +342,19 @@ func (ly *Layer) PoolTry(idx int) (*Pool, error) {
 		return nil, fmt.Errorf("Layer Pool index: %v out of range, N = %v", idx, np)
 	}
 	return &(ly.Pools[idx]), nil
+}
+
+func (ly *Layer) SendNameTry(sender string) (emer.Prjn, error) {
+	return emer.SendNameTry(ly, sender)
+}
+func (ly *Layer) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
+	return emer.SendNameTypeTry(ly, sender, typ)
+}
+func (ly *Layer) RecvNameTry(receiver string) (emer.Prjn, error) {
+	return emer.RecvNameTry(ly, receiver)
+}
+func (ly *Layer) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
+	return emer.RecvNameTypeTry(ly, receiver, typ)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

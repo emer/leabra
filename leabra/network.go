@@ -180,12 +180,13 @@ func (nt *Network) InitWts() {
 // call before InitWts if using Topo wts
 func (nt *Network) InitTopoScales() {
 	scales := &etensor.Float32{}
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+	for _, lyi := range nt.Layers {
+		if lyi.IsOff() {
 			continue
 		}
-		rpjn := ly.RecvPrjns()
-		for _, p := range *rpjn {
+		ly := lyi.(LeabraLayer).AsLeabra()
+		rpjn := ly.RcvPrjns
+		for _, p := range rpjn {
 			if p.IsOff() {
 				continue
 			}
