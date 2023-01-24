@@ -1111,7 +1111,7 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Ge.UpdateVal(nrn.Ge, ni)
+			pl.Inhib.Ge.UpdateVal(nrn.Ge, int32(ni))
 		}
 		pl.Inhib.Ge.CalcAvg()
 	}
@@ -1185,7 +1185,7 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Act.UpdateVal(nrn.Act, ni)
+			pl.Inhib.Act.UpdateVal(nrn.Act, int32(ni))
 		}
 		pl.Inhib.Act.CalcAvg()
 	}

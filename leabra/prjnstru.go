@@ -170,7 +170,7 @@ func (ps *PrjnStru) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int3
 		(*n)[i] = nv
 		(*idxst)[i] = idx
 		idx += nv
-		avgmax.UpdateVal(float32(nv), i)
+		avgmax.UpdateVal(float32(nv), int32(i))
 	}
 	avgmax.CalcAvg()
 	return idx
