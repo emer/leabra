@@ -249,7 +249,7 @@ func (ss *Sim) New() {
 }
 
 func (pp *PatParams) Defaults() {
-	pp.ListSize = 20
+	pp.ListSize = 175
 	pp.MinDiffPct = 0.5
 	pp.CtxtFlipPct = .25
 }
@@ -258,9 +258,9 @@ func (hp *HipParams) Defaults() {
 	// size
 	hp.ECSize.Set(2, 3)
 	hp.ECPool.Set(7, 7)
-	hp.CA1Pool.Set(15, 15) // using MedHip for default
-	hp.CA3Size.Set(30, 30) // using MedHip for default
-	hp.DGRatio = 2.236     // c.f. Ketz et al., 2013
+	hp.CA1Pool.Set(20, 20) // using BigHip for default
+	hp.CA3Size.Set(40, 40) // using BigHip for default
+	hp.DGRatio = 2.236     // sqrt(5) = 2.236 c.f. Ketz et al., 2013
 
 	// ratio
 	hp.DGPCon = 0.25
@@ -462,6 +462,9 @@ func (ss *Sim) Init() {
 	ss.StopNow = false
 	ss.NewRun()
 	ss.UpdateView(true)
+	if ss.NetView != nil && ss.NetView.IsVisible() {
+		ss.NetView.RecordSyns()
+	}
 }
 
 // NewRndSeed gets a new random seed based on current time -- otherwise uses
@@ -518,8 +521,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	// First Quarter: CA1 is driven by ECin, not by CA3 recall
 	// (which is not really active yet anyway)
+	thetaLow := float32(0.3)
 	ca1FmECin.WtScale.Abs = 1
-	ca1FmCa3.WtScale.Abs = 0
+	ca1FmCa3.WtScale.Abs = thetaLow
 
 	dgwtscale := ca3FmDg.WtScale.Rel
 	ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDel // 0 for the first quarter, comment out if NoEDL and orig, zycyc. NoEDL key
@@ -565,7 +569,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 		}
 		switch qtr + 1 {
 		case 1: // Second, Third Quarters: CA1 is driven by CA3 recall
-			ca1FmECin.WtScale.Abs = 0
+			ca1FmECin.WtScale.Abs = thetaLow
 			ca1FmCa3.WtScale.Abs = 1
 			//ca3FmDg.WtScale.Rel = dgwtscale //zycyc, orig
 			if train { // def
@@ -577,7 +581,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 		case 3: // Fourth Quarter: CA1 back to ECin drive only
 			ca1FmECin.WtScale.Abs = 1
-			ca1FmCa3.WtScale.Abs = 0
+			ca1FmCa3.WtScale.Abs = thetaLow
 			ss.Net.GScaleFmAvgAct() // update computed scaling factors
 			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
 			if train {              // clamp ECout from ECin
@@ -607,7 +611,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 
 	if train {
 		ss.Net.DWt()
-		if len(os.Args) <= 1 {
+		if ss.NetView != nil && ss.NetView.IsVisible() {
 			ss.NetView.RecordSyns()
 		}
 		ss.Net.WtFmDWt() // so testing is based on updated weights
@@ -660,7 +664,7 @@ func (ss *Sim) TrainTrial() {
 			ss.TestAll()
 		}
 
-		//// zycyc, fixed epoch num -- half AB half AC
+		// zycyc, fixed epoch num -- half AB half AC
 		//if ss.TrainEnv.Table.Table == ss.TrainAB && (epc == ss.MaxEpcs/2) {
 		//	ss.TrainEnv.Table = etable.NewIdxView(ss.TrainAC)
 		//}
@@ -2437,14 +2441,18 @@ var SimProps = ki.Props{
 
 // zycyc
 // OuterLoopParams are the parameters to run for outer crossed factor testing
+//var OuterLoopParams = []string{"SmallHip"}
+
 var OuterLoopParams = []string{"BigHip"}
 
 //var OuterLoopParams = []string{"SmallHip", "MedHip", "BigHip"}
 
 // InnerLoopParams are the parameters to run for inner crossed factor testing
-var InnerLoopParams = []string{"List175"}
+//var InnerLoopParams = []string{"List020", "List040"}
 
-//var InnerLoopParams = []string{"List100", "List125", "List150", "List175", "List200"}
+//var InnerLoopParams = []string{"List150", "List175", "List200"}
+
+var InnerLoopParams = []string{"List100", "List125", "List150", "List175", "List200"}
 
 //var InnerLoopParams = []string{"List020", "List040", "List060", "List080", "List100"}
 
@@ -2485,8 +2493,8 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.BatchRun, "run", 0, "current batch run")
-	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do, i.e., subjects")
-	flag.IntVar(&ss.MaxEpcs, "epcs", 8, "maximum number of epochs to run (split between AB / AC)")
+	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do, i.e., subjects")
+	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
 	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveCycPatSimLog, "cycpatsimlog", false, "if true, save train cycle similarity log to file") // zycyc, pat sim key

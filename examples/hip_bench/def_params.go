@@ -103,11 +103,11 @@ var ParamSets = params.Sets{
 			//	Params: params.Params{
 			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
-			//{Sel: "#ECoutToCA1", Desc: "ECout Perforant Path",
-			//	Params: params.Params{
-			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
-			//	}},
-			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
+			{Sel: "#ECoutToCA1", Desc: "ECout Perforant Path",
+				Params: params.Params{
+					"Prjn.WtScale.Rel": "0.3", // Back proj should generally be very weak but we're specifically setting this here bc others are set already
+				}},
+			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level -- now for EC3 and EC5",
 				Params: params.Params{
 					"Layer.Act.Gbar.L":        "0.1",
 					"Layer.Inhib.ActAvg.Init": "0.2",
