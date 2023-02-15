@@ -410,9 +410,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pj.SetClass("HippoCHL")
 
 	// using 4 threads total (rest on 0)
-	dg.SetThread(1)
-	ca3.SetThread(2)
-	ca1.SetThread(3) // this has the most
+	dg.(leabra.LeabraLayer).SetThread(1)
+	ca3.(leabra.LeabraLayer).SetThread(2)
+	ca1.(leabra.LeabraLayer).SetThread(3) // this has the most
 
 	// note: if you wanted to change a layer type from e.g., Target to Compare, do this:
 	// outLay.SetType(emer.Compare)
@@ -513,9 +513,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 	input := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
 	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
-	ca1FmECin := ca1.RcvPrjns.SendName("ECin").(leabra.LeabraPrjn).AsLeabra()
-	ca1FmCa3 := ca1.RcvPrjns.SendName("CA3").(leabra.LeabraPrjn).AsLeabra()
-	ca3FmDg := ca3.RcvPrjns.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
+	ca1FmECin := ca1.SendName("ECin").(leabra.LeabraPrjn).AsLeabra()
+	ca1FmCa3 := ca1.SendName("CA3").(leabra.LeabraPrjn).AsLeabra()
+	ca3FmDg := ca3.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
 	_ = ecin
 	_ = input
 

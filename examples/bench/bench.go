@@ -88,12 +88,12 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 
 	switch threads {
 	case 2:
-		hid3Lay.SetThread(1)
-		outLay.SetThread(1)
+		hid3Lay.(leabra.LeabraLayer).SetThread(1)
+		outLay.(leabra.LeabraLayer).SetThread(1)
 	case 4:
-		hid2Lay.SetThread(1)
-		hid3Lay.SetThread(2)
-		outLay.SetThread(3)
+		hid2Lay.(leabra.LeabraLayer).SetThread(1)
+		hid3Lay.(leabra.LeabraLayer).SetThread(2)
+		outLay.(leabra.LeabraLayer).SetThread(3)
 	}
 
 	net.Defaults()

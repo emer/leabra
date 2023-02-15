@@ -288,12 +288,12 @@ func (ly *MSNLayer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Lay
 	}
 	var pj emer.Prjn
 	if prjnType != "" {
-		pj, err = sendLay.SendPrjns().RecvNameTypeTry(ly.Nm, prjnType)
+		pj, err = sendLay.RecvNameTypeTry(ly.Nm, prjnType)
 		if pj == nil {
-			pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+			pj, err = sendLay.RecvNameTry(ly.Nm)
 		}
 	} else {
-		pj, err = sendLay.SendPrjns().RecvNameTry(ly.Nm)
+		pj, err = sendLay.RecvNameTry(ly.Nm)
 	}
 	if pj == nil {
 		return err
@@ -321,12 +321,12 @@ func (ly *MSNLayer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Lay
 	}
 	var pj emer.Prjn
 	if prjnType != "" {
-		pj, err = recvLay.RecvPrjns().SendNameTypeTry(ly.Nm, prjnType)
+		pj, err = recvLay.SendNameTypeTry(ly.Nm, prjnType)
 		if pj == nil {
-			pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+			pj, err = recvLay.SendNameTry(ly.Nm)
 		}
 	} else {
-		pj, err = recvLay.RecvPrjns().SendNameTry(ly.Nm)
+		pj, err = recvLay.SendNameTry(ly.Nm)
 	}
 	if pj == nil {
 		return err

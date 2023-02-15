@@ -388,7 +388,7 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 // ModsFmInc sets ModLrn and ModLevel based on individual neuron activation and incoming ModNet values.
 //
 // If ModNet is below threshold, ModLrn is set to 0, and ModLevel is set to either 0 or 1 depending on the value of the
-//ModNetThreshold parameter.
+// ModNetThreshold parameter.
 //
 // If ModNet is above threshold, ModLrn for each neuron is set to the ratio of its ModNet input to its subpool
 // activation value, with special cases for extreme values.
@@ -529,7 +529,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 			if nrn.IsOff() {
 				continue
 			}
-			mpl.ModNetStats.UpdateVal(mnr.ModNet, ni)
+			mpl.ModNetStats.UpdateVal(mnr.ModNet, int32(ni))
 		}
 		mpl.ModNetStats.CalcAvg()
 		if mpl.ModNetStats.Max == 0 { // HACK!!!

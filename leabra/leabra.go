@@ -89,6 +89,9 @@ type LeabraLayer interface {
 	// interface does not need to include accessors to all the basic stuff
 	AsLeabra() *Layer
 
+	// SetThread sets the thread number for this layer to run on
+	SetThread(thr int)
+
 	// InitWts initializes the weight values in the network, i.e., resetting learning
 	// Also calls InitActs
 	InitWts()
@@ -119,6 +122,12 @@ type LeabraLayer interface {
 	// layer Type field -- call this if the Type has changed since the last
 	// ApplyExt* method call.
 	UpdateExtFlags()
+
+	// RecvPrjns returns the slice of receiving projections for this layer
+	RecvPrjns() *LeabraPrjns
+
+	// SendPrjns returns the slice of sending projections for this layer
+	SendPrjns() *LeabraPrjns
 
 	// IsTarget returns true if this layer is a Target layer.
 	// By default, returns true for layers of Type == emer.Target
@@ -266,4 +275,10 @@ type LeabraPrjn interface {
 	// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
 	// Useful for implementing learning rate schedules.
 	LrateMult(mult float32)
+}
+
+type LeabraPrjns []LeabraPrjn
+
+func (pl *LeabraPrjns) Add(p LeabraPrjn) {
+	(*pl) = append(*pl, p)
 }

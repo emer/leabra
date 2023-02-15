@@ -523,8 +523,8 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 	} else {
 		for pi := range lw.Prjns {
 			pw := &lw.Prjns[pi]
-			pj := rpjs.SendName(pw.From)
-			if pj != nil {
+			pj, err := ly.SendNameTry(pw.From)
+			if err == nil {
 				er := pj.SetWts(pw)
 				if er != nil {
 					err = er

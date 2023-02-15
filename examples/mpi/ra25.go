@@ -152,8 +152,8 @@ type Sim struct {
 	MaxRuns      int               `desc:"maximum number of model runs to perform"`
 	MaxEpcs      int               `desc:"maximum number of epochs to run per model run"`
 	NZeroStop    int               `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
-	TrainEnv     empi.FixedTable   `desc:"Training environment -- contains everything about iterating over input / output patterns over training -- NOTE: using empi version"`
-	TestEnv      empi.FixedTable   `desc:"Testing environment -- manages iterating over testing -- NOTE: using empi version"`
+	TrainEnv     env.MPIFixedTable `desc:"Training environment -- contains everything about iterating over input / output patterns over training -- NOTE: using empi version"`
+	TestEnv      env.MPIFixedTable `desc:"Testing environment -- manages iterating over testing -- NOTE: using empi version"`
 	Time         leabra.Time       `desc:"leabra timing parameters and state"`
 	ViewOn       bool              `desc:"whether to update the network view while running"`
 	TrainUpdt    leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model"`

@@ -103,7 +103,7 @@ func TestMakeNet(t *testing.T) {
 func TestSynVals(t *testing.T) {
 	TestNet.InitWts()
 	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	fmIn := hidLay.RcvPrjns.SendName("Input").(*Prjn)
+	fmIn := hidLay.SendName("Input").(*Prjn)
 
 	bfWt := fmIn.SynVal("Wt", 1, 1)
 	if mat32.IsNaN(bfWt) {

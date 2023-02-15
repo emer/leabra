@@ -29,8 +29,8 @@ type LayerStru struct {
 	Idx       int            `desc:"a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers."`
 	RepIxs    []int          `desc:"indexes of representative units in the layer, for computationally expensive stats or displays"`
 	RepShp    etensor.Shape  `desc:"shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape"`
-	RcvPrjns  emer.Prjns     `desc:"list of receiving projections into this layer from other layers"`
-	SndPrjns  emer.Prjns     `desc:"list of sending projections from this layer to other layers"`
+	RcvPrjns  LeabraPrjns    `desc:"list of receiving projections into this layer from other layers"`
+	SndPrjns  LeabraPrjns    `desc:"list of sending projections from this layer to other layers"`
 }
 
 // emer.Layer interface methods
@@ -64,13 +64,34 @@ func (ls *LayerStru) Pos() mat32.Vec3            { return ls.Ps }
 func (ls *LayerStru) SetPos(pos mat32.Vec3)      { ls.Ps = pos }
 func (ls *LayerStru) Index() int                 { return ls.Idx }
 func (ls *LayerStru) SetIndex(idx int)           { ls.Idx = idx }
-func (ls *LayerStru) RecvPrjns() *emer.Prjns     { return &ls.RcvPrjns }
+func (ls *LayerStru) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
 func (ls *LayerStru) NRecvPrjns() int            { return len(ls.RcvPrjns) }
 func (ls *LayerStru) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
-func (ls *LayerStru) SendPrjns() *emer.Prjns     { return &ls.SndPrjns }
+func (ls *LayerStru) SendPrjns() *LeabraPrjns    { return &ls.SndPrjns }
 func (ls *LayerStru) NSendPrjns() int            { return len(ls.SndPrjns) }
 func (ls *LayerStru) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
 func (ls *LayerStru) RepIdxs() []int             { return ls.RepIxs }
+
+func (ly *LayerStru) SendNameTry(sender string) (emer.Prjn, error) {
+	return emer.SendNameTry(ly.LeabraLay, sender)
+}
+func (ly *LayerStru) SendName(sender string) emer.Prjn {
+	pj, _ := emer.SendNameTry(ly.LeabraLay, sender)
+	return pj
+}
+func (ly *LayerStru) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
+	return emer.SendNameTypeTry(ly.LeabraLay, sender, typ)
+}
+func (ly *LayerStru) RecvNameTry(receiver string) (emer.Prjn, error) {
+	return emer.RecvNameTry(ly.LeabraLay, receiver)
+}
+func (ly *LayerStru) RecvName(receiver string) emer.Prjn {
+	pj, _ := emer.RecvNameTry(ly.LeabraLay, receiver)
+	return pj
+}
+func (ly *LayerStru) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
+	return emer.RecvNameTypeTry(ly.LeabraLay, receiver, typ)
+}
 
 func (ls *LayerStru) Idx4DFrom2D(x, y int) ([]int, bool) {
 	lshp := ls.Shape()
@@ -158,7 +179,9 @@ func (ls *LayerStru) NPools() int {
 
 // RecipToSendPrjn finds the reciprocal projection relative to the given sending projection
 // found within the SendPrjns of this layer.  This is then a recv prjn within this layer:
-//  S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
+//
+//	S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
+//
 // returns false if not found.
 func (ls *LayerStru) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
 	for _, rpj := range ls.RcvPrjns {
