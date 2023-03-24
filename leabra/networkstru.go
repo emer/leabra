@@ -257,6 +257,18 @@ func (nt *NetworkStru) AllParams() string {
 	return nds
 }
 
+// KeyLayerParams returns a listing for all layers in the network,
+// of the most important layer-level params (specific to each algorithm).
+func (nt *NetworkStru) KeyLayerParams() string {
+	return "" // todo: implement!
+}
+
+// KeyPrjnParams returns a listing for all Recv projections in the network,
+// of the most important projection-level params (specific to each algorithm).
+func (nt *NetworkStru) KeyPrjnParams() string {
+	return nt.AllWtScales()
+}
+
 // AllWtScales returns a listing of all WtScale parameters in the Network
 // in all Layers, Recv projections.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep

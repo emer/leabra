@@ -141,7 +141,7 @@ func (ev *FSAEnv) NextState() {
 	ri := ev.AState.Cur * nst
 	ps := ev.TMat.Values[ri : ri+nst]
 	ls := ev.Labels.Values[ri : ri+nst]
-	nxt := erand.PChoose64(ps) // next state chosen at random
+	nxt := erand.PChoose64(ps, -1) // next state chosen at random
 	ev.NextStates.Set1D(0, nxt)
 	ev.NextLabels.Set1D(0, ls[nxt])
 	idx := 1
