@@ -366,7 +366,7 @@ func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, ty
 // requires Build.
 func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
-	pj.Connect(send, recv, pat, typ)
+	pj.(LeabraPrjn).AsLeabra().Connect(send, recv, pat, typ)
 	recv.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
 	send.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
 	return pj
@@ -426,7 +426,7 @@ func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) eme
 // requires Build.
 func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
-	pj.Connect(lay, lay, pat, emer.Lateral)
+	pj.(LeabraPrjn).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
 	lay.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
 	lay.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
 	return pj
