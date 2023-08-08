@@ -88,6 +88,5 @@ memory-efficient, but it is fully general and shouldn't be too-bad memory-wise o
 bit-packed arrays are used, and these bitmaps don't need to be retained once connections have
 been established).  This approach allows patterns to just focus on patterns, and they don't care
 at all how they are used to allocate actual connections.
-
 */
 package leabra

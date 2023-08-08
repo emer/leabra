@@ -40,12 +40,24 @@ type ModReceiver interface {
 // ModLayer is a layer that RECEIVES modulatory input
 type ModLayer struct {
 	leabra.Layer
-	ModNeurs     []ModNeuron     `desc:"neuron-level modulation state"`
-	ModPools     []ModPool       `desc:"pools for maintaining aggregate values"`
+
+	// neuron-level modulation state
+	ModNeurs []ModNeuron `desc:"neuron-level modulation state"`
+
+	// pools for maintaining aggregate values
+	ModPools []ModPool `desc:"pools for maintaining aggregate values"`
+
+	// layer names and scale values for mods sent from this layer
 	ModReceivers []ModRcvrParams `desc:"layer names and scale values for mods sent from this layer"`
-	ModParams    `desc:"parameters shared by all modulator receiver layers"`
-	DaMod        DaModParams `desc:"parameters for dopaminergic modulation"`
-	Modulators   `desc:"layer-level neuromodulator levels"`
+
+	// parameters shared by all modulator receiver layers
+	ModParams `desc:"parameters shared by all modulator receiver layers"`
+
+	// parameters for dopaminergic modulation
+	DaMod DaModParams `desc:"parameters for dopaminergic modulation"`
+
+	// layer-level neuromodulator levels
+	Modulators `desc:"layer-level neuromodulator levels"`
 }
 
 var _ IModLayer = (*ModLayer)(nil)
@@ -54,59 +66,113 @@ var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, nil)
 
 // ModPool is similar to a standard Pool structure, and uses the same code to compute running statistics.
 type ModPool struct {
-	ModNetStats      minmax.AvgMax32
-	ModSent          float32 `desc:"modulation level transmitted to receiver layers"`
+	ModNetStats minmax.AvgMax32
+
+	// modulation level transmitted to receiver layers
+	ModSent float32 `desc:"modulation level transmitted to receiver layers"`
+
+	// threshold for sending modulation. values below this are not added to the pool-level total
 	ModSendThreshold float32 `desc:"threshold for sending modulation. values below this are not added to the pool-level total"`
 }
 
 // DaModParams specifies parameters shared by all layers that receive dopaminergic modulatory input.
 type DaModParams struct {
-	On        bool    `desc:"whether to use dopamine modulation"`
+
+	// whether to use dopamine modulation
+	On bool `desc:"whether to use dopamine modulation"`
+
+	// dopamine receptor type, D1 or D2
 	RecepType DaRType `inactive:"+" desc:"dopamine receptor type, D1 or D2"`
+
+	// multiplicative gain factor applied to positive dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign!
 	BurstGain float32 `desc:"multiplicative gain factor applied to positive dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign!"`
-	DipGain   float32 `desc:"multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext"`
+
+	// multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext
+	DipGain float32 `desc:"multiplicative gain factor applied to negative dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign! should be small for acq, but roughly equal to burst_da_gain for ext"`
 }
 
 // ModParams contains values that control a receiving layer's response to modulatory inputs
 type ModParams struct {
-	Minus            float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
-	Plus             float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
-	NegGain          float32 `viewif:"DaMod.On&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
-	PosGain          float32 `viewif:"DaMod.On&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
-	ActModZero       bool    `desc:"for modulation coming from the BLA via deep_mod_net -- when this modulation signal is below zero, does it have the ability to zero out the patch activations?  i.e., is the modulation required to enable patch firing?"`
-	ModNetThreshold  float32 `desc:"threshold on deep_mod_net before deep mod is applied -- if not receiving even this amount of overall input from deep_mod sender, then do not use the deep_mod_net to drive deep_mod and deep_lrn values -- only for SUPER units -- based on LAYER level maximum for base LeabraLayerSpec, PVLV classes are based on actual deep_mod_net for each unit"`
+
+	// [viewif: On] how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Minus float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+
+	// [viewif: On] how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Plus float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+
+	// [viewif: DaMod.On&&ModGain] for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase
+	NegGain float32 `viewif:"DaMod.On&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
+
+	// [viewif: DaMod.On&&ModGain] for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase
+	PosGain float32 `viewif:"DaMod.On&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
+
+	// for modulation coming from the BLA via deep_mod_net -- when this modulation signal is below zero, does it have the ability to zero out the patch activations?  i.e., is the modulation required to enable patch firing?
+	ActModZero bool `desc:"for modulation coming from the BLA via deep_mod_net -- when this modulation signal is below zero, does it have the ability to zero out the patch activations?  i.e., is the modulation required to enable patch firing?"`
+
+	// threshold on deep_mod_net before deep mod is applied -- if not receiving even this amount of overall input from deep_mod sender, then do not use the deep_mod_net to drive deep_mod and deep_lrn values -- only for SUPER units -- based on LAYER level maximum for base LeabraLayerSpec, PVLV classes are based on actual deep_mod_net for each unit
+	ModNetThreshold float32 `desc:"threshold on deep_mod_net before deep mod is applied -- if not receiving even this amount of overall input from deep_mod sender, then do not use the deep_mod_net to drive deep_mod and deep_lrn values -- only for SUPER units -- based on LAYER level maximum for base LeabraLayerSpec, PVLV classes are based on actual deep_mod_net for each unit"`
+
+	// threshold for including neuron activation in total to send (for ModNet)
 	ModSendThreshold float32 `desc:"threshold for including neuron activation in total to send (for ModNet)"`
-	IsModSender      bool    `desc:"does this layer send modulation to other layers?"`
-	IsModReceiver    bool    `desc:"does this layer receive modulation from other layers?"`
-	IsPVReceiver     bool    `desc:"does this layer receive a direct PV input?"`
+
+	// does this layer send modulation to other layers?
+	IsModSender bool `desc:"does this layer send modulation to other layers?"`
+
+	// does this layer receive modulation from other layers?
+	IsModReceiver bool `desc:"does this layer receive modulation from other layers?"`
+
+	// does this layer receive a direct PV input?
+	IsPVReceiver bool `desc:"does this layer receive a direct PV input?"`
 }
 
 // ModRcvrParams specifies the name of a layer that receives modulatory input, and a scale factor--critical for inputs from
 // large layers such as BLA.
 type ModRcvrParams struct {
-	RcvName string  `desc:"name of receiving layer"`
-	Scale   float32 `desc:"scale factor for modulation to this receiver"`
+
+	// name of receiving layer
+	RcvName string `desc:"name of receiving layer"`
+
+	// scale factor for modulation to this receiver
+	Scale float32 `desc:"scale factor for modulation to this receiver"`
 }
 
 var KiT_ModParams = kit.Types.AddType(&ModParams{}, nil)
 
 // Modulators are modulatory neurotransmitters. Currently ACh and SE are only placeholders.
 type Modulators struct {
-	DA  float32 `desc:"current dopamine level for this layer"`
+
+	// current dopamine level for this layer
+	DA float32 `desc:"current dopamine level for this layer"`
+
+	// current acetylcholine level for this layer
 	ACh float32 `desc:"current acetylcholine level for this layer"`
-	SE  float32 `desc:"current serotonin level for this layer"`
+
+	// current serotonin level for this layer
+	SE float32 `desc:"current serotonin level for this layer"`
 }
 
 var KiT_Modulators = kit.Types.AddType(&Modulators{}, nil)
 
 // ModNeuron encapsulates the variables used by all layers that receive modulatory input
 type ModNeuron struct {
+
+	// neuron-level modulator activation
 	Modulators `desc:"neuron-level modulator activation"`
-	ModAct     float32 `desc:"activity level for modulation"`
-	ModLevel   float32 `desc:"degree of full modulation to apply"`
-	ModNet     float32 `desc:"modulation input from sender"`
-	ModLrn     float32 `desc:"multiplier for DA modulation of learning rate"`
-	PVAct      float32 `desc:"direct activation from US"`
+
+	// activity level for modulation
+	ModAct float32 `desc:"activity level for modulation"`
+
+	// degree of full modulation to apply
+	ModLevel float32 `desc:"degree of full modulation to apply"`
+
+	// modulation input from sender
+	ModNet float32 `desc:"modulation input from sender"`
+
+	// multiplier for DA modulation of learning rate
+	ModLrn float32 `desc:"multiplier for DA modulation of learning rate"`
+
+	// direct activation from US
+	PVAct float32 `desc:"direct activation from US"`
 }
 
 var KiT_ModNeuron = kit.Types.AddType(&ModNeuron{}, nil)

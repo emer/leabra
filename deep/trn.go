@@ -14,6 +14,8 @@ import (
 // TRNLayers, and pools this inhibition using the Max operation
 type TRNLayer struct {
 	leabra.Layer
+
+	// layers that we receive inhibition from
 	ILayers emer.LayNames `desc:"layers that we receive inhibition from"`
 }
 

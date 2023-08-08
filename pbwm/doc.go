@@ -33,22 +33,22 @@ Naming rule: DA when a singleton, DaMod (lowercase a) when CamelCased with somet
 
 * ModLayer adds DA-modulated learning on top of basic Leabra learning
 
-* GateLayer has GateStates in 1-to-1 correspondence with Pools, to keep
-   track of gating state -- source gating layers can send updates to other layers.
+  - GateLayer has GateStates in 1-to-1 correspondence with Pools, to keep
+    track of gating state -- source gating layers can send updates to other layers.
 
 ################
 # PBWM specific
 
-* MatrixLayer for dorsal striatum gating of DLPFC areas, separate D1R = Go, D2R = NoGo
-	Each layer contains Maint and Out GateTypes, as function of outer 4D Pool X dimension
-	(Maint on the left, Out on the right)
+  - MatrixLayer for dorsal striatum gating of DLPFC areas, separate D1R = Go, D2R = NoGo
+    Each layer contains Maint and Out GateTypes, as function of outer 4D Pool X dimension
+    (Maint on the left, Out on the right)
 
-* GPiThalLayer receives from Matrix Go and GPe NoGo to compute final WTA gating, and
-   broadcasts GateState info to its SendTo layers.  See Timing params for timing.
+  - GPiThalLayer receives from Matrix Go and GPe NoGo to compute final WTA gating, and
+    broadcasts GateState info to its SendTo layers.  See Timing params for timing.
 
-* PFCLayer for active maintenance -- reproduces a DeepLeabra like framework,
-   with update timing according to BurstQtr.  Gating is computed in quarter
-   *before* updating in BurstQtr.
-   At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
+  - PFCLayer for active maintenance -- reproduces a DeepLeabra like framework,
+    with update timing according to BurstQtr.  Gating is computed in quarter
+    *before* updating in BurstQtr.
+    At *end* of BurstQtr, Super Burst -> Deep Ctxt to drive maintenance via Ctxt in Deep.
 */
 package pbwm

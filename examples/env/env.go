@@ -18,16 +18,36 @@ import (
 // It can be used as a starting point for writing your own Env, without
 // having much existing code to rewrite.
 type ExEnv struct {
-	Nm    string          `desc:"name of this environment"`
-	Dsc   string          `desc:"description of this environment"`
-	Size  int             `desc:"size of each dimension in 2D input"`
-	Point image.Point     `desc:"X,Y coordinates of point"`
+
+	// name of this environment
+	Nm string `desc:"name of this environment"`
+
+	// description of this environment
+	Dsc string `desc:"description of this environment"`
+
+	// size of each dimension in 2D input
+	Size int `desc:"size of each dimension in 2D input"`
+
+	// X,Y coordinates of point
+	Point image.Point `desc:"X,Y coordinates of point"`
+
+	// input state, 2D Size x Size
 	Input etensor.Float32 `desc:"input state, 2D Size x Size"`
-	X     etensor.Float32 `desc:"X as a one-hot state 1D Size"`
-	Y     etensor.Float32 `desc:"Y  as a one-hot state 1D Size"`
-	Run   env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
-	Epoch env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
-	Trial env.Ctr         `view:"inline" desc:"trial increments over input states -- could add Event as a lower level"`
+
+	// X as a one-hot state 1D Size
+	X etensor.Float32 `desc:"X as a one-hot state 1D Size"`
+
+	// Y  as a one-hot state 1D Size
+	Y etensor.Float32 `desc:"Y  as a one-hot state 1D Size"`
+
+	// [view: inline] current run of model as provided during Init
+	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+
+	// [view: inline] number of times through Seq.Max number of sequences
+	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+
+	// [view: inline] trial increments over input states -- could add Event as a lower level
+	Trial env.Ctr `view:"inline" desc:"trial increments over input states -- could add Event as a lower level"`
 }
 
 func (ev *ExEnv) Name() string { return ev.Nm }

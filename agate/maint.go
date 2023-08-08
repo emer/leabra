@@ -15,6 +15,8 @@ import (
 // PulseClearParams are parameters for the synchronous pulse of activation /
 // inhibition that clears NMDA maintenance.
 type PulseClearParams struct {
+
+	// GABAB value activated by the inhibitory pulse
 	GABAB float32 `desc:"GABAB value activated by the inhibitory pulse"`
 }
 
@@ -22,12 +24,16 @@ func (pc *PulseClearParams) Defaults() {
 	pc.GABAB = 2
 }
 
-///////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////
 // MaintLayer is a layer with NMDA channels that supports active maintenance
 // in frontal cortex, via NMDA channels (in an NMDAMaintPrjn).
 type MaintLayer struct {
 	glong.Layer
-	PulseClear PulseClearParams      `desc:"parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance."`
+
+	// parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance.
+	PulseClear PulseClearParams `desc:"parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance."`
+
+	// inhibition from output layer
 	InterInhib interinhib.InterInhib `desc:"inhibition from output layer"`
 }
 

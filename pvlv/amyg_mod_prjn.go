@@ -28,17 +28,39 @@ type ISetScalePrjn interface {
 // AmygModPrjn holds parameters and state variables for modulatory projections to amygdala layers
 type AmygModPrjn struct {
 	leabra.Prjn
-	SetScale    bool        `desc:"only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically-supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)"`
-	SetScaleMin float32     `desc:"minimum scale value for SetScale projections"`
-	SetScaleMax float32     `desc:"maximum scale value for SetScale projections"`
-	InitWtVal   float32     `desc:"constant initial weight value for specs that do not support a custom init_wts function and have set_scale set: the scale values are set to what the random weights would otherwise be set to, and the initial weight value is set to this constant: the net actual weight value is scale * init_wt_val.."`
-	DALRGain    float32     `desc:"gain multiplier on abs(DA) learning rate multiplier"`
-	DALRBase    float32     `desc:"constant baseline amount of learning prior to abs(DA) factor -- should be near zero otherwise offsets in activation will drive learning in the absence of DA significance"`
-	DALrnThr    float32     `desc:"minimum threshold for phasic abs(da) signals to count as non-zero;  useful to screen out spurious da signals due to tiny VSPatch-to-LHb signals on t2 & t4 timesteps that can accumulate over many trials - 0.02 seems to work okay"`
-	ActDeltaThr float32     `desc:"minimum threshold for delta activation to count as non-zero;  useful to screen out spurious learning due to unintended delta activity - 0.02 seems to work okay for both acquisition and extinction guys"`
-	ActLrnMod   bool        `desc:"if true, recv unit deep_lrn value modulates learning"`
-	ActLrnThr   float32     `desc:"only ru->deep_lrn values > this get to learn - 0.05f seems to work okay"`
-	DaMod       DaModParams `desc:"parameters for dopaminergic modulation"`
+
+	// only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically-supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)
+	SetScale bool `desc:"only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically-supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)"`
+
+	// minimum scale value for SetScale projections
+	SetScaleMin float32 `desc:"minimum scale value for SetScale projections"`
+
+	// maximum scale value for SetScale projections
+	SetScaleMax float32 `desc:"maximum scale value for SetScale projections"`
+
+	// constant initial weight value for specs that do not support a custom init_wts function and have set_scale set: the scale values are set to what the random weights would otherwise be set to, and the initial weight value is set to this constant: the net actual weight value is scale * init_wt_val..
+	InitWtVal float32 `desc:"constant initial weight value for specs that do not support a custom init_wts function and have set_scale set: the scale values are set to what the random weights would otherwise be set to, and the initial weight value is set to this constant: the net actual weight value is scale * init_wt_val.."`
+
+	// gain multiplier on abs(DA) learning rate multiplier
+	DALRGain float32 `desc:"gain multiplier on abs(DA) learning rate multiplier"`
+
+	// constant baseline amount of learning prior to abs(DA) factor -- should be near zero otherwise offsets in activation will drive learning in the absence of DA significance
+	DALRBase float32 `desc:"constant baseline amount of learning prior to abs(DA) factor -- should be near zero otherwise offsets in activation will drive learning in the absence of DA significance"`
+
+	// minimum threshold for phasic abs(da) signals to count as non-zero;  useful to screen out spurious da signals due to tiny VSPatch-to-LHb signals on t2 & t4 timesteps that can accumulate over many trials - 0.02 seems to work okay
+	DALrnThr float32 `desc:"minimum threshold for phasic abs(da) signals to count as non-zero;  useful to screen out spurious da signals due to tiny VSPatch-to-LHb signals on t2 & t4 timesteps that can accumulate over many trials - 0.02 seems to work okay"`
+
+	// minimum threshold for delta activation to count as non-zero;  useful to screen out spurious learning due to unintended delta activity - 0.02 seems to work okay for both acquisition and extinction guys
+	ActDeltaThr float32 `desc:"minimum threshold for delta activation to count as non-zero;  useful to screen out spurious learning due to unintended delta activity - 0.02 seems to work okay for both acquisition and extinction guys"`
+
+	// if true, recv unit deep_lrn value modulates learning
+	ActLrnMod bool `desc:"if true, recv unit deep_lrn value modulates learning"`
+
+	// only ru->deep_lrn values > this get to learn - 0.05f seems to work okay
+	ActLrnThr float32 `desc:"only ru->deep_lrn values > this get to learn - 0.05f seems to work okay"`
+
+	// parameters for dopaminergic modulation
+	DaMod DaModParams `desc:"parameters for dopaminergic modulation"`
 }
 
 // These null variables serve as a check that AmygModPrjn actually implements the IAmygPrjn and ISetScalePrjn interfaces

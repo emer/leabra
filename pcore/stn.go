@@ -21,14 +21,30 @@ import (
 // The conductance is applied to KNa channels to take advantage
 // of the existing infrastructure.
 type CaParams struct {
-	BurstThr  float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
-	ActThr    float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
-	BurstCa   float32 `def:"1" desc:"Ca level for burst level activation"`
-	ActCa     float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
-	GbarKCa   float32 `def:"10" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
-	KCaTau    float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
-	CaTau     float32 `def:"50" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
-	AlphaInit bool    `desc:"initialize Ca, KCa values at start of every AlphaCycle"`
+
+	// [def: 0.9] activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold
+	BurstThr float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
+
+	// [def: 0.7] activation threshold for increment in activation above baseline that drives lower influx of Ca
+	ActThr float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
+
+	// [def: 1] Ca level for burst level activation
+	BurstCa float32 `def:"1" desc:"Ca level for burst level activation"`
+
+	// [def: 0.2] Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay
+	ActCa float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
+
+	// [def: 10] maximal KCa conductance (actual conductance is applied to KNa channels)
+	GbarKCa float32 `def:"10" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
+
+	// [def: 20] KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
+	KCaTau float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
+
+	// [def: 50] Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
+	CaTau float32 `def:"50" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
+
+	// initialize Ca, KCa values at start of every AlphaCycle
+	AlphaInit bool `desc:"initialize Ca, KCa values at start of every AlphaCycle"`
 }
 
 func (kc *CaParams) Defaults() {
@@ -60,7 +76,11 @@ func (kc *CaParams) KCaGFmCa(ca float32) float32 {
 // GPeIn signal has had a chance to integrate its MtxNo inputs.
 type STNLayer struct {
 	Layer
-	Ca       CaParams    `view:"inline" desc:"parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
+
+	// [view: inline] parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)
+	Ca CaParams `view:"inline" desc:"parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
+
+	// slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
 	STNNeurs []STNNeuron `desc:"slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
 }
 

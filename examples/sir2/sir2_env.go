@@ -34,22 +34,54 @@ const (
 
 // SIREnv implements the store-ignore-recall task
 type SIREnv struct {
-	Nm        string          `desc:"name of this environment"`
-	Dsc       string          `desc:"description of this environment"`
-	NStim     int             `desc:"number of different stimuli that can be maintained"`
-	RewVal    float32         `desc:"value for reward, based on whether model output = target"`
-	NoRewVal  float32         `desc:"value for non-reward"`
-	Act       Actions         `desc:"current action"`
-	Stim      int             `desc:"current stimulus"`
-	Maint1    int             `desc:"current stimulus being maintained"`
-	Maint2    int             `desc:"current stimulus being maintained"`
-	Input     etensor.Float64 `desc:"stimulus input pattern"`
+
+	// name of this environment
+	Nm string `desc:"name of this environment"`
+
+	// description of this environment
+	Dsc string `desc:"description of this environment"`
+
+	// number of different stimuli that can be maintained
+	NStim int `desc:"number of different stimuli that can be maintained"`
+
+	// value for reward, based on whether model output = target
+	RewVal float32 `desc:"value for reward, based on whether model output = target"`
+
+	// value for non-reward
+	NoRewVal float32 `desc:"value for non-reward"`
+
+	// current action
+	Act Actions `desc:"current action"`
+
+	// current stimulus
+	Stim int `desc:"current stimulus"`
+
+	// current stimulus being maintained
+	Maint1 int `desc:"current stimulus being maintained"`
+
+	// current stimulus being maintained
+	Maint2 int `desc:"current stimulus being maintained"`
+
+	// stimulus input pattern
+	Input etensor.Float64 `desc:"stimulus input pattern"`
+
+	// input pattern with action
 	CtrlInput etensor.Float64 `desc:"input pattern with action"`
-	Output    etensor.Float64 `desc:"output pattern of what to respond"`
-	Reward    etensor.Float64 `desc:"reward value"`
-	Run       env.Ctr         `view:"inline" desc:"current run of model as provided during Init"`
-	Epoch     env.Ctr         `view:"inline" desc:"number of times through Seq.Max number of sequences"`
-	Trial     env.Ctr         `view:"inline" desc:"trial is the step counter within epoch"`
+
+	// output pattern of what to respond
+	Output etensor.Float64 `desc:"output pattern of what to respond"`
+
+	// reward value
+	Reward etensor.Float64 `desc:"reward value"`
+
+	// [view: inline] current run of model as provided during Init
+	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+
+	// [view: inline] number of times through Seq.Max number of sequences
+	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+
+	// [view: inline] trial is the step counter within epoch
+	Trial env.Ctr `view:"inline" desc:"trial is the step counter within epoch"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }

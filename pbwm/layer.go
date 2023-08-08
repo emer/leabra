@@ -17,9 +17,15 @@ import (
 // See ModLayer for a version that includes DA-modulated learning parameters,
 type Layer struct {
 	leabra.Layer
-	DA  float32 `inactive:"+" desc:"current dopamine level for this layer"`
+
+	// current dopamine level for this layer
+	DA float32 `inactive:"+" desc:"current dopamine level for this layer"`
+
+	// current acetylcholine level for this layer
 	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
-	SE  float32 `inactive:"+" desc:"current serotonin level for this layer"`
+
+	// current serotonin level for this layer
+	SE float32 `inactive:"+" desc:"current serotonin level for this layer"`
 }
 
 var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)

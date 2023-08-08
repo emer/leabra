@@ -6,6 +6,7 @@ package pvlv
 
 import (
 	"fmt"
+
 	_ "github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -31,14 +32,22 @@ var KiT_AcqExt = kit.Enums.AddEnum(NAcqExt, kit.NotBitFlag, nil)
 
 type CElAmygLayer struct {
 	ModLayer
-	CElTyp     CElAmygLayerType `desc:"basic parameters determining what type CEl layer this is"`
-	AcqDeepMod bool             `desc:"use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal"`
+
+	// basic parameters determining what type CEl layer this is
+	CElTyp CElAmygLayerType `desc:"basic parameters determining what type CEl layer this is"`
+
+	// use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal
+	AcqDeepMod bool `desc:"use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal"`
 }
 
 var KiT_CElAmygLayer = kit.Types.AddType(&CElAmygLayer{}, nil)
 
 type CElAmygLayerType struct {
-	AcqExt  AcqExt  `desc:"acquisition or extinction"`
+
+	// acquisition or extinction
+	AcqExt AcqExt `desc:"acquisition or extinction"`
+
+	// positive or negative DA valence
 	Valence Valence `desc:"positive or negative DA valence"`
 }
 

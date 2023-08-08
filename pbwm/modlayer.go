@@ -12,6 +12,8 @@ import (
 // ModLayer provides DA modulated learning to basic Leabra layers.
 type ModLayer struct {
 	Layer
+
+	// dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning.
 	DaMod DaModParams `desc:"dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning."`
 }
 

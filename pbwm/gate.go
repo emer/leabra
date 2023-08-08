@@ -19,9 +19,15 @@ import (
 // their native geometry -- FullIndex1D provides access from a subset
 // to full set.
 type GateShape struct {
-	Y      int `desc:"overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels"`
+
+	// overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels
+	Y int `desc:"overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels"`
+
+	// how many pools in the X dimension are Maint gating pools -- rest are Out
 	MaintX int `desc:"how many pools in the X dimension are Maint gating pools -- rest are Out"`
-	OutX   int `desc:"how many pools in the X dimension are Out gating pools -- comes after Maint"`
+
+	// how many pools in the X dimension are Out gating pools -- comes after Maint
+	OutX int `desc:"how many pools in the X dimension are Out gating pools -- comes after Maint"`
 }
 
 // Set sets the shape parameters: number of Y dimension pools, and
@@ -89,9 +95,15 @@ func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
 // GateState is gating state values stored in layers that receive thalamic gating signals
 // including MatrixLayer, PFCLayer, GPiThal layer, etc -- use GateLayer as base layer to include.
 type GateState struct {
+
+	// gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle
 	Act float32 `desc:"gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle"`
-	Now bool    `desc:"gating timing signal -- true if this is the moment when gating takes place"`
-	Cnt int     `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
+
+	// gating timing signal -- true if this is the moment when gating takes place
+	Now bool `desc:"gating timing signal -- true if this is the moment when gating takes place"`
+
+	// unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating.
+	Cnt int `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
 }
 
 // Init initializes the values -- call during InitActs()
@@ -114,7 +126,11 @@ func (gs *GateState) CopyFrom(fm *GateState) {
 // slice of GateState fields that a gating layer will update.
 type GateLayer struct {
 	Layer
-	GateShp    GateShape   `desc:"shape of overall Maint + Out gating system that this layer is part of"`
+
+	// shape of overall Maint + Out gating system that this layer is part of
+	GateShp GateShape `desc:"shape of overall Maint + Out gating system that this layer is part of"`
+
+	// slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out
 	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
 }
 

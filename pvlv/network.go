@@ -51,7 +51,6 @@ func (nt *Network) Cycle(ltime *leabra.Time) {
 	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
 }
 
-//
 func (nt *Network) CycleImpl(ltime *leabra.Time) {
 	nt.QuarterInitPrvs(ltime)
 	nt.SendGDelta(ltime) // also does integ
@@ -142,7 +141,7 @@ func (nt *Network) AddVTALayer(name string, val Valence) *VTALayer {
 //
 // cpmt specifies patch or matrix StriatalCompartment
 //
-//da parameter gives the DaReceptor type (DaRType) (D1R = Go, D2R = NoGo)
+// da parameter gives the DaReceptor type (DaRType) (D1R = Go, D2R = NoGo)
 func (nt *Network) AddMSNLayer(name string, nY, nX, nNeurY, nNeurX int, cpmt StriatalCompartment, da DaRType) *MSNLayer {
 	return AddMSNLayer(nt, name, nY, nX, nNeurY, nNeurX, cpmt, da)
 }

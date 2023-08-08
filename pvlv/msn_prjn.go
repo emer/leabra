@@ -17,8 +17,12 @@ import (
 
 // TraceSyn holds extra synaptic state for trace projections
 type TraceSyn struct {
+
+	// new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)
 	NTr float32 `desc:"new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)"`
-	Tr  float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)"`
+
+	//  current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)
+	Tr float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)"`
 }
 
 type DALrnRule int
@@ -38,12 +42,24 @@ var KiT_DALrnRule = kit.Enums.AddEnum(DALrnRuleN, kit.NotBitFlag, nil)
 type MSNPrjn struct {
 	leabra.Prjn
 	LearningRule DALrnRule
-	Trace        MSNTraceParams `view:"inline" desc:"special parameters for striatum trace learning"`
-	TrSyns       []TraceSyn     `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
-	SLActVar     string         `desc:"sending layer activation variable name"`
-	RLActVar     string         `desc:"receiving layer activation variable name"`
-	MaxVSActMod  float32        `def:"0.7" min:"0" desc:"for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning"`
-	DaMod        DaModParams    `desc:"parameters for dopaminergic modulation"`
+
+	// [view: inline] special parameters for striatum trace learning
+	Trace MSNTraceParams `view:"inline" desc:"special parameters for striatum trace learning"`
+
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	TrSyns []TraceSyn `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+
+	// sending layer activation variable name
+	SLActVar string `desc:"sending layer activation variable name"`
+
+	// receiving layer activation variable name
+	RLActVar string `desc:"receiving layer activation variable name"`
+
+	// [def: 0.7] [min: 0] for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning
+	MaxVSActMod float32 `def:"0.7" min:"0" desc:"for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning"`
+
+	// parameters for dopaminergic modulation
+	DaMod DaModParams `desc:"parameters for dopaminergic modulation"`
 }
 
 type IMSNPrjn interface {

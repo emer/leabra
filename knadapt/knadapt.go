@@ -22,11 +22,21 @@ package knadapt
 // Chan describes one channel type of sodium-gated adaptation, with a specific
 // set of rate constants.
 type Chan struct {
-	On   bool    `desc:"if On, use this component of K-Na adaptation"`
+
+	// if On, use this component of K-Na adaptation
+	On bool `desc:"if On, use this component of K-Na adaptation"`
+
+	// [viewif: On] Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
 	Rise float32 `viewif:"On" desc:"Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate"`
-	Max  float32 `viewif:"On" desc:"Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here"`
-	Tau  float32 `viewif:"On" desc:"time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)"`
-	Dt   float32 `view:"-" desc:"1/Tau rate constant"`
+
+	// [viewif: On] Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
+	Max float32 `viewif:"On" desc:"Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here"`
+
+	// [viewif: On] time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
+	Tau float32 `viewif:"On" desc:"time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)"`
+
+	// [view: -] 1/Tau rate constant
+	Dt float32 `view:"-" desc:"1/Tau rate constant"`
 }
 
 func (ka *Chan) Defaults() {
@@ -68,11 +78,21 @@ func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
 // Evidence supports at least 3 different time constants:
 // M-type (fast), Slick (medium), and Slack (slow)
 type Params struct {
-	On   bool    `desc:"if On, apply K-Na adaptation"`
+
+	// if On, apply K-Na adaptation
+	On bool `desc:"if On, apply K-Na adaptation"`
+
+	// [def: 0.8] [viewif: On] extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
 	Rate float32 `viewif:"On" def:"0.8" desc:"extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking"`
-	Fast Chan    `view:"inline" desc:"fast time-scale adaptation"`
-	Med  Chan    `view:"inline" desc:"medium time-scale adaptation"`
-	Slow Chan    `view:"inline" desc:"slow time-scale adaptation"`
+
+	// [view: inline] fast time-scale adaptation
+	Fast Chan `view:"inline" desc:"fast time-scale adaptation"`
+
+	// [view: inline] medium time-scale adaptation
+	Med Chan `view:"inline" desc:"medium time-scale adaptation"`
+
+	// [view: inline] slow time-scale adaptation
+	Slow Chan `view:"inline" desc:"slow time-scale adaptation"`
 }
 
 func (ka *Params) Defaults() {

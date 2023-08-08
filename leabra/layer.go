@@ -30,12 +30,24 @@ import (
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
 type Layer struct {
 	LayerStru
-	Act     ActParams       `view:"add-fields" desc:"Activation parameters and methods for computing activations"`
-	Inhib   InhibParams     `view:"add-fields" desc:"Inhibition parameters and methods for computing layer-level inhibition"`
-	Learn   LearnNeurParams `view:"add-fields" desc:"Learning parameters and methods that operate at the neuron level"`
-	Neurons []Neuron        `desc:"slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values."`
-	Pools   []Pool          `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
-	CosDiff CosDiffStats    `desc:"cosine difference between ActM, ActP stats"`
+
+	// [view: add-fields] Activation parameters and methods for computing activations
+	Act ActParams `view:"add-fields" desc:"Activation parameters and methods for computing activations"`
+
+	// [view: add-fields] Inhibition parameters and methods for computing layer-level inhibition
+	Inhib InhibParams `view:"add-fields" desc:"Inhibition parameters and methods for computing layer-level inhibition"`
+
+	// [view: add-fields] Learning parameters and methods that operate at the neuron level
+	Learn LearnNeurParams `view:"add-fields" desc:"Learning parameters and methods that operate at the neuron level"`
+
+	// slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values.
+	Neurons []Neuron `desc:"slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values."`
+
+	// inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values.
+	Pools []Pool `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
+
+	// cosine difference between ActM, ActP stats
+	CosDiff CosDiffStats `desc:"cosine difference between ActM, ActP stats"`
 }
 
 var KiT_Layer = kit.Types.AddType(&Layer{}, LayerProps)

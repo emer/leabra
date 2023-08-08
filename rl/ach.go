@@ -73,8 +73,12 @@ func (sd *SendACh) AddAllBut(net emer.Network, excl ...string) {
 // ClampAChLayer is an Input layer that just sends its activity as the acetylcholine signal
 type ClampAChLayer struct {
 	leabra.Layer
+
+	// list of layers to send acetylcholine to
 	SendACh SendACh `desc:"list of layers to send acetylcholine to"`
-	ACh     float32 `desc:"acetylcholine value for this layer"`
+
+	// acetylcholine value for this layer
+	ACh float32 `desc:"acetylcholine value for this layer"`
 }
 
 var KiT_ClampAChLayer = kit.Types.AddType(&ClampAChLayer{}, leabra.LayerProps)

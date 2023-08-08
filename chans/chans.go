@@ -12,9 +12,17 @@ package chans
 
 // Chans are ion channels used in computing point-neuron activation function
 type Chans struct {
+
+	// excitatory sodium (Na) AMPA channels activated by synaptic glutamate
 	E float32 `desc:"excitatory sodium (Na) AMPA channels activated by synaptic glutamate"`
+
+	// constant leak (potassium, K+) channels -- determines resting potential (typically higher than resting potential of K)
 	L float32 `desc:"constant leak (potassium, K+) channels -- determines resting potential (typically higher than resting potential of K)"`
+
+	// inhibitory chloride (Cl-) channels activated by synaptic GABA
 	I float32 `desc:"inhibitory chloride (Cl-) channels activated by synaptic GABA"`
+
+	// gated / active potassium channels -- typically hyperpolarizing relative to leak / rest
 	K float32 `desc:"gated / active potassium channels -- typically hyperpolarizing relative to leak / rest"`
 }
 

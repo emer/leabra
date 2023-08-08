@@ -7,23 +7,57 @@ package data
 // ConditionParams contains settings for one portion of a Run. A ConditionParams refers to a single ConditionParams, along with
 // other information such as the number of times to run each instantiated Block. A single Block can be referenced by many RunBlocks.
 type ConditionParams struct {
-	Nm              string `desc:"identifier for this type of configuration"`
-	Desc            string `desc:"description of this configuration"`
-	TrialBlkNm      string `desc:"trial group name"`
-	FixedProb       bool   `desc:"fixed probability for each trial group"`
-	NIters          int    `desc:"number of iterations to run"`
-	BlocksPerIter   int    `desc:"number of blocks (1 block = one behavioral trial = sequence of CS, US) in each iteration -- needs to be higher if there are stochastic variables (probabilities)."`
-	PermuteTrialGps bool   `desc:"permute list of fully-instantiated trials after generation"`
-	SaveFinalWts    bool   `desc:"save final weights after training"`
-	SaveWtsInterval int    `desc:"how frequently to save weights during training (in blocks)"`
-	TestInterval    int    `desc:"how frequently (blocks) to run a test during training"`
-	LogTrials       bool   `desc:"should trial-level data be saved to log files?"`
-	LoadWeights     bool   `desc:"load initial weights from a file (specified in weights_file)"`
-	WeightsFile     string `desc:"full relative path (from project) of weights file to load -- use CRR: prefix to load from cluster run results directory"`
-	LoadStBlk       int    `desc:"after loading weights, reset block counter to this value (-1 = leave at value from the loaded weights)"`
-	LrsStepBlks     int    `desc:"learning rate schedule blocks per step of decrease in learning rate"`
-	LrsNSteps       int    `desc:"number of steps in the learning rate schedule"`
-	LrsBumpStep     int    `desc:"if positive (3 is typical), then bump up the learning rate at this step in the schedule -- can help improve final performance level"`
+
+	// identifier for this type of configuration
+	Nm string `desc:"identifier for this type of configuration"`
+
+	// description of this configuration
+	Desc string `desc:"description of this configuration"`
+
+	// trial group name
+	TrialBlkNm string `desc:"trial group name"`
+
+	// fixed probability for each trial group
+	FixedProb bool `desc:"fixed probability for each trial group"`
+
+	// number of iterations to run
+	NIters int `desc:"number of iterations to run"`
+
+	// number of blocks (1 block = one behavioral trial = sequence of CS, US) in each iteration -- needs to be higher if there are stochastic variables (probabilities).
+	BlocksPerIter int `desc:"number of blocks (1 block = one behavioral trial = sequence of CS, US) in each iteration -- needs to be higher if there are stochastic variables (probabilities)."`
+
+	// permute list of fully-instantiated trials after generation
+	PermuteTrialGps bool `desc:"permute list of fully-instantiated trials after generation"`
+
+	// save final weights after training
+	SaveFinalWts bool `desc:"save final weights after training"`
+
+	// how frequently to save weights during training (in blocks)
+	SaveWtsInterval int `desc:"how frequently to save weights during training (in blocks)"`
+
+	// how frequently (blocks) to run a test during training
+	TestInterval int `desc:"how frequently (blocks) to run a test during training"`
+
+	// should trial-level data be saved to log files?
+	LogTrials bool `desc:"should trial-level data be saved to log files?"`
+
+	// load initial weights from a file (specified in weights_file)
+	LoadWeights bool `desc:"load initial weights from a file (specified in weights_file)"`
+
+	// full relative path (from project) of weights file to load -- use CRR: prefix to load from cluster run results directory
+	WeightsFile string `desc:"full relative path (from project) of weights file to load -- use CRR: prefix to load from cluster run results directory"`
+
+	// after loading weights, reset block counter to this value (-1 = leave at value from the loaded weights)
+	LoadStBlk int `desc:"after loading weights, reset block counter to this value (-1 = leave at value from the loaded weights)"`
+
+	// learning rate schedule blocks per step of decrease in learning rate
+	LrsStepBlks int `desc:"learning rate schedule blocks per step of decrease in learning rate"`
+
+	// number of steps in the learning rate schedule
+	LrsNSteps int `desc:"number of steps in the learning rate schedule"`
+
+	// if positive (3 is typical), then bump up the learning rate at this step in the schedule -- can help improve final performance level
+	LrsBumpStep int `desc:"if positive (3 is typical), then bump up the learning rate at this step in the schedule -- can help improve final performance level"`
 }
 type ConditionParamsMap map[string]ConditionParams
 

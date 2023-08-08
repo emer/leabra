@@ -18,6 +18,8 @@ import (
 // Use TDRewPredPrjn for DA modulated learning.
 type TDRewPredLayer struct {
 	leabra.Layer
+
+	// dopamine value for this layer
 	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
@@ -48,8 +50,12 @@ func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
 
 // TDRewIntegParams are params for reward integrator layer
 type TDRewIntegParams struct {
+
+	// discount factor -- how much to discount the future prediction from RewPred
 	Discount float32 `desc:"discount factor -- how much to discount the future prediction from RewPred"`
-	RewPred  string  `desc:"name of TDRewPredLayer to get reward prediction from "`
+
+	// name of TDRewPredLayer to get reward prediction from
+	RewPred string `desc:"name of TDRewPredLayer to get reward prediction from "`
 }
 
 func (tp *TDRewIntegParams) Defaults() {
@@ -66,8 +72,12 @@ func (tp *TDRewIntegParams) Defaults() {
 // and directly accesses values from RewPred layer.
 type TDRewIntegLayer struct {
 	leabra.Layer
+
+	// parameters for reward integration
 	RewInteg TDRewIntegParams `desc:"parameters for reward integration"`
-	DA       float32          `desc:"dopamine value for this layer"`
+
+	// dopamine value for this layer
+	DA float32 `desc:"dopamine value for this layer"`
 }
 
 var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, leabra.LayerProps)
@@ -128,9 +138,15 @@ func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
 // between the TDRewIntegLayer activations in the minus and plus phase.
 type TDDaLayer struct {
 	leabra.Layer
-	SendDA   SendDA  `desc:"list of layers to send dopamine to"`
-	RewInteg string  `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
-	DA       float32 `desc:"dopamine value for this layer"`
+
+	// list of layers to send dopamine to
+	SendDA SendDA `desc:"list of layers to send dopamine to"`
+
+	// name of TDRewIntegLayer from which this computes the temporal derivative
+	RewInteg string `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
+
+	// dopamine value for this layer
+	DA float32 `desc:"dopamine value for this layer"`
 }
 
 var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)

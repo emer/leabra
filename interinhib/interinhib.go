@@ -8,12 +8,13 @@ which can be added to Layer types.  Call at the start of the
 Layer InhibFmGeAct method like this:
 
 // InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) InhibFmGeAct(ltime *Time) {
-	lpl := &ly.Pools[0]
-	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.InterInhib.Inhib(&ly.Layer) // does inter-layer inhibition
-	ly.PoolInhibFmGeAct(ltime)
-}
+
+	func (ly *Layer) InhibFmGeAct(ltime *Time) {
+		lpl := &ly.Pools[0]
+		ly.Inhib.Layer.Inhib(&lpl.Inhib)
+		ly.InterInhib.Inhib(&ly.Layer) // does inter-layer inhibition
+		ly.PoolInhibFmGeAct(ltime)
+	}
 */
 package interinhib
 
@@ -27,9 +28,15 @@ import (
 // the receiving layer either does a Max or Add of portion of
 // inhibition from other layer(s).
 type InterInhib struct {
+
+	// layers to receive inhibition from
 	Lays emer.LayNames `desc:"layers to receive inhibition from"`
-	Gi   float32       `desc:"multiplier on Gi from other layers"`
-	Add  bool          `desc:"add inhibition -- otherwise Max"`
+
+	// multiplier on Gi from other layers
+	Gi float32 `desc:"multiplier on Gi from other layers"`
+
+	// add inhibition -- otherwise Max
+	Add bool `desc:"add inhibition -- otherwise Max"`
 }
 
 func (il *InterInhib) Defaults() {

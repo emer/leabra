@@ -6,15 +6,16 @@ package pvlv
 
 import (
 	"fmt"
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/kit"
 	"math"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/emer/etable/etensor"
+	"github.com/goki/ki/kit"
 )
 
-//var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")
+// var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")
 var CtxRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_?([ABCDEFUVWXYZ]?)")
 
 // Stim : conditioned stimuli
@@ -438,12 +439,13 @@ func (us US) Tensor() etensor.Tensor {
 	return Tensor(us)
 }
 
-//func (pos PosUS) TensorScaled(scale float32) etensor.Tensor {
-//	return TensorScaled(pos, 1.0 / scale)
-//}
-//func (neg NegUS) TensorScaled(scale float32) etensor.Tensor {
-//	return TensorScaled(neg, 1.0 / scale)
-//}
+//	func (pos PosUS) TensorScaled(scale float32) etensor.Tensor {
+//		return TensorScaled(pos, 1.0 / scale)
+//	}
+//
+//	func (neg NegUS) TensorScaled(scale float32) etensor.Tensor {
+//		return TensorScaled(neg, 1.0 / scale)
+//	}
 func (us US) TensorScaled(scale float32) etensor.Tensor {
 	return TensorScaled(us, 1.0/scale)
 }
@@ -529,10 +531,18 @@ var KiT_Tick = kit.Enums.AddEnum(TickN+1, kit.NotBitFlag, nil)
 var USTimeInShape = []int{16, 2, 4, 5}
 
 type USTimeState struct {
-	Stm Stim    `desc:"CS value"`
-	US  US      `desc:"a US value or absent (USNone)"`
+
+	// CS value
+	Stm Stim `desc:"CS value"`
+
+	// a US value or absent (USNone)
+	US US `desc:"a US value or absent (USNone)"`
+
+	// PV d, POS, NEG, or absent (ValNone)
 	Val Valence `desc:"PV d, POS, NEG, or absent (ValNone)"`
-	Tck Tick    `desc:"Within-trial timestep"`
+
+	// Within-trial timestep
+	Tck Tick `desc:"Within-trial timestep"`
 }
 type PackedUSTimeState int64
 

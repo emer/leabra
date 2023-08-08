@@ -73,8 +73,12 @@ func (sd *SendDA) AddAllBut(net emer.Network, excl ...string) {
 // ClampDaLayer is an Input layer that just sends its activity as the dopamine signal
 type ClampDaLayer struct {
 	leabra.Layer
-	SendDA SendDA  `desc:"list of layers to send dopamine to"`
-	DA     float32 `desc:"dopamine value for this layer"`
+
+	// list of layers to send dopamine to
+	SendDA SendDA `desc:"list of layers to send dopamine to"`
+
+	// dopamine value for this layer
+	DA float32 `desc:"dopamine value for this layer"`
 }
 
 var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, leabra.LayerProps)

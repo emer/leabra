@@ -16,24 +16,48 @@ import (
 
 // Gain constants for inputs to the VTA
 type VTADAGains struct {
-	DA                float32 `desc:"overall multiplier for dopamine values"`
-	PPTg              float32 `desc:"gain on bursts from PPTg"`
-	LHb               float32 `desc:"gain on dips/bursts from LHbRMTg"`
-	PV                float32 `desc:"gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)"`
-	PVIBurstShunt     float32 `desc:"gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)"`
+
+	// overall multiplier for dopamine values
+	DA float32 `desc:"overall multiplier for dopamine values"`
+
+	// gain on bursts from PPTg
+	PPTg float32 `desc:"gain on bursts from PPTg"`
+
+	// gain on dips/bursts from LHbRMTg
+	LHb float32 `desc:"gain on dips/bursts from LHbRMTg"`
+
+	// gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)
+	PV float32 `desc:"gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)"`
+
+	// gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)
+	PVIBurstShunt float32 `desc:"gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)"`
+
+	// gain on VSPatch projection that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)
 	PVIAntiBurstShunt float32 `desc:"gain on VSPatch projection that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)"`
-	PVIDipShunt       float32 `desc:"gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial"`
-	PVIAntiDipShunt   float32 `desc:"gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)"`
+
+	// gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial
+	PVIDipShunt float32 `desc:"gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial"`
+
+	// gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)
+	PVIAntiDipShunt float32 `desc:"gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)"`
 }
 
 // VTA internal state
 type VTALayer struct {
 	rl.ClampDaLayer
-	SendVal       float32
-	Valence       Valence    `desc:"VTA layer DA valence, positive or negative"`
-	TonicDA       float32    `desc:"set a tonic 'dopamine' (DA) level (offset to add to da values)"`
-	DAGains       VTADAGains `view:"inline" desc:"gains for various VTA inputs"`
-	RecvFrom      map[string]emer.Layer
+	SendVal float32
+
+	// VTA layer DA valence, positive or negative
+	Valence Valence `desc:"VTA layer DA valence, positive or negative"`
+
+	// set a tonic 'dopamine' (DA) level (offset to add to da values)
+	TonicDA float32 `desc:"set a tonic 'dopamine' (DA) level (offset to add to da values)"`
+
+	// [view: inline] gains for various VTA inputs
+	DAGains  VTADAGains `view:"inline" desc:"gains for various VTA inputs"`
+	RecvFrom map[string]emer.Layer
+
+	// input values--for debugging only
 	InternalState VTAState `desc:"input values--for debugging only"`
 }
 

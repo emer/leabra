@@ -6,10 +6,18 @@ package pbwm
 
 // PFC dynamic behavior element -- defines the dynamic behavior of deep layer PFC units
 type PFCDyn struct {
-	Init     float32 `desc:"initial value at point when gating starts -- MUST be > 0 when used."`
-	RiseTau  float32 `desc:"time constant for linear rise in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first"`
+
+	// initial value at point when gating starts -- MUST be > 0 when used.
+	Init float32 `desc:"initial value at point when gating starts -- MUST be > 0 when used."`
+
+	// time constant for linear rise in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first
+	RiseTau float32 `desc:"time constant for linear rise in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first"`
+
+	// time constant for linear decay in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first
 	DecayTau float32 `desc:"time constant for linear decay in maintenance activation (per quarter when deep is updated) -- use integers -- if both rise and decay then rise comes first"`
-	Desc     string  `desc:"description of this factor"`
+
+	// description of this factor
+	Desc string `desc:"description of this factor"`
 }
 
 func (pd *PFCDyn) Defaults() {

@@ -16,22 +16,46 @@ import (
 
 // Gain constants for LHbRMTg inputs
 type LHbRMTgGains struct {
-	All                float32 `desc:"final overall gain on everything"`
-	VSPatchPosD1       float32 `desc:"patch D1 APPETITIVE pathway - versus pos PV outcomes"`
-	VSPatchPosD2       float32 `desc:"patch D2 APPETITIVE pathway versus vspatch_pos_D1"`
+
+	// final overall gain on everything
+	All float32 `desc:"final overall gain on everything"`
+
+	// patch D1 APPETITIVE pathway - versus pos PV outcomes
+	VSPatchPosD1 float32 `desc:"patch D1 APPETITIVE pathway - versus pos PV outcomes"`
+
+	// patch D2 APPETITIVE pathway versus vspatch_pos_D1
+	VSPatchPosD2 float32 `desc:"patch D2 APPETITIVE pathway versus vspatch_pos_D1"`
+
+	// proportion of positive reward prediction error (RPE) to use if RPE results from a predicted omission of positive
 	VSPatchPosDisinhib float32 `desc:"proportion of positive reward prediction error (RPE) to use if RPE results from a predicted omission of positive"`
-	VSMatrixPosD1      float32 `desc:"gain on VS matrix D1 APPETITIVE guys"`
-	VSMatrixPosD2      float32 `desc:"VS matrix D2 APPETITIVE"`
-	VSPatchNegD1       float32 `desc:"VS patch D1 pathway versus neg PV outcomes"`
-	VSPatchNegD2       float32 `desc:"VS patch D2 pathway versus vspatch_neg_D1"`
-	VSMatrixNegD1      float32 `desc:"VS matrix D1 AVERSIVE"`
-	VSMatrixNegD2      float32 `desc:"VS matrix D2 AVERSIVE"`
+
+	// gain on VS matrix D1 APPETITIVE guys
+	VSMatrixPosD1 float32 `desc:"gain on VS matrix D1 APPETITIVE guys"`
+
+	// VS matrix D2 APPETITIVE
+	VSMatrixPosD2 float32 `desc:"VS matrix D2 APPETITIVE"`
+
+	// VS patch D1 pathway versus neg PV outcomes
+	VSPatchNegD1 float32 `desc:"VS patch D1 pathway versus neg PV outcomes"`
+
+	// VS patch D2 pathway versus vspatch_neg_D1
+	VSPatchNegD2 float32 `desc:"VS patch D2 pathway versus vspatch_neg_D1"`
+
+	// VS matrix D1 AVERSIVE
+	VSMatrixNegD1 float32 `desc:"VS matrix D1 AVERSIVE"`
+
+	// VS matrix D2 AVERSIVE
+	VSMatrixNegD2 float32 `desc:"VS matrix D2 AVERSIVE"`
 }
 
 type LHbRMTgLayer struct {
 	leabra.Layer
-	RcvFrom       emer.LayNames
-	Gains         LHbRMTgGains         `view:"inline"`
+	RcvFrom emer.LayNames
+
+	// [view: inline]
+	Gains LHbRMTgGains `view:"inline"`
+
+	// reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes
 	PVNegDiscount float32              `desc:"reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes"`
 	InternalState LHBRMTgInternalState // for debugging
 }

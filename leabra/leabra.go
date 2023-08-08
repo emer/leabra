@@ -34,6 +34,12 @@ type LeabraNetwork interface {
 	// to all the basic stuff
 	AsLeabra() *Network
 
+	// NewLayer creates a new concrete layer of appropriate type for this network
+	NewLayer() emer.Layer
+
+	// NewPrjn creates a new concrete projection of appropriate type for this network
+	NewPrjn() emer.Prjn
+
 	// AlphaCycInit handles all initialization at start of new input pattern.
 	// Should already have presented the external input to the network at this point.
 	// If updtActAvg is true, this includes updating the running-average

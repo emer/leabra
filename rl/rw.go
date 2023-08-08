@@ -21,8 +21,12 @@ import (
 // Use with RWPrjn which does simple delta-rule learning on minus-plus.
 type RWPredLayer struct {
 	leabra.Layer
+
+	// default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance
 	PredRange minmax.F32 `desc:"default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance"`
-	DA        float32    `inactive:"+" desc:"dopamine value for this layer"`
+
+	// dopamine value for this layer
+	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, leabra.LayerProps)
@@ -59,10 +63,18 @@ func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 // RWPred prediction is also accessed directly from Rew layer to avoid any issues.
 type RWDaLayer struct {
 	leabra.Layer
-	SendDA    SendDA  `desc:"list of layers to send dopamine to"`
-	RewLay    string  `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
-	RWPredLay string  `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
-	DA        float32 `inactive:"+" desc:"dopamine value for this layer"`
+
+	// list of layers to send dopamine to
+	SendDA SendDA `desc:"list of layers to send dopamine to"`
+
+	// name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed
+	RewLay string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
+
+	// name of RWPredLayer layer that is subtracted from the reward value
+	RWPredLay string `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
+
+	// dopamine value for this layer
+	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 
 var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, leabra.LayerProps)
@@ -153,6 +165,8 @@ func (ly *RWDaLayer) CyclePost(ltime *leabra.Time) {
 // Has no weight bounds or limits on sign etc.
 type RWPrjn struct {
 	leabra.Prjn
+
+	// tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal
 	DaTol float32 `desc:"tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal"`
 }
 

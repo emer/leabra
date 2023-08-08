@@ -74,86 +74,221 @@ const LogPrec = 4
 // selected to apply on top of that
 
 type Sim struct {
-	RunParamsNm       string                `inactive:"+" desc:"Name of the current run. Use menu above to set"`
-	RunParams         *data.RunParams       `desc:"For sequences of conditions"`
-	ConditionParamsNm string                `inactive:"+" desc:"name of current ConditionParams"`
-	ConditionParams   *data.ConditionParams `desc:"pointer to current ConditionParams"`
-	Tag               string                `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Params            params.Sets           `view:"no-inline" desc:"pvlv-specific network parameters"`
-	ParamSet          string
+
+	// Name of the current run. Use menu above to set
+	RunParamsNm string `inactive:"+" desc:"Name of the current run. Use menu above to set"`
+
+	// For sequences of conditions
+	RunParams *data.RunParams `desc:"For sequences of conditions"`
+
+	// name of current ConditionParams
+	ConditionParamsNm string `inactive:"+" desc:"name of current ConditionParams"`
+
+	// pointer to current ConditionParams
+	ConditionParams *data.ConditionParams `desc:"pointer to current ConditionParams"`
+
+	// extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)
+	Tag string `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+
+	// [view: no-inline] pvlv-specific network parameters
+	Params   params.Sets `view:"no-inline" desc:"pvlv-specific network parameters"`
+	ParamSet string
 	//StableParams                 params.Set        `view:"no-inline" desc:"shouldn't need to change these'"`
 	//MiscParams                   params.Set        `view:"no-inline" desc:"misc params -- network specs"`
-	//AnalysisParams               params.Set        `view:"no-inline" desc:"??"`
-	Env PVLVEnv `desc:"environment -- PVLV environment"`
-	//TestEnv                      PVLVEnv           `desc:"Testing environment -- PVLV environment"`
-	devMenuSetup                 bool              `view:"-" desc:"stepping menu layout. Default is one button, true means original \"wide\" setup"`
-	StepsToRun                   int               `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
-	nStepsBox                    *gi.SpinBox       `view:"-"`
-	OrigSteps                    int               `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
-	StepGrain                    StepGrain         `view:"-" desc:"granularity for the Step command"`
-	StopStepCondition            StopStepCond      `desc:"granularity for conditional stop"`
-	StopConditionTrialNameString string            `desc:"if StopStepCond is TrialName or NotTrialName, this string is used for matching the current AlphaTrialName"`
-	StopStepCounter              env.Ctr           `inactive:"+" view:"-" desc:"number of times we've hit whatever StopStepGrain is set to'"`
-	StepMode                     bool              `view:"-" desc:"running from Step command?"`
-	TestMode                     bool              `inactive:"+" desc:"testing mode, no training"`
-	CycleLogUpdt                 leabra.TimeScales `desc:"time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented"`
-	NetTimesCycleQtr             bool              `desc:"turn this OFF to see cycle-level updating"`
-	TrialAnalysisTimeLogInterval int
-	TrialAnalUpdateCmpGraphs     bool                `desc:"turn off to preserve existing cmp graphs - else saves cur as cmp for new run"`
-	Net                          *pvlv.Network       `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	CycleOutputDataRows          int                 `desc:"maximum number of rows for CycleOutputData"`
-	CycleOutputData              *etable.Table       `view:"no-inline" desc:"Cycle-level output data"`
-	CycleDataPlot                *eplot.Plot2D       `view:"no-inline" desc:"Fine-grained trace data"`
-	CycleOutputMetadata          map[string][]string `view:"-"`
-	TimeLogBlock                 int                 `desc:"current block within current run phase"`
-	TimeLogBlockAll              int                 `desc:"current block across all phases of the run"`
-	Time                         leabra.Time         `desc:"leabra timing parameters and state"`
-	ViewOn                       bool                `desc:"whether to update the network view while running"`
-	TrainUpdt                    leabra.TimeScales   `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
-	TestUpdt                     leabra.TimeScales   `desc:"at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model"`
-	TstRecLays                   []string            `view:"-" desc:"names of layers to record activations etc of during testing"`
-	ContextModel                 ContextModel        `desc:"how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded"`
-	// internal state - view:"-"
-	Win                       *gi.Window                  `view:"-" desc:"main GUI window"`
-	NetView                   *netview.NetView            `view:"-" desc:"the network viewer"`
-	ToolBar                   *gi.ToolBar                 `view:"-" desc:"the master toolbar"`
-	WtsGrid                   *etview.TensorGrid          `view:"-" desc:"the weights grid view"`
-	TrialTypeData             *etable.Table               `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeBlockFirstLog    *etable.Table               `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeBlockFirstLogCmp *etable.Table               `view:"no-inline" desc:"data for the TrialTypeData plot"`
-	TrialTypeDataPlot         *eplot.Plot2D               `view:"no-inline" desc:"multiple views for different type of trials"`
-	TrialTypeDataPerBlock     bool                        `desc:"clear the TrialTypeData plot between parts of a run"`
-	TrialTypeSet              map[string]int              `view:"-"`
-	GlobalTrialTypeSet        map[string]int              `view:"-"`
-	TrialTypeBlockFirst       *eplot.Plot2D               `view:"-" desc:"block plot"`
-	TrialTypeBlockFirstCmp    *eplot.Plot2D               `view:"-" desc:"block plot"`
-	HistoryGraph              *eplot.Plot2D               `view:"-" desc:"trial history"`
-	RealTimeData              *eplot.Plot2D               `view:"-" desc:"??"`
-	SaveWts                   bool                        `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
-	NoGui                     bool                        `view:"-" desc:"if true, runing in no GUI mode"`
-	RndSeed                   int64                       `desc:"the current random seed"`
-	Stepper                   *stepper.Stepper            `view:"-"`
-	SimHasRun                 bool                        `view:"-"`
-	IsRunning                 bool                        `view:"-"`
-	InitHasRun                bool                        `view:"-"`
-	VerboseInit               bool                        `view:"-"`
-	LayerThreads              bool                        `desc:"use per-layer threads"`
-	TrialTypeBlockFirstLogged map[string]bool             `view:"-"`
-	RunPlot                   *eplot.Plot2D               `view:"-" desc:"the run plot"`
-	TrnEpcFile                *os.File                    `view:"-" desc:"log file"`
-	RunFile                   *os.File                    `view:"-" desc:"log file"`
-	ValsTsrs                  map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
-	LogSetParams              bool                        `view:"-" desc:"if true, print message for all params that are set"`
-	Interactive               bool                        `view:"-" desc:"true iff running through the GUI"`
-	StructView                *giv.StructView             `view:"-" desc:"structure view for this struct"`
-	InputShapes               map[string][]int            `view:"-"`
 
-	// master lists of various kinds of parameters
-	MasterRunParams        data.RunParamsMap       `view:"no-inline" desc:"master list of RunParams records"`
-	MasterConditionParams  data.ConditionParamsMap `view:"no-inline" desc:"master list of ConditionParams records"`
-	MasterTrialBlockParams data.TrialBlockMap      `desc:"master list of BlockParams (sets of trial groups) records"`
-	MaxConditions          int                     `view:"-" desc:"maximum number of conditions to run through"` // for non-GUI runs
-	simOneTimeInit         sync.Once
+	// environment -- PVLV environment
+	Env PVLVEnv `desc:"environment -- PVLV environment"`
+
+	// [view: -] stepping menu layout. Default is one button, true means original "wide" setup
+	devMenuSetup bool `view:"-" desc:"stepping menu layout. Default is one button, true means original \"wide\" setup"`
+
+	// [view: -] number of StopStepGrain steps to execute before stopping
+	StepsToRun int `view:"-" desc:"number of StopStepGrain steps to execute before stopping"`
+
+	// [view: -]
+	nStepsBox *gi.SpinBox `view:"-"`
+
+	// [view: -] saved number of StopStepGrain steps to execute before stopping
+	OrigSteps int `view:"-" desc:"saved number of StopStepGrain steps to execute before stopping"`
+
+	// [view: -] granularity for the Step command
+	StepGrain StepGrain `view:"-" desc:"granularity for the Step command"`
+
+	// granularity for conditional stop
+	StopStepCondition StopStepCond `desc:"granularity for conditional stop"`
+
+	// if StopStepCond is TrialName or NotTrialName, this string is used for matching the current AlphaTrialName
+	StopConditionTrialNameString string `desc:"if StopStepCond is TrialName or NotTrialName, this string is used for matching the current AlphaTrialName"`
+
+	// [view: -] number of times we've hit whatever StopStepGrain is set to'
+	StopStepCounter env.Ctr `inactive:"+" view:"-" desc:"number of times we've hit whatever StopStepGrain is set to'"`
+
+	// [view: -] running from Step command?
+	StepMode bool `view:"-" desc:"running from Step command?"`
+
+	// testing mode, no training
+	TestMode bool `inactive:"+" desc:"testing mode, no training"`
+
+	// time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented
+	CycleLogUpdt leabra.TimeScales `desc:"time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented"`
+
+	// turn this OFF to see cycle-level updating
+	NetTimesCycleQtr             bool `desc:"turn this OFF to see cycle-level updating"`
+	TrialAnalysisTimeLogInterval int
+
+	// turn off to preserve existing cmp graphs - else saves cur as cmp for new run
+	TrialAnalUpdateCmpGraphs bool `desc:"turn off to preserve existing cmp graphs - else saves cur as cmp for new run"`
+
+	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
+	Net *pvlv.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+
+	// maximum number of rows for CycleOutputData
+	CycleOutputDataRows int `desc:"maximum number of rows for CycleOutputData"`
+
+	// [view: no-inline] Cycle-level output data
+	CycleOutputData *etable.Table `view:"no-inline" desc:"Cycle-level output data"`
+
+	// [view: no-inline] Fine-grained trace data
+	CycleDataPlot *eplot.Plot2D `view:"no-inline" desc:"Fine-grained trace data"`
+
+	// [view: -]
+	CycleOutputMetadata map[string][]string `view:"-"`
+
+	// current block within current run phase
+	TimeLogBlock int `desc:"current block within current run phase"`
+
+	// current block across all phases of the run
+	TimeLogBlockAll int `desc:"current block across all phases of the run"`
+
+	// leabra timing parameters and state
+	Time leabra.Time `desc:"leabra timing parameters and state"`
+
+	// whether to update the network view while running
+	ViewOn bool `desc:"whether to update the network view while running"`
+
+	// at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model
+	TrainUpdt leabra.TimeScales `desc:"at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model"`
+
+	// at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model
+	TestUpdt leabra.TimeScales `desc:"at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model"`
+
+	// [view: -] names of layers to record activations etc of during testing
+	TstRecLays []string `view:"-" desc:"names of layers to record activations etc of during testing"`
+
+	// how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded
+	ContextModel ContextModel `desc:"how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded"`
+
+	// [view: -] main GUI window
+	Win *gi.Window `view:"-" desc:"main GUI window"`
+
+	// [view: -] the network viewer
+	NetView *netview.NetView `view:"-" desc:"the network viewer"`
+
+	// [view: -] the master toolbar
+	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
+
+	// [view: -] the weights grid view
+	WtsGrid *etview.TensorGrid `view:"-" desc:"the weights grid view"`
+
+	// [view: no-inline] data for the TrialTypeData plot
+	TrialTypeData *etable.Table `view:"no-inline" desc:"data for the TrialTypeData plot"`
+
+	// [view: no-inline] data for the TrialTypeData plot
+	TrialTypeBlockFirstLog *etable.Table `view:"no-inline" desc:"data for the TrialTypeData plot"`
+
+	// [view: no-inline] data for the TrialTypeData plot
+	TrialTypeBlockFirstLogCmp *etable.Table `view:"no-inline" desc:"data for the TrialTypeData plot"`
+
+	// [view: no-inline] multiple views for different type of trials
+	TrialTypeDataPlot *eplot.Plot2D `view:"no-inline" desc:"multiple views for different type of trials"`
+
+	// clear the TrialTypeData plot between parts of a run
+	TrialTypeDataPerBlock bool `desc:"clear the TrialTypeData plot between parts of a run"`
+
+	// [view: -]
+	TrialTypeSet map[string]int `view:"-"`
+
+	// [view: -]
+	GlobalTrialTypeSet map[string]int `view:"-"`
+
+	// [view: -] block plot
+	TrialTypeBlockFirst *eplot.Plot2D `view:"-" desc:"block plot"`
+
+	// [view: -] block plot
+	TrialTypeBlockFirstCmp *eplot.Plot2D `view:"-" desc:"block plot"`
+
+	// [view: -] trial history
+	HistoryGraph *eplot.Plot2D `view:"-" desc:"trial history"`
+
+	// [view: -] ??
+	RealTimeData *eplot.Plot2D `view:"-" desc:"??"`
+
+	// [view: -] for command-line run only, auto-save final weights after each run
+	SaveWts bool `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+
+	// [view: -] if true, runing in no GUI mode
+	NoGui bool `view:"-" desc:"if true, runing in no GUI mode"`
+
+	// the current random seed
+	RndSeed int64 `desc:"the current random seed"`
+
+	// [view: -]
+	Stepper *stepper.Stepper `view:"-"`
+
+	// [view: -]
+	SimHasRun bool `view:"-"`
+
+	// [view: -]
+	IsRunning bool `view:"-"`
+
+	// [view: -]
+	InitHasRun bool `view:"-"`
+
+	// [view: -]
+	VerboseInit bool `view:"-"`
+
+	// use per-layer threads
+	LayerThreads bool `desc:"use per-layer threads"`
+
+	// [view: -]
+	TrialTypeBlockFirstLogged map[string]bool `view:"-"`
+
+	// [view: -] the run plot
+	RunPlot *eplot.Plot2D `view:"-" desc:"the run plot"`
+
+	// [view: -] log file
+	TrnEpcFile *os.File `view:"-" desc:"log file"`
+
+	// [view: -] log file
+	RunFile *os.File `view:"-" desc:"log file"`
+
+	// [view: -] for holding layer values
+	ValsTsrs map[string]*etensor.Float32 `view:"-" desc:"for holding layer values"`
+
+	// [view: -] if true, print message for all params that are set
+	LogSetParams bool `view:"-" desc:"if true, print message for all params that are set"`
+
+	// [view: -] true iff running through the GUI
+	Interactive bool `view:"-" desc:"true iff running through the GUI"`
+
+	// [view: -] structure view for this struct
+	StructView *giv.StructView `view:"-" desc:"structure view for this struct"`
+
+	// [view: -]
+	InputShapes map[string][]int `view:"-"`
+
+	// [view: no-inline] master list of RunParams records
+	MasterRunParams data.RunParamsMap `view:"no-inline" desc:"master list of RunParams records"`
+
+	// [view: no-inline] master list of ConditionParams records
+	MasterConditionParams data.ConditionParamsMap `view:"no-inline" desc:"master list of ConditionParams records"`
+
+	// master list of BlockParams (sets of trial groups) records
+	MasterTrialBlockParams data.TrialBlockMap `desc:"master list of BlockParams (sets of trial groups) records"`
+
+	// [view: -] maximum number of conditions to run through
+	MaxConditions  int `view:"-" desc:"maximum number of conditions to run through"`
+	simOneTimeInit sync.Once
 }
 
 // this registers this Sim Type and gives it properties that e.g.,
@@ -273,7 +408,7 @@ const (
 	StopStepCondN
 )
 
-////go:generate stringer -type=StopStepCond -linecomment // moved to stringers.go
+// //go:generate stringer -type=StopStepCond -linecomment // moved to stringers.go
 var KiT_StopStepCond = kit.Enums.AddEnum(StopStepCondN, kit.NotBitFlag, nil)
 
 // Init restarts the run, and initializes everything, including network weights

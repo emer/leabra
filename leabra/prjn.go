@@ -24,14 +24,26 @@ import (
 // leabra.Prjn is a basic Leabra projection with synaptic learning parameters
 type Prjn struct {
 	PrjnStru
-	WtInit  WtInitParams   `view:"inline" desc:"initial random weight distribution"`
-	WtScale WtScaleParams  `view:"inline" desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
-	Learn   LearnSynParams `view:"add-fields" desc:"synaptic-level learning parameters"`
-	Syns    []Synapse      `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 
-	// misc state variables below:
-	GScale float32         `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
-	GInc   []float32       `desc:"local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe"`
+	// [view: inline] initial random weight distribution
+	WtInit WtInitParams `view:"inline" desc:"initial random weight distribution"`
+
+	// [view: inline] weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors
+	WtScale WtScaleParams `view:"inline" desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
+
+	// [view: add-fields] synaptic-level learning parameters
+	Learn LearnSynParams `view:"add-fields" desc:"synaptic-level learning parameters"`
+
+	// synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	Syns []Synapse `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+
+	// scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels
+	GScale float32 `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
+
+	// local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe
+	GInc []float32 `desc:"local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe"`
+
+	// weight balance state variables for this projection, one per recv neuron
 	WbRecv []WtBalRecvPrjn `desc:"weight balance state variables for this projection, one per recv neuron"`
 }
 
@@ -679,10 +691,18 @@ func (pj *Prjn) LrateMult(mult float32) {
 // WtBalRecvPrjn are state variables used in computing the WtBal weight balance function
 // There is one of these for each Recv Neuron participating in the projection.
 type WtBalRecvPrjn struct {
-	Avg  float32 `desc:"average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn"`
+
+	// average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn
+	Avg float32 `desc:"average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn"`
+
+	// overall weight balance factor that drives changes in WbInc vs. WbDec via a sigmoidal function -- this is the net strength of weight balance changes
 	Fact float32 `desc:"overall weight balance factor that drives changes in WbInc vs. WbDec via a sigmoidal function -- this is the net strength of weight balance changes"`
-	Inc  float32 `desc:"weight balance increment factor -- extra multiplier to add to weight increases to maintain overall weight balance"`
-	Dec  float32 `desc:"weight balance decrement factor -- extra multiplier to add to weight decreases to maintain overall weight balance"`
+
+	// weight balance increment factor -- extra multiplier to add to weight increases to maintain overall weight balance
+	Inc float32 `desc:"weight balance increment factor -- extra multiplier to add to weight increases to maintain overall weight balance"`
+
+	// weight balance decrement factor -- extra multiplier to add to weight decreases to maintain overall weight balance
+	Dec float32 `desc:"weight balance decrement factor -- extra multiplier to add to weight decreases to maintain overall weight balance"`
 }
 
 func (wb *WtBalRecvPrjn) Init() {

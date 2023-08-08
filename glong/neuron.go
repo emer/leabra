@@ -45,14 +45,30 @@ func init() {
 
 // Neuron holds the extra neuron (unit) level variables for glong computation.
 type Neuron struct {
+
+	// Maximum activation over Alpha cycle period
 	AlphaMax float32 `desc:"Maximum activation over Alpha cycle period"`
-	VmEff    float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
-	Gnmda    float32 `desc:"net NMDA conductance, after Vm gating and Gbar -- added directly to Ge as it has the same reversal potential."`
-	NMDA     float32 `desc:"NMDA channel activation -- underlying time-integrated value with decay"`
-	NMDASyn  float32 `desc:"synaptic NMDA activation directly from projection(s)"`
-	GgabaB   float32 `desc:"net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential."`
-	GABAB    float32 `desc:"GABA-B / GIRK activation -- time-integrated value with rise and decay time constants"`
-	GABABx   float32 `desc:"GABA-B / GIRK internal drive variable -- gets the raw activation and decays"`
+
+	// Effective membrane potential, including simulated backpropagating action potential contribution from activity level.
+	VmEff float32 `desc:"Effective membrane potential, including simulated backpropagating action potential contribution from activity level."`
+
+	// net NMDA conductance, after Vm gating and Gbar -- added directly to Ge as it has the same reversal potential.
+	Gnmda float32 `desc:"net NMDA conductance, after Vm gating and Gbar -- added directly to Ge as it has the same reversal potential."`
+
+	// NMDA channel activation -- underlying time-integrated value with decay
+	NMDA float32 `desc:"NMDA channel activation -- underlying time-integrated value with decay"`
+
+	// synaptic NMDA activation directly from projection(s)
+	NMDASyn float32 `desc:"synaptic NMDA activation directly from projection(s)"`
+
+	// net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential.
+	GgabaB float32 `desc:"net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential."`
+
+	// GABA-B / GIRK activation -- time-integrated value with rise and decay time constants
+	GABAB float32 `desc:"GABA-B / GIRK activation -- time-integrated value with rise and decay time constants"`
+
+	// GABA-B / GIRK internal drive variable -- gets the raw activation and decays
+	GABABx float32 `desc:"GABA-B / GIRK internal drive variable -- gets the raw activation and decays"`
 }
 
 func (nrn *Neuron) VarNames() []string {

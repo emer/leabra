@@ -22,10 +22,18 @@ import (
 // and reward outcome layer.
 type CINLayer struct {
 	leabra.Layer
-	RewThr  float32       `desc:"threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior"`
+
+	// threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior
+	RewThr float32 `desc:"threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior"`
+
+	// Reward-representing layer(s) from which this computes ACh as Max absolute value
 	RewLays emer.LayNames `desc:"Reward-representing layer(s) from which this computes ACh as Max absolute value"`
-	SendACh rl.SendACh    `desc:"list of layers to send acetylcholine to"`
-	ACh     float32       `desc:"acetylcholine value for this layer"`
+
+	// list of layers to send acetylcholine to
+	SendACh rl.SendACh `desc:"list of layers to send acetylcholine to"`
+
+	// acetylcholine value for this layer
+	ACh float32 `desc:"acetylcholine value for this layer"`
 }
 
 var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)

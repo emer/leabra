@@ -16,8 +16,9 @@ Q4:   ECin -> CA1, ECin -> ECout (CA3 -> CA1 off, ECin -> CA1 on): ActP = plus p
 [ ------ minus ------- ][ -- plus -- ]
 [   auto-  ][ recall-  ][ -- plus -- ]
 
-  DG -> CA3 -> CA1
- /    /      /    \
+	 DG -> CA3 -> CA1
+	/    /      /    \
+
 [----ECin---] -> [ ECout ]
 
 minus phase: ECout unclamped, driven by CA1
@@ -29,7 +30,9 @@ CA3 -> CA1 = 0, ECin -> CA1 = 1
 (same as auto- -- training signal for CA3 -> CA1 is what EC would produce!
 
 ActQ1 = auto encoder minus phase state (in both CA1 and ECout
-        used in EcCa1Prjn as minus phase relative to ActP plus phase in CHL)
+
+	used in EcCa1Prjn as minus phase relative to ActP plus phase in CHL)
+
 ActM = recall minus phase (normal minus phase dynamics for CA3 recall learning)
 ActP = plus (serves as plus phase for both auto and recall)
 
@@ -38,6 +41,5 @@ the ActQ1, ActM, ActP variables to learn on the right signals
 
 todo: implement a two-trial version of the code to produce a true theta rhythm
 integrating over two adjacent alpha trials..
-
 */
 package hip

@@ -16,9 +16,15 @@ import (
 
 type MSNLayer struct {
 	ModLayer
+
+	// patch or matrix
 	Compartment StriatalCompartment `inactive:"+" desc:"patch or matrix"`
-	DIState     []DelInhState       `desc:"slice of delayed inhibition state for this layer."`
-	DIParams    DelayedInhibParams  `view:"no-inline add-fields"`
+
+	// slice of delayed inhibition state for this layer.
+	DIState []DelInhState `desc:"slice of delayed inhibition state for this layer."`
+
+	// [view: no-inline add-fields]
+	DIParams DelayedInhibParams `view:"no-inline add-fields"`
 }
 
 var KiT_MSNLayer = kit.Types.AddType(&MSNLayer{}, leabra.LayerProps)
@@ -37,6 +43,8 @@ func (ly *MSNLayer) AsMod() *ModLayer {
 
 // Parameters for Dorsal Striatum Medium Spiny Neuron computation
 type MSNParams struct {
+
+	// patch or matrix
 	Compartment StriatalCompartment `inactive:"+" desc:"patch or matrix"`
 }
 
@@ -52,21 +60,37 @@ var KiT_StriatalCompartment = kit.Enums.AddEnum(NSComp, kit.NotBitFlag, nil)
 
 // Delayed inhibition for matrix compartment layers
 type DelayedInhibParams struct {
-	Active bool    `desc:"add in a portion of inhibition from previous time period"`
-	PrvQ   float32 `desc:"proportion of per-unit net input on previous gamma-frequency quarter to add in as inhibition"`
+
+	// add in a portion of inhibition from previous time period
+	Active bool `desc:"add in a portion of inhibition from previous time period"`
+
+	// proportion of per-unit net input on previous gamma-frequency quarter to add in as inhibition
+	PrvQ float32 `desc:"proportion of per-unit net input on previous gamma-frequency quarter to add in as inhibition"`
+
+	// proportion of per-unit net input on previous trial to add in as inhibition
 	PrvTrl float32 `desc:"proportion of per-unit net input on previous trial to add in as inhibition"`
 }
 
 // Params for for trace-based learning
 type MSNTraceParams struct {
-	Deriv       bool    `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
-	Decay       float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+
+	// [def: true] use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
+	Deriv bool `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+
+	// [def: 1] [min: 0] multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes
+	Decay float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+
+	// learning rate scale factor, if
 	GateLRScale float32 `desc:"learning rate scale factor, if "`
 }
 
 // DelInhState contains extra variables for MSNLayer neurons -- stored separately
 type DelInhState struct {
-	GePrvQ   float32 `desc:"netin from previous quarter, used for delayed inhibition"`
+
+	// netin from previous quarter, used for delayed inhibition
+	GePrvQ float32 `desc:"netin from previous quarter, used for delayed inhibition"`
+
+	// netin from previous "trial" (alpha cycle), used for delayed inhibition
 	GePrvTrl float32 `desc:"netin from previous \"trial\" (alpha cycle), used for delayed inhibition"`
 }
 

@@ -17,11 +17,21 @@ import (
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
-	ThalLay   string  `desc:"name of VThal layer -- needed to get overall gating output action"`
-	ThalThr   float32 `def:"0.25" desc:"threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior"`
-	Deriv     bool    `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+
+	// name of VThal layer -- needed to get overall gating output action
+	ThalLay string `desc:"name of VThal layer -- needed to get overall gating output action"`
+
+	// [def: 0.25] threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior
+	ThalThr float32 `def:"0.25" desc:"threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior"`
+
+	// [def: true] use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
+	Deriv bool `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+
+	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
 	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
-	DipGain   float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+
+	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
+	DipGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 }
 
 func (mp *MatrixParams) Defaults() {
@@ -48,10 +58,18 @@ func (mp *MatrixParams) LrnFactor(act float32) float32 {
 // Go / NoGo gating units in BG.  D1R = Go, D2R = NoGo.
 type MatrixLayer struct {
 	Layer
-	DaR    DaReceptors  `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+
+	// dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo
+	DaR DaReceptors `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+
+	// [view: inline] matrix parameters
 	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
-	DALrn  float32      `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
-	ACh    float32      `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
+
+	// effective learning dopamine value for this layer: reflects DaR and Gains
+	DALrn float32 `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+
+	// acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning
+	ACh float32 `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
 }
 
 var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
@@ -240,8 +258,12 @@ func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
 // and subsequent activity, and is based biologically on synaptic tags.
 // Trace is reset at time of reward based on ACh level from CINs.
 type MatrixTraceParams struct {
-	CurTrlDA bool    `def:"true" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
-	Decay    float32 `def:"2" min:"0" desc:"multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
+
+	// [def: true] if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA
+	CurTrlDA bool `def:"true" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
+
+	// [def: 2] [min: 0] multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome.
+	Decay float32 `def:"2" min:"0" desc:"multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
 }
 
 func (tp *MatrixTraceParams) Defaults() {
@@ -256,8 +278,12 @@ func (tp *MatrixTraceParams) Defaults() {
 // in PBWM context
 type MatrixPrjn struct {
 	leabra.Prjn
-	Trace  MatrixTraceParams `view:"inline" desc:"special parameters for matrix trace learning"`
-	TrSyns []TraceSyn        `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+
+	// [view: inline] special parameters for matrix trace learning
+	Trace MatrixTraceParams `view:"inline" desc:"special parameters for matrix trace learning"`
+
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	TrSyns []TraceSyn `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
 }
 
 var KiT_MatrixPrjn = kit.Types.AddType(&MatrixPrjn{}, leabra.PrjnProps)

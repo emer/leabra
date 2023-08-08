@@ -39,17 +39,39 @@ const LogPrec = 4
 
 // Sim holds the params, table, etc
 type Sim struct {
-	RiseTau   float64       `desc:"rise time constant"`
-	DecayTau  float64       `desc:"decay time constant -- must NOT be same as RiseTau"`
-	GsXInit   float64       `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
-	MaxTime   float64       `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
-	TauFact   float64       `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
-	TimeSteps int           `desc:"total number of time steps to take"`
-	TimeInc   float64       `desc:"time increment per step"`
-	Table     *etable.Table `view:"no-inline" desc:"table for plot"`
-	Plot      *eplot.Plot2D `view:"-" desc:"the plot"`
-	Win       *gi.Window    `view:"-" desc:"main GUI window"`
-	ToolBar   *gi.ToolBar   `view:"-" desc:"the master toolbar"`
+
+	// rise time constant
+	RiseTau float64 `desc:"rise time constant"`
+
+	// decay time constant -- must NOT be same as RiseTau
+	DecayTau float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
+
+	// initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start
+	GsXInit float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
+
+	// time when peak conductance occurs, in TimeInc units
+	MaxTime float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
+
+	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
+	TauFact float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+
+	// total number of time steps to take
+	TimeSteps int `desc:"total number of time steps to take"`
+
+	// time increment per step
+	TimeInc float64 `desc:"time increment per step"`
+
+	// [view: no-inline] table for plot
+	Table *etable.Table `view:"no-inline" desc:"table for plot"`
+
+	// [view: -] the plot
+	Plot *eplot.Plot2D `view:"-" desc:"the plot"`
+
+	// [view: -] main GUI window
+	Win *gi.Window `view:"-" desc:"main GUI window"`
+
+	// [view: -] the master toolbar
+	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
 }
 
 // TheSim is the overall state for this simulation

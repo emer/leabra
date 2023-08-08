@@ -14,7 +14,11 @@ import (
 
 // OutParams determine the behavior of OutLayer
 type OutParams struct {
-	ResetThr  float32       `desc:"threshold on activation, above which the ClearLays will be reset"`
+
+	// threshold on activation, above which the ClearLays will be reset
+	ResetThr float32 `desc:"threshold on activation, above which the ClearLays will be reset"`
+
+	// name of corresponding layers that are reset when this layer gets activated
 	ClearLays emer.LayNames `desc:"name of corresponding layers that are reset when this layer gets activated"`
 }
 
@@ -26,6 +30,8 @@ func (np *OutParams) Defaults() {
 // with Ventral Thalamus (VM / VA etc) for output gating, and also NMDAPrjn maintenance.
 type OutLayer struct {
 	MaintLayer
+
+	// Parameters for output layer function
 	Out OutParams `desc:"Parameters for output layer function"`
 }
 

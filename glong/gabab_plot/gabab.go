@@ -39,29 +39,72 @@ const LogPrec = 4
 
 // Sim holds the params, table, etc
 type Sim struct {
-	GABAbv    float64 `def:"0.1" desc:"multiplier on GABAb as function of voltage"`
-	GABAbo    float64 `def:"10" desc:"offset of GABAb function"`
-	GABAberev float64 `def:"-90" desc:"GABAb reversal / driving potential"`
-	Vstart    float64 `def:"-90" desc:"starting voltage"`
-	Vend      float64 `def:"0" desc:"ending voltage"`
-	Vstep     float64 `def:"1" desc:"voltage increment"`
-	Smax      int     `def:"15" desc:"max number of spikes"`
-	RiseTau   float64 `desc:"rise time constant"`
-	DecayTau  float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
-	GsXInit   float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
-	MaxTime   float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
-	TauFact   float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
-	TimeSteps int     `desc:"total number of time steps to take"`
-	TimeInc   float64 `desc:"time increment per step"`
 
-	VGTable   *etable.Table `view:"no-inline" desc:"table for plot"`
-	SGTable   *etable.Table `view:"no-inline" desc:"table for plot"`
+	// [def: 0.1] multiplier on GABAb as function of voltage
+	GABAbv float64 `def:"0.1" desc:"multiplier on GABAb as function of voltage"`
+
+	// [def: 10] offset of GABAb function
+	GABAbo float64 `def:"10" desc:"offset of GABAb function"`
+
+	// [def: -90] GABAb reversal / driving potential
+	GABAberev float64 `def:"-90" desc:"GABAb reversal / driving potential"`
+
+	// [def: -90] starting voltage
+	Vstart float64 `def:"-90" desc:"starting voltage"`
+
+	// [def: 0] ending voltage
+	Vend float64 `def:"0" desc:"ending voltage"`
+
+	// [def: 1] voltage increment
+	Vstep float64 `def:"1" desc:"voltage increment"`
+
+	// [def: 15] max number of spikes
+	Smax int `def:"15" desc:"max number of spikes"`
+
+	// rise time constant
+	RiseTau float64 `desc:"rise time constant"`
+
+	// decay time constant -- must NOT be same as RiseTau
+	DecayTau float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
+
+	// initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start
+	GsXInit float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
+
+	// time when peak conductance occurs, in TimeInc units
+	MaxTime float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
+
+	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
+	TauFact float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+
+	// total number of time steps to take
+	TimeSteps int `desc:"total number of time steps to take"`
+
+	// time increment per step
+	TimeInc float64 `desc:"time increment per step"`
+
+	// [view: no-inline] table for plot
+	VGTable *etable.Table `view:"no-inline" desc:"table for plot"`
+
+	// [view: no-inline] table for plot
+	SGTable *etable.Table `view:"no-inline" desc:"table for plot"`
+
+	// [view: no-inline] table for plot
 	TimeTable *etable.Table `view:"no-inline" desc:"table for plot"`
-	VGPlot    *eplot.Plot2D `view:"-" desc:"the plot"`
-	SGPlot    *eplot.Plot2D `view:"-" desc:"the plot"`
-	TimePlot  *eplot.Plot2D `view:"-" desc:"the plot"`
-	Win       *gi.Window    `view:"-" desc:"main GUI window"`
-	ToolBar   *gi.ToolBar   `view:"-" desc:"the master toolbar"`
+
+	// [view: -] the plot
+	VGPlot *eplot.Plot2D `view:"-" desc:"the plot"`
+
+	// [view: -] the plot
+	SGPlot *eplot.Plot2D `view:"-" desc:"the plot"`
+
+	// [view: -] the plot
+	TimePlot *eplot.Plot2D `view:"-" desc:"the plot"`
+
+	// [view: -] main GUI window
+	Win *gi.Window `view:"-" desc:"main GUI window"`
+
+	// [view: -] the master toolbar
+	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
 }
 
 // TheSim is the overall state for this simulation

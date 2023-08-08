@@ -5,9 +5,10 @@
 package pvlv
 
 import (
+	"strconv"
+
 	"github.com/emer/emergent/emer"
 	"github.com/emer/leabra/leabra"
-	"strconv"
 
 	//"github.com/emer/leabra/pbwm"
 	"github.com/goki/ki/kit"
@@ -16,13 +17,19 @@ import (
 // The PPTg passes on a positively-rectified version of its input signal.
 type PPTgLayer struct {
 	leabra.Layer
-	Ge              float32
-	GePrev          float32
-	SendAct         float32
-	DA              float32
-	DNetGain        float32 `desc:"gain on input activation"`
-	ActThreshold    float32 `desc:"activation threshold for passing through"`
-	ClampActivation bool    `desc:"clamp activation directly, after applying gain"`
+	Ge      float32
+	GePrev  float32
+	SendAct float32
+	DA      float32
+
+	// gain on input activation
+	DNetGain float32 `desc:"gain on input activation"`
+
+	// activation threshold for passing through
+	ActThreshold float32 `desc:"activation threshold for passing through"`
+
+	// clamp activation directly, after applying gain
+	ClampActivation bool `desc:"clamp activation directly, after applying gain"`
 }
 
 var KiT_PPTgLayer = kit.Types.AddType(&PPTgLayer{}, leabra.LayerProps)

@@ -15,11 +15,23 @@ import (
 // a Da-based term to the Ge excitatory synaptic input.
 // Plus-phase = learning effects relative to minus-phase "performance" dopamine effects
 type DaModParams struct {
-	On      bool    `desc:"whether to use dopamine modulation"`
-	ModGain bool    `viewif:"On" desc:"modulate gain instead of Ge excitatory synaptic input"`
-	Minus   float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
-	Plus    float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+
+	// whether to use dopamine modulation
+	On bool `desc:"whether to use dopamine modulation"`
+
+	// [viewif: On] modulate gain instead of Ge excitatory synaptic input
+	ModGain bool `viewif:"On" desc:"modulate gain instead of Ge excitatory synaptic input"`
+
+	// [viewif: On] how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Minus float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+
+	// [viewif: On] how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Plus float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+
+	// [viewif: On&&ModGain] for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase
 	NegGain float32 `viewif:"On&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
+
+	// [viewif: On&&ModGain] for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase
 	PosGain float32 `viewif:"On&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
 }
 

@@ -6,10 +6,11 @@ package pvlv
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/emer/leabra/interinhib"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
-	"strconv"
 )
 
 // IBlAmygLayer has one method, AsBlAmygLayer, that returns a pointer to the layer specifically as a BLA layer.
@@ -24,9 +25,15 @@ func (ly *BlAmygLayer) AsBlAmygLayer() *BlAmygLayer {
 
 // BlAmygLayer contains values specific to BLA layers, including Interlayer Inhibition (ILI)
 type BlAmygLayer struct {
+
+	// modulation state
 	ModLayer `desc:"modulation state"`
-	Valence  Valence               `desc:"positive or negative valence"`
-	ILI      interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
+
+	// positive or negative valence
+	Valence Valence `desc:"positive or negative valence"`
+
+	// inter-layer inhibition parameters and state
+	ILI interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
 }
 
 var KiT_BlAmygLayer = kit.Types.AddType(&BlAmygLayer{}, nil)

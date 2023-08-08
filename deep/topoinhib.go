@@ -15,12 +15,24 @@ import (
 // TopoInhib provides for topographic gaussian inhibition integrating over neighborhood.
 // Effective inhibition is
 type TopoInhib struct {
-	On    bool      `desc:"use topographic inhibition"`
-	Width int       `desc:"half-width of topographic inhibition within layer"`
-	Sigma float32   `desc:"normalized gaussian sigma as proportion of Width, for gaussian weighting"`
-	Gi    float32   `desc:"overall inhibition multiplier for topographic inhibition (generally <= 1)"`
-	LayGi float32   `desc:"layer-level baseline inhibition factor for Max computation -- ensures a baseline inhib as proportion of maximum inhib within any single pool"`
-	Wts   []float32 `inactive:"+" desc:"gaussian weights as function of distance, precomputed.  index 0 = dist 1"`
+
+	// use topographic inhibition
+	On bool `desc:"use topographic inhibition"`
+
+	// half-width of topographic inhibition within layer
+	Width int `desc:"half-width of topographic inhibition within layer"`
+
+	// normalized gaussian sigma as proportion of Width, for gaussian weighting
+	Sigma float32 `desc:"normalized gaussian sigma as proportion of Width, for gaussian weighting"`
+
+	// overall inhibition multiplier for topographic inhibition (generally <= 1)
+	Gi float32 `desc:"overall inhibition multiplier for topographic inhibition (generally <= 1)"`
+
+	// layer-level baseline inhibition factor for Max computation -- ensures a baseline inhib as proportion of maximum inhib within any single pool
+	LayGi float32 `desc:"layer-level baseline inhibition factor for Max computation -- ensures a baseline inhib as proportion of maximum inhib within any single pool"`
+
+	// gaussian weights as function of distance, precomputed.  index 0 = dist 1
+	Wts []float32 `inactive:"+" desc:"gaussian weights as function of distance, precomputed.  index 0 = dist 1"`
 }
 
 func (ti *TopoInhib) Defaults() {
@@ -43,8 +55,10 @@ func (ti *TopoInhib) Update() {
 
 // TopoInhibLayer is a layer with topographically organized inhibition among pools
 type TopoInhibLayer struct {
-	leabra.Layer           // access as .Layer
-	TopoInhib    TopoInhib `desc:"topographic inhibition parameters for pool-level inhibition (only used for layers with pools)"`
+	leabra.Layer // access as .Layer
+
+	// topographic inhibition parameters for pool-level inhibition (only used for layers with pools)
+	TopoInhib TopoInhib `desc:"topographic inhibition parameters for pool-level inhibition (only used for layers with pools)"`
 }
 
 var KiT_TopoInhibLayer = kit.Types.AddType(&TopoInhibLayer{}, LayerProps)

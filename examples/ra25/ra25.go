@@ -140,30 +140,75 @@ var ParamSets = params.Sets{
 // as arguments to methods, and provides the core GUI interface (note the view tags
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
-	Net          *leabra.Network  `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
-	Params       emer.Params      `view:"inline" desc:"all parameter management"`
-	Tag          string           `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
-	Pats         *etable.Table    `view:"no-inline" desc:"the training patterns to use"`
-	Stats        estats.Stats     `desc:"contains computed statistic values"`
-	Logs         elog.Logs        `desc:"Contains all the logs and information about the logs.'"`
-	StartRun     int              `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
-	MaxRuns      int              `desc:"maximum number of model runs to perform (starting from StartRun)"`
-	MaxEpcs      int              `desc:"maximum number of epochs to run per model run"`
-	NZeroStop    int              `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
-	TrainEnv     env.FixedTable   `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
-	TestEnv      env.FixedTable   `desc:"Testing environment -- manages iterating over testing"`
-	Time         leabra.Time      `desc:"leabra timing parameters and state"`
-	ViewUpdt     netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
-	TestInterval int              `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
-	PCAInterval  int              `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
 
-	GUI          egui.GUI         `view:"-" desc:"manages all the gui elements"`
-	SaveWts      bool             `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
-	NoGui        bool             `view:"-" desc:"if true, runing in no GUI mode"`
-	LogSetParams bool             `view:"-" desc:"if true, print message for all params that are set"`
-	NeedsNewRun  bool             `view:"-" desc:"flag to initialize NewRun if last one finished"`
-	RndSeeds     []int64          `view:"-" desc:"a list of random seeds to use for each run"`
-	NetData      *netview.NetData `view:"-" desc:"net data for recording in nogui mode"`
+	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
+	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+
+	// [view: inline] all parameter management
+	Params emer.Params `view:"inline" desc:"all parameter management"`
+
+	// extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)
+	Tag string `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+
+	// [view: no-inline] the training patterns to use
+	Pats *etable.Table `view:"no-inline" desc:"the training patterns to use"`
+
+	// contains computed statistic values
+	Stats estats.Stats `desc:"contains computed statistic values"`
+
+	// Contains all the logs and information about the logs.'
+	Logs elog.Logs `desc:"Contains all the logs and information about the logs.'"`
+
+	// starting run number -- typically 0 but can be set in command args for parallel runs on a cluster
+	StartRun int `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
+
+	// maximum number of model runs to perform (starting from StartRun)
+	MaxRuns int `desc:"maximum number of model runs to perform (starting from StartRun)"`
+
+	// maximum number of epochs to run per model run
+	MaxEpcs int `desc:"maximum number of epochs to run per model run"`
+
+	// if a positive number, training will stop after this many epochs with zero SSE
+	NZeroStop int `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
+
+	// Training environment -- contains everything about iterating over input / output patterns over training
+	TrainEnv env.FixedTable `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
+
+	// Testing environment -- manages iterating over testing
+	TestEnv env.FixedTable `desc:"Testing environment -- manages iterating over testing"`
+
+	// leabra timing parameters and state
+	Time leabra.Time `desc:"leabra timing parameters and state"`
+
+	// [view: inline] netview update parameters
+	ViewUpdt netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
+
+	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
+	TestInterval int `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
+
+	// how frequently (in epochs) to compute PCA on hidden representations to measure variance?
+	PCAInterval int `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
+
+	// [view: -] manages all the gui elements
+	GUI egui.GUI `view:"-" desc:"manages all the gui elements"`
+
+	// [view: -] for command-line run only, auto-save final weights after each run
+	SaveWts bool `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+
+	// [view: -] if true, runing in no GUI mode
+	NoGui bool `view:"-" desc:"if true, runing in no GUI mode"`
+
+	// [view: -] if true, print message for all params that are set
+	LogSetParams bool `view:"-" desc:"if true, print message for all params that are set"`
+
+	// [view: -] flag to initialize NewRun if last one finished
+	NeedsNewRun bool `view:"-" desc:"flag to initialize NewRun if last one finished"`
+
+	// [view: -] a list of random seeds to use for each run
+	RndSeeds []int64 `view:"-" desc:"a list of random seeds to use for each run"`
+
+	// [view: -] net data for recording in nogui mode
+	NetData *netview.NetData `view:"-" desc:"net data for recording in nogui mode"`
 }
 
 // this registers this Sim Type and gives it properties that e.g.,

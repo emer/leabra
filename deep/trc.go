@@ -16,8 +16,12 @@ import (
 
 // Driver describes the source of driver inputs from cortex into TRC (pulvinar)
 type Driver struct {
+
+	// driver layer
 	Driver string `desc:"driver layer"`
-	Off    int    `inactive:"-" desc:"offset into TRC pool"`
+
+	// offset into TRC pool
+	Off int `inactive:"-" desc:"offset into TRC pool"`
 }
 
 // Drivers are a list of drivers
@@ -42,16 +46,36 @@ func (dr *Drivers) AddOne(laynm string) {
 // TRCParams provides parameters for how the plus-phase (outcome) state of thalamic relay cell
 // (e.g., Pulvinar) neurons is computed from the corresponding driver neuron Burst activation.
 type TRCParams struct {
-	DriversOff bool            `def:"false" desc:"Turn off the driver inputs, in which case this layer behaves like a standard layer"`
-	BurstQtr   leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines"`
-	DriveScale float32         `def:"0.3" min:"0.0" desc:"multiplier on driver input strength, multiplies activation of driver layer"`
-	MaxInhib   float32         `def:"0.6" min:"0.01" desc:"Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning."`
-	NoTopo     bool            `desc:"Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools"`
-	AvgMix     float32         `min:"0" max:"1" desc:"proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo"`
-	Binarize   bool            `desc:"Apply threshold to driver burst input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs."`
-	BinThr     float32         `viewif:"Binarize" desc:"Threshold for binarizing in terms of sending Burst activation"`
-	BinOn      float32         `def:"0.3" viewif:"Binarize" desc:"Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that)."`
-	BinOff     float32         `def:"0" viewif:"Binarize" desc:"Resulting driver Ge value for units below threshold -- typically 0."`
+
+	// [def: false] Turn off the driver inputs, in which case this layer behaves like a standard layer
+	DriversOff bool `def:"false" desc:"Turn off the driver inputs, in which case this layer behaves like a standard layer"`
+
+	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines
+	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines"`
+
+	// [def: 0.3] [min: 0.0] multiplier on driver input strength, multiplies activation of driver layer
+	DriveScale float32 `def:"0.3" min:"0.0" desc:"multiplier on driver input strength, multiplies activation of driver layer"`
+
+	// [def: 0.6] [min: 0.01] Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning.
+	MaxInhib float32 `def:"0.6" min:"0.01" desc:"Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning."`
+
+	// Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools
+	NoTopo bool `desc:"Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools"`
+
+	// [min: 0] [max: 1] proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo
+	AvgMix float32 `min:"0" max:"1" desc:"proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo"`
+
+	// Apply threshold to driver burst input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs.
+	Binarize bool `desc:"Apply threshold to driver burst input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs."`
+
+	// [viewif: Binarize] Threshold for binarizing in terms of sending Burst activation
+	BinThr float32 `viewif:"Binarize" desc:"Threshold for binarizing in terms of sending Burst activation"`
+
+	// [def: 0.3] [viewif: Binarize] Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that).
+	BinOn float32 `def:"0.3" viewif:"Binarize" desc:"Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that)."`
+
+	// [def: 0] [viewif: Binarize] Resulting driver Ge value for units below threshold -- typically 0.
+	BinOff float32 `def:"0" viewif:"Binarize" desc:"Resulting driver Ge value for units below threshold -- typically 0."`
 }
 
 func (tp *TRCParams) Update() {
@@ -91,23 +115,27 @@ func (tp *TRCParams) GeFmMaxAvg(max, avg float32) float32 {
 // and is then driven by strong 5IB driver inputs in the plus phase.
 // For attentional modulation, TRC maintains pool-level correspondence with CT inputs
 // which creates challenges for aligning with driver inputs.
-// * Max operation used to integrate across multiple drivers, where necessary,
-//   e.g., multiple driver pools map onto single TRC pool (common feedforward theme),
-//   *even when there is no logical connection for the i'th unit in each pool* --
-//   to make this dimensionality reduction more effective, using lateral connectivity
-//   between pools that favors this correspondence is beneficial.  Overall, this is
-//   consistent with typical DCNN max pooling organization.
-// * Typically, pooled 4D TRC layers should have fewer pools than driver layers,
-//   in which case the respective pool geometry is interpolated.  Ideally, integer size
-//   differences are best (e.g., driver layer has 2x pools vs TRC).
-// * Pooled 4D TRC layer should in general not predict flat 2D drivers, but if so
-//   the drivers are replicated for each pool.
-// * Similarly, there shouldn't generally be more TRC pools than driver pools, but
-//   if so, drivers replicate across pools.
+//   - Max operation used to integrate across multiple drivers, where necessary,
+//     e.g., multiple driver pools map onto single TRC pool (common feedforward theme),
+//     *even when there is no logical connection for the i'th unit in each pool* --
+//     to make this dimensionality reduction more effective, using lateral connectivity
+//     between pools that favors this correspondence is beneficial.  Overall, this is
+//     consistent with typical DCNN max pooling organization.
+//   - Typically, pooled 4D TRC layers should have fewer pools than driver layers,
+//     in which case the respective pool geometry is interpolated.  Ideally, integer size
+//     differences are best (e.g., driver layer has 2x pools vs TRC).
+//   - Pooled 4D TRC layer should in general not predict flat 2D drivers, but if so
+//     the drivers are replicated for each pool.
+//   - Similarly, there shouldn't generally be more TRC pools than driver pools, but
+//     if so, drivers replicate across pools.
 type TRCLayer struct {
-	TopoInhibLayer           // access as .TopoInhibLayer
-	TRC            TRCParams `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron"`
-	Drivers        Drivers   `desc:"name of SuperLayer that sends 5IB Burst driver inputs to this layer"`
+	TopoInhibLayer // access as .TopoInhibLayer
+
+	// [view: inline] parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron
+	TRC TRCParams `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron"`
+
+	// name of SuperLayer that sends 5IB Burst driver inputs to this layer
+	Drivers Drivers `desc:"name of SuperLayer that sends 5IB Burst driver inputs to this layer"`
 }
 
 var KiT_TRCLayer = kit.Types.AddType(&TRCLayer{}, LayerProps)

@@ -14,6 +14,8 @@ import (
 // Typically just a single unit per Pool representing a given stripe.
 type GPLayer struct {
 	Layer
+
+	// type of GP layer
 	GPLay GPLays `desc:"type of GP layer"`
 }
 

@@ -24,8 +24,12 @@ import (
 // leabra.Network has parameters for running a basic rate-coded Leabra network
 type Network struct {
 	NetworkStru
+
+	// [def: 10] how frequently to update the weight balance average weight factor -- relatively expensive
 	WtBalInterval int `def:"10" desc:"how frequently to update the weight balance average weight factor -- relatively expensive"`
-	WtBalCtr      int `inactive:"+" desc:"counter for how long it has been since last WtBal"`
+
+	// counter for how long it has been since last WtBal
+	WtBalCtr int `inactive:"+" desc:"counter for how long it has been since last WtBal"`
 }
 
 var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)

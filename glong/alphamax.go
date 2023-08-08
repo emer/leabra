@@ -16,8 +16,12 @@ import (
 // Needed for recording activations on layers with transient dynamics over alpha.
 type AlphaMaxLayer struct {
 	leabra.Layer
-	AlphaMaxCyc int       `desc:"cycle upon which to start updating AlphaMax value"`
-	AlphaMaxs   []float32 `desc:"per-neuron maximum activation value during alpha cycle"`
+
+	// cycle upon which to start updating AlphaMax value
+	AlphaMaxCyc int `desc:"cycle upon which to start updating AlphaMax value"`
+
+	// per-neuron maximum activation value during alpha cycle
+	AlphaMaxs []float32 `desc:"per-neuron maximum activation value during alpha cycle"`
 }
 
 var KiT_AlphaMaxLayer = kit.Types.AddType(&AlphaMaxLayer{}, leabra.LayerProps)

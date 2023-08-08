@@ -17,6 +17,8 @@ import (
 // Adds a dopamine variable to base Leabra layer type.
 type Layer struct {
 	glong.AlphaMaxLayer
+
+	// dopamine value for this layer
 	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
 }
 

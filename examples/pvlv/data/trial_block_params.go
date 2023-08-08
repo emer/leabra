@@ -11,24 +11,60 @@ import (
 // TrialGp : block-level state
 // aka TrialBlock
 type TrialBlockParams struct {
-	TrialBlkName        string    `desc:"name"`
-	PercentOfTotal      float64   `desc:"Percent of all trials for this type"`
-	ValenceContext      p.Valence `desc:"Positive or negative reward valence"`
-	USProb              float64   `desc:"Probability of US"`
-	FixedProb           bool      `desc:"Fixed probability?"`
-	MixedUS             bool      `desc:"Mixed US set?"`
-	USMagnitude         float64   `desc:"US magnitude"`
-	AlphTicksPerTrialGp int       `desc:"Number of ticks for a trial"`
-	CS                  string    `desc:"Conditioned stimulus"`
-	CSTimeStart         p.Tick    `desc:"Tick of CS start"`
-	CSTimeEnd           p.Tick    `desc:"Tick of CS end"`
-	CS2TimeStart        p.Tick    `desc:"Tick of CS2 start"`
-	CS2TimeEnd          p.Tick    `desc:"Tick of CS2 end"`
-	USType              p.US      `desc:"Unconditioned stimulus"`
-	USTimeStart         p.Tick    `desc:"Tick for start of US presentation"`
-	USTimeEnd           p.Tick    `desc:"Tick for end of US presentation"`
-	Context             string    `desc:"Context"`
-	Location            string    `desc:"Location"`
+
+	// name
+	TrialBlkName string `desc:"name"`
+
+	// Percent of all trials for this type
+	PercentOfTotal float64 `desc:"Percent of all trials for this type"`
+
+	// Positive or negative reward valence
+	ValenceContext p.Valence `desc:"Positive or negative reward valence"`
+
+	// Probability of US
+	USProb float64 `desc:"Probability of US"`
+
+	// Fixed probability?
+	FixedProb bool `desc:"Fixed probability?"`
+
+	// Mixed US set?
+	MixedUS bool `desc:"Mixed US set?"`
+
+	// US magnitude
+	USMagnitude float64 `desc:"US magnitude"`
+
+	// Number of ticks for a trial
+	AlphTicksPerTrialGp int `desc:"Number of ticks for a trial"`
+
+	// Conditioned stimulus
+	CS string `desc:"Conditioned stimulus"`
+
+	// Tick of CS start
+	CSTimeStart p.Tick `desc:"Tick of CS start"`
+
+	// Tick of CS end
+	CSTimeEnd p.Tick `desc:"Tick of CS end"`
+
+	// Tick of CS2 start
+	CS2TimeStart p.Tick `desc:"Tick of CS2 start"`
+
+	// Tick of CS2 end
+	CS2TimeEnd p.Tick `desc:"Tick of CS2 end"`
+
+	// Unconditioned stimulus
+	USType p.US `desc:"Unconditioned stimulus"`
+
+	// Tick for start of US presentation
+	USTimeStart p.Tick `desc:"Tick for start of US presentation"`
+
+	// Tick for end of US presentation
+	USTimeEnd p.Tick `desc:"Tick for end of US presentation"`
+
+	// Context
+	Context string `desc:"Context"`
+
+	// Location
+	Location string `desc:"Location"`
 }
 
 type TrialBlockMap map[string]TrialBlock

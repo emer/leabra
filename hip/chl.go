@@ -11,11 +11,23 @@ import (
 
 // Contrastive Hebbian Learning (CHL) parameters
 type CHLParams struct {
-	On      bool    `desc:"if true, use CHL learning instead of standard XCAL learning -- allows easy exploration of CHL vs. XCAL"`
-	Hebb    float32 `def:"0.001" min:"0" max:"1" desc:"amount of hebbian learning (should be relatively small, can be effective at .0001)"`
-	Err     float32 `def:"0.999" min:"0" max:"1" inactive:"+" desc:"amount of error driven learning, automatically computed to be 1-Hebb"`
-	MinusQ1 bool    `desc:"if true, use ActQ1 as the minus phase -- otherwise ActM"`
+
+	// if true, use CHL learning instead of standard XCAL learning -- allows easy exploration of CHL vs. XCAL
+	On bool `desc:"if true, use CHL learning instead of standard XCAL learning -- allows easy exploration of CHL vs. XCAL"`
+
+	// [def: 0.001] [min: 0] [max: 1] amount of hebbian learning (should be relatively small, can be effective at .0001)
+	Hebb float32 `def:"0.001" min:"0" max:"1" desc:"amount of hebbian learning (should be relatively small, can be effective at .0001)"`
+
+	// [def: 0.999] [min: 0] [max: 1] amount of error driven learning, automatically computed to be 1-Hebb
+	Err float32 `def:"0.999" min:"0" max:"1" inactive:"+" desc:"amount of error driven learning, automatically computed to be 1-Hebb"`
+
+	// if true, use ActQ1 as the minus phase -- otherwise ActM
+	MinusQ1 bool `desc:"if true, use ActQ1 as the minus phase -- otherwise ActM"`
+
+	// [def: 0.4:0.8] [min: 0] [max: 1] proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)
 	SAvgCor float32 `def:"0.4:0.8" min:"0" max:"1" desc:"proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)"`
+
+	// [def: 0.001] [min: 0] threshold of sending average activation below which learning does not occur (prevents learning when there is no input)
 	SAvgThr float32 `def:"0.001" min:"0" desc:"threshold of sending average activation below which learning does not occur (prevents learning when there is no input)"`
 }
 
@@ -70,8 +82,10 @@ func (ch *CHLParams) DWt(hebb, err float32) float32 {
 // based on basic rate-coded leabra.Prjn, that implements a
 // pure CHL learning rule, which works better in the hippocampus.
 type CHLPrjn struct {
-	leabra.Prjn           // access as .Prjn
-	CHL         CHLParams `view:"inline" desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
+	leabra.Prjn // access as .Prjn
+
+	// [view: inline] parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible
+	CHL CHLParams `view:"inline" desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
 }
 
 func (pj *CHLPrjn) Defaults() {

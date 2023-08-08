@@ -23,48 +23,116 @@ const NeuronVarStart = 8
 // rate-code only and no optional features at all.
 // All variables accessible via Unit interface must be float32 and start at the top, in contiguous order
 type Neuron struct {
-	Flags   NeurFlags `desc:"bit flags for binary state variables"`
-	SubPool int32     `desc:"index of the sub-level inhibitory pool that this neuron is in (only for 4D shapes, the pool (unit-group / hypercolumn) structure level) -- indicies start at 1 -- 0 is layer-level pool (is 0 if no sub-pools)."`
-	Act     float32   `desc:"rate-coded activation value reflecting final output of neuron communicated to other neurons, typically in range 0-1.  This value includes adaptation and synaptic depression / facilitation effects which produce temporal contrast (see ActLrn for version without this).  For rate-code activation, this is noisy-x-over-x-plus-one (NXX1) function; for discrete spiking it is computed from the inverse of the inter-spike interval (ISI), and Spike reflects the discrete spikes."`
-	ActLrn  float32   `desc:"learning activation value, reflecting *dendritic* activity that is not affected by synaptic depression or adapdation channels which are located near the axon hillock.  This is the what drives the Avg* values that drive learning. Computationally, neurons strongly discount the signals sent to other neurons to provide temporal contrast, but need to learn based on a more stable reflection of their overall inputs in the dendrites."`
-	Ge      float32   `desc:"total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E"`
-	Gi      float32   `desc:"total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I"`
-	Gk      float32   `desc:"total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K"`
-	Inet    float32   `desc:"net current produced by all channels -- drives update of Vm"`
-	Vm      float32   `desc:"membrane potential -- integrates Inet current over time"`
 
+	// bit flags for binary state variables
+	Flags NeurFlags `desc:"bit flags for binary state variables"`
+
+	// index of the sub-level inhibitory pool that this neuron is in (only for 4D shapes, the pool (unit-group / hypercolumn) structure level) -- indicies start at 1 -- 0 is layer-level pool (is 0 if no sub-pools).
+	SubPool int32 `desc:"index of the sub-level inhibitory pool that this neuron is in (only for 4D shapes, the pool (unit-group / hypercolumn) structure level) -- indicies start at 1 -- 0 is layer-level pool (is 0 if no sub-pools)."`
+
+	// rate-coded activation value reflecting final output of neuron communicated to other neurons, typically in range 0-1.  This value includes adaptation and synaptic depression / facilitation effects which produce temporal contrast (see ActLrn for version without this).  For rate-code activation, this is noisy-x-over-x-plus-one (NXX1) function; for discrete spiking it is computed from the inverse of the inter-spike interval (ISI), and Spike reflects the discrete spikes.
+	Act float32 `desc:"rate-coded activation value reflecting final output of neuron communicated to other neurons, typically in range 0-1.  This value includes adaptation and synaptic depression / facilitation effects which produce temporal contrast (see ActLrn for version without this).  For rate-code activation, this is noisy-x-over-x-plus-one (NXX1) function; for discrete spiking it is computed from the inverse of the inter-spike interval (ISI), and Spike reflects the discrete spikes."`
+
+	// learning activation value, reflecting *dendritic* activity that is not affected by synaptic depression or adapdation channels which are located near the axon hillock.  This is the what drives the Avg* values that drive learning. Computationally, neurons strongly discount the signals sent to other neurons to provide temporal contrast, but need to learn based on a more stable reflection of their overall inputs in the dendrites.
+	ActLrn float32 `desc:"learning activation value, reflecting *dendritic* activity that is not affected by synaptic depression or adapdation channels which are located near the axon hillock.  This is the what drives the Avg* values that drive learning. Computationally, neurons strongly discount the signals sent to other neurons to provide temporal contrast, but need to learn based on a more stable reflection of their overall inputs in the dendrites."`
+
+	// total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E
+	Ge float32 `desc:"total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E"`
+
+	// total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I
+	Gi float32 `desc:"total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I"`
+
+	// total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K
+	Gk float32 `desc:"total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K"`
+
+	// net current produced by all channels -- drives update of Vm
+	Inet float32 `desc:"net current produced by all channels -- drives update of Vm"`
+
+	// membrane potential -- integrates Inet current over time
+	Vm float32 `desc:"membrane potential -- integrates Inet current over time"`
+
+	// target value: drives learning to produce this activation value
 	Targ float32 `desc:"target value: drives learning to produce this activation value"`
-	Ext  float32 `desc:"external input: drives activation of unit from outside influences (e.g., sensory input)"`
 
-	AvgSS   float32 `desc:"super-short time-scale average of ActLrn activation -- provides the lowest-level time integration -- for spiking this integrates over spikes before subsequent averaging, and it is also useful for rate-code to provide a longer time integral overall"`
-	AvgS    float32 `desc:"short time-scale average of ActLrn activation -- tracks the most recent activation states (integrates over AvgSS values), and represents the plus phase for learning in XCAL algorithms"`
-	AvgM    float32 `desc:"medium time-scale average of ActLrn activation -- integrates over AvgS values, and represents the minus phase for learning in XCAL algorithms"`
-	AvgL    float32 `desc:"long time-scale average of medium-time scale (trial level) activation, used for the BCM-style floating threshold in XCAL"`
+	// external input: drives activation of unit from outside influences (e.g., sensory input)
+	Ext float32 `desc:"external input: drives activation of unit from outside influences (e.g., sensory input)"`
+
+	// super-short time-scale average of ActLrn activation -- provides the lowest-level time integration -- for spiking this integrates over spikes before subsequent averaging, and it is also useful for rate-code to provide a longer time integral overall
+	AvgSS float32 `desc:"super-short time-scale average of ActLrn activation -- provides the lowest-level time integration -- for spiking this integrates over spikes before subsequent averaging, and it is also useful for rate-code to provide a longer time integral overall"`
+
+	// short time-scale average of ActLrn activation -- tracks the most recent activation states (integrates over AvgSS values), and represents the plus phase for learning in XCAL algorithms
+	AvgS float32 `desc:"short time-scale average of ActLrn activation -- tracks the most recent activation states (integrates over AvgSS values), and represents the plus phase for learning in XCAL algorithms"`
+
+	// medium time-scale average of ActLrn activation -- integrates over AvgS values, and represents the minus phase for learning in XCAL algorithms
+	AvgM float32 `desc:"medium time-scale average of ActLrn activation -- integrates over AvgS values, and represents the minus phase for learning in XCAL algorithms"`
+
+	// long time-scale average of medium-time scale (trial level) activation, used for the BCM-style floating threshold in XCAL
+	AvgL float32 `desc:"long time-scale average of medium-time scale (trial level) activation, used for the BCM-style floating threshold in XCAL"`
+
+	// how much to learn based on the long-term floating threshold (AvgL) for BCM-style Hebbian learning -- is modulated by level of AvgL itself (stronger Hebbian as average activation goes higher) and optionally the average amount of error experienced in the layer (to retain a common proportionality with the level of error-driven learning across layers)
 	AvgLLrn float32 `desc:"how much to learn based on the long-term floating threshold (AvgL) for BCM-style Hebbian learning -- is modulated by level of AvgL itself (stronger Hebbian as average activation goes higher) and optionally the average amount of error experienced in the layer (to retain a common proportionality with the level of error-driven learning across layers)"`
+
+	// short time-scale activation average that is actually used for learning -- typically includes a small contribution from AvgM in addition to mostly AvgS, as determined by LrnActAvgParams.LrnM -- important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place
 	AvgSLrn float32 `desc:"short time-scale activation average that is actually used for learning -- typically includes a small contribution from AvgM in addition to mostly AvgS, as determined by LrnActAvgParams.LrnM -- important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place"`
 
-	ActQ0  float32 `desc:"the activation state at start of current alpha cycle (same as the state at end of previous cycle)"`
-	ActQ1  float32 `desc:"the activation state at end of first quarter of current alpha cycle"`
-	ActQ2  float32 `desc:"the activation state at end of second quarter of current alpha cycle"`
-	ActM   float32 `desc:"the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation"`
-	ActP   float32 `desc:"the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation"`
+	// the activation state at start of current alpha cycle (same as the state at end of previous cycle)
+	ActQ0 float32 `desc:"the activation state at start of current alpha cycle (same as the state at end of previous cycle)"`
+
+	// the activation state at end of first quarter of current alpha cycle
+	ActQ1 float32 `desc:"the activation state at end of first quarter of current alpha cycle"`
+
+	// the activation state at end of second quarter of current alpha cycle
+	ActQ2 float32 `desc:"the activation state at end of second quarter of current alpha cycle"`
+
+	// the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation
+	ActM float32 `desc:"the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation"`
+
+	// the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation
+	ActP float32 `desc:"the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation"`
+
+	// ActP - ActM -- difference between plus and minus phase acts -- reflects the individual error gradient for this neuron in standard error-driven learning terms
 	ActDif float32 `desc:"ActP - ActM -- difference between plus and minus phase acts -- reflects the individual error gradient for this neuron in standard error-driven learning terms"`
+
+	// delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place
 	ActDel float32 `desc:"delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place"`
+
+	// average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation
 	ActAvg float32 `desc:"average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation"`
 
+	// noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)
 	Noise float32 `desc:"noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)"`
 
-	GiSyn    float32 `desc:"aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`
-	GiSelf   float32 `desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`
-	ActSent  float32 `desc:"last activation value sent (only send when diff is over threshold)"`
-	GeRaw    float32 `desc:"raw excitatory conductance (net input) received from sending units (send delta's are added to this value)"`
-	GiRaw    float32 `desc:"raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)"`
+	// aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi
+	GiSyn float32 `desc:"aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`
+
+	// total amount of self-inhibition -- time-integrated to avoid oscillations
+	GiSelf float32 `desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`
+
+	// last activation value sent (only send when diff is over threshold)
+	ActSent float32 `desc:"last activation value sent (only send when diff is over threshold)"`
+
+	// raw excitatory conductance (net input) received from sending units (send delta's are added to this value)
+	GeRaw float32 `desc:"raw excitatory conductance (net input) received from sending units (send delta's are added to this value)"`
+
+	// raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)
+	GiRaw float32 `desc:"raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)"`
+
+	// conductance of sodium-gated potassium channel (KNa) fast dynamics (M-type) -- produces accommodation / adaptation of firing
 	GknaFast float32 `desc:"conductance of sodium-gated potassium channel (KNa) fast dynamics (M-type) -- produces accommodation / adaptation of firing"`
-	GknaMed  float32 `desc:"conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing"`
+
+	// conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing
+	GknaMed float32 `desc:"conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing"`
+
+	// conductance of sodium-gated potassium channel (KNa) slow dynamics (Slack) -- produces accommodation / adaptation of firing
 	GknaSlow float32 `desc:"conductance of sodium-gated potassium channel (KNa) slow dynamics (Slack) -- produces accommodation / adaptation of firing"`
 
-	Spike  float32 `desc:"whether neuron has spiked or not (0 or 1), for discrete spiking neurons."`
-	ISI    float32 `desc:"current inter-spike-interval -- counts up since last spike.  Starts at -1 when initialized."`
+	// whether neuron has spiked or not (0 or 1), for discrete spiking neurons.
+	Spike float32 `desc:"whether neuron has spiked or not (0 or 1), for discrete spiking neurons."`
+
+	// current inter-spike-interval -- counts up since last spike.  Starts at -1 when initialized.
+	ISI float32 `desc:"current inter-spike-interval -- counts up since last spike.  Starts at -1 when initialized."`
+
+	// average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization.
 	ISIAvg float32 `desc:"average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization."`
 }
 

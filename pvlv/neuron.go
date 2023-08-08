@@ -93,9 +93,9 @@ func (mnr *ModNeuron) VarByName(varNm string) (float32, error) {
 	return mnr.VarByIndex(i), nil
 }
 
-//// UnitVals fills in values of given variable name on unit,
-//// for each unit in the layer, into given float32 slice (only resized if not big enough).
-//// Returns error on invalid var name.
+// // UnitVals fills in values of given variable name on unit,
+// // for each unit in the layer, into given float32 slice (only resized if not big enough).
+// // Returns error on invalid var name.
 func (ly *ModLayer) UnitVals(vals *[]float32, varNm string) error {
 	vidx, ok := ModNeuronVarsMap[varNm]
 	if !ok {
@@ -113,8 +113,8 @@ func (ly *ModLayer) UnitVals(vals *[]float32, varNm string) error {
 	return nil
 }
 
-//// UnitValsTensor returns values of given variable name on unit
-//// for each unit in the layer, as a float32 tensor in same shape as layer units.
+// // UnitValsTensor returns values of given variable name on unit
+// // for each unit in the layer, as a float32 tensor in same shape as layer units.
 func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 	if tsr == nil {
 		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")

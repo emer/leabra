@@ -15,10 +15,18 @@ import (
 // NMDAParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
 // parameters.  We have to do some things to make it work for rate code neurons..
 type NMDAParams struct {
-	ActVm       float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
-	AlphaMaxCyc int     `desc:"cycle upon which to start updating AlphaMax value"`
-	Tau         float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
-	Gbar        float32 `desc:"strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input"`
+
+	// [def: 0.4] extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good..
+	ActVm float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
+
+	// cycle upon which to start updating AlphaMax value
+	AlphaMaxCyc int `desc:"cycle upon which to start updating AlphaMax value"`
+
+	// [def: 100] decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential
+	Tau float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
+
+	// strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input
+	Gbar float32 `desc:"strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input"`
 }
 
 func (np *NMDAParams) Defaults() {

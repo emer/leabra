@@ -12,12 +12,24 @@ import (
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
 // These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
 type MatrixParams struct {
-	LearnQtr    leabra.Quarters `desc:"Quarter(s) when learning takes place, typically Q2 and Q4, corresponding to the PFC GateQtr. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
-	PatchShunt  float32         `def:"0.2,0.5" min:"0" max:"1" desc:"how much the patch shunt activation multiplies the dopamine values -- 0 = complete shunting, 1 = no shunting -- should be a factor < 1.0"`
-	ShuntACh    bool            `def:"true" desc:"also shunt the ACh value driven from CIN units -- this prevents clearing of MSNConSpec traces -- more plausibly the patch units directly interfere with the effects of CIN's rather than through ach, but it is easier to implement with ach shunting here."`
-	OutAChInhib float32         `def:"0,0.3" desc:"how much does the LACK of ACh from the CIN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly"`
-	BurstGain   float32         `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
-	DipGain     float32         `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+
+	// Quarter(s) when learning takes place, typically Q2 and Q4, corresponding to the PFC GateQtr. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions.
+	LearnQtr leabra.Quarters `desc:"Quarter(s) when learning takes place, typically Q2 and Q4, corresponding to the PFC GateQtr. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
+
+	// [def: 0.2,0.5] [min: 0] [max: 1] how much the patch shunt activation multiplies the dopamine values -- 0 = complete shunting, 1 = no shunting -- should be a factor < 1.0
+	PatchShunt float32 `def:"0.2,0.5" min:"0" max:"1" desc:"how much the patch shunt activation multiplies the dopamine values -- 0 = complete shunting, 1 = no shunting -- should be a factor < 1.0"`
+
+	// [def: true] also shunt the ACh value driven from CIN units -- this prevents clearing of MSNConSpec traces -- more plausibly the patch units directly interfere with the effects of CIN's rather than through ach, but it is easier to implement with ach shunting here.
+	ShuntACh bool `def:"true" desc:"also shunt the ACh value driven from CIN units -- this prevents clearing of MSNConSpec traces -- more plausibly the patch units directly interfere with the effects of CIN's rather than through ach, but it is easier to implement with ach shunting here."`
+
+	// [def: 0,0.3] how much does the LACK of ACh from the CIN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly
+	OutAChInhib float32 `def:"0,0.3" desc:"how much does the LACK of ACh from the CIN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly"`
+
+	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
+	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+
+	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
+	DipGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
 }
 
 func (mp *MatrixParams) Defaults() {
@@ -32,11 +44,21 @@ func (mp *MatrixParams) Defaults() {
 
 // MatrixNeuron contains extra variables for MatrixLayer neurons -- stored separately
 type MatrixNeuron struct {
-	DA    float32 `desc:"per-neuron modulated dopamine level, derived from layer DA and Shunt"`
+
+	// per-neuron modulated dopamine level, derived from layer DA and Shunt
+	DA float32 `desc:"per-neuron modulated dopamine level, derived from layer DA and Shunt"`
+
+	// per-neuron effective learning dopamine value -- gain modulated and sign reversed for D2R
 	DALrn float32 `desc:"per-neuron effective learning dopamine value -- gain modulated and sign reversed for D2R"`
-	ACh   float32 `desc:"per-neuron modulated ACh level, derived from layer ACh and Shunt"`
+
+	// per-neuron modulated ACh level, derived from layer ACh and Shunt
+	ACh float32 `desc:"per-neuron modulated ACh level, derived from layer ACh and Shunt"`
+
+	// shunting input received from Patch neurons (in reality flows through SNc DA pathways)
 	Shunt float32 `desc:"shunting input received from Patch neurons (in reality flows through SNc DA pathways)"`
-	ActG  float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+
+	// gating activation -- the activity value when gating occurred in this pool
+	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
 }
 
 // MatrixLayer represents the dorsal matrisome MSN's that are the main
@@ -45,9 +67,17 @@ type MatrixNeuron struct {
 // (Maint on the left up to MaintN, Out on the right after)
 type MatrixLayer struct {
 	GateLayer
-	MaintN      int            `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
-	DaR         DaReceptors    `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
-	Matrix      MatrixParams   `view:"inline" desc:"matrix parameters"`
+
+	// number of Maint Pools in X outer dimension of 4D shape -- Out gating after that
+	MaintN int `desc:"number of Maint Pools in X outer dimension of 4D shape -- Out gating after that"`
+
+	// dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo
+	DaR DaReceptors `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+
+	// [view: inline] matrix parameters
+	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
+
+	// slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
 	MatrixNeurs []MatrixNeuron `desc:"slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
 }
 
