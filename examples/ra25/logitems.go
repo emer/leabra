@@ -112,10 +112,10 @@ func (ss *Sim) ConfigLogItems() {
 			etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
 				pcterr := ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", agg.AggMean)
 				epc := ctx.Stats.Int("Epoch")
-				if ss.Stats.Int("FirstZero") < 0 && pcterr == 0 {
+				if ss.Stats.Int("FirstZero") < 0 && pcterr[0] == 0 {
 					ss.Stats.SetInt("FirstZero", epc)
 				}
-				if pcterr == 0 {
+				if pcterr[0] == 0 {
 					nzero := ss.Stats.Int("NZero")
 					ss.Stats.SetInt("NZero", nzero+1)
 				} else {
