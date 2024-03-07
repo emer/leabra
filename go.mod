@@ -6,7 +6,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/emer/emergent v1.3.53
 	github.com/emer/empi v1.0.19
-	github.com/emer/etable v1.1.21
+	github.com/emer/etable v1.1.24
 	github.com/goki/gi v1.3.25
 	github.com/goki/ki v1.1.17
 	github.com/goki/kigen v1.0.2
