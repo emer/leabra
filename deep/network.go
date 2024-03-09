@@ -5,9 +5,9 @@
 package deep
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 )

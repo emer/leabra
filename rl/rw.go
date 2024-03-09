@@ -7,7 +7,7 @@ package rl
 import (
 	"log"
 
-	"github.com/emer/etable/minmax"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"

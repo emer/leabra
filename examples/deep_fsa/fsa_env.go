@@ -7,9 +7,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/emer/emergent/env"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/etable/etensor"
+	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/erand"
+	"github.com/emer/etable/v2/etensor"
 )
 
 // FSAEnv generates states in a finite state automaton (FSA) which is a

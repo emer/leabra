@@ -5,8 +5,8 @@
 package leabra
 
 import (
-	"github.com/emer/emergent/erand"
-	"github.com/emer/etable/minmax"
+	"github.com/emer/emergent/v2/erand"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/chans"
 	"github.com/emer/leabra/v2/knadapt"
 	"github.com/emer/leabra/v2/nxx1"

@@ -4,7 +4,7 @@
 
 package fffb
 
-import "github.com/emer/etable/minmax"
+import "github.com/emer/etable/v2/minmax"
 
 // Inhib contains state values for computed FFFB inhibition
 type Inhib struct {

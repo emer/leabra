@@ -7,7 +7,7 @@ package pvlv
 import (
 	"fmt"
 
-	_ "github.com/emer/etable/etensor"
+	_ "github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 )

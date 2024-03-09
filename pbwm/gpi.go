@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 )

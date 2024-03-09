@@ -5,7 +5,7 @@
 package leabra
 
 import (
-	"github.com/emer/etable/minmax"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/fffb"
 )
 

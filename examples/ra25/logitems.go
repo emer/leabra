@@ -5,12 +5,12 @@
 package main
 
 import (
-	"github.com/emer/emergent/elog"
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/etime"
-	"github.com/emer/etable/agg"
-	"github.com/emer/etable/etensor"
-	"github.com/emer/etable/minmax"
+	"github.com/emer/emergent/v2/elog"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/etable/v2/agg"
+	"github.com/emer/etable/v2/etensor"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/leabra"
 )
 

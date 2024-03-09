@@ -5,7 +5,7 @@
 package deep
 
 import (
-	"github.com/emer/emergent/efuns"
+	"github.com/emer/emergent/v2/efuns"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"

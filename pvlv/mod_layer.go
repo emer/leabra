@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/etable/minmax"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"

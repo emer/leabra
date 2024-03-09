@@ -4,7 +4,7 @@
 
 package main
 
-import "github.com/emer/emergent/params"
+import "github.com/emer/emergent/v2/params"
 
 // OrigParamSets is the original hip model params, prior to optimization in 2/2020
 var OrigParamSets = params.Sets{

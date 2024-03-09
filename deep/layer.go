@@ -5,7 +5,7 @@
 package deep
 
 import (
-	"github.com/emer/emergent/emer"
+	"github.com/emer/emergent/v2/emer"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
 )

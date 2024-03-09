@@ -5,7 +5,7 @@
 package pvlv
 
 import (
-	"github.com/emer/etable/etensor"
+	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/mat32"
 )

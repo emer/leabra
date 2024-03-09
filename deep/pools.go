@@ -7,8 +7,8 @@ package deep
 import (
 	"log"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/evec"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/evec"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////

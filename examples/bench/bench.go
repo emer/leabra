@@ -16,14 +16,14 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/patgen"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/timer"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/erand"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/patgen"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/timer"
+	"github.com/emer/etable/v2/etable"
+	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
 

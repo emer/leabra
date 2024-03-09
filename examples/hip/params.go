@@ -2,7 +2,7 @@
 
 package main
 
-import "github.com/emer/emergent/params"
+import "github.com/emer/emergent/v2/params"
 
 var SavedParamsSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{

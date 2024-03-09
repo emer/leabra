@@ -5,8 +5,8 @@
 package leabra
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/etable/etensor"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/etable/v2/etensor"
 )
 
 // LeabraNetwork defines the essential algorithmic API for Leabra, at the network level.

@@ -10,10 +10,10 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/emer/etable/eplot"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
-	_ "github.com/emer/etable/etview" // include to get gui views
+	"github.com/emer/etable/v2/eplot"
+	"github.com/emer/etable/v2/etable"
+	"github.com/emer/etable/v2/etensor"
+	_ "github.com/emer/etable/v2/etview" // include to get gui views
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"

@@ -4,7 +4,7 @@
 
 package main
 
-import "github.com/emer/emergent/params"
+import "github.com/emer/emergent/v2/params"
 
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that

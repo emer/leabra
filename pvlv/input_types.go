@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emer/etable/etensor"
+	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/ki/kit"
 )
 

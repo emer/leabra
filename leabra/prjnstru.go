@@ -8,11 +8,11 @@ import (
 	"errors"
 	"log"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/etable/etensor"
-	"github.com/emer/etable/minmax"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/etable/v2/etensor"
+	"github.com/emer/etable/v2/minmax"
 	"github.com/goki/gi/giv"
 )
 
