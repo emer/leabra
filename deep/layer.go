@@ -7,8 +7,8 @@ package deep
 //go:generate core generate
 
 import (
+	"cogentcore.org/core/ki"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/goki/ki/ki"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////

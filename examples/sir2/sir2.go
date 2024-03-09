@@ -18,6 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/gimain"
+	"cogentcore.org/core/giv"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
@@ -35,11 +40,6 @@ import (
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/pbwm"
 	"github.com/emer/leabra/v2/rl"
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/gi/giv"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 
 func guirun() {
 	TheSim.Init()
-	win := TheSim.ConfigGui()
+	win := TheSim.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -884,7 +884,7 @@ func (ss *Sim) Stopped() {
 
 // SaveWeights saves the network weights -- when called with giv.CallMethod
 // it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
+func (ss *Sim) SaveWeights(filename gi.Filename) {
 	ss.Net.SaveWtsJSON(filename)
 }
 
@@ -1383,8 +1383,8 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	}
 }
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() *gi.Window {
 	width := 1600
 	height := 1200
 

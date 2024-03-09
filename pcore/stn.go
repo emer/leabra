@@ -7,9 +7,9 @@ package pcore
 import (
 	"strings"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // CaParams control the calcium dynamics in STN neurons.

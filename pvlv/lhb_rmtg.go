@@ -7,11 +7,11 @@ package pvlv
 import (
 	"fmt"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	_ "github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // Gain constants for LHbRMTg inputs

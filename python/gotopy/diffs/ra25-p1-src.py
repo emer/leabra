@@ -526,7 +526,7 @@ class Sim(pygiv.ClassViewObj):
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
             print("Saving Weights to: %s\n" % fnm)
-            ss.Net.SaveWtsJSON(gi.FileName(fnm))
+            ss.Net.SaveWtsJSON(gi.Filename(fnm))
 
     def NewRun(ss):
         """
@@ -1171,9 +1171,9 @@ class Sim(pygiv.ClassViewObj):
         plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
         return plt
 
-    def ConfigGui(ss):
+    def ConfigGUI(ss):
         """
-        ConfigGui configures the GoGi gui interface for this simulation,
+        ConfigGUI configures the GoGi gui interface for this simulation,
         """
         width = 1600
         height = 1200
@@ -1382,7 +1382,7 @@ def main(argv):
         TheSim.Train()
         sys.exit(0)
     else:
-        TheSim.ConfigGui()
+        TheSim.ConfigGUI()
         print("Note: run pyleabra -i ra25.py to run in interactive mode, or just pyleabra, then 'import ra25'")
         print("for non-gui background running, here are the args:")
         usage()

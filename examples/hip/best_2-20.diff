@@ -401,5 +401,5 @@ index 0e622a4..acac8c5 100644
  	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
  	ss.Train()
 +	fnm := ss.LogFileName("runs")
-+	ss.RunStats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers)
++	ss.RunStats.SaveCSV(gi.Filename(fnm), etable.Tab, etable.Headers)
  }

@@ -7,8 +7,8 @@ package pcore
 import (
 	"strings"
 
+	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // VThalLayer represents the Ventral thalamus: VA / VM / VL,

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"log"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // BurstParams determine how the 5IB Burst activation is computed from

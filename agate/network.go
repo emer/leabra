@@ -5,6 +5,7 @@
 package agate
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
@@ -12,7 +13,6 @@ import (
 	"github.com/emer/leabra/v2/glong"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/pcore"
-	"github.com/goki/ki/kit"
 )
 
 // agate.Network has methods for configuring specialized AGate network components

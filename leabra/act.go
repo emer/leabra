@@ -11,8 +11,6 @@ import (
 	"github.com/emer/leabra/v2/chans"
 	"github.com/emer/leabra/v2/knadapt"
 	"github.com/emer/leabra/v2/nxx1"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
 )
 
 ///////////////////////////////////////////////////////////////////////
@@ -380,14 +378,7 @@ func (dp *DtParams) GFmRaw(geRaw float32, ge *float32) {
 //  Noise
 
 // ActNoiseType are different types / locations of random noise for activations
-type ActNoiseType int
-
-//go:generate stringer -type=ActNoiseType
-
-var KiT_ActNoiseType = kit.Enums.AddEnum(ActNoiseTypeN, kit.NotBitFlag, nil)
-
-func (ev ActNoiseType) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *ActNoiseType) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type ActNoiseType int //enums:enum
 
 // The activation noise types
 const (
@@ -519,16 +510,16 @@ func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
 	ncon = mat32.Max(ncon, 1) // prjn Avg can be < 1 in some cases
 	semExtra := 2
 	slayActN := int(mat32.Round(savg * snu)) // sending layer actual # active
-	slayActN = ints.MaxInt(slayActN, 1)
+	slayActN = max(slayActN, 1)
 	var sc float32
 	if ncon == snu {
 		sc = 1 / float32(slayActN)
 	} else {
 		maxActN := int(mat32.Min(ncon, float32(slayActN))) // max number we could get
 		avgActN := int(mat32.Round(savg * ncon))           // recv average actual # active if uniform
-		avgActN = ints.MaxInt(avgActN, 1)
+		avgActN = max(avgActN, 1)
 		expActN := avgActN + semExtra // expected
-		expActN = ints.MinInt(expActN, maxActN)
+		expActN = min(expActN, maxActN)
 		sc = 1 / float32(expActN)
 	}
 	return sc

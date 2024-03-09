@@ -8,9 +8,6 @@ require (
 	github.com/emer/emergent/v2 v2.0.0-dev0.0.11.0.20240224003427-ad13f00b17d7
 	github.com/emer/empi/v2 v2.0.0-dev0.0.4
 	github.com/emer/etable/v2 v2.0.0-dev0.0.16
-	github.com/goki/gi v1.3.25
-	github.com/goki/ki v1.1.17
-	github.com/goki/kigen v1.0.2
 )
 
 require (

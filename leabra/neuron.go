@@ -9,9 +9,8 @@ import (
 	"reflect"
 	"unsafe"
 
+	"cogentcore.org/core/ki/bitflag"
 	"cogentcore.org/core/mat32"
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/kit"
 )
 
 // NeuronVarStart is the byte offset of fields in the Neuron structure
@@ -215,14 +214,7 @@ func (nrn *Neuron) IsOff() bool {
 }
 
 // NeurFlags are bit-flags encoding relevant binary state for neurons
-type NeurFlags int32
-
-//go:generate stringer -type=NeurFlags
-
-var KiT_NeurFlags = kit.Enums.AddEnum(NeurFlagsN, kit.BitFlag, nil)
-
-func (ev NeurFlags) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *NeurFlags) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type NeurFlags int32 //enums:bitflag
 
 // The neuron flags
 const (

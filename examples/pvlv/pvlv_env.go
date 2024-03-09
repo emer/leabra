@@ -13,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/examples/pvlv/data"
 	"github.com/emer/leabra/v2/pvlv"
-	"github.com/goki/ki/kit"
 )
 
 type PVLVEnv struct {

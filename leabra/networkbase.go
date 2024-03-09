@@ -18,6 +18,8 @@ import (
 	"strings"
 	"sync"
 
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/glop/indent"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
@@ -25,10 +27,6 @@ import (
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/emergent/v2/timer"
 	"github.com/emer/emergent/v2/weights"
-	"github.com/goki/gi/gi"
-	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ints"
-	"github.com/goki/kigen/dedupe"
 )
 
 // LayFunChan is a channel that runs LeabraLayer functions
@@ -99,6 +97,8 @@ func (nt *NetworkBase) Label() string                 { return nt.Nm }
 func (nt *NetworkBase) NLayers() int                  { return len(nt.Layers) }
 func (nt *NetworkBase) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
 func (nt *NetworkBase) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
+func (nt *NetworkBase) MaxParallelData() int          { return 0 } // TODO(v2): should this be 0?
+func (nt *NetworkBase) NParallelData() int            { return 0 }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
 // Will create the layer map if it is nil or a different size than layers slice,
@@ -138,19 +138,30 @@ func (nt *NetworkBase) MakeLayMap() {
 // If no classes are passed, all layer names in order are returned.
 func (nt *NetworkBase) LayersByClass(classes ...string) []string {
 	var nms []string
+	hasName := map[string]bool{}
 	if len(classes) == 0 {
 		for _, ly := range nt.Layers {
 			if ly.IsOff() {
 				continue
 			}
-			nms = append(nms, ly.Name())
+			nm := ly.Name()
+			if !hasName[nm] {
+				hasName[nm] = true
+				nms = append(nms, nm)
+			}
 		}
 		return nms
 	}
 	for _, lc := range classes {
-		nms = append(nms, nt.LayClassMap[lc]...)
+		ns := nt.LayClassMap[lc]
+		for _, nm := range ns {
+			if !hasName[nm] {
+				hasName[nm] = true
+				nms = append(nms, nm)
+			}
+		}
 	}
-	return dedupe.DeDupe(nms)
+	return nms
 }
 
 // BuildThreads constructs the layer thread allocation based on Thread setting in the layers
@@ -161,7 +172,7 @@ func (nt *NetworkBase) BuildThreads() {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
-		nthr = ints.MaxInt(nthr, ly.Thr)
+		nthr = max(nthr, ly.Thr)
 	}
 	nt.NThreads = nthr + 1
 	nt.ThrLay = make([][]emer.Layer, nt.NThreads)
@@ -499,7 +510,7 @@ func (nt *NetworkBase) Build() error {
 
 // SaveWtsJSON saves network weights (and any other state that adapts with learning)
 // to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *NetworkBase) SaveWtsJSON(filename gi.FileName) error {
+func (nt *NetworkBase) SaveWtsJSON(filename gi.Filename) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -521,7 +532,7 @@ func (nt *NetworkBase) SaveWtsJSON(filename gi.FileName) error {
 
 // OpenWtsJSON opens network weights (and any other state that adapts with learning)
 // from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsJSON(filename gi.FileName) error {
+func (nt *NetworkBase) OpenWtsJSON(filename gi.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -629,7 +640,7 @@ func (nt *NetworkBase) SetWts(nw *weights.Network) error {
 
 // OpenWtsCpp opens network weights (and any other state that adapts with learning)
 // from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsCpp(filename gi.FileName) error {
+func (nt *NetworkBase) OpenWtsCpp(filename gi.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {

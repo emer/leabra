@@ -5,8 +5,8 @@
 package pbwm
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // PFCGateParams has parameters for PFC gating

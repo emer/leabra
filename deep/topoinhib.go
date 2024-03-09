@@ -5,11 +5,10 @@
 package deep
 
 import (
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/efuns"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
 )
 
 // TopoInhib provides for topographic gaussian inhibition integrating over neighborhood.
@@ -111,10 +110,10 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 			max := laymax
 			for iy := 1; iy <= wd; iy++ {
 				for ix := 1; ix <= wd; ix++ {
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px+ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px+ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px-ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px-ix, ints.MinInt(iy-1, ix-1)))
+					max = mat32.Max(max, ly.TopoGiPos(py+iy, px+ix, min(iy-1, ix-1)))
+					max = mat32.Max(max, ly.TopoGiPos(py-iy, px+ix, min(iy-1, ix-1)))
+					max = mat32.Max(max, ly.TopoGiPos(py+iy, px-ix, min(iy-1, ix-1)))
+					max = mat32.Max(max, ly.TopoGiPos(py-iy, px-ix, min(iy-1, ix-1)))
 				}
 			}
 			pi := py*pxn + px

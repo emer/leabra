@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/kit"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/ki/kit"
 )
 
 // var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")

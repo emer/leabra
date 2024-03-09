@@ -14,6 +14,11 @@ import (
 	"strconv"
 	"time"
 
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/gimain"
+	"cogentcore.org/core/giv"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
@@ -28,11 +33,6 @@ import (
 	_ "github.com/emer/etable/v2/etview" // include to get gui views
 	"github.com/emer/etable/v2/split"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/gi/giv"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 
 func guirun() {
 	TheSim.Init()
-	win := TheSim.ConfigGui()
+	win := TheSim.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -548,7 +548,7 @@ func (ss *Sim) RunEnd() {
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %v\n", fnm)
-		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+		ss.Net.SaveWtsJSON(gi.Filename(fnm))
 	}
 }
 
@@ -669,7 +669,7 @@ func (ss *Sim) Stopped() {
 
 // SaveWeights saves the network weights -- when called with giv.CallMethod
 // it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
+func (ss *Sim) SaveWeights(filename gi.Filename) {
 	ss.Net.SaveWtsJSON(filename)
 }
 
@@ -1200,8 +1200,8 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() *gi.Window {
 	width := 1600
 	height := 1200
 

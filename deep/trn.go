@@ -5,9 +5,9 @@
 package deep
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // TRNLayer copies inhibition from pools in CT and TRC layers, and from other

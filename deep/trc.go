@@ -9,9 +9,9 @@ import (
 	"log"
 	"math"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // Driver describes the source of driver inputs from cortex into TRC (pulvinar)

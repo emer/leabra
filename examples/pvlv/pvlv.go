@@ -18,6 +18,8 @@ import (
 	"sync"
 	"time"
 
+	"cogentcore.org/core/giv"
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/stepper"
@@ -27,18 +29,15 @@ import (
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/etable/v2/etview"
 	_ "github.com/emer/etable/v2/split"
-	"github.com/goki/gi/giv"
-	"github.com/goki/ki/ints"
 
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
+	"cogentcore.org/core/ki"
 
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/gimain"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/pvlv"
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
 
 	"github.com/emer/leabra/v2/examples/pvlv/data"
 )
@@ -57,7 +56,7 @@ func main() {
 
 func guirun(ss *Sim) {
 	ss.InitSim()
-	win := ss.ConfigGui()
+	win := ss.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -296,7 +295,7 @@ type Sim struct {
 var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
 
 func (ss *Sim) OpenCemerWeights(fName string) {
-	err := ss.Net.OpenWtsCpp(gi.FileName(fName))
+	err := ss.Net.OpenWtsCpp(gi.Filename(fName))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
@@ -715,7 +714,7 @@ func FileViewLoadCemerWts(vp *gi.Viewport2D) {
 			if sig == int64(gi.DialogAccepted) {
 				dlg, _ := send.(*gi.Dialog)
 				CemerWtsFname = giv.FileViewDialogValue(dlg)
-				err := TheSim.Net.OpenWtsCpp(gi.FileName(CemerWtsFname))
+				err := TheSim.Net.OpenWtsCpp(gi.Filename(CemerWtsFname))
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -723,7 +722,7 @@ func FileViewLoadCemerWts(vp *gi.Viewport2D) {
 		})
 }
 
-func (ss *Sim) ConfigGui() *gi.Window {
+func (ss *Sim) ConfigGUI() *gi.Window {
 	width := 1600
 	height := 1600
 	gi.SetAppName("pvlv")
@@ -931,7 +930,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 	maxLen := 0
 	for i := 0; i < int(StepGrainN); i++ {
 		s := StepGrain(i).String()
-		maxLen = ints.MaxInt(maxLen, len(s))
+		maxLen = max(maxLen, len(s))
 		stepKeys = append(stepKeys, s)
 	}
 	sg.ItemsFromStringList(stepKeys, false, maxLen)

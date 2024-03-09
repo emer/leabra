@@ -5,9 +5,8 @@
 package pbwm
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
 )
 
 // GateShape defines the shape of the outer pool dimensions of gating layers,
@@ -165,7 +164,7 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 	}
 	switch {
 	case myt == typ:
-		mx := ints.MinInt(len(states), len(ly.GateStates))
+		mx := min(len(states), len(ly.GateStates))
 		for i := 0; i < mx; i++ {
 			ly.SetGateState(i, &states[i])
 		}

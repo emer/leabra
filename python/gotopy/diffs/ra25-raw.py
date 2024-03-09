@@ -31,11 +31,11 @@ import "flag"
 _ "github.com/emer/etable/v2/etview" # include to get gui views
 "github.com/emer/etable/v2/split"
 "github.com/emer/leabra/v2/leabra"
-"github.com/goki/gi/gi"
-"github.com/goki/gi/gimain"
-"github.com/goki/gi/giv"
-"github.com/goki/ki/ki"
-"github.com/goki/ki/kit"
+"cogentcore.org/core/gi"
+"cogentcore.org/core/gimain"
+"cogentcore.org/core/giv"
+"cogentcore.org/core/ki"
+"cogentcore.org/core/laser"
 "cogentcore.org/core/mat32"
 
 def main():
@@ -49,7 +49,7 @@ def main():
 
 def guirun():
     TheSim.Init()
-    win = TheSim.ConfigGui()
+    win = TheSim.ConfigGUI()
     win.StartEventLoop()
 
     # LogPrec is precision for saving float values in logs
@@ -512,7 +512,7 @@ class Sim(pygiv.ClassViewObj):
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
             print("Saving Weights to: %s\n" % fnm)
-            ss.Net.SaveWtsJSON(gi.FileName(fnm))
+            ss.Net.SaveWtsJSON(gi.Filename(fnm))
 
     def NewRun(ss):
         """
@@ -1161,9 +1161,9 @@ class Sim(pygiv.ClassViewObj):
         plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
         return plt
 
-    def ConfigGui(ss):
+    def ConfigGUI(ss):
         """
-        ConfigGui configures the GoGi gui interface for this simulation,
+        ConfigGUI configures the GoGi gui interface for this simulation,
         """
         width = 1600
         height = 1200

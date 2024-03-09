@@ -5,12 +5,12 @@
 package leabra
 
 import (
+	"cogentcore.org/core/giv"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/gi/giv"
 )
 
 // LayerBase manages the structural elements of the layer, which are common

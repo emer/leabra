@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math/rand"
 
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/ki/kit"
 )
 
 // Actions are SIR actions

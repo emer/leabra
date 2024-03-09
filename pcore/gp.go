@@ -5,8 +5,8 @@
 package pcore
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // GPLayer represents a globus pallidus layer, including:

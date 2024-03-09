@@ -7,9 +7,9 @@ package rl
 import (
 	"log"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // TDRewPredLayer is the temporal differences reward prediction layer.

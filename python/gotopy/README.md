@@ -40,6 +40,6 @@ $ leabra-to.py mysim.go
 
 which generates a file named `mysim.py` -- important: will overwrite any existing!
 
-After running, you will need to fix the start and end by copying from an existing project that is similar (use ra25 if nothing else), with the CB callback functions at the top, and the `tbar.AddAction` calls in `ConfigGui` at the end that call these callbacks instead of the inline code.   There may be other errors which you can discover by running it -- there is a diminishing returns point on this conversion process so it is not designed to be complete.
+After running, you will need to fix the start and end by copying from an existing project that is similar (use ra25 if nothing else), with the CB callback functions at the top, and the `tbar.AddAction` calls in `ConfigGUI` at the end that call these callbacks instead of the inline code.   There may be other errors which you can discover by running it -- there is a diminishing returns point on this conversion process so it is not designed to be complete.
 
 

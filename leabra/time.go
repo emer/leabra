@@ -5,8 +5,8 @@
 package leabra
 
 import (
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/kit"
+	"cogentcore.org/core/ki/bitflag"
+	"cogentcore.org/core/kit"
 )
 
 // leabra.Time contains all the timing state and parameter information for running a model
@@ -95,14 +95,7 @@ func (tm *Time) QuarterCycle() int {
 // for use in relevant timing parameters where quarters need to be specified.
 // The Q1..4 defined values are integer *bit positions* -- use Set, Has etc methods
 // to set bits from these bit positions.
-type Quarters int32
-
-//go:generate stringer -type=Quarters
-
-var KiT_Quarters = kit.Enums.AddEnum(QuartersN, kit.BitFlag, nil)
-
-func (qt Quarters) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(qt) }
-func (qt *Quarters) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(qt, b) }
+type Quarters int32 //enums:bitflag
 
 // The quarters
 const (

@@ -5,11 +5,11 @@
 package pbwm
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // pbwm.Network has methods for configuring specialized PBWM network components

@@ -16,6 +16,9 @@ import (
 	"os"
 	"time"
 
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
@@ -33,10 +36,6 @@ import (
 	_ "github.com/emer/etable/v2/etview" // include to get gui views
 	"github.com/emer/etable/v2/split"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 func main() {
@@ -45,15 +44,13 @@ func main() {
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		guirun()
 	}
 }
 
 func guirun() {
 	TheSim.Init()
-	win := TheSim.ConfigGui()
+	win := TheSim.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -459,7 +456,7 @@ func (ss *Sim) RunEnd() {
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+		ss.Net.SaveWtsJSON(gi.Filename(fnm))
 	}
 }
 
@@ -529,7 +526,7 @@ func (ss *Sim) Stopped() {
 
 // SaveWeights saves the network weights -- when called with giv.CallMethod
 // it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
+func (ss *Sim) SaveWeights(filename gi.Filename) {
 	ss.Net.SaveWtsJSON(filename)
 }
 
@@ -770,10 +767,10 @@ func (ss *Sim) PCAStats() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() {
 	title := "Leabra Random Associator"
-	ss.GUI.MakeWindow(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	ss.GUI.MakeBody(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 	ss.GUI.CycleUpdateInterval = 10
 
 	nv := ss.GUI.AddNetView("NetView")
@@ -1009,6 +1006,6 @@ func (ss *Sim) CmdArgs() {
 
 	if saveNetData {
 		ndfn := ss.Net.Nm + "_" + ss.RunName() + ".netdata.gz"
-		ss.NetData.SaveJSON(gi.FileName(ndfn))
+		ss.NetData.SaveJSON(gi.Filename(ndfn))
 	}
 }

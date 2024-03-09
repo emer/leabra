@@ -5,29 +5,31 @@
 from leabra import go, gi, giv, kit, units
 from enum import Enum
 
+
 class ClassViewObj(object):
     """
     ClassViewObj is the base class for Python-defined classes that support a GUI editor (View)
     that functions like the StructView in GoGi.  It maintains a dict of tags for each field
     that determine tooltips and other behavior for the field GUI representation.
     """
+
     def __init__(self):
         self.Tags = {}
         self.ClassView = 0
         self.ClassViewInline = 0
         self.ClassViewDialog = 0
-    
+
     def SetTags(self, field, tags):
         self.Tags[field] = tags
 
     def NewClassView(self, name):
         self.ClassView = ClassView(self, name)
         return self.ClassView
-    
+
     def UpdateClassView(self):
         if self.ClassView != 0:
             self.ClassView.Update()
-    
+
     def NewClassViewInline(self, name):
         self.ClassViewInline = ClassViewInline(self, name)
         return self.ClassViewInline
@@ -35,42 +37,46 @@ class ClassViewObj(object):
     def UpdateClassViewInline(self):
         if self.ClassViewInline != 0:
             self.ClassViewInline.Update()
-        
+
     def OpenViewDialog(self, vp, name, tags):
-        """ opens a new dialog window for this object, or if one already exists, raises it """
+        """opens a new dialog window for this object, or if one already exists, raises it"""
         if self.ClassViewDialog != 0 and self.ClassViewDialog.Win.IsVisible():
             self.ClassViewDialog.Win.Raise()
             return
-        self.ClassViewDialog = ClassViewDialog(vp, self, name, tags, giv.DlgOpts(Title=name))
+        self.ClassViewDialog = ClassViewDialog(
+            vp, self, name, tags, giv.DlgOpts(Title=name)
+        )
         return self.ClassViewDialog
-        
+
+
 class ClassViewInline(object):
     """
-    ClassViewInline provides GoGi giv.StructViewInline like inline editor for 
+    ClassViewInline provides GoGi giv.StructViewInline like inline editor for
     python class objects under GoGi.
     Due to limitations on calling python callbacks across threads, you must pass a unique
     name to the constructor.  The object must be a ClassViewObj, with tags using same
-    syntax as the struct field tags in Go: https://github.com/goki/gi/wiki/Tags
+    syntax as the struct field tags in Go: https://cogentcore.org/core/gi/wiki/Tags
     for customizing the view properties (space separated, name:"value")
     """
+
     def __init__(self, obj, name):
-        """ note: essential to provide a distinctive name for each view """
+        """note: essential to provide a distinctive name for each view"""
         self.Class = obj
         self.Name = name
         classviews[name] = self
         self.Lay = 0
         self.Tags = obj.Tags
-        self.Views = {} # dict of ValueView reps of Go objs
-        self.Widgets = {} # dict of Widget reps of Python objs
-        
+        self.Views = {}  # dict of ValueView reps of Go objs
+        self.Widgets = {}  # dict of Widget reps of Python objs
+
     def FieldTags(self, field):
-        """ returns the full string of tags for given field, empty string if none """
+        """returns the full string of tags for given field, empty string if none"""
         if field in self.Tags:
             return self.Tags[field]
         return ""
 
     def FieldTagVal(self, field, key):
-        """ returns the value for given key in tags for given field, empty string if none """
+        """returns the value for given key in tags for given field, empty string if none"""
         return giv.StructTagVal(key, self.FieldTags(field))
 
     def Config(self):
@@ -84,7 +90,11 @@ class ClassViewInline(object):
         self.Widgets = {}
         for nm, val in flds.items():
             tags = self.FieldTags(nm)
-            if HasTagValue(tags, "view", "-") or nm == "Tags" or nm.startswith("ClassView"):
+            if (
+                HasTagValue(tags, "view", "-")
+                or nm == "Tags"
+                or nm.startswith("ClassView")
+            ):
                 continue
             lbl = gi.Label(self.Lay.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
             lbl.Redrawable = True
@@ -96,7 +106,10 @@ class ClassViewInline(object):
             if isinstance(val, go.GoClass):
                 fnm = self.Name + ":" + nm
                 if kit.IfaceIsNil(val):
-                    print("Field %s is Nil in ClassView for obj: %s" % (fnm, str(self.Class)))
+                    print(
+                        "Field %s is Nil in ClassView for obj: %s"
+                        % (fnm, str(self.Class))
+                    )
                     continue
                 vv = giv.ToValueView(val, tags)
                 giv.SetSoloValueIface(vv, val)
@@ -109,50 +122,54 @@ class ClassViewInline(object):
                 vw = PyObjView(val, nm, self.Lay, self.Name, tags)
                 self.Widgets[nm] = vw
         self.Lay.UpdateEnd(updt)
-        
+
     def Update(self):
         updt = self.Lay.UpdateStart()
         flds = self.Class.__dict__
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
-                giv.SetSoloValueIface(vv, val) # always update in case it might have changed
+                giv.SetSoloValueIface(
+                    vv, val
+                )  # always update in case it might have changed
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
                 PyObjUpdtView(val, vw, nm)
         self.Lay.UpdateEnd(updt)
 
+
 class ClassView(object):
     """
     ClassView provides GoGi giv.StructView like editor for python class objects under GoGi.
     Due to limitations on calling python callbacks across threads, you must pass a unique
     name to the constructor.  The object must be a ClassViewObj, with tags using same
-    syntax as the struct field tags in Go: https://github.com/goki/gi/wiki/Tags
+    syntax as the struct field tags in Go: https://cogentcore.org/core/gi/wiki/Tags
     for customizing the view properties (space separated, name:"value")
     """
+
     def __init__(self, obj, name):
-        """ note: essential to provide a distinctive name for each view """
+        """note: essential to provide a distinctive name for each view"""
         self.Class = obj
         self.Name = name
         classviews[name] = self
         self.Frame = 0
         self.Tags = obj.Tags
-        self.Views = {} # dict of ValueView reps of Go objs
-        self.Widgets = {} # dict of Widget reps of Python objs
-        
+        self.Views = {}  # dict of ValueView reps of Go objs
+        self.Widgets = {}  # dict of Widget reps of Python objs
+
     def AddFrame(self, par):
-        """ Add a new gi.Frame for the view to given parent gi object """
+        """Add a new gi.Frame for the view to given parent gi object"""
         self.Frame = gi.Frame(par.AddNewChild(gi.KiT_Frame(), "classview"))
-    
+
     def FieldTags(self, field):
-        """ returns the full string of tags for given field, empty string if none """
+        """returns the full string of tags for given field, empty string if none"""
         if field in self.Tags:
             return self.Tags[field]
         return ""
 
     def FieldTagVal(self, field, key):
-        """ returns the value for given key in tags for given field, empty string if none """
+        """returns the value for given key in tags for given field, empty string if none"""
         return giv.StructTagVal(key, self.FieldTags(field))
 
     def Config(self):
@@ -169,7 +186,11 @@ class ClassView(object):
         self.Widgets = {}
         for nm, val in flds.items():
             tags = self.FieldTags(nm)
-            if HasTagValue(tags, "view", "-") or nm == "Tags" or nm.startswith("ClassView"):
+            if (
+                HasTagValue(tags, "view", "-")
+                or nm == "Tags"
+                or nm.startswith("ClassView")
+            ):
                 continue
             lbl = gi.Label(self.Frame.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
             lbl.SetText(nm)
@@ -179,7 +200,10 @@ class ClassView(object):
             if isinstance(val, go.GoClass):
                 fnm = self.Name + ":" + nm
                 if kit.IfaceIsNil(val):
-                    print("Field %s is Nil in ClassView for obj: %s" % (fnm, str(self.Class)))
+                    print(
+                        "Field %s is Nil in ClassView for obj: %s"
+                        % (fnm, str(self.Class))
+                    )
                     continue
                 vv = giv.ToValueView(val, tags)
                 giv.SetSoloValueIface(vv, val)
@@ -192,19 +216,22 @@ class ClassView(object):
                 vw = PyObjView(val, nm, self.Frame, self.Name, tags)
                 self.Widgets[nm] = vw
         self.Frame.UpdateEnd(updt)
-        
+
     def Update(self):
         updt = self.Frame.UpdateStart()
         flds = self.Class.__dict__
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
-                giv.SetSoloValueIface(vv, val) # always update in case it might have changed
+                giv.SetSoloValueIface(
+                    vv, val
+                )  # always update in case it might have changed
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
                 PyObjUpdtView(val, vw, nm)
         self.Frame.UpdateEnd(updt)
+
 
 def ClassViewDialog(vp, obj, name, tags, opts):
     """
@@ -217,9 +244,9 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     prIdx = dlg.PromptWidgetIdx(frame)
 
     cv = obj.NewClassView(name)
-    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIdx+1, "cv-frame"))
+    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIdx + 1, "cv-frame"))
     cv.Config()
-    
+
     # sv.Viewport = dlg.Embed(gi.KiT_Viewport2D).(*gi.Viewport2D)
     # if opts.Inactive {
     #     sv.SetInactive()
@@ -229,17 +256,21 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     dlg.Open(0, 0, vp, go.nil)
     return dlg
 
+
 # classviews is a dictionary of classviews -- needed for callbacks
 classviews = {}
 
+
 def TagValue(tags, key):
-    """ returns tag value for given key """
+    """returns tag value for given key"""
     return giv.StructTagVal(key, tags)
 
+
 def HasTagValue(tags, key, value):
-    """ returns true if given key has given value """
+    """returns true if given key has given value"""
     tval = giv.StructTagVal(key, tags)
     return tval == value
+
 
 def PyObjView(val, nm, frame, ctxt, tags):
     """
@@ -306,6 +337,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
         vw.SetInactive()
     return vw
 
+
 def PyObjUpdtView(val, vw, nm):
     """
     updates the given view widget for given value
@@ -338,40 +370,48 @@ def PyObjUpdtView(val, vw, nm):
             tvw = gi.TextField(vw)
             tvw.SetText(str(val))
         else:
-            print("epygiv; object %s = %s doesn't have expected TextField widget" % (nm, val))
-    
+            print(
+                "epygiv; object %s = %s doesn't have expected TextField widget"
+                % (nm, val)
+            )
+
+
 def SetIntValCB(recv, send, sig, data):
     vw = gi.SpinBox(handle=send)
     nm = vw.Name()
-    nms = nm.split(':')
+    nms = nm.split(":")
     cv = classviews[nms[0]]
     setattr(cv.Class, nms[1], int(vw.Value))
+
 
 def SetFloatValCB(recv, send, sig, data):
     vw = gi.SpinBox(handle=send)
     nm = vw.Name()
-    nms = nm.split(':')
+    nms = nm.split(":")
     cv = classviews[nms[0]]
     setattr(cv.Class, nms[1], float(vw.Value))
+
 
 def EditObjCB(recv, send, sig, data):
     vw = gi.Action(handle=send)
     nm = vw.Name()
-    nms = nm.split(':')
+    nms = nm.split(":")
     cv = classviews[nms[0]]
     fld = getattr(cv.Class, nms[1])
     tags = cv.FieldTags(nms[1])
     nnm = nm.replace(":", "_")
     return fld.OpenViewDialog(vw.Viewport, nnm, tags)
 
+
 def SetStrValCB(recv, send, sig, data):
     if sig != gi.TextFieldDone:
         return
     vw = gi.TextField(handle=send)
     nm = vw.Name()
-    nms = nm.split(':')
+    nms = nm.split(":")
     cv = classviews[nms[0]]
     setattr(cv.Class, nms[1], vw.Text())
+
 
 def SetBoolValCB(recv, send, sig, data):
     if sig != gi.ButtonToggled:
@@ -379,32 +419,35 @@ def SetBoolValCB(recv, send, sig, data):
     vw = gi.CheckBox(handle=send)
     nm = vw.Name()
     # print("cb name:", nm)
-    nms = nm.split(':')
+    nms = nm.split(":")
     cv = classviews[nms[0]]
     setattr(cv.Class, nms[1], vw.IsChecked() != 0)
+
 
 ##############
 # Enums
 
+
 def ItemsFromEnum(cb, enm):
     nms = []
     typ = type(enm)
-    nnm = typ.__name__ + "N" # common convention of using the type name + N for last item in list
+    nnm = (
+        typ.__name__ + "N"
+    )  # common convention of using the type name + N for last item in list
     for en in typ:
         if en.name != nnm:
             nms.append(en.name)
     cb.ItemsFromStringList(go.Slice_string(nms), False, 0)
     cb.SetCurVal(enm.name)
-    
+
+
 def SetEnumCB(recv, send, sig, data):
     vw = gi.ComboBox(handle=send)
     nm = vw.Name()
-    nms = nm.split(':')
+    nms = nm.split(":")
     idx = vw.CurIndex
     cv = classviews[nms[0]]
     flds = cv.Class.__dict__
     typ = type(flds[nms[1]])
     vl = typ(idx)
     setattr(cv.Class, nms[1], vl)
-    
-    

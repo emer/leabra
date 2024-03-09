@@ -5,10 +5,10 @@
 package glong
 
 import (
+	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // glong.Network has methods for configuring specialized Glong network components.

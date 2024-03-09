@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/glop/indent"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/weights"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/ki/indent"
 )
 
 // Prjn is a basic Leabra projection with synaptic learning parameters

@@ -17,7 +17,6 @@ import (
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/ki/ki"
 )
 
 // Network has parameters for running a basic rate-coded Leabra network
@@ -632,77 +631,79 @@ func (nt *Network) ThreadReport() string {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Network props for gui
 
-var NetworkProps = ki.Props{
-	"ToolBar": ki.PropSlice{
-		{"SaveWtsJSON", ki.Props{
-			"label": "Save Wts...",
-			"icon":  "file-save",
-			"desc":  "Save json-formatted weights",
-			"Args": ki.PropSlice{
-				{"Weights File Name", ki.Props{
-					"default-field": "WtsFile",
-					"ext":           ".wts,.wts.gz",
-				}},
-			},
-		}},
-		{"OpenWtsJSON", ki.Props{
-			"label": "Open Wts...",
-			"icon":  "file-open",
-			"desc":  "Open json-formatted weights",
-			"Args": ki.PropSlice{
-				{"Weights File Name", ki.Props{
-					"default-field": "WtsFile",
-					"ext":           ".wts,.wts.gz",
-				}},
-			},
-		}},
-		{"sep-file", ki.BlankProp{}},
-		{"Build", ki.Props{
-			"icon": "update",
-			"desc": "build the network's neurons and synapses according to current params",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the network weight values according to prjn parameters",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the network activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"AddLayer", ki.Props{
-			"label": "Add Layer...",
-			"icon":  "new",
-			"desc":  "add a new layer to network",
-			"Args": ki.PropSlice{
-				{"Layer Name", ki.Props{}},
-				{"Layer Shape", ki.Props{
-					"desc": "shape of layer, typically 2D (Y, X) or 4D (Pools Y, Pools X, Units Y, Units X)",
-				}},
-				{"Layer Type", ki.Props{
-					"desc": "type of layer -- used for determining how inputs are applied",
-				}},
-			},
-		}},
-		{"ConnectLayerNames", ki.Props{
-			"label": "Connect Layers...",
-			"icon":  "new",
-			"desc":  "add a new connection between layers in the network",
-			"Args": ki.PropSlice{
-				{"Send Layer Name", ki.Props{}},
-				{"Recv Layer Name", ki.Props{}},
-				{"Pattern", ki.Props{
-					"desc": "pattern to connect with",
-				}},
-				{"Prjn Type", ki.Props{
-					"desc": "type of projection -- direction, or other more specialized factors",
-				}},
-			},
-		}},
-		{"AllWtScales", ki.Props{
-			"icon":        "file-sheet",
-			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
-			"show-return": true,
-		}},
-	},
-}
+// TODO(v2): props
+
+// var NetworkProps = ki.Props{
+// 	"ToolBar": ki.PropSlice{
+// 		{"SaveWtsJSON", ki.Props{
+// 			"label": "Save Wts...",
+// 			"icon":  "file-save",
+// 			"desc":  "Save json-formatted weights",
+// 			"Args": ki.PropSlice{
+// 				{"Weights File Name", ki.Props{
+// 					"default-field": "WtsFile",
+// 					"ext":           ".wts,.wts.gz",
+// 				}},
+// 			},
+// 		}},
+// 		{"OpenWtsJSON", ki.Props{
+// 			"label": "Open Wts...",
+// 			"icon":  "file-open",
+// 			"desc":  "Open json-formatted weights",
+// 			"Args": ki.PropSlice{
+// 				{"Weights File Name", ki.Props{
+// 					"default-field": "WtsFile",
+// 					"ext":           ".wts,.wts.gz",
+// 				}},
+// 			},
+// 		}},
+// 		{"sep-file", ki.BlankProp{}},
+// 		{"Build", ki.Props{
+// 			"icon": "update",
+// 			"desc": "build the network's neurons and synapses according to current params",
+// 		}},
+// 		{"InitWts", ki.Props{
+// 			"icon": "update",
+// 			"desc": "initialize the network weight values according to prjn parameters",
+// 		}},
+// 		{"InitActs", ki.Props{
+// 			"icon": "update",
+// 			"desc": "initialize the network activation values",
+// 		}},
+// 		{"sep-act", ki.BlankProp{}},
+// 		{"AddLayer", ki.Props{
+// 			"label": "Add Layer...",
+// 			"icon":  "new",
+// 			"desc":  "add a new layer to network",
+// 			"Args": ki.PropSlice{
+// 				{"Layer Name", ki.Props{}},
+// 				{"Layer Shape", ki.Props{
+// 					"desc": "shape of layer, typically 2D (Y, X) or 4D (Pools Y, Pools X, Units Y, Units X)",
+// 				}},
+// 				{"Layer Type", ki.Props{
+// 					"desc": "type of layer -- used for determining how inputs are applied",
+// 				}},
+// 			},
+// 		}},
+// 		{"ConnectLayerNames", ki.Props{
+// 			"label": "Connect Layers...",
+// 			"icon":  "new",
+// 			"desc":  "add a new connection between layers in the network",
+// 			"Args": ki.PropSlice{
+// 				{"Send Layer Name", ki.Props{}},
+// 				{"Recv Layer Name", ki.Props{}},
+// 				{"Pattern", ki.Props{
+// 					"desc": "pattern to connect with",
+// 				}},
+// 				{"Prjn Type", ki.Props{
+// 					"desc": "type of projection -- direction, or other more specialized factors",
+// 				}},
+// 			},
+// 		}},
+// 		{"AllWtScales", ki.Props{
+// 			"icon":        "file-sheet",
+// 			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
+// 			"show-return": true,
+// 		}},
+// 	},
+// }

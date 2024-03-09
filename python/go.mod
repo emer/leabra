@@ -7,8 +7,8 @@ require (
 	github.com/emer/etable v1.1.21
 	github.com/emer/leabra v1.2.8
 	github.com/go-python/gopy v0.4.6
-	github.com/goki/gi v1.3.18
-	github.com/goki/ki v1.1.11
+	cogentcore.org/core/gi v1.3.18
+	cogentcore.org/core/ki v1.1.11
 	github.com/goki/mat32 v1.0.15
 )
 
@@ -40,7 +40,7 @@ require (
 	github.com/goki/freetype v1.0.1 // indirect
 	github.com/goki/go-difflib v1.2.1 // indirect
 	github.com/goki/gosl v1.0.13 // indirect
-	github.com/goki/kigen v1.0.2 // indirect
+	cogentcore.org/core/kigen v1.0.2 // indirect
 	github.com/goki/pi v1.0.27 // indirect
 	github.com/goki/prof v1.0.0 // indirect
 	github.com/goki/vci v1.0.1 // indirect

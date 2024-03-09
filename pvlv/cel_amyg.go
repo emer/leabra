@@ -7,9 +7,9 @@ package pvlv
 import (
 	"fmt"
 
+	"cogentcore.org/core/kit"
 	_ "github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 type ICElAmygLayer interface {

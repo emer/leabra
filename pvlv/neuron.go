@@ -9,10 +9,10 @@ import (
 	"log"
 	"unsafe"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // UnitVarNames returns a list of variable names available on the units in this layer

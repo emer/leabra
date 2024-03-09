@@ -7,10 +7,10 @@ package rl
 import (
 	"log"
 
+	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // RWPredLayer computes reward prediction for a simple Rescorla-Wagner

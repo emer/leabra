@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"reflect"
 
-	"github.com/goki/ki/kit"
+	"cogentcore.org/core/kit"
 )
 
 type IRecs interface {

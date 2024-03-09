@@ -15,16 +15,15 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/glop/indent"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/ki/bitflag"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/weights"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/ki"
 )
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
@@ -704,8 +703,8 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 // ApplyExt2D applies 2D tensor external input
 func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
+	ymx := min(ext.Dim(0), ly.Shp.Dim(0))
+	xmx := min(ext.Dim(1), ly.Shp.Dim(1))
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
@@ -731,8 +730,8 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
 	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
 
-	ymx := ints.MinInt(ext.Dim(0), lNy)
-	xmx := ints.MinInt(ext.Dim(1), lNx)
+	ymx := min(ext.Dim(0), lNy)
+	xmx := min(ext.Dim(1), lNx)
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
@@ -756,10 +755,10 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 // ApplyExt4D applies 4D tensor external input
 func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ypmx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xpmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
-	ynmx := ints.MinInt(ext.Dim(2), ly.Shp.Dim(2))
-	xnmx := ints.MinInt(ext.Dim(3), ly.Shp.Dim(3))
+	ypmx := min(ext.Dim(0), ly.Shp.Dim(0))
+	xpmx := min(ext.Dim(1), ly.Shp.Dim(1))
+	ynmx := min(ext.Dim(2), ly.Shp.Dim(2))
+	xnmx := min(ext.Dim(3), ly.Shp.Dim(3))
 	for yp := 0; yp < ypmx; yp++ {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
@@ -789,7 +788,7 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(ext.Len(), len(ly.Neurons))
+	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -811,7 +810,7 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D(ext []float64) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -833,7 +832,7 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D32(ext []float32) {
 	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
