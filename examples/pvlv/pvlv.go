@@ -35,12 +35,12 @@ import (
 
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/pvlv"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/pvlv"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 
-	"github.com/emer/leabra/examples/pvlv/data"
+	"github.com/emer/leabra/v2/examples/pvlv/data"
 )
 
 var TheSim Sim // this is in a global mainly for debugging--otherwise it can be impossible to find

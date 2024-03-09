@@ -5,7 +5,7 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
 )

@@ -5,9 +5,9 @@
 package agate
 
 import (
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/interinhib"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/glong"
+	"github.com/emer/leabra/v2/interinhib"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
 )

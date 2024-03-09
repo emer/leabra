@@ -8,10 +8,10 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/deep"
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/pcore"
+	"github.com/emer/leabra/v2/deep"
+	"github.com/emer/leabra/v2/glong"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/pcore"
 	"github.com/goki/ki/kit"
 )
 

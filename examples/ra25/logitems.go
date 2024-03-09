@@ -11,7 +11,7 @@ import (
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 func (ss *Sim) ConfigLogItems() {

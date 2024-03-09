@@ -10,8 +10,8 @@ import (
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/pvlv"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/pvlv"
 )
 
 func (ss *Sim) ConfigNet(net *pvlv.Network) {

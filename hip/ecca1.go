@@ -5,7 +5,7 @@
 package hip
 
 import (
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/mat32"
 )
 

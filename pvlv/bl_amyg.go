@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/emer/leabra/interinhib"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/interinhib"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 )
 

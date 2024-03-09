@@ -12,7 +12,7 @@ import (
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/prjn"
 	"github.com/emer/etable/etensor"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/mat32"
 )
 

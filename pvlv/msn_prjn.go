@@ -10,7 +10,7 @@ import (
 	"reflect"
 
 	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"
 )

@@ -5,7 +5,7 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // PBWMLayer defines the essential algorithmic API for PBWM at the layer level.

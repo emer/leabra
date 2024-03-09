@@ -17,8 +17,8 @@ import (
 	"github.com/emer/emergent/params"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
-	"github.com/emer/leabra/examples/pvlv/data"
-	"github.com/emer/leabra/pvlv"
+	"github.com/emer/leabra/v2/examples/pvlv/data"
+	"github.com/emer/leabra/v2/pvlv"
 	"github.com/goki/ki/kit"
 )
 

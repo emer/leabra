@@ -24,7 +24,7 @@ import (
 	"github.com/emer/emergent/timer"
 	"github.com/emer/etable/etable"
 	"github.com/emer/etable/etensor"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 var Net *leabra.Network

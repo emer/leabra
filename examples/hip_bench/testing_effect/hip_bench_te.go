@@ -34,8 +34,8 @@ import (
 	"github.com/emer/etable/etensor"
 	_ "github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/split"
-	"github.com/emer/leabra/hip"
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/hip"
+	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"

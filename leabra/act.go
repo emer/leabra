@@ -7,9 +7,9 @@ package leabra
 import (
 	"github.com/emer/emergent/erand"
 	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/chans"
-	"github.com/emer/leabra/knadapt"
-	"github.com/emer/leabra/nxx1"
+	"github.com/emer/leabra/v2/chans"
+	"github.com/emer/leabra/v2/knadapt"
+	"github.com/emer/leabra/v2/nxx1"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
 	"github.com/goki/mat32"

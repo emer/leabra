@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 var (

@@ -31,9 +31,9 @@ import (
 	"github.com/emer/etable/etview" // include to get gui views
 	"github.com/emer/etable/simat"
 	"github.com/emer/etable/split"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/pbwm"
-	"github.com/emer/leabra/rl"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/pbwm"
+	"github.com/emer/leabra/v2/rl"
 	"github.com/goki/gi/gi"
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
