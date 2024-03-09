@@ -10,7 +10,6 @@ import (
 
 	"github.com/emer/leabra/v2/interinhib"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // IBlAmygLayer has one method, AsBlAmygLayer, that returns a pointer to the layer specifically as a BLA layer.
@@ -35,8 +34,6 @@ type BlAmygLayer struct {
 	// inter-layer inhibition parameters and state
 	ILI interinhib.InterInhib
 }
-
-var KiT_BlAmygLayer = kit.Types.AddType(&BlAmygLayer{}, nil)
 
 func (ly *BlAmygLayer) Build() error {
 	nu := ly.Shp.Len()

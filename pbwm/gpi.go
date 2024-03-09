@@ -25,8 +25,6 @@ type GPiThalPrjn struct {
 	GeRaw []float32
 }
 
-var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, leabra.PrjnProps)
-
 func (pj *GPiThalPrjn) Build() error {
 	err := pj.Prjn.Build()
 	if err != nil {

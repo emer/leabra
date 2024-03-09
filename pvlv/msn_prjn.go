@@ -12,7 +12,6 @@ import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // TraceSyn holds extra synaptic state for trace projections
@@ -25,15 +24,13 @@ type TraceSyn struct {
 	Tr float32
 }
 
-type DALrnRule int
+type DALrnRule int //enums:enum
 
 const (
 	DAHebbVS DALrnRule = iota
 	TraceNoThalVS
 	DALrnRuleN
 )
-
-var KiT_DALrnRule = kit.Enums.AddEnum(DALrnRuleN, kit.NotBitFlag, nil)
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  MSNPrjn

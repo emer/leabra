@@ -244,13 +244,13 @@ func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *STNLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *STNLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if varIdx < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

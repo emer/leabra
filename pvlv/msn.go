@@ -23,11 +23,8 @@ type MSNLayer struct {
 	// slice of delayed inhibition state for this layer.
 	DIState []DelInhState
 
-	//
 	DIParams DelayedInhibParams `view:"no-inline add-fields"`
 }
-
-var KiT_MSNLayer = kit.Types.AddType(&MSNLayer{}, leabra.LayerProps)
 
 type IMSNLayer interface {
 	AsMSNLayer() *MSNLayer
@@ -117,7 +114,7 @@ func (ly *MSNLayer) GetMonitorVal(data []string) float64 {
 			fmt.Printf("Unit value name \"%v\" unknown\n", valType)
 			val = 0
 		} else {
-			val = ly.UnitVal1D(idx, unitIdx)
+			val = ly.UnitVal1D(idx, unitIdx, 0) // TODO(v2): what should di be?
 		}
 	}
 	return float64(val)

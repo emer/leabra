@@ -23,8 +23,6 @@ type TDRewPredLayer struct {
 	DA float32 `inactive:"+"`
 }
 
-var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, leabra.LayerProps)
-
 // DALayer interface:
 
 func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
@@ -79,8 +77,6 @@ type TDRewIntegLayer struct {
 	// dopamine value for this layer
 	DA float32
 }
-
-var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, leabra.LayerProps)
 
 func (ly *TDRewIntegLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -226,8 +222,6 @@ func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
 type TDRewPredPrjn struct {
 	leabra.Prjn
 }
-
-var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, leabra.PrjnProps)
 
 func (pj *TDRewPredPrjn) Defaults() {
 	pj.Prjn.Defaults()

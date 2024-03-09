@@ -6,6 +6,8 @@
 
 package pvlv
 
+//go:generate core generate
+
 import (
 	"fmt"
 	"strconv"
@@ -211,7 +213,7 @@ func (dm *ModParams) Gain(da, gain float32, plusPhase bool) float32 {
 }
 
 // Dopamine receptor type, for D1R and D2R dopamine receptors
-type DaRType int
+type DaRType int //enums:enum
 
 const (
 	// D1R: primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum
@@ -222,8 +224,6 @@ const (
 
 	DaRTypeN
 )
-
-var KiT_DaRType = kit.Enums.AddEnum(DaRTypeN, kit.NotBitFlag, nil)
 
 // GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
 func (ly *ModLayer) GetMonitorVal(data []string) float64 {
@@ -313,7 +313,7 @@ func (ly *ModLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *ModLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *ModLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}

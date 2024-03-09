@@ -11,7 +11,6 @@ import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 func TotalAct(ly emer.Layer) float32 {
@@ -27,9 +26,6 @@ func TotalAct(ly emer.Layer) float32 {
 type Network struct {
 	leabra.Network
 }
-
-var NetworkProps = leabra.NetworkProps
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
 type INetwork interface {
 	AsLeabra() *leabra.Network

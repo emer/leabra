@@ -96,10 +96,10 @@ func (mnr *ModNeuron) VarByName(varNm string) (float32, error) {
 // // UnitVals fills in values of given variable name on unit,
 // // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // // Returns error on invalid var name.
-func (ly *ModLayer) UnitVals(vals *[]float32, varNm string) error {
+func (ly *ModLayer) UnitVals(vals *[]float32, varNm string, di int) error {
 	vidx, ok := ModNeuronVarsMap[varNm]
 	if !ok {
-		return ly.Layer.UnitVals(vals, "Act")
+		return ly.Layer.UnitVals(vals, "Act", di)
 	}
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -115,7 +115,7 @@ func (ly *ModLayer) UnitVals(vals *[]float32, varNm string) error {
 
 // // UnitValsTensor returns values of given variable name on unit
 // // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
 		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
 		log.Println(err)
@@ -123,7 +123,7 @@ func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 	}
 	vidx, ok := ModNeuronVarsMap[varNm]
 	if !ok {
-		return ly.Layer.UnitValsTensor(tsr, varNm)
+		return ly.Layer.UnitValsTensor(tsr, varNm, di)
 	}
 	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.ModNeurs {
@@ -136,11 +136,11 @@ func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-func (ly *ModLayer) ModUnitVals(vals *[]float32, varNm string) error {
+func (ly *ModLayer) ModUnitVals(vals *[]float32, varNm string, di int) error {
 
 	vidx, err := NeuronVarIdxByName(varNm)
 	if err != nil {
-		return ly.ModUnitVals(vals, varNm)
+		return ly.ModUnitVals(vals, varNm, di)
 	}
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -149,7 +149,7 @@ func (ly *ModLayer) ModUnitVals(vals *[]float32, varNm string) error {
 		*vals = (*vals)[0:nn]
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
+		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i, di)
 	}
 	return nil
 }

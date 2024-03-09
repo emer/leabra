@@ -229,13 +229,13 @@ func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := len(leabra.NeuronVars)
 	if varIdx < 0 || varIdx > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
 		return mat32.NaN()
 	}
 	if varIdx <= nn { //
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
@@ -285,8 +285,6 @@ type MatrixPrjn struct {
 	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
 	TrSyns []TraceSyn
 }
-
-var KiT_MatrixPrjn = kit.Types.AddType(&MatrixPrjn{}, leabra.PrjnProps)
 
 func (pj *MatrixPrjn) Defaults() {
 	pj.Prjn.Defaults()

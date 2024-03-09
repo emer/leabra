@@ -9,7 +9,6 @@ import (
 
 	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/minmax"
-	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
 )
@@ -28,8 +27,6 @@ type RWPredLayer struct {
 	// dopamine value for this layer
 	DA float32 `inactive:"+"`
 }
-
-var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, leabra.LayerProps)
 
 func (ly *RWPredLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -169,8 +166,6 @@ type RWPrjn struct {
 	// tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal
 	DaTol float32
 }
-
-var KiT_RWPrjn = kit.Types.AddType(&RWPrjn{}, deep.PrjnProps)
 
 func (pj *RWPrjn) Defaults() {
 	pj.Prjn.Defaults()

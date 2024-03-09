@@ -11,7 +11,6 @@ import (
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/rl"
-	"github.com/goki/ki/kit"
 )
 
 // CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
@@ -35,8 +34,6 @@ type CINLayer struct {
 	// acetylcholine value for this layer
 	ACh float32
 }
-
-var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
 func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -117,13 +114,13 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CINLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = ACh
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

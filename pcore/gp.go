@@ -19,8 +19,6 @@ type GPLayer struct {
 	GPLay GPLays
 }
 
-var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
-
 // Defaults in param.Sheet format
 // Sel: "GPLayer", Desc: "defaults",
 // 	Params: params.Params{
