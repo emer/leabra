@@ -249,7 +249,6 @@ const (
 	ValNone Valence = iota // NoValence
 	POS
 	NEG
-	ValenceN
 )
 
 var ValMap = map[string]Valence{

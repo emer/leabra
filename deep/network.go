@@ -16,8 +16,6 @@ type Network struct {
 	leabra.Network
 }
 
-var NetworkProps = leabra.NetworkProps
-
 // Defaults sets all the default parameters for all layers and projections
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()

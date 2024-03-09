@@ -43,32 +43,32 @@ const (
 // LayerProps are required to get the extended EnumType
 var LayerProps = ki.Props{
 	// "EnumType:Typ": KiT_LayerType,
-	"ToolBar": ki.PropSlice{
-		{"Defaults", ki.Props{
-			"icon": "reset",
-			"desc": "return all parameters to their intial default values",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"LesionNeurons", ki.Props{
-			"icon": "close",
-			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-			"Args": ki.PropSlice{
-				{"Proportion", ki.Props{
-					"desc": "proportion (0 -- 1) of neurons to lesion",
-				}},
-			},
-		}},
-		{"UnLesionNeurons", ki.Props{
-			"icon": "reset",
-			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
-		}},
-	},
+	// "ToolBar": ki.PropSlice{
+	// 	{"Defaults", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "return all parameters to their intial default values",
+	// 	}},
+	// 	{"InitWts", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+	// 	}},
+	// 	{"InitActs", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's activation values",
+	// 	}},
+	// 	{"sep-act", ki.BlankProp{}},
+	// 	{"LesionNeurons", ki.Props{
+	// 		"icon": "close",
+	// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+	// 		"Args": ki.PropSlice{
+	// 			{"Proportion", ki.Props{
+	// 				"desc": "proportion (0 -- 1) of neurons to lesion",
+	// 			}},
+	// 		},
+	// 	}},
+	// 	{"UnLesionNeurons", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+	// 	}},
+	// },
 }
