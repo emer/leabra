@@ -9,7 +9,6 @@ import (
 
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // AlphaMaxLayer computes the maximum activation per neuron over the alpha cycle.
@@ -23,8 +22,6 @@ type AlphaMaxLayer struct {
 	// per-neuron maximum activation value during alpha cycle
 	AlphaMaxs []float32
 }
-
-var KiT_AlphaMaxLayer = kit.Types.AddType(&AlphaMaxLayer{}, leabra.LayerProps)
 
 func (ly *AlphaMaxLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -121,13 +118,13 @@ func (ly *AlphaMaxLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *AlphaMaxLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *AlphaMaxLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = AlphaMax
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

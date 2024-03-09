@@ -4,6 +4,8 @@
 
 package leabra
 
+//go:generate core generate
+
 import (
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/etable/v2/etensor"

@@ -153,13 +153,13 @@ func (ly *CTLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CTLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CTLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = CtxtGes
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
+		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

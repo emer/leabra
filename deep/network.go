@@ -9,15 +9,12 @@ import (
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // deep.Network has parameters for running a DeepLeabra network
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
 var NetworkProps = leabra.NetworkProps
 

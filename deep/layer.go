@@ -4,10 +4,11 @@
 
 package deep
 
+//go:generate core generate
+
 import (
 	"github.com/emer/emergent/v2/emer"
 	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -18,11 +19,7 @@ import (
 // redundancy here.
 
 // LayerType has the DeepLeabra extensions to the emer.LayerType types, for gui
-type LayerType emer.LayerType
-
-//go:generate stringer -type=LayerType
-
-var KiT_LayerType = kit.Enums.AddEnumExt(emer.KiT_LayerType, LayerTypeN, kit.NotBitFlag, nil)
+type LayerType emer.LayerType //enums:enum
 
 const (
 	// CT are layer 6 corticothalamic projecting neurons, which drive predictions
@@ -45,7 +42,7 @@ const (
 
 // LayerProps are required to get the extended EnumType
 var LayerProps = ki.Props{
-	"EnumType:Typ": KiT_LayerType,
+	// "EnumType:Typ": KiT_LayerType,
 	"ToolBar": ki.PropSlice{
 		{"Defaults", ki.Props{
 			"icon": "reset",

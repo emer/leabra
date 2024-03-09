@@ -9,7 +9,6 @@ import (
 
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // OutParams determine the behavior of OutLayer
@@ -34,8 +33,6 @@ type OutLayer struct {
 	// Parameters for output layer function
 	Out OutParams
 }
-
-var KiT_OutLayer = kit.Types.AddType(&OutLayer{}, leabra.LayerProps)
 
 func (ly *OutLayer) Defaults() {
 	ly.MaintLayer.Defaults()

@@ -9,7 +9,6 @@ import (
 	"github.com/emer/leabra/v2/glong"
 	"github.com/emer/leabra/v2/interinhib"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 // PulseClearParams are parameters for the synchronous pulse of activation /
@@ -36,8 +35,6 @@ type MaintLayer struct {
 	// inhibition from output layer
 	InterInhib interinhib.InterInhib
 }
-
-var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()

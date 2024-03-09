@@ -8,8 +8,6 @@ import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 // NMDAParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
@@ -68,8 +66,6 @@ type NMDAPrjn struct {
 	leabra.Prjn // access as .Prjn
 }
 
-var KiT_NMDAPrjn = kit.Types.AddType(&NMDAPrjn{}, PrjnProps)
-
 func (pj *NMDAPrjn) UpdateParams() {
 	pj.Prjn.UpdateParams()
 }
@@ -95,11 +91,7 @@ func (pj *NMDAPrjn) PrjnTypeName() string {
 //  PrjnType
 
 // PrjnType has the GLong extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType
-
-//go:generate stringer -type=PrjnType
-
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
+type PrjnType emer.PrjnType //enums:enum
 
 // The GLong prjn types
 const (
@@ -113,6 +105,6 @@ const (
 	PrjnTypeN
 )
 
-var PrjnProps = ki.Props{
-	"EnumType:Typ": KiT_PrjnType,
-}
+// var PrjnProps = ki.Props{
+// 	"EnumType:Typ": KiT_PrjnType,
+// }

@@ -8,8 +8,6 @@ import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 // CtxtSender is an interface for layers that implement the SendCtxtGe method
@@ -36,8 +34,6 @@ type CTCtxtPrjn struct {
 	// local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value
 	CtxtGeInc []float32
 }
-
-var KiT_CTCtxtPrjn = kit.Types.AddType(&CTCtxtPrjn{}, PrjnProps)
 
 func (pj *CTCtxtPrjn) Defaults() {
 	pj.Prjn.Defaults()
@@ -192,11 +188,7 @@ func (pj *CTCtxtPrjn) DWt() {
 //  PrjnType
 
 // PrjnType has the DeepLeabra extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType
-
-//go:generate stringer -type=PrjnType
-
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
+type PrjnType emer.PrjnType //enums:enum
 
 // The DeepLeabra prjn types
 const (
@@ -214,6 +206,6 @@ const (
 	PrjnTypeN
 )
 
-var PrjnProps = ki.Props{
-	"EnumType:Typ": KiT_PrjnType,
-}
+// var PrjnProps = ki.Props{
+// 	"EnumType:Typ": KiT_PrjnType,
+// }

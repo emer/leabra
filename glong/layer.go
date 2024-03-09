@@ -4,10 +4,11 @@
 
 package glong
 
+//go:generate core generate
+
 import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/ki/kit"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -30,8 +31,6 @@ type Layer struct {
 	// slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
 	GlNeurs []Neuron
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 func (ly *Layer) Defaults() {
 	ly.Layer.Defaults()
@@ -251,13 +250,13 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if varIdx < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
