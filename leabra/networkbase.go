@@ -34,8 +34,8 @@ import (
 // LayFunChan is a channel that runs LeabraLayer functions
 type LayFunChan chan func(ly LeabraLayer)
 
-// leabra.NetworkStru holds the basic structural components of a network (layers)
-type NetworkStru struct {
+// leabra.NetworkBase holds the basic structural components of a network (layers)
+type NetworkBase struct {
 
 	// we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary.
 	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-"`
@@ -88,22 +88,22 @@ type NetworkStru struct {
 
 // InitName MUST be called to initialize the network's pointer to itself as an emer.Network
 // which enables the proper interface methods to be called.  Also sets the name.
-func (nt *NetworkStru) InitName(net emer.Network, name string) {
+func (nt *NetworkBase) InitName(net emer.Network, name string) {
 	nt.EmerNet = net
 	nt.Nm = name
 }
 
 // emer.Network interface methods:
-func (nt *NetworkStru) Name() string                  { return nt.Nm }
-func (nt *NetworkStru) Label() string                 { return nt.Nm }
-func (nt *NetworkStru) NLayers() int                  { return len(nt.Layers) }
-func (nt *NetworkStru) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
-func (nt *NetworkStru) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
+func (nt *NetworkBase) Name() string                  { return nt.Nm }
+func (nt *NetworkBase) Label() string                 { return nt.Nm }
+func (nt *NetworkBase) NLayers() int                  { return len(nt.Layers) }
+func (nt *NetworkBase) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
+func (nt *NetworkBase) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
 // Will create the layer map if it is nil or a different size than layers slice,
 // but otherwise needs to be updated manually.
-func (nt *NetworkStru) LayerByName(name string) emer.Layer {
+func (nt *NetworkBase) LayerByName(name string) emer.Layer {
 	if nt.LayMap == nil || len(nt.LayMap) != len(nt.Layers) {
 		nt.MakeLayMap()
 	}
@@ -113,7 +113,7 @@ func (nt *NetworkStru) LayerByName(name string) emer.Layer {
 
 // LayerByNameTry returns a layer by looking it up by name -- emits a log error message
 // if layer is not found
-func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
+func (nt *NetworkBase) LayerByNameTry(name string) (emer.Layer, error) {
 	ly := nt.LayerByName(name)
 	if ly == nil {
 		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Nm)
@@ -124,7 +124,7 @@ func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
 }
 
 // MakeLayMap updates layer map based on current layers
-func (nt *NetworkStru) MakeLayMap() {
+func (nt *NetworkBase) MakeLayMap() {
 	nt.LayMap = make(map[string]emer.Layer, len(nt.Layers))
 	for _, ly := range nt.Layers {
 		nt.LayMap[ly.Name()] = ly
@@ -136,7 +136,7 @@ func (nt *NetworkStru) MakeLayMap() {
 // The layer Type is always included as a Class, along with any other
 // space-separated strings specified in Class for parameter styling, etc.
 // If no classes are passed, all layer names in order are returned.
-func (nt *NetworkStru) LayersByClass(classes ...string) []string {
+func (nt *NetworkBase) LayersByClass(classes ...string) []string {
 	var nms []string
 	if len(classes) == 0 {
 		for _, ly := range nt.Layers {
@@ -154,7 +154,7 @@ func (nt *NetworkStru) LayersByClass(classes ...string) []string {
 }
 
 // BuildThreads constructs the layer thread allocation based on Thread setting in the layers
-func (nt *NetworkStru) BuildThreads() {
+func (nt *NetworkBase) BuildThreads() {
 	nthr := 0
 	for _, lyi := range nt.Layers {
 		if lyi.IsOff() {
@@ -186,7 +186,7 @@ func (nt *NetworkStru) BuildThreads() {
 
 // StdVertLayout arranges layers in a standard vertical (z axis stack) layout, by setting
 // the Rel settings
-func (nt *NetworkStru) StdVertLayout() {
+func (nt *NetworkBase) StdVertLayout() {
 	lstnm := ""
 	for li, ly := range nt.Layers {
 		if li == 0 {
@@ -199,7 +199,7 @@ func (nt *NetworkStru) StdVertLayout() {
 }
 
 // Layout computes the 3D layout of layers based on their relative position settings
-func (nt *NetworkStru) Layout() {
+func (nt *NetworkBase) Layout() {
 	for itr := 0; itr < 5; itr++ {
 		var lstly emer.Layer
 		for _, ly := range nt.Layers {
@@ -231,9 +231,9 @@ func (nt *NetworkStru) Layout() {
 }
 
 // BoundsUpdt updates the Min / Max display bounds for 3D display
-func (nt *NetworkStru) BoundsUpdt() {
-	mn := mat32.NewVec3Scalar(mat32.Infinity)
-	mx := mat32.Vec3Zero
+func (nt *NetworkBase) BoundsUpdt() {
+	mn := mat32.V3Scalar(mat32.Infinity)
+	mx := mat32.Vec3{}
 	for _, ly := range nt.Layers {
 		ps := ly.Pos()
 		sz := ly.Size()
@@ -252,7 +252,7 @@ func (nt *NetworkStru) BoundsUpdt() {
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
 // returns true if any params were set, and error if there were any errors.
-func (nt *NetworkStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+func (nt *NetworkBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
 	applied := false
 	var rerr error
 	for _, ly := range nt.Layers {
@@ -269,7 +269,7 @@ func (nt *NetworkStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error
 
 // NonDefaultParams returns a listing of all parameters in the Network that
 // are not at their default values -- useful for setting param styles etc.
-func (nt *NetworkStru) NonDefaultParams() string {
+func (nt *NetworkBase) NonDefaultParams() string {
 	nds := ""
 	for _, ly := range nt.Layers {
 		nd := ly.NonDefaultParams()
@@ -279,7 +279,7 @@ func (nt *NetworkStru) NonDefaultParams() string {
 }
 
 // AllParams returns a listing of all parameters in the Network.
-func (nt *NetworkStru) AllParams() string {
+func (nt *NetworkBase) AllParams() string {
 	nds := ""
 	for _, ly := range nt.Layers {
 		nd := ly.AllParams()
@@ -290,13 +290,13 @@ func (nt *NetworkStru) AllParams() string {
 
 // KeyLayerParams returns a listing for all layers in the network,
 // of the most important layer-level params (specific to each algorithm).
-func (nt *NetworkStru) KeyLayerParams() string {
+func (nt *NetworkBase) KeyLayerParams() string {
 	return "" // todo: implement!
 }
 
 // KeyPrjnParams returns a listing for all Recv projections in the network,
 // of the most important projection-level params (specific to each algorithm).
-func (nt *NetworkStru) KeyPrjnParams() string {
+func (nt *NetworkBase) KeyPrjnParams() string {
 	return nt.AllWtScales()
 }
 
@@ -304,7 +304,7 @@ func (nt *NetworkStru) KeyPrjnParams() string {
 // in all Layers, Recv projections.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep
 // track of what they all are set to.
-func (nt *NetworkStru) AllWtScales() string {
+func (nt *NetworkBase) AllWtScales() string {
 	str := ""
 	for _, lyi := range nt.Layers {
 		if lyi.IsOff() {
@@ -326,7 +326,7 @@ func (nt *NetworkStru) AllWtScales() string {
 
 // AddLayerInit is implementation routine that takes a given layer and
 // adds it to the network, and initializes and configures it properly.
-func (nt *NetworkStru) AddLayerInit(ly emer.Layer, name string, shape []int, typ emer.LayerType) {
+func (nt *NetworkBase) AddLayerInit(ly emer.Layer, name string, shape []int, typ emer.LayerType) {
 	if nt.EmerNet == nil {
 		log.Printf("Network EmerNet is nil -- you MUST call InitName on network, passing a pointer to the network to initialize properly!")
 		return
@@ -344,7 +344,7 @@ func (nt *NetworkStru) AddLayerInit(ly emer.Layer, name string, shape []int, typ
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each unit
 // group having 4 rows (Y) of 5 (X) units.
-func (nt *NetworkStru) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
+func (nt *NetworkBase) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
 	ly := nt.EmerNet.(LeabraNetwork).NewLayer() // essential to use EmerNet interface here!
 	nt.AddLayerInit(ly, name, shape, typ)
 	return ly
@@ -352,7 +352,7 @@ func (nt *NetworkStru) AddLayer(name string, shape []int, typ emer.LayerType) em
 
 // AddLayer2D adds a new layer with given name and 2D shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential.
-func (nt *NetworkStru) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerType) emer.Layer {
+func (nt *NetworkBase) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerType) emer.Layer {
 	return nt.AddLayer(name, []int{shapeY, shapeX}, typ)
 }
 
@@ -361,7 +361,7 @@ func (nt *NetworkStru) AddLayer2D(name string, shapeY, shapeX int, typ emer.Laye
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each pool
 // having 4 rows (Y) of 5 (X) neurons.
-func (nt *NetworkStru) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ emer.LayerType) emer.Layer {
+func (nt *NetworkBase) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ emer.LayerType) emer.Layer {
 	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
 }
 
@@ -369,7 +369,7 @@ func (nt *NetworkStru) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 // adding to the recv and send projection lists on each side of the connection.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, typ emer.PrjnType) (rlay, slay emer.Layer, pj emer.Prjn, err error) {
+func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat prjn.Pattern, typ emer.PrjnType) (rlay, slay emer.Layer, pj emer.Prjn, err error) {
 	rlay, err = nt.LayerByNameTry(recv)
 	if err != nil {
 		return
@@ -386,7 +386,7 @@ func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, ty
 // adding to the recv and send projection lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType) emer.Prjn {
+func (nt *NetworkBase) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType) emer.Prjn {
 	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
 	return nt.ConnectLayersPrjn(send, recv, pat, typ, pj)
 }
@@ -395,7 +395,7 @@ func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, ty
 // adding given prjn to the recv and send projection lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkBase) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
 	pj.(LeabraPrjn).AsLeabra().Connect(send, recv, pat, typ)
 	recv.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
@@ -408,7 +408,7 @@ func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern
 // to the high layer, and receives a Back projection in the opposite direction.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat prjn.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Prjn, err error) {
+func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat prjn.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Prjn, err error) {
 	lowlay, err = nt.LayerByNameTry(low)
 	if err != nil {
 		return
@@ -427,7 +427,7 @@ func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat prjn.Pattern
 // and receives a Back projection in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern) (fwdpj, backpj emer.Prjn) {
+func (nt *NetworkBase) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern) (fwdpj, backpj emer.Prjn) {
 	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
 	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
 	return
@@ -439,7 +439,7 @@ func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 // Py = python version with no return vals.
-func (nt *NetworkStru) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Pattern) {
+func (nt *NetworkBase) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Pattern) {
 	nt.ConnectLayers(low, high, pat, emer.Forward)
 	nt.ConnectLayers(high, low, pat, emer.Back)
 }
@@ -447,7 +447,7 @@ func (nt *NetworkStru) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Patte
 // LateralConnectLayer establishes a self-projection within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) emer.Prjn {
+func (nt *NetworkBase) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) emer.Prjn {
 	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
 	return nt.LateralConnectLayerPrjn(lay, pat, pj)
 }
@@ -455,7 +455,7 @@ func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) eme
 // LateralConnectLayerPrjn makes lateral self-projection using given projection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkBase) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
 	pj.Init(pj)
 	pj.(LeabraPrjn).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
 	lay.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
@@ -465,7 +465,7 @@ func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern,
 
 // Build constructs the layer and projection state based on the layer shapes
 // and patterns of interconnectivity
-func (nt *NetworkStru) Build() error {
+func (nt *NetworkBase) Build() error {
 	nt.StopThreads() // any existing..
 	nt.LayClassMap = make(map[string][]string)
 	emsg := ""
@@ -499,7 +499,7 @@ func (nt *NetworkStru) Build() error {
 
 // SaveWtsJSON saves network weights (and any other state that adapts with learning)
 // to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
+func (nt *NetworkBase) SaveWtsJSON(filename gi.FileName) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -521,7 +521,7 @@ func (nt *NetworkStru) SaveWtsJSON(filename gi.FileName) error {
 
 // OpenWtsJSON opens network weights (and any other state that adapts with learning)
 // from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
+func (nt *NetworkBase) OpenWtsJSON(filename gi.FileName) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -547,7 +547,7 @@ func (nt *NetworkStru) OpenWtsJSON(filename gi.FileName) error {
 // WriteWtsJSON writes the weights from this layer from the receiver-side perspective
 // in a JSON text format.  We build in the indentation logic to make it much faster and
 // more efficient.
-func (nt *NetworkStru) WriteWtsJSON(w io.Writer) error {
+func (nt *NetworkBase) WriteWtsJSON(w io.Writer) error {
 	depth := 0
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("{\n"))
@@ -588,7 +588,7 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) error {
 // ReadWtsJSON reads network weights from the receiver-side perspective
 // in a JSON text format.  Reads entire file into a temporary weights.Weights
 // structure that is then passed to Layers etc using SetWts method.
-func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
+func (nt *NetworkBase) ReadWtsJSON(r io.Reader) error {
 	nw, err := weights.NetReadJSON(r)
 	if err != nil {
 		return err // note: already logged
@@ -601,7 +601,7 @@ func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
 }
 
 // SetWts sets the weights for this network from weights.Network decoded values
-func (nt *NetworkStru) SetWts(nw *weights.Network) error {
+func (nt *NetworkBase) SetWts(nw *weights.Network) error {
 	var err error
 	if nw.Network != "" {
 		nt.Nm = nw.Network
@@ -629,7 +629,7 @@ func (nt *NetworkStru) SetWts(nw *weights.Network) error {
 
 // OpenWtsCpp opens network weights (and any other state that adapts with learning)
 // from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkStru) OpenWtsCpp(filename gi.FileName) error {
+func (nt *NetworkBase) OpenWtsCpp(filename gi.FileName) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -653,7 +653,7 @@ func (nt *NetworkStru) OpenWtsCpp(filename gi.FileName) error {
 // ReadWtsCpp reads the weights from old C++ emergent format.
 // Reads entire file into a temporary weights.Weights
 // structure that is then passed to Layers etc using SetWts method.
-func (nt *NetworkStru) ReadWtsCpp(r io.Reader) error {
+func (nt *NetworkBase) ReadWtsCpp(r io.Reader) error {
 	nw, err := weights.NetReadCpp(r)
 	if err != nil {
 		return err // note: already logged
@@ -667,7 +667,7 @@ func (nt *NetworkStru) ReadWtsCpp(r io.Reader) error {
 
 // VarRange returns the min / max values for given variable
 // todo: support r. s. projection values
-func (nt *NetworkStru) VarRange(varNm string) (min, max float32, err error) {
+func (nt *NetworkBase) VarRange(varNm string) (min, max float32, err error) {
 	first := true
 	for _, ly := range nt.Layers {
 		lmin, lmax, lerr := ly.VarRange(varNm)
@@ -694,7 +694,7 @@ func (nt *NetworkStru) VarRange(varNm string) (min, max float32, err error) {
 //  Threading infrastructure
 
 // StartThreads starts up the computation threads, which monitor the channels for work
-func (nt *NetworkStru) StartThreads() {
+func (nt *NetworkBase) StartThreads() {
 	fmt.Printf("NThreads: %d\tgo max procs: %d\tnum cpu:%d\n", nt.NThreads, runtime.GOMAXPROCS(0), runtime.NumCPU())
 	for th := 0; th < nt.NThreads; th++ {
 		go nt.ThrWorker(th) // start the worker thread for this channel
@@ -702,14 +702,14 @@ func (nt *NetworkStru) StartThreads() {
 }
 
 // StopThreads stops the computation threads
-func (nt *NetworkStru) StopThreads() {
+func (nt *NetworkBase) StopThreads() {
 	for th := 0; th < nt.NThreads; th++ {
 		close(nt.ThrChans[th])
 	}
 }
 
 // ThrWorker is the worker function run by the worker threads
-func (nt *NetworkStru) ThrWorker(tt int) {
+func (nt *NetworkBase) ThrWorker(tt int) {
 	if nt.LockThreads {
 		runtime.LockOSThread()
 	}
@@ -732,7 +732,7 @@ func (nt *NetworkStru) ThrWorker(tt int) {
 
 // ThrLayFun calls function on layer, using threaded (go routine worker) computation if NThreads > 1
 // and otherwise just iterates over layers in the current thread.
-func (nt *NetworkStru) ThrLayFun(fun func(ly LeabraLayer), funame string) {
+func (nt *NetworkBase) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 	nt.FunTimerStart(funame)
 	if nt.NThreads <= 1 {
 		for _, ly := range nt.Layers {
@@ -752,7 +752,7 @@ func (nt *NetworkStru) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 }
 
 // TimerReport reports the amount of time spent in each function, and in each thread
-func (nt *NetworkStru) TimerReport() {
+func (nt *NetworkBase) TimerReport() {
 	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Nm, nt.NThreads)
 	fmt.Printf("\t%13s \t%7s\t%7s\n", "Function Name", "Secs", "Pct")
 	nfn := len(nt.FunTimes)
@@ -790,14 +790,14 @@ func (nt *NetworkStru) TimerReport() {
 }
 
 // ThrTimerReset resets the per-thread timers
-func (nt *NetworkStru) ThrTimerReset() {
+func (nt *NetworkBase) ThrTimerReset() {
 	for th := 0; th < nt.NThreads; th++ {
 		nt.ThrTimes[th].Reset()
 	}
 }
 
 // FunTimerStart starts function timer for given function name -- ensures creation of timer
-func (nt *NetworkStru) FunTimerStart(fun string) {
+func (nt *NetworkBase) FunTimerStart(fun string) {
 	ft, ok := nt.FunTimes[fun]
 	if !ok {
 		ft = &timer.Time{}
@@ -807,7 +807,7 @@ func (nt *NetworkStru) FunTimerStart(fun string) {
 }
 
 // FunTimerStop stops function timer -- timer must already exist
-func (nt *NetworkStru) FunTimerStop(fun string) {
+func (nt *NetworkBase) FunTimerStop(fun string) {
 	ft := nt.FunTimes[fun]
 	ft.Stop()
 }

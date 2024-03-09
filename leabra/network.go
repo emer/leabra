@@ -18,12 +18,11 @@ import (
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
-// leabra.Network has parameters for running a basic rate-coded Leabra network
+// Network has parameters for running a basic rate-coded Leabra network
 type Network struct {
-	NetworkStru
+	NetworkBase
 
 	// how frequently to update the weight balance average weight factor -- relatively expensive
 	WtBalInterval int `def:"10"`
@@ -31,8 +30,6 @@ type Network struct {
 	// counter for how long it has been since last WtBal
 	WtBalCtr int `inactive:"+"`
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
 
 func (nt *Network) AsLeabra() *Network {
 	return nt
