@@ -32,7 +32,6 @@ import (
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
-	_ "github.com/emer/etable/v2/etview" // include to get gui views
 	"github.com/emer/etable/v2/split"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -49,7 +48,7 @@ func main() {
 
 func guirun() {
 	TheSim.Init()
-	win := TheSim.ConfigGUI()
+	TheSim.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -59,7 +58,7 @@ const LogPrec = 4
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
 var ParamSets = params.Sets{
-	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
+	"Base": {Desc: "these are the best params", Sheets: params.Sheets{
 		"NetSize": &params.Sheet{
 			{Sel: ".Hidden", Desc: "all hidden layers",
 				Params: params.Params{
@@ -97,7 +96,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "DefaultInhib", Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
+	"DefaultInhib": {Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "#Output", Desc: "go back to default",
 				Params: params.Params{
@@ -111,7 +110,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
+	"NoMomentum": {Desc: "no momentum or normalization", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "no norm or momentum",
 				Params: params.Params{
@@ -120,7 +119,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
+	"WtBalOn": {Desc: "try with weight bal on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "weight bal on",
 				Params: params.Params{
