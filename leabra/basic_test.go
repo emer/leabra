@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"testing"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/etable/v2/etensor"
-	"github.com/goki/mat32"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of

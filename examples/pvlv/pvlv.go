@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/stepper"
 	_ "github.com/emer/etable/v2/agg"
@@ -28,7 +29,6 @@ import (
 	_ "github.com/emer/etable/v2/split"
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ints"
-	"github.com/goki/mat32"
 
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"

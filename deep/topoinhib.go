@@ -5,11 +5,11 @@
 package deep
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/efuns"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // TopoInhib provides for topographic gaussian inhibition integrating over neighborhood.

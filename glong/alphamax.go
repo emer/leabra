@@ -7,9 +7,9 @@ package glong
 import (
 	"fmt"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // AlphaMaxLayer computes the maximum activation per neuron over the alpha cycle.

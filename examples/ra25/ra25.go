@@ -16,6 +16,7 @@ import (
 	"os"
 	"time"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
 	"github.com/emer/emergent/v2/emer"
@@ -36,7 +37,6 @@ import (
 	"github.com/goki/gi/gimain"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 func main() {

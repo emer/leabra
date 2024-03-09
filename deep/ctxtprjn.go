@@ -5,11 +5,11 @@
 package deep
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // CtxtSender is an interface for layers that implement the SendCtxtGe method

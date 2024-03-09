@@ -19,7 +19,7 @@ overall values.
 */
 package nxx1
 
-import "github.com/goki/mat32"
+import "cogentcore.org/core/mat32"
 
 // Params are the Noisy X/(X+1) rate-coded activation function parameters.
 // This function well-characterizes the neural response function empirically,

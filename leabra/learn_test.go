@@ -7,7 +7,7 @@ package leabra
 import (
 	"testing"
 
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
 )
 
 func TestXCal(t *testing.T) {

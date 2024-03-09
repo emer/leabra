@@ -3,6 +3,7 @@ module github.com/emer/leabra/v2
 go 1.22
 
 require (
+	cogentcore.org/core v0.0.7-0.20240224002924-02e90b285442
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/emer/emergent/v2 v2.0.0-dev0.0.11.0.20240224003427-ad13f00b17d7
 	github.com/emer/empi/v2 v2.0.0-dev0.0.4
@@ -10,11 +11,9 @@ require (
 	github.com/goki/gi v1.3.25
 	github.com/goki/ki v1.1.17
 	github.com/goki/kigen v1.0.2
-	github.com/goki/mat32 v1.0.18
 )
 
 require (
-	cogentcore.org/core v0.0.7-0.20240224002924-02e90b285442 // indirect
 	git.sr.ht/~sbinet/gg v0.5.0 // indirect
 	github.com/Bios-Marcel/wastebasket v0.0.4-0.20240213135800-f26f1ae0a7c4 // indirect
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
@@ -45,6 +44,7 @@ require (
 	github.com/goki/freetype v1.0.4 // indirect
 	github.com/goki/go-difflib v1.2.1 // indirect
 	github.com/goki/gosl v1.0.17 // indirect
+	github.com/goki/mat32 v1.0.18 // indirect
 	github.com/goki/pi v1.0.28 // indirect
 	github.com/goki/prof v1.0.1 // indirect
 	github.com/goki/vci v1.0.2 // indirect

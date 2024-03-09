@@ -5,9 +5,9 @@
 package pvlv
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/mat32"
 )
 
 // IAmygPrjn has one method, AsAmygModPrjn, which recasts the projection as a moddulatory projection

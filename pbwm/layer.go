@@ -7,9 +7,9 @@ package pbwm
 import (
 	"fmt"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // pbwm.Layer is the base layer type for PBWM framework -- has variables for the

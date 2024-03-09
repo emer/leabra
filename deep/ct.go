@@ -7,9 +7,9 @@ package deep
 import (
 	"fmt"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // CTLayer implements the corticothalamic projecting layer 6 deep neurons

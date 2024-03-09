@@ -5,7 +5,7 @@
 package glong
 
 import (
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
 )
 
 // GABABParams control the GABAB dynamics in PFC Maint neurons, based on Brunel & Wang (2001)

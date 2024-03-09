@@ -5,6 +5,7 @@
 package leabra
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/chans"
@@ -12,7 +13,6 @@ import (
 	"github.com/emer/leabra/v2/nxx1"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 ///////////////////////////////////////////////////////////////////////

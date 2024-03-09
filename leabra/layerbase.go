@@ -5,17 +5,17 @@
 package leabra
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/gi/giv"
-	"github.com/goki/mat32"
 )
 
-// leabra.LayerStru manages the structural elements of the layer, which are common
+// LayerBase manages the structural elements of the layer, which are common
 // to any Layer type
-type LayerStru struct {
+type LayerBase struct {
 
 	// we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary.
 	LeabraLay LeabraLayer `copy:"-" json:"-" xml:"-" view:"-"`
@@ -68,62 +68,64 @@ type LayerStru struct {
 // InitName MUST be called to initialize the layer's pointer to itself as an emer.Layer
 // which enables the proper interface methods to be called.  Also sets the name, and
 // the parent network that this layer belongs to (which layers may want to retain).
-func (ls *LayerStru) InitName(lay emer.Layer, name string, net emer.Network) {
+func (ls *LayerBase) InitName(lay emer.Layer, name string, net emer.Network) {
 	ls.LeabraLay = lay.(LeabraLayer)
 	ls.Nm = name
 	ls.Network = net
 }
 
-func (ls *LayerStru) Name() string               { return ls.Nm }
-func (ls *LayerStru) SetName(nm string)          { ls.Nm = nm }
-func (ls *LayerStru) Label() string              { return ls.Nm }
-func (ls *LayerStru) Class() string              { return ls.Typ.String() + " " + ls.Cls }
-func (ls *LayerStru) SetClass(cls string)        { ls.Cls = cls }
-func (ls *LayerStru) TypeName() string           { return "Layer" } // type category, for params..
-func (ls *LayerStru) Type() emer.LayerType       { return ls.Typ }
-func (ls *LayerStru) SetType(typ emer.LayerType) { ls.Typ = typ }
-func (ls *LayerStru) IsOff() bool                { return ls.Off }
-func (ls *LayerStru) SetOff(off bool)            { ls.Off = off }
-func (ls *LayerStru) Shape() *etensor.Shape      { return &ls.Shp }
-func (ls *LayerStru) Is2D() bool                 { return ls.Shp.NumDims() == 2 }
-func (ls *LayerStru) Is4D() bool                 { return ls.Shp.NumDims() == 4 }
-func (ls *LayerStru) Thread() int                { return ls.Thr }
-func (ls *LayerStru) SetThread(thr int)          { ls.Thr = thr }
-func (ls *LayerStru) RelPos() relpos.Rel         { return ls.Rel }
-func (ls *LayerStru) Pos() mat32.Vec3            { return ls.Ps }
-func (ls *LayerStru) SetPos(pos mat32.Vec3)      { ls.Ps = pos }
-func (ls *LayerStru) Index() int                 { return ls.Idx }
-func (ls *LayerStru) SetIndex(idx int)           { ls.Idx = idx }
-func (ls *LayerStru) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
-func (ls *LayerStru) NRecvPrjns() int            { return len(ls.RcvPrjns) }
-func (ls *LayerStru) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
-func (ls *LayerStru) SendPrjns() *LeabraPrjns    { return &ls.SndPrjns }
-func (ls *LayerStru) NSendPrjns() int            { return len(ls.SndPrjns) }
-func (ls *LayerStru) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
-func (ls *LayerStru) RepIdxs() []int             { return ls.RepIxs }
+func (ls *LayerBase) Name() string        { return ls.Nm }
+func (ls *LayerBase) SetName(nm string)   { ls.Nm = nm }
+func (ls *LayerBase) Label() string       { return ls.Nm }
+func (ls *LayerBase) Class() string       { return ls.Typ.String() + " " + ls.Cls }
+func (ls *LayerBase) SetClass(cls string) { ls.Cls = cls }
+func (ly *LayerBase) AddClass(cls string) { ly.Cls = params.AddClass(ly.Cls, cls) }
 
-func (ly *LayerStru) SendNameTry(sender string) (emer.Prjn, error) {
+func (ls *LayerBase) TypeName() string           { return "Layer" } // type category, for params..
+func (ls *LayerBase) Type() emer.LayerType       { return ls.Typ }
+func (ls *LayerBase) SetType(typ emer.LayerType) { ls.Typ = typ }
+func (ls *LayerBase) IsOff() bool                { return ls.Off }
+func (ls *LayerBase) SetOff(off bool)            { ls.Off = off }
+func (ls *LayerBase) Shape() *etensor.Shape      { return &ls.Shp }
+func (ls *LayerBase) Is2D() bool                 { return ls.Shp.NumDims() == 2 }
+func (ls *LayerBase) Is4D() bool                 { return ls.Shp.NumDims() == 4 }
+func (ls *LayerBase) Thread() int                { return ls.Thr }
+func (ls *LayerBase) SetThread(thr int)          { ls.Thr = thr }
+func (ls *LayerBase) RelPos() relpos.Rel         { return ls.Rel }
+func (ls *LayerBase) Pos() mat32.Vec3            { return ls.Ps }
+func (ls *LayerBase) SetPos(pos mat32.Vec3)      { ls.Ps = pos }
+func (ls *LayerBase) Index() int                 { return ls.Idx }
+func (ls *LayerBase) SetIndex(idx int)           { ls.Idx = idx }
+func (ls *LayerBase) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
+func (ls *LayerBase) NRecvPrjns() int            { return len(ls.RcvPrjns) }
+func (ls *LayerBase) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
+func (ls *LayerBase) SendPrjns() *LeabraPrjns    { return &ls.SndPrjns }
+func (ls *LayerBase) NSendPrjns() int            { return len(ls.SndPrjns) }
+func (ls *LayerBase) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
+func (ls *LayerBase) RepIdxs() []int             { return ls.RepIxs }
+
+func (ly *LayerBase) SendNameTry(sender string) (emer.Prjn, error) {
 	return emer.SendNameTry(ly.LeabraLay, sender)
 }
-func (ly *LayerStru) SendName(sender string) emer.Prjn {
+func (ly *LayerBase) SendName(sender string) emer.Prjn {
 	pj, _ := emer.SendNameTry(ly.LeabraLay, sender)
 	return pj
 }
-func (ly *LayerStru) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
+func (ly *LayerBase) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
 	return emer.SendNameTypeTry(ly.LeabraLay, sender, typ)
 }
-func (ly *LayerStru) RecvNameTry(receiver string) (emer.Prjn, error) {
+func (ly *LayerBase) RecvNameTry(receiver string) (emer.Prjn, error) {
 	return emer.RecvNameTry(ly.LeabraLay, receiver)
 }
-func (ly *LayerStru) RecvName(receiver string) emer.Prjn {
+func (ly *LayerBase) RecvName(receiver string) emer.Prjn {
 	pj, _ := emer.RecvNameTry(ly.LeabraLay, receiver)
 	return pj
 }
-func (ly *LayerStru) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
+func (ly *LayerBase) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
 	return emer.RecvNameTypeTry(ly.LeabraLay, receiver, typ)
 }
 
-func (ls *LayerStru) Idx4DFrom2D(x, y int) ([]int, bool) {
+func (ls *LayerBase) Idx4DFrom2D(x, y int) ([]int, bool) {
 	lshp := ls.Shape()
 	nux := lshp.Dim(3)
 	nuy := lshp.Dim(2)
@@ -138,14 +140,14 @@ func (ls *LayerStru) Idx4DFrom2D(x, y int) ([]int, bool) {
 	return idx, true
 }
 
-func (ls *LayerStru) SetRelPos(rel relpos.Rel) {
+func (ls *LayerBase) SetRelPos(rel relpos.Rel) {
 	ls.Rel = rel
 	if ls.Rel.Scale == 0 {
 		ls.Rel.Defaults()
 	}
 }
 
-func (ls *LayerStru) Size() mat32.Vec2 {
+func (ls *LayerBase) Size() mat32.Vec2 {
 	if ls.Rel.Scale == 0 {
 		ls.Rel.Defaults()
 	}
@@ -163,7 +165,7 @@ func (ls *LayerStru) Size() mat32.Vec2 {
 }
 
 // SetShape sets the layer shape and also uses default dim names
-func (ls *LayerStru) SetShape(shape []int) {
+func (ls *LayerBase) SetShape(shape []int) {
 	var dnms []string
 	if len(shape) == 2 {
 		dnms = emer.LayerDimNames2D
@@ -174,7 +176,7 @@ func (ls *LayerStru) SetShape(shape []int) {
 }
 
 // SetRepIdxsShape sets the RepIdxs, and RepShape and as list of dimension sizes
-func (ls *LayerStru) SetRepIdxsShape(idxs, shape []int) {
+func (ls *LayerBase) SetRepIdxsShape(idxs, shape []int) {
 	ls.RepIxs = idxs
 	var dnms []string
 	if len(shape) == 2 {
@@ -186,7 +188,7 @@ func (ls *LayerStru) SetRepIdxsShape(idxs, shape []int) {
 }
 
 // RepShape returns the shape to use for representative units
-func (ls *LayerStru) RepShape() *etensor.Shape {
+func (ls *LayerBase) RepShape() *etensor.Shape {
 	sz := len(ls.RepIxs)
 	if sz == 0 {
 		return &ls.Shp
@@ -200,7 +202,7 @@ func (ls *LayerStru) RepShape() *etensor.Shape {
 // NPools returns the number of unit sub-pools according to the shape parameters.
 // Currently supported for a 4D shape, where the unit pools are the first 2 Y,X dims
 // and then the units within the pools are the 2nd 2 Y,X dims
-func (ls *LayerStru) NPools() int {
+func (ls *LayerBase) NPools() int {
 	if ls.Shp.NumDims() != 4 {
 		return 0
 	}
@@ -213,7 +215,7 @@ func (ls *LayerStru) NPools() int {
 //	S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
 //
 // returns false if not found.
-func (ls *LayerStru) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
+func (ls *LayerBase) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
 	for _, rpj := range ls.RcvPrjns {
 		if rpj.SendLay() == spj.RecvLay() {
 			return rpj, true
@@ -223,7 +225,7 @@ func (ls *LayerStru) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
 }
 
 // Config configures the basic properties of the layer
-func (ls *LayerStru) Config(shape []int, typ emer.LayerType) {
+func (ls *LayerBase) Config(shape []int, typ emer.LayerType) {
 	ls.SetShape(shape)
 	ls.Typ = typ
 }
@@ -233,7 +235,7 @@ func (ls *LayerStru) Config(shape []int, typ emer.LayerType) {
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
 // returns true if any params were set, and error if there were any errors.
-func (ls *LayerStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
 	applied := false
 	var rerr error
 	app, err := pars.Apply(ls.LeabraLay, setMsg) // essential to go through LeabraPrj
@@ -258,7 +260,7 @@ func (ls *LayerStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 
 // NonDefaultParams returns a listing of all parameters in the Layer that
 // are not at their default values -- useful for setting param styles etc.
-func (ls *LayerStru) NonDefaultParams() string {
+func (ls *LayerBase) NonDefaultParams() string {
 	nds := giv.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
 	for _, pj := range ls.RcvPrjns {
 		pnd := pj.NonDefaultParams()

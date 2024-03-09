@@ -5,8 +5,8 @@
 package hip
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/mat32"
 )
 
 // Contrastive Hebbian Learning (CHL) parameters

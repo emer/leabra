@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/weights"
@@ -18,7 +19,6 @@ import (
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // leabra.Prjn is a basic Leabra projection with synaptic learning parameters

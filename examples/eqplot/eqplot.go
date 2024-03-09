@@ -11,6 +11,7 @@ import (
 	"math"
 	"strconv"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/eplot"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
@@ -19,7 +20,6 @@ import (
 	"github.com/goki/gi/gimain"
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ki"
-	"github.com/goki/mat32"
 )
 
 func main() {

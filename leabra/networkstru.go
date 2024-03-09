@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
@@ -28,7 +29,6 @@ import (
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"
 	"github.com/goki/kigen/dedupe"
-	"github.com/goki/mat32"
 )
 
 // LayFunChan is a channel that runs LeabraLayer functions

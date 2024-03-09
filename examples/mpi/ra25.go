@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"time"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
@@ -38,7 +39,6 @@ import (
 	"github.com/goki/gi/giv"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 func main() {

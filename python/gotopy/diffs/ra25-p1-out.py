@@ -36,7 +36,7 @@ _ "github.com/emer/etable/v2/etview" # include to get gui views
 "github.com/goki/gi/giv"
 "github.com/goki/ki/ki"
 "github.com/goki/ki/kit"
-"github.com/goki/mat32"
+"cogentcore.org/core/mat32"
 
 def main():
     TheSim.New()

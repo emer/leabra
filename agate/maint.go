@@ -5,11 +5,11 @@
 package agate
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/glong"
 	"github.com/emer/leabra/v2/interinhib"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // PulseClearParams are parameters for the synchronous pulse of activation /

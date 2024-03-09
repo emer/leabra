@@ -5,7 +5,7 @@
 package leabra
 
 import (
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
 )
 
 ///////////////////////////////////////////////////////////////////////

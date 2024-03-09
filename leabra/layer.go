@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/weights"
@@ -24,12 +25,11 @@ import (
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
 type Layer struct {
-	LayerStru
+	LayerBase
 
 	// Activation parameters and methods for computing activations
 	Act ActParams `view:"add-fields"`

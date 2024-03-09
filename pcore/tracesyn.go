@@ -4,7 +4,7 @@
 
 package pcore
 
-import "github.com/goki/mat32"
+import "cogentcore.org/core/mat32"
 
 // TraceSyn holds extra synaptic state for trace projections
 type TraceSyn struct {

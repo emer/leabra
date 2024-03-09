@@ -7,10 +7,10 @@ package pcore
 import (
 	"fmt"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/glong"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // Layer is the base layer type for PCore framework.

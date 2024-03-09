@@ -9,9 +9,9 @@ import (
 	"reflect"
 	"unsafe"
 
+	"cogentcore.org/core/mat32"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // NeuronVarStart is the byte offset of fields in the Neuron structure

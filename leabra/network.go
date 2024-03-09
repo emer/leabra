@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unsafe"
 
+	"cogentcore.org/core/mat32"
 	"github.com/c2h5oh/datasize"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
@@ -18,7 +19,6 @@ import (
 	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // leabra.Network has parameters for running a basic rate-coded Leabra network

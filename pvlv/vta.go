@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/rl"
-	"github.com/goki/mat32"
 )
 
 // Gain constants for inputs to the VTA

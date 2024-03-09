@@ -19,9 +19,9 @@ Layer InhibFmGeAct method like this:
 package interinhib
 
 import (
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
-	"github.com/goki/mat32"
 )
 
 // InterInhib specifies inhibition between layers, where

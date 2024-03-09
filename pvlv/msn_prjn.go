@@ -9,10 +9,10 @@ import (
 	_ "fmt"
 	"reflect"
 
+	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
 )
 
 // TraceSyn holds extra synaptic state for trace projections
