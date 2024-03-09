@@ -7,7 +7,6 @@ package pcore
 import (
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -16,8 +15,6 @@ import (
 type VThalLayer struct {
 	Layer
 }
-
-var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "VThalLayer", Desc: "defaults",

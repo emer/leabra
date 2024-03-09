@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/etable/v2/minmax"
@@ -63,8 +62,6 @@ type ModLayer struct {
 }
 
 var _ IModLayer = (*ModLayer)(nil)
-
-var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, nil)
 
 // ModPool is similar to a standard Pool structure, and uses the same code to compute running statistics.
 type ModPool struct {
@@ -138,8 +135,6 @@ type ModRcvrParams struct {
 	Scale float32
 }
 
-var KiT_ModParams = kit.Types.AddType(&ModParams{}, nil)
-
 // Modulators are modulatory neurotransmitters. Currently ACh and SE are only placeholders.
 type Modulators struct {
 
@@ -152,8 +147,6 @@ type Modulators struct {
 	// current serotonin level for this layer
 	SE float32
 }
-
-var KiT_Modulators = kit.Types.AddType(&Modulators{}, nil)
 
 // ModNeuron encapsulates the variables used by all layers that receive modulatory input
 type ModNeuron struct {
@@ -176,8 +169,6 @@ type ModNeuron struct {
 	// direct activation from US
 	PVAct float32
 }
-
-var KiT_ModNeuron = kit.Types.AddType(&ModNeuron{}, nil)
 
 // AsMod returns a pointer to the ModLayer portion of the layer
 func (ly *ModLayer) AsMod() *ModLayer {

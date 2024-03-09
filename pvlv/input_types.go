@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/etable/v2/etensor"
 )
 
@@ -21,7 +20,7 @@ var CtxRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_?([ABCDEFUVWXYZ
 // Stim : conditioned stimuli
 var StimInShape = []int{12, 1}
 
-type Stim int
+type Stim int //enums:enum
 
 const (
 	StmA    Stim = iota // A
@@ -79,14 +78,12 @@ func (stm Stim) TensorScaled(scale float32) etensor.Tensor {
 	return tsr
 }
 
-var KiT_Stim = kit.Enums.AddEnum(StimN+1, kit.NotBitFlag, nil)
-
 // end Stim
 
 // Context
 var ContextInShape = []int{20, 3}
 
-type Context int
+type Context int //enums:enum
 
 const (
 	CtxA      Context = iota // A
@@ -243,12 +240,10 @@ func (ctx Context) TensorScaled(scale float32) etensor.Tensor {
 	return tsr
 }
 
-var KiT_Context = kit.Enums.AddEnum(NContexts+1, kit.NotBitFlag, nil)
-
 // end Context
 
 // Valence
-type Valence int
+type Valence int //enums:enum
 
 const (
 	ValNone Valence = iota // NoValence
@@ -284,8 +279,6 @@ func (val Valence) TensorScaled(scale float32) etensor.Tensor {
 func (val Valence) Negate() Valence {
 	return Valence(1 - (int(val)))
 }
-
-var KiT_Valence = kit.Enums.AddEnum(ValenceN, kit.NotBitFlag, nil)
 
 var Fooey Inputs = POS // for testing
 //end Valence
@@ -338,8 +331,8 @@ func TensorScaled(us US, scale float32) etensor.Tensor {
 // end US
 
 // positive and negative subtypes of US
-type PosUS US
-type NegUS US
+type PosUS US //enums:enum
+type NegUS US //enums:enum
 
 const (
 	Water PosUS = iota
@@ -458,13 +451,10 @@ func (us US) String() string {
 	}
 }
 
-var kiTPosUS = kit.Enums.AddEnum(NPosUS+1, kit.NotBitFlag, nil)
-var kiTNegUS = kit.Enums.AddEnum(NNegUS+1, kit.NotBitFlag, nil)
-
 // end US subtypes
 
 // Tick
-type Tick int
+type Tick int //enums:enum
 
 const (
 	T0 Tick = iota
@@ -522,8 +512,6 @@ func (t Tick) TensorScaled(scale float32) etensor.Tensor {
 	}
 	return tsr
 }
-
-var KiT_Tick = kit.Enums.AddEnum(TickN+1, kit.NotBitFlag, nil)
 
 // Tick
 

@@ -5,7 +5,6 @@
 package pcore
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
@@ -17,10 +16,6 @@ import (
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
 
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {

@@ -5,7 +5,6 @@
 package pbwm
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
@@ -16,10 +15,6 @@ import (
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
 
 // NewLayer returns new layer of default pbwm.Layer type
 func (nt *Network) NewLayer() emer.Layer {

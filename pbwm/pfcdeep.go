@@ -5,7 +5,6 @@
 package pbwm
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -88,8 +87,6 @@ type PFCDeepLayer struct {
 	// slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
 	PFCNeurs []PFCNeuron
 }
-
-var KiT_PFCDeepLayer = kit.Types.AddType(&PFCDeepLayer{}, leabra.LayerProps)
 
 func (ly *PFCDeepLayer) Defaults() {
 	ly.GateLayer.Defaults()

@@ -24,7 +24,6 @@ import (
 	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/giv"
 	"cogentcore.org/core/ki"
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
@@ -434,10 +433,6 @@ type Sim struct {
 	// timer for last epoch
 	LastEpcTime time.Time `view:"-"`
 }
-
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for filename for save methods.
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
 
 // TheSim is the overall state for this simulation
 var TheSim Sim

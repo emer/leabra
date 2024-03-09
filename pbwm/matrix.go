@@ -5,7 +5,6 @@
 package pbwm
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -80,8 +79,6 @@ type MatrixLayer struct {
 	// slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
 	MatrixNeurs []MatrixNeuron
 }
-
-var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",

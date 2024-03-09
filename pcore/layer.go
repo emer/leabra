@@ -7,10 +7,8 @@ package pcore
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/glong"
-	"github.com/emer/leabra/v2/leabra"
 )
 
 // Layer is the base layer type for PCore framework.
@@ -21,8 +19,6 @@ type Layer struct {
 	// dopamine value for this layer
 	DA float32 `inactive:"+"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 

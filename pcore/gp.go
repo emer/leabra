@@ -5,7 +5,6 @@
 package pcore
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -110,14 +109,7 @@ func (ly *GPLayer) Defaults() {
 //  GPLays
 
 // GPLays for GPLayer type
-type GPLays int
-
-//go:generate stringer -type=GPLays
-
-var KiT_GPLays = kit.Enums.AddEnum(GPLaysN, kit.NotBitFlag, nil)
-
-func (ev GPLays) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *GPLays) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type GPLays int //enums:enum
 
 const (
 	// GPeOut is Outer layer of GPe neurons, receiving inhibition from MtxGo

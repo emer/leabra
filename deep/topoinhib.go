@@ -5,7 +5,6 @@
 package deep
 
 import (
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/efuns"
 	"github.com/emer/leabra/v2/leabra"
@@ -59,8 +58,6 @@ type TopoInhibLayer struct {
 	// topographic inhibition parameters for pool-level inhibition (only used for layers with pools)
 	TopoInhib TopoInhib
 }
-
-var KiT_TopoInhibLayer = kit.Types.AddType(&TopoInhibLayer{}, LayerProps)
 
 func (ly *TopoInhibLayer) Defaults() {
 	ly.Layer.Defaults()

@@ -4,8 +4,6 @@
 
 package pbwm
 
-import "cogentcore.org/core/kit"
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  DaMod
 
@@ -77,14 +75,7 @@ func (dm *DaModParams) Gain(da, gain float32, plusPhase bool) float32 {
 // Enums
 
 // DaReceptors for D1R and D2R dopamine receptors
-type DaReceptors int
-
-//go:generate stringer -type=DaReceptors
-
-var KiT_DaReceptors = kit.Enums.AddEnum(DaReceptorsN, kit.NotBitFlag, nil)
-
-func (ev DaReceptors) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *DaReceptors) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type DaReceptors int //enums:enum
 
 const (
 	// D1R primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum
@@ -97,14 +88,7 @@ const (
 )
 
 // Valences for Appetitive and Aversive valence coding
-type Valences int
-
-//go:generate stringer -type=Valences
-
-var KiT_Valences = kit.Enums.AddEnum(ValencesN, kit.NotBitFlag, nil)
-
-func (ev Valences) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *Valences) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type Valences int //enums:enum
 
 const (
 	// Appetititve is a positive valence US (food, water, etc)

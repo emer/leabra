@@ -9,7 +9,6 @@ import (
 	"log"
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -71,8 +70,6 @@ type MatrixLayer struct {
 	// acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning
 	ACh float32 `inactive:"+"`
 }
-
-var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",

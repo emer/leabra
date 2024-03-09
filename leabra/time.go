@@ -6,7 +6,6 @@ package leabra
 
 import (
 	"cogentcore.org/core/ki/bitflag"
-	"cogentcore.org/core/kit"
 )
 
 // leabra.Time contains all the timing state and parameter information for running a model
@@ -150,14 +149,7 @@ func (qt Quarters) HasPrev(qtr int) bool {
 // establish a common conceptual framework for time -- it can easily be extended in specific
 // simulations to add needed additional levels, although using one of the existing standard
 // values is recommended wherever possible.
-type TimeScales int32
-
-//go:generate stringer -type=TimeScales
-
-var KiT_TimeScales = kit.Enums.AddEnum(TimeScalesN, kit.NotBitFlag, nil)
-
-func (ev TimeScales) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *TimeScales) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type TimeScales int32 //enums:enum
 
 // The time scales
 const (

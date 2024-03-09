@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/examples/pvlv/data"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -15,7 +14,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // 	    Running the network..
 
-type StepGrain int
+type StepGrain int //enums:enum
 
 const (
 	Cycle StepGrain = iota
@@ -27,8 +26,6 @@ const (
 	Condition
 	StepGrainN
 )
-
-var KiT_StepGrain = kit.Enums.AddEnum(StepGrainN, kit.NotBitFlag, nil)
 
 func (ss *Sim) SettleMinus(train bool) {
 	ev := &ss.Env

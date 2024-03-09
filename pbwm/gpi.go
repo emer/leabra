@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -136,8 +135,6 @@ type GPiThalLayer struct {
 	// slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
 	GPiNeurs []GPiNeuron
 }
-
-var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, leabra.LayerProps)
 
 // Sel: "GPiThalLayer", Desc: "defaults ",
 // 	Params: params.Params{

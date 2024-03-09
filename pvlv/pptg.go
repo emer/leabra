@@ -7,7 +7,6 @@ package pvlv
 import (
 	"strconv"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	//"github.com/emer/leabra/v2/pbwm"
@@ -30,8 +29,6 @@ type PPTgLayer struct {
 	// clamp activation directly, after applying gain
 	ClampActivation bool
 }
-
-var KiT_PPTgLayer = kit.Types.AddType(&PPTgLayer{}, leabra.LayerProps)
 
 func (ly *PPTgLayer) Build() error {
 	err := ly.Layer.Build()

@@ -9,7 +9,6 @@ import (
 	"log"
 	"math"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -137,8 +136,6 @@ type TRCLayer struct {
 	// name of SuperLayer that sends 5IB Burst driver inputs to this layer
 	Drivers Drivers
 }
-
-var KiT_TRCLayer = kit.Types.AddType(&TRCLayer{}, LayerProps)
 
 func (ly *TRCLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()

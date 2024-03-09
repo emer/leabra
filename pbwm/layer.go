@@ -7,7 +7,6 @@ package pbwm
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -27,8 +26,6 @@ type Layer struct {
 	// current serotonin level for this layer
 	SE float32 `inactive:"+"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 

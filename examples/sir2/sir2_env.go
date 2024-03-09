@@ -8,20 +8,12 @@ import (
 	"fmt"
 	"math/rand"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/etable/v2/etensor"
 )
 
 // Actions are SIR actions
-type Actions int
-
-//go:generate stringer -type=Actions
-
-var KiT_Actions = kit.Enums.AddEnum(ActionsN, kit.NotBitFlag, nil)
-
-func (ev Actions) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *Actions) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type Actions int //enums:enum
 
 const (
 	Store1 Actions = iota
@@ -29,7 +21,6 @@ const (
 	Ignore
 	Recall1
 	Recall2
-	ActionsN
 )
 
 // SIREnv implements the store-ignore-recall task

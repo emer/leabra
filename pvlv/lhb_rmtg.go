@@ -7,7 +7,6 @@ package pvlv
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	_ "github.com/emer/emergent/v2/emer"
@@ -52,15 +51,12 @@ type LHbRMTgLayer struct {
 	leabra.Layer
 	RcvFrom emer.LayNames
 
-	//
 	Gains LHbRMTgGains `view:"inline"`
 
 	// reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes
 	PVNegDiscount float32
 	InternalState LHBRMTgInternalState // for debugging
 }
-
-var KiT_LHbRMTgLayer = kit.Types.AddType(&LHbRMTgLayer{}, leabra.LayerProps)
 
 type LHBRMTgInternalState struct {
 	VSPatchPosD1   float32

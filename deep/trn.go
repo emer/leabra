@@ -5,7 +5,6 @@
 package deep
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -17,15 +16,4 @@ type TRNLayer struct {
 
 	// layers that we receive inhibition from
 	ILayers emer.LayNames
-}
-
-var KiT_TRNLayer = kit.Types.AddType(&TRNLayer{}, leabra.LayerProps)
-
-func (ly *TRNLayer) Defaults() {
-	ly.Layer.Defaults()
-}
-
-// InitActs fully initializes activation state -- only called automatically during InitWts
-func (ly *TRNLayer) InitActs() {
-	ly.Layer.InitActs()
 }

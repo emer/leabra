@@ -5,7 +5,6 @@
 package rl
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -80,8 +79,6 @@ type ClampAChLayer struct {
 	// acetylcholine value for this layer
 	ACh float32
 }
-
-var KiT_ClampAChLayer = kit.Types.AddType(&ClampAChLayer{}, leabra.LayerProps)
 
 // AChLayer interface:
 

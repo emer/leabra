@@ -7,7 +7,6 @@ package pcore
 import (
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -83,8 +82,6 @@ type STNLayer struct {
 	// slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
 	STNNeurs []STNNeuron
 }
-
-var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "STNLayer", Desc: "defaults",

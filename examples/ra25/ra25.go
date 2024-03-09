@@ -18,7 +18,6 @@ import (
 
 	"cogentcore.org/core/gi"
 	"cogentcore.org/core/ki"
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
@@ -207,10 +206,6 @@ type Sim struct {
 	// net data for recording in nogui mode
 	NetData *netview.NetData `view:"-"`
 }
-
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for filename for save methods.
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
 
 // TheSim is the overall state for this simulation
 var TheSim Sim

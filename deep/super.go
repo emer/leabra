@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -69,8 +68,6 @@ type SuperLayer struct {
 	// slice of super neuron values -- same size as Neurons
 	SuperNeurs []SuperNeuron
 }
-
-var KiT_SuperLayer = kit.Types.AddType(&SuperLayer{}, LayerProps)
 
 func (ly *SuperLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()

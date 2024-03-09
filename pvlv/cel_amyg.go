@@ -7,7 +7,6 @@ package pvlv
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	_ "github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -20,15 +19,13 @@ func (ly *CElAmygLayer) AsCElAmygLayer() *CElAmygLayer {
 	return ly
 }
 
-type AcqExt int
+type AcqExt int //enums:enum
 
 const (
 	Acq AcqExt = iota
 	Ext
 	NAcqExt
 )
-
-var KiT_AcqExt = kit.Enums.AddEnum(NAcqExt, kit.NotBitFlag, nil)
 
 type CElAmygLayer struct {
 	ModLayer
@@ -39,8 +36,6 @@ type CElAmygLayer struct {
 	// use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal
 	AcqDeepMod bool
 }
-
-var KiT_CElAmygLayer = kit.Types.AddType(&CElAmygLayer{}, nil)
 
 type CElAmygLayerType struct {
 

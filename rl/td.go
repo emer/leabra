@@ -7,7 +7,6 @@ package rl
 import (
 	"log"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -144,8 +143,6 @@ type TDDaLayer struct {
 	// dopamine value for this layer
 	DA float32
 }
-
-var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()

@@ -5,7 +5,6 @@
 package pbwm
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -16,8 +15,6 @@ type ModLayer struct {
 	// dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning.
 	DaMod DaModParams
 }
-
-var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, leabra.LayerProps)
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *ModLayer) GFmInc(ltime *leabra.Time) {

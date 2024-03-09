@@ -5,7 +5,6 @@
 package agate
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/relpos"
@@ -20,10 +19,6 @@ import (
 type Network struct {
 	deep.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = deep.NetworkProps
 
 // Defaults sets all the default parameters for all layers and projections
 func (nt *Network) Defaults() {

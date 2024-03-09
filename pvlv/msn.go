@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
@@ -45,15 +44,13 @@ type MSNParams struct {
 	Compartment StriatalCompartment `inactive:"+"`
 }
 
-type StriatalCompartment int
+type StriatalCompartment int //enums:enum
 
 const (
 	PATCH StriatalCompartment = iota
 	MATRIX
 	NSComp
 )
-
-var KiT_StriatalCompartment = kit.Enums.AddEnum(NSComp, kit.NotBitFlag, nil)
 
 // Delayed inhibition for matrix compartment layers
 type DelayedInhibParams struct {

@@ -9,7 +9,6 @@ import (
 	"log"
 	"unsafe"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
@@ -22,7 +21,7 @@ func (ly *ModLayer) UnitVarNames() []string {
 }
 
 // NeuronVars are indexes into extra neuron-level variables
-type ModNeuronVar int
+type ModNeuronVar int //enums:enum
 
 const (
 	DA ModNeuronVar = iota
@@ -34,10 +33,7 @@ const (
 	ModLrn
 	PVAct
 	Cust1
-	ModNeuronVarsN
 )
-
-var KiT_ModNeuronVar = kit.Enums.AddEnum(ModNeuronVarsN, kit.NotBitFlag, nil)
 
 var (
 	// ModNeuronVars are the modulator neurons plus some custom variables that sub-types use for their

@@ -7,7 +7,6 @@ package deep
 import (
 	"fmt"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -25,8 +24,6 @@ type CTLayer struct {
 	// slice of context (temporally delayed) excitatory conducances.
 	CtxtGes []float32
 }
-
-var KiT_CTLayer = kit.Types.AddType(&CTLayer{}, LayerProps)
 
 func (ly *CTLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()

@@ -7,7 +7,6 @@ package pcore
 import (
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -18,8 +17,6 @@ import (
 type GPiLayer struct {
 	GPLayer
 }
-
-var KiT_GPiLayer = kit.Types.AddType(&GPiLayer{}, leabra.LayerProps)
 
 func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()

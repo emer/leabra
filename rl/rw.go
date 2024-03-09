@@ -7,7 +7,6 @@ package rl
 import (
 	"log"
 
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/leabra"
@@ -73,8 +72,6 @@ type RWDaLayer struct {
 	// dopamine value for this layer
 	DA float32 `inactive:"+"`
 }
-
-var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, leabra.LayerProps)
 
 func (ly *RWDaLayer) Defaults() {
 	ly.Layer.Defaults()

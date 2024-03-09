@@ -5,7 +5,6 @@
 package glong
 
 import (
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/leabra/v2/leabra"
@@ -15,10 +14,6 @@ import (
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
 
 // Defaults sets all the default parameters for all layers and projections
 func (nt *Network) Defaults() {

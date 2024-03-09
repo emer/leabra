@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"cogentcore.org/core/giv"
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/stepper"
@@ -290,10 +289,6 @@ type Sim struct {
 	simOneTimeInit sync.Once
 }
 
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for filename for save methods.
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
-
 func (ss *Sim) OpenCemerWeights(fName string) {
 	err := ss.Net.OpenWtsCpp(gi.Filename(fName))
 	if err != nil {
@@ -398,7 +393,7 @@ func (ss *Sim) Ki() *Sim {
 	return ss
 }
 
-type StopStepCond int
+type StopStepCond int //enums:enum
 
 const (
 	SSNone              StopStepCond = iota // None
@@ -406,9 +401,6 @@ const (
 	SSTrialNameNonmatch                     // Not Trial Name
 	StopStepCondN
 )
-
-// //go:generate stringer -type=StopStepCond -linecomment // moved to stringers.go
-var KiT_StopStepCond = kit.Enums.AddEnum(StopStepCondN, kit.NotBitFlag, nil)
 
 // Init restarts the run, and initializes everything, including network weights
 // and resets the block log table

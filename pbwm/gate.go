@@ -4,11 +4,6 @@
 
 package pbwm
 
-import (
-	"cogentcore.org/core/kit"
-	"github.com/emer/leabra/v2/leabra"
-)
-
 // GateShape defines the shape of the outer pool dimensions of gating layers,
 // organized into Maint and Out subsets which are arrayed along the X axis
 // with Maint first (to the left) then Out.  Individual layers may only
@@ -133,8 +128,6 @@ type GateLayer struct {
 	GateStates []GateState
 }
 
-var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, leabra.LayerProps)
-
 func (ly *GateLayer) AsGate() *GateLayer {
 	return ly
 }
@@ -247,14 +240,7 @@ type GateLayerer interface {
 }
 
 // GateTypes for region of striatum
-type GateTypes int
-
-//go:generate stringer -type=GateTypes
-
-var KiT_GateTypes = kit.Enums.AddEnum(GateTypesN, kit.NotBitFlag, nil)
-
-func (ev GateTypes) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *GateTypes) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type GateTypes int //enums:enum
 
 const (
 	// Maint is maintenance gating -- toggles active maintenance in PFC

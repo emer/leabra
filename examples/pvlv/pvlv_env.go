@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"cogentcore.org/core/kit"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/etable/v2/etable"
@@ -211,7 +210,7 @@ func (ev *PVLVEnv) SaveWeights(_ *Sim) {
 // end SaveWeights
 
 // ContextModel
-type ContextModel int
+type ContextModel int //enums:enum
 
 const (
 	ELEMENTAL ContextModel = iota
@@ -219,8 +218,6 @@ const (
 	BOTH
 	ContextModelN
 )
-
-var KiT_ContextModel = kit.Enums.AddEnum(ContextModelN, kit.NotBitFlag, nil)
 
 func (ev *PVLVEnv) Counters() []env.TimeScales {
 	return []env.TimeScales{env.Epoch, env.Block, env.Trial}

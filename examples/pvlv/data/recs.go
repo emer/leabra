@@ -4,8 +4,6 @@ import (
 	"errors"
 	"math/rand"
 	"reflect"
-
-	"cogentcore.org/core/kit"
 )
 
 type IRecs interface {
@@ -23,16 +21,13 @@ type Recs struct {
 	Order   DataLoopOrder
 }
 
-type DataLoopOrder int
+type DataLoopOrder int //enums:enum
 
 const (
 	SEQUENTIAL DataLoopOrder = iota
 	PERMUTED
 	RANDOM
-	DataLoopOrderN
 )
-
-var KiT_DataLoopOrder = kit.Enums.AddEnum(DataLoopOrderN, kit.NotBitFlag, nil)
 
 func IntSequence(begin, end, step int) (sequence []int) {
 	if step == 0 {
