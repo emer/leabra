@@ -18,13 +18,13 @@ import (
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
+	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/weights"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/ki/bitflag"
 	"github.com/goki/ki/indent"
 	"github.com/goki/ki/ints"
 	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
@@ -49,8 +49,6 @@ type Layer struct {
 	// cosine difference between ActM, ActP stats
 	CosDiff CosDiffStats
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, LayerProps)
 
 // AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
 // this to return the base Layer type, so that the LeabraLayer interface does not
@@ -78,6 +76,13 @@ func (ly *Layer) UpdateParams() {
 	for _, pj := range ly.RcvPrjns {
 		pj.UpdateParams()
 	}
+}
+
+// SetParam sets parameter at given path to given value.
+// returns error if path not found or value cannot be set.
+func (ly *Layer) SetParam(path, val string) error {
+	// TODO(v2): SetParam
+	return params.SetParam(&struct{}{}, path, val)
 }
 
 // JsonToParams reformates json output to suitable params display output
@@ -134,7 +139,7 @@ func (ly *Layer) UnitVarNum() int {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
@@ -148,7 +153,7 @@ func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 // UnitVals fills in values of given variable name on unit,
 // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
-func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
+func (ly *Layer) UnitVals(vals *[]float32, varNm string, di int) error {
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
@@ -164,14 +169,14 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
+		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i, di)
 	}
 	return nil
 }
 
 // UnitValsTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
 		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
 		log.Println(err)
@@ -187,7 +192,7 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		v := ly.LeabraLay.UnitVal1D(vidx, i)
+		v := ly.LeabraLay.UnitVal1D(vidx, i, di)
 		if mat32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -207,10 +212,10 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 // set to a 1D shape to hold all the values if subset is defined,
 // otherwise it calls UnitValsTensor and is identical to that.
 // Returns error on invalid var name.
-func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
+func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string, di int) error {
 	nu := len(ly.RepIxs)
 	if nu == 0 {
-		return ly.UnitValsTensor(tsr, varNm)
+		return ly.UnitValsTensor(tsr, varNm, di)
 	}
 	if tsr == nil {
 		err := fmt.Errorf("axon.UnitValsRepTensor: Tensor is nil")
@@ -229,7 +234,7 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
 		return err
 	}
 	for i, ui := range ly.RepIxs {
-		v := ly.LeabraLay.UnitVal1D(vidx, ui)
+		v := ly.LeabraLay.UnitVal1D(vidx, ui, di)
 		if mat32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -241,13 +246,13 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
 
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
+func (ly *Layer) UnitVal(varNm string, idx []int, di int) float32 {
 	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
 		return mat32.NaN()
 	}
 	fidx := ly.Shp.Offset(idx)
-	return ly.LeabraLay.UnitVal1D(vidx, fidx)
+	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
 }
 
 // RecvPrjnVals fills in values of given synapse variable name,

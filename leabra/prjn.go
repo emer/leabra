@@ -13,17 +13,16 @@ import (
 
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
 	"github.com/emer/emergent/v2/weights"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
 )
 
-// leabra.Prjn is a basic Leabra projection with synaptic learning parameters
+// Prjn is a basic Leabra projection with synaptic learning parameters
 type Prjn struct {
-	PrjnStru
+	PrjnBase
 
 	// initial random weight distribution
 	WtInit WtInitParams `view:"inline"`
@@ -46,10 +45,6 @@ type Prjn struct {
 	// weight balance state variables for this projection, one per recv neuron
 	WbRecv []WtBalRecvPrjn
 }
-
-var KiT_Prjn = kit.Types.AddType(&Prjn{}, PrjnProps)
-
-var PrjnProps = ki.Props{}
 
 // AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
 // this to return the base Prjn type, so that the LeabraPrjn interface does not
@@ -86,6 +81,13 @@ func (pj *Prjn) AllParams() string {
 	b, _ = json.MarshalIndent(&pj.Learn, "", " ")
 	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " XCal: {", "\n  XCal: {", -1)
 	return str
+}
+
+// SetParam sets parameter at given path to given value.
+// returns error if path not found or value cannot be set.
+func (pj *Prjn) SetParam(path, val string) error {
+	// TODO(v2): SetParam
+	return params.SetParam(&struct{}{}, path, val)
 }
 
 func (pj *Prjn) SynVarNames() []string {
@@ -311,7 +313,7 @@ func (pj *Prjn) SetWts(pw *weights.Prjn) error {
 }
 
 // Build constructs the full connectivity among the layers as specified in this projection.
-// Calls PrjnStru.BuildStru and then allocates the synaptic values in Syns accordingly.
+// Calls PrjnBase.BuildStru and then allocates the synaptic values in Syns accordingly.
 func (pj *Prjn) Build() error {
 	if err := pj.BuildStru(); err != nil {
 		return err
