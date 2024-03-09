@@ -399,8 +399,6 @@ const (
 
 	// GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values
 	GeMultNoise
-
-	ActNoiseTypeN
 )
 
 // ActNoiseParams contains parameters for activation-level noise

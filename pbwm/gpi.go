@@ -76,8 +76,8 @@ type GPiTimingParams struct {
 }
 
 func (gt *GPiTimingParams) Defaults() {
-	gt.GateQtr.Set(int(leabra.Q1))
-	gt.GateQtr.Set(int(leabra.Q3))
+	gt.GateQtr.SetFlag(true, leabra.Q1)
+	gt.GateQtr.SetFlag(true, leabra.Q3)
 	gt.Cycle = 18
 }
 
@@ -335,7 +335,7 @@ func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
 
 // GateFmAct updates GateState from current activations, at time of gating
 func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
-	gateQtr := ly.Timing.GateQtr.Has(ltime.Quarter)
+	gateQtr := ly.Timing.GateQtr.HasFlag(ltime.Quarter)
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]

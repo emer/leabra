@@ -29,7 +29,7 @@ func (ly *CTLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
 	ly.Act.Init.Decay = 0            // deep doesn't decay!
 	ly.Inhib.ActAvg.UseFirst = false // first activations can be very far off
-	ly.BurstQtr.Set(int(leabra.Q4))
+	ly.BurstQtr.SetFlag(true, leabra.Q4)
 	ly.Typ = CT
 }
 
@@ -73,7 +73,7 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
 func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.Has(ltime.Quarter) {
+	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -104,7 +104,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 // overall Ctxt value, only on Deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
 func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.Has(ltime.Quarter) {
+	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.CtxtGes {

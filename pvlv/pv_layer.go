@@ -16,7 +16,7 @@ import (
 type PVLayer struct {
 	leabra.Layer
 	Net           *Network
-	SendPVQuarter int
+	SendPVQuarter leabra.Quarters
 	PVReceivers   emer.LayNames
 }
 
@@ -37,7 +37,7 @@ func (ly *PVLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.SendPVQuarter = int(leabra.Q4)
+	ly.SendPVQuarter = leabra.Q4
 	return nil
 }
 

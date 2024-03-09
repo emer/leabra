@@ -102,7 +102,6 @@ const (
 // gui versions
 const (
 	NMDA_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
-	PrjnTypeN
 )
 
 // var PrjnProps = ki.Props{

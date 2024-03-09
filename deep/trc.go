@@ -81,7 +81,7 @@ func (tp *TRCParams) Update() {
 }
 
 func (tp *TRCParams) Defaults() {
-	tp.BurstQtr.Set(int(leabra.Q4))
+	tp.BurstQtr.SetFlag(true, leabra.Q4)
 	tp.DriveScale = 0.3
 	tp.MaxInhib = 0.6
 	tp.Binarize = false
@@ -380,7 +380,7 @@ func (ly *TRCLayer) SetDriverActs() {
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *TRCLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
-	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.Has(ltime.Quarter) {
+	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.HasFlag(ltime.Quarter) {
 		ly.GFmIncNeur(ltime) // regular
 		return
 	}

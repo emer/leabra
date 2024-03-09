@@ -22,8 +22,8 @@ type PFCGateParams struct {
 }
 
 func (gp *PFCGateParams) Defaults() {
-	gp.GateQtr.Set(int(leabra.Q2))
-	gp.GateQtr.Set(int(leabra.Q4))
+	gp.GateQtr.SetFlag(true, leabra.Q2)
+	gp.GateQtr.SetFlag(true, leabra.Q4)
 	gp.OutQ1Only = true
 }
 
@@ -95,7 +95,7 @@ func (ly *PFCDeepLayer) Defaults() {
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
 		ly.Maint.MaxMaint = 1
 		ly.Gate.GateQtr = 0
-		ly.Gate.GateQtr.Set(int(leabra.Q1))
+		ly.Gate.GateQtr.SetFlag(true, leabra.Q1)
 	}
 	if len(ly.Dyns) > 0 {
 		ly.Maint.UseDyn = true
@@ -254,7 +254,7 @@ func (ly *PFCDeepLayer) QuarterFinal(ltime *leabra.Time) {
 
 // DeepMaint updates deep maintenance activations
 func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
+	if !ly.Gate.GateQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	slyi := ly.SuperPFC()
@@ -305,7 +305,7 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 
 // UpdtGateCnt updates the gate counter
 func (ly *PFCDeepLayer) UpdtGateCnt(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
+	if !ly.Gate.GateQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for gi := range ly.GateStates {
@@ -341,7 +341,7 @@ func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
 
 // DoQuarter2DWt indicates whether to do optional Q2 DWt
 func (ly *PFCDeepLayer) DoQuarter2DWt() bool {
-	if !ly.Gate.GateQtr.Has(1) {
+	if !ly.Gate.GateQtr.HasFlag(leabra.Q2) {
 		return false
 	}
 	return true

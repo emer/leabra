@@ -203,7 +203,6 @@ const (
 // gui versions
 const (
 	CTCtxt_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
-	PrjnTypeN
 )
 
 // var PrjnProps = ki.Props{

@@ -27,7 +27,7 @@ type BurstParams struct {
 }
 
 func (db *BurstParams) Defaults() {
-	db.BurstQtr.Set(int(leabra.Q4))
+	db.BurstQtr.SetFlag(true, leabra.Q4)
 	db.ThrRel = 0.1
 	db.ThrAbs = 0.1
 }
@@ -187,7 +187,7 @@ func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
 // BurstFmAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
 func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+	if !ly.Burst.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	lpl := &ly.Pools[0]
@@ -217,7 +217,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
 func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+	if !ly.Burst.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {

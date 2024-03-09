@@ -37,7 +37,6 @@ const (
 const (
 	CT_ LayerType = LayerType(emer.LayerTypeN) + iota
 	TRC_
-	LayerTypeN
 )
 
 // LayerProps are required to get the extended EnumType

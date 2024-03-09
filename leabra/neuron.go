@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"unsafe"
 
-	"cogentcore.org/core/ki/bitflag"
 	"cogentcore.org/core/mat32"
 )
 
@@ -189,23 +188,11 @@ func (nrn *Neuron) VarByName(varNm string) (float32, error) {
 }
 
 func (nrn *Neuron) HasFlag(flag NeurFlags) bool {
-	return bitflag.Has32(int32(nrn.Flags), int(flag))
+	return nrn.Flags.HasFlag(flag)
 }
 
-func (nrn *Neuron) SetFlag(flag NeurFlags) {
-	bitflag.Set32((*int32)(&nrn.Flags), int(flag))
-}
-
-func (nrn *Neuron) ClearFlag(flag NeurFlags) {
-	bitflag.Clear32((*int32)(&nrn.Flags), int(flag))
-}
-
-func (nrn *Neuron) SetMask(mask int32) {
-	bitflag.SetMask32((*int32)(&nrn.Flags), mask)
-}
-
-func (nrn *Neuron) ClearMask(mask int32) {
-	bitflag.ClearMask32((*int32)(&nrn.Flags), mask)
+func (nrn *Neuron) SetFlag(on bool, flag NeurFlags) {
+	nrn.Flags.SetFlag(on, flag)
 }
 
 // IsOff returns true if the neuron has been turned off (lesioned)
@@ -214,7 +201,7 @@ func (nrn *Neuron) IsOff() bool {
 }
 
 // NeurFlags are bit-flags encoding relevant binary state for neurons
-type NeurFlags int32 //enums:bitflag
+type NeurFlags int64 //enums:bitflag
 
 // The neuron flags
 const (
@@ -230,6 +217,4 @@ const (
 	// NeurHasCmpr means the neuron has external comparison input in its Targ field -- used for computing
 	// comparison statistics but does not drive neural activity ever
 	NeurHasCmpr
-
-	NeurFlagsN
 )

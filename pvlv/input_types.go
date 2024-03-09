@@ -36,7 +36,6 @@ const (
 	StmY                // Y
 	StmZ                // Z
 	StmNone             // NoStim
-	StimN   = StmNone
 )
 
 var StimMap = map[string]Stim{
@@ -330,8 +329,8 @@ func TensorScaled(us US, scale float32) etensor.Tensor {
 // end US
 
 // positive and negative subtypes of US
-type PosUS US //enums:enum
-type NegUS US //enums:enum
+type PosUS US //enums:enum -no-extend
+type NegUS US //enums:enum -no-extend
 
 const (
 	Water PosUS = iota
@@ -467,7 +466,6 @@ const (
 	T8
 	T9
 	TckNone
-	TickN = TckNone
 )
 
 var TickMap = map[string]Tick{
@@ -792,14 +790,3 @@ func (usts USTimeState) OneHot(scale float32) etensor.Tensor {
 	tsr.Set([]int{int(usts.Stm), int(usts.Tck), int(usts.Val) - 1, usts.US.Int()}, 1.0/scale)
 	return tsr
 }
-
-//go:generate stringer -linecomment -output=inputs_strings.go -type=Stim,PosUS,NegUS,Context,Tick
-
-//func main() {
-//	//uss := []US{Nausea, Food, Water, Mate, OtherPos, OtherNeg, Shock}
-//	//fmt.Println(1 << 0, 1 << 1)
-//	//for _, item := range uss {
-//	//	fmt.Println(item, item.Int(), item.Val(), item.PV(), item.OneHot(), OneHotUS(item), OneHotTsrUS(item))
-//	//}
-//
-//}

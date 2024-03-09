@@ -212,8 +212,6 @@ const (
 
 	// D2R: primarily expresses Dopamine D2 Receptors -- dopamine is inhibitory and bursts of dopamine lead to decreases in synaptic weight, while dips lead to increases -- indirect pathway in dorsal striatum
 	D2R
-
-	DaRTypeN
 )
 
 // GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable

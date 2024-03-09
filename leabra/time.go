@@ -4,10 +4,6 @@
 
 package leabra
 
-import (
-	"cogentcore.org/core/ki/bitflag"
-)
-
 // leabra.Time contains all the timing state and parameter information for running a model
 type Time struct {
 
@@ -21,7 +17,7 @@ type Time struct {
 	CycleTot int
 
 	// current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3.
-	Quarter int
+	Quarter Quarters
 
 	// true if this is the plus phase (final quarter = 3) -- else minus phase
 	PlusPhase bool
@@ -83,7 +79,7 @@ func (tm *Time) QuarterInc() {
 
 // QuarterCycle returns the number of cycles into current quarter
 func (tm *Time) QuarterCycle() int {
-	qmin := tm.Quarter * tm.CycPerQtr
+	qmin := int(tm.Quarter) * tm.CycPerQtr
 	return tm.Cycle - qmin
 }
 
@@ -94,7 +90,7 @@ func (tm *Time) QuarterCycle() int {
 // for use in relevant timing parameters where quarters need to be specified.
 // The Q1..4 defined values are integer *bit positions* -- use Set, Has etc methods
 // to set bits from these bit positions.
-type Quarters int32 //enums:bitflag
+type Quarters int64 //enums:bitflag
 
 // The quarters
 const (
@@ -103,39 +99,23 @@ const (
 	Q2
 	Q3
 	Q4
-	QuartersN
 )
-
-// Set sets given quarter bit (adds to any existing) (qtr = 0..3 = same as Quarters)
-func (qt *Quarters) Set(qtr int) {
-	bitflag.Set32((*int32)(qt), qtr)
-}
-
-// Clear clears given quarter bit (qtr = 0..3 = same as Quarters)
-func (qt *Quarters) Clear(qtr int) {
-	bitflag.Clear32((*int32)(qt), qtr)
-}
-
-// Has returns true if the given quarter is set (qtr = 0..3 = same as Quarters)
-func (qt Quarters) Has(qtr int) bool {
-	return bitflag.Has32(int32(qt), qtr)
-}
 
 // HasNext returns true if the quarter after given quarter is set.
 // This wraps around from Q4 to Q1.  (qtr = 0..3 = same as Quarters)
-func (qt Quarters) HasNext(qtr int) bool {
+func (qt Quarters) HasNext(qtr Quarters) bool {
 	nqt := (qtr + 1) % 4
-	return qt.Has(nqt)
+	return qt.HasFlag(nqt)
 }
 
 // HasPrev returns true if the quarter before given quarter is set.
 // This wraps around from Q1 to Q4.  (qtr = 0..3 = same as Quarters)
-func (qt Quarters) HasPrev(qtr int) bool {
+func (qt Quarters) HasPrev(qtr Quarters) bool {
 	pqt := (qtr - 1)
 	if pqt < 0 {
 		pqt += 4
 	}
-	return qt.Has(pqt)
+	return qt.HasFlag(pqt)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -239,6 +219,4 @@ const (
 	// restaurant, attending a wedding or other "event".
 	// This could be a chapter in a book.
 	Episode
-
-	TimeScalesN
 )

@@ -17,7 +17,6 @@ import (
 
 	"cogentcore.org/core/glop/indent"
 	"cogentcore.org/core/ki"
-	"cogentcore.org/core/ki/bitflag"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
@@ -655,29 +654,31 @@ func (ly *Layer) InitWtSym() {
 
 // InitExt initializes external input state -- called prior to apply ext
 func (ly *Layer) InitExt() {
-	msk := bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
-	for ni := range ly.Neurons {
-		nrn := &ly.Neurons[ni]
-		nrn.Ext = 0
-		nrn.Targ = 0
-		nrn.ClearMask(msk)
-	}
+	// TODO(v2)
+	// msk := bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
+	// for ni := range ly.Neurons {
+	// 	nrn := &ly.Neurons[ni]
+	// 	nrn.Ext = 0
+	// 	nrn.Targ = 0
+	// 	nrn.ClearMask(msk)
+	// }
 }
 
 // ApplyExtFlags gets the clear mask and set mask for updating neuron flags
 // based on layer type, and whether input should be applied to Targ (else Ext)
 func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
-	clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
-	toTarg = false
-	if ly.Typ == emer.Target {
-		setmsk = bitflag.Mask32(int(NeurHasTarg))
-		toTarg = true
-	} else if ly.Typ == emer.Compare {
-		setmsk = bitflag.Mask32(int(NeurHasCmpr))
-		toTarg = true
-	} else {
-		setmsk = bitflag.Mask32(int(NeurHasExt))
-	}
+	// TODO(v2)
+	// clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
+	// toTarg = false
+	// if ly.Typ == emer.Target {
+	// 	setmsk = bitflag.Mask32(int(NeurHasTarg))
+	// 	toTarg = true
+	// } else if ly.Typ == emer.Compare {
+	// 	setmsk = bitflag.Mask32(int(NeurHasCmpr))
+	// 	toTarg = true
+	// } else {
+	// 	setmsk = bitflag.Mask32(int(NeurHasExt))
+	// }
 	return
 }
 
@@ -1453,32 +1454,32 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 //  Layer props for gui
 
 var LayerProps = ki.Props{
-	"ToolBar": ki.PropSlice{
-		{"Defaults", ki.Props{
-			"icon": "reset",
-			"desc": "return all parameters to their intial default values",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"LesionNeurons", ki.Props{
-			"icon": "close",
-			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-			"Args": ki.PropSlice{
-				{"Proportion", ki.Props{
-					"desc": "proportion (0 -- 1) of neurons to lesion",
-				}},
-			},
-		}},
-		{"UnLesionNeurons", ki.Props{
-			"icon": "reset",
-			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
-		}},
-	},
+	// "ToolBar": ki.PropSlice{
+	// 	{"Defaults", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "return all parameters to their intial default values",
+	// 	}},
+	// 	{"InitWts", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+	// 	}},
+	// 	{"InitActs", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's activation values",
+	// 	}},
+	// 	{"sep-act", ki.BlankProp{}},
+	// 	{"LesionNeurons", ki.Props{
+	// 		"icon": "close",
+	// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+	// 		"Args": ki.PropSlice{
+	// 			{"Proportion", ki.Props{
+	// 				"desc": "proportion (0 -- 1) of neurons to lesion",
+	// 			}},
+	// 		},
+	// 	}},
+	// 	{"UnLesionNeurons", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+	// 	}},
+	// },
 }

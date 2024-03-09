@@ -178,7 +178,7 @@ func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 }
 
 func (ly *VTALayer) ActFmG(ltime *leabra.Time) {
-	if ltime.Quarter == int(leabra.Q4) {
+	if ltime.Quarter == leabra.Q4 {
 		ly.VTAAct(ltime)
 	} else {
 		nrn := &ly.Neurons[0]

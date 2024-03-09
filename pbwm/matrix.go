@@ -32,8 +32,8 @@ type MatrixParams struct {
 }
 
 func (mp *MatrixParams) Defaults() {
-	mp.LearnQtr.Set(int(leabra.Q2))
-	mp.LearnQtr.Set(int(leabra.Q4))
+	mp.LearnQtr.SetFlag(true, leabra.Q2)
+	mp.LearnQtr.SetFlag(true, leabra.Q4)
 	mp.PatchShunt = 0.2
 	mp.ShuntACh = true
 	mp.OutAChInhib = 0.3
@@ -270,7 +270,7 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 
 // DoQuarter2DWt indicates whether to do optional Q2 DWt
 func (ly *MatrixLayer) DoQuarter2DWt() bool {
-	if !ly.Matrix.LearnQtr.Has(1) {
+	if !ly.Matrix.LearnQtr.HasFlag(leabra.Q2) {
 		return false
 	}
 	return true
