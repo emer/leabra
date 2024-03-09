@@ -16,7 +16,7 @@ type TRNLayer struct {
 	leabra.Layer
 
 	// layers that we receive inhibition from
-	ILayers emer.LayNames `desc:"layers that we receive inhibition from"`
+	ILayers emer.LayNames
 }
 
 var KiT_TRNLayer = kit.Types.AddType(&TRNLayer{}, leabra.LayerProps)

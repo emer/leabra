@@ -75,10 +75,10 @@ type ClampDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
 
 var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, leabra.LayerProps)

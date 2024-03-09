@@ -19,10 +19,10 @@ import (
 type TraceSyn struct {
 
 	// new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)
-	NTr float32 `desc:"new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)"`
+	NTr float32
 
 	//  current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)
-	Tr float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after learning on current values -- includes both thal gated (+ and other nongated, - inputs)"`
+	Tr float32
 }
 
 type DALrnRule int
@@ -43,23 +43,23 @@ type MSNPrjn struct {
 	leabra.Prjn
 	LearningRule DALrnRule
 
-	// [view: inline] special parameters for striatum trace learning
-	Trace MSNTraceParams `view:"inline" desc:"special parameters for striatum trace learning"`
+	// special parameters for striatum trace learning
+	Trace MSNTraceParams `view:"inline"`
 
 	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
-	TrSyns []TraceSyn `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+	TrSyns []TraceSyn
 
 	// sending layer activation variable name
-	SLActVar string `desc:"sending layer activation variable name"`
+	SLActVar string
 
 	// receiving layer activation variable name
-	RLActVar string `desc:"receiving layer activation variable name"`
+	RLActVar string
 
-	// [def: 0.7] [min: 0] for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning
-	MaxVSActMod float32 `def:"0.7" min:"0" desc:"for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning"`
+	// for VS matrix TRACE_NO_THAL_VS and DA_HEBB_VS learning rules, this is the maximum value that the deep_mod_net modulatory inputs from the basal amygdala (up state enabling signal) can contribute to learning
+	MaxVSActMod float32 `def:"0.7" min:"0"`
 
 	// parameters for dopaminergic modulation
-	DaMod DaModParams `desc:"parameters for dopaminergic modulation"`
+	DaMod DaModParams
 }
 
 type IMSNPrjn interface {

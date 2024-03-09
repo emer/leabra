@@ -75,10 +75,10 @@ type ClampAChLayer struct {
 	leabra.Layer
 
 	// list of layers to send acetylcholine to
-	SendACh SendACh `desc:"list of layers to send acetylcholine to"`
+	SendACh SendACh
 
 	// acetylcholine value for this layer
-	ACh float32 `desc:"acetylcholine value for this layer"`
+	ACh float32
 }
 
 var KiT_ClampAChLayer = kit.Types.AddType(&ClampAChLayer{}, leabra.LayerProps)

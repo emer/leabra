@@ -533,16 +533,16 @@ var USTimeInShape = []int{16, 2, 4, 5}
 type USTimeState struct {
 
 	// CS value
-	Stm Stim `desc:"CS value"`
+	Stm Stim
 
 	// a US value or absent (USNone)
-	US US `desc:"a US value or absent (USNone)"`
+	US US
 
 	// PV d, POS, NEG, or absent (ValNone)
-	Val Valence `desc:"PV d, POS, NEG, or absent (ValNone)"`
+	Val Valence
 
 	// Within-trial timestep
-	Tck Tick `desc:"Within-trial timestep"`
+	Tck Tick
 }
 type PackedUSTimeState int64
 

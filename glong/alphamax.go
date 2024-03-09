@@ -18,10 +18,10 @@ type AlphaMaxLayer struct {
 	leabra.Layer
 
 	// cycle upon which to start updating AlphaMax value
-	AlphaMaxCyc int `desc:"cycle upon which to start updating AlphaMax value"`
+	AlphaMaxCyc int
 
 	// per-neuron maximum activation value during alpha cycle
-	AlphaMaxs []float32 `desc:"per-neuron maximum activation value during alpha cycle"`
+	AlphaMaxs []float32
 }
 
 var KiT_AlphaMaxLayer = kit.Types.AddType(&AlphaMaxLayer{}, leabra.LayerProps)

@@ -13,13 +13,13 @@ import (
 type PFCGateParams struct {
 
 	// Quarter(s) that the effect of gating on updating Deep from Super occurs -- this is typically 1 quarter after the GPiThal GateQtr
-	GateQtr leabra.Quarters `desc:"Quarter(s) that the effect of gating on updating Deep from Super occurs -- this is typically 1 quarter after the GPiThal GateQtr"`
+	GateQtr leabra.Quarters
 
 	// if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating
-	OutGate bool `desc:"if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating"`
+	OutGate bool
 
-	// [def: true] [viewif: OutGate] for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial
-	OutQ1Only bool `viewif:"OutGate" def:"true" desc:"for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial"`
+	// for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial
+	OutQ1Only bool `viewif:"OutGate" def:"true"`
 }
 
 func (gp *PFCGateParams) Defaults() {
@@ -32,16 +32,16 @@ func (gp *PFCGateParams) Defaults() {
 type PFCMaintParams struct {
 
 	// use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance
-	UseDyn bool `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
+	UseDyn bool
 
-	// [def: 0.8] [min: 0] multiplier on maint current
-	MaintGain float32 `min:"0" def:"0.8" desc:"multiplier on maint current"`
+	// multiplier on maint current
+	MaintGain float32 `min:"0" def:"0.8"`
 
-	// [def: false] on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases..
-	OutClearMaint bool `def:"false" desc:"on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases.."`
+	// on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases..
+	OutClearMaint bool `def:"false"`
 
-	// [def: 0] [min: 0] [max: 1] how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.
-	Clear    float32 `min:"0" max:"1" def:"0" desc:"how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.  "`
+	// how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.
+	Clear    float32 `min:"0" max:"1" def:"0"`
 	MaxMaint int     `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
 }
 
@@ -56,13 +56,13 @@ func (mp *PFCMaintParams) Defaults() {
 type PFCNeuron struct {
 
 	// gating activation -- the activity value when gating occurred in this pool
-	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	ActG float32
 
 	// maintenance value for Deep layers = sending act at time of gating
-	Maint float32 `desc:"maintenance value for Deep layers = sending act at time of gating"`
+	Maint float32
 
 	// maintenance excitatory conductance value for Deep layers
-	MaintGe float32 `desc:"maintenance excitatory conductance value for Deep layers"`
+	MaintGe float32
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -76,17 +76,17 @@ type PFCNeuron struct {
 type PFCDeepLayer struct {
 	GateLayer
 
-	// [view: inline] PFC Gating parameters
-	Gate PFCGateParams `view:"inline" desc:"PFC Gating parameters"`
+	// PFC Gating parameters
+	Gate PFCGateParams `view:"inline"`
 
-	// [view: inline] PFC Maintenance parameters
-	Maint PFCMaintParams `view:"inline" desc:"PFC Maintenance parameters"`
+	// PFC Maintenance parameters
+	Maint PFCMaintParams `view:"inline"`
 
 	// PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)
-	Dyns PFCDyns `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)"`
+	Dyns PFCDyns
 
 	// slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
-	PFCNeurs []PFCNeuron `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	PFCNeurs []PFCNeuron
 }
 
 var KiT_PFCDeepLayer = kit.Types.AddType(&PFCDeepLayer{}, leabra.LayerProps)

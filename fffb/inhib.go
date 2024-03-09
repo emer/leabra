@@ -10,25 +10,25 @@ import "github.com/emer/etable/v2/minmax"
 type Inhib struct {
 
 	// computed feedforward inhibition
-	FFi float32 `desc:"computed feedforward inhibition"`
+	FFi float32
 
 	// computed feedback inhibition (total)
-	FBi float32 `desc:"computed feedback inhibition (total)"`
+	FBi float32
 
 	// overall value of the inhibition -- this is what is added into the unit Gi inhibition level (along with any synaptic unit-driven inhibition)
-	Gi float32 `desc:"overall value of the inhibition -- this is what is added into the unit Gi inhibition level (along with any synaptic unit-driven inhibition)"`
+	Gi float32
 
 	// original value of the inhibition (before pool or other effects)
-	GiOrig float32 `desc:"original value of the inhibition (before pool or other effects)"`
+	GiOrig float32
 
 	// for pools, this is the layer-level inhibition that is MAX'd with the pool-level inhibition to produce the net inhibition
-	LayGi float32 `desc:"for pools, this is the layer-level inhibition that is MAX'd with the pool-level inhibition to produce the net inhibition"`
+	LayGi float32
 
 	// average and max Ge excitatory conductance values, which drive FF inhibition
-	Ge minmax.AvgMax32 `desc:"average and max Ge excitatory conductance values, which drive FF inhibition"`
+	Ge minmax.AvgMax32
 
 	// average and max Act activation values, which drive FB inhibition
-	Act minmax.AvgMax32 `desc:"average and max Act activation values, which drive FB inhibition"`
+	Act minmax.AvgMax32
 }
 
 func (fi *Inhib) Init() {

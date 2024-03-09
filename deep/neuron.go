@@ -39,13 +39,13 @@ func init() {
 type SuperNeuron struct {
 
 	// 5IB bursting activation value, computed by thresholding regular activation
-	Burst float32 `desc:"5IB bursting activation value, computed by thresholding regular activation"`
+	Burst float32
 
 	// previous bursting activation -- used for context-based learning
-	BurstPrv float32 `desc:"previous bursting activation -- used for context-based learning"`
+	BurstPrv float32
 
 	// attentional signal from TRC layer
-	Attn float32 `desc:"attentional signal from TRC layer"`
+	Attn float32
 }
 
 // SuperNeuronVarIdxByName returns the index of the variable in the SuperNeuron, or error

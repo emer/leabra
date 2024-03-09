@@ -23,13 +23,13 @@ type PPTgLayer struct {
 	DA      float32
 
 	// gain on input activation
-	DNetGain float32 `desc:"gain on input activation"`
+	DNetGain float32
 
 	// activation threshold for passing through
-	ActThreshold float32 `desc:"activation threshold for passing through"`
+	ActThreshold float32
 
 	// clamp activation directly, after applying gain
-	ClampActivation bool `desc:"clamp activation directly, after applying gain"`
+	ClampActivation bool
 }
 
 var KiT_PPTgLayer = kit.Types.AddType(&PPTgLayer{}, leabra.LayerProps)

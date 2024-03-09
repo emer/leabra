@@ -21,14 +21,14 @@ import (
 type Layer struct {
 	leabra.Layer
 
-	// [view: inline] NMDA channel parameters plus more general params
-	NMDA NMDAParams `view:"inline" desc:"NMDA channel parameters plus more general params"`
+	// NMDA channel parameters plus more general params
+	NMDA NMDAParams `view:"inline"`
 
-	// [view: inline] GABA-B / GIRK channel parameters
-	GABAB GABABParams `view:"inline" desc:"GABA-B / GIRK channel parameters"`
+	// GABA-B / GIRK channel parameters
+	GABAB GABABParams `view:"inline"`
 
 	// slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
-	GlNeurs []Neuron `desc:"slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	GlNeurs []Neuron
 }
 
 var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)

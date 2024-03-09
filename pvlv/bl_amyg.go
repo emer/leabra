@@ -27,13 +27,13 @@ func (ly *BlAmygLayer) AsBlAmygLayer() *BlAmygLayer {
 type BlAmygLayer struct {
 
 	// modulation state
-	ModLayer `desc:"modulation state"`
+	ModLayer
 
 	// positive or negative valence
-	Valence Valence `desc:"positive or negative valence"`
+	Valence Valence
 
 	// inter-layer inhibition parameters and state
-	ILI interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
+	ILI interinhib.InterInhib
 }
 
 var KiT_BlAmygLayer = kit.Types.AddType(&BlAmygLayer{}, nil)

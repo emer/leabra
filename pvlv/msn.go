@@ -18,12 +18,12 @@ type MSNLayer struct {
 	ModLayer
 
 	// patch or matrix
-	Compartment StriatalCompartment `inactive:"+" desc:"patch or matrix"`
+	Compartment StriatalCompartment `inactive:"+"`
 
 	// slice of delayed inhibition state for this layer.
-	DIState []DelInhState `desc:"slice of delayed inhibition state for this layer."`
+	DIState []DelInhState
 
-	// [view: no-inline add-fields]
+	//
 	DIParams DelayedInhibParams `view:"no-inline add-fields"`
 }
 
@@ -45,7 +45,7 @@ func (ly *MSNLayer) AsMod() *ModLayer {
 type MSNParams struct {
 
 	// patch or matrix
-	Compartment StriatalCompartment `inactive:"+" desc:"patch or matrix"`
+	Compartment StriatalCompartment `inactive:"+"`
 }
 
 type StriatalCompartment int
@@ -62,33 +62,33 @@ var KiT_StriatalCompartment = kit.Enums.AddEnum(NSComp, kit.NotBitFlag, nil)
 type DelayedInhibParams struct {
 
 	// add in a portion of inhibition from previous time period
-	Active bool `desc:"add in a portion of inhibition from previous time period"`
+	Active bool
 
 	// proportion of per-unit net input on previous gamma-frequency quarter to add in as inhibition
-	PrvQ float32 `desc:"proportion of per-unit net input on previous gamma-frequency quarter to add in as inhibition"`
+	PrvQ float32
 
 	// proportion of per-unit net input on previous trial to add in as inhibition
-	PrvTrl float32 `desc:"proportion of per-unit net input on previous trial to add in as inhibition"`
+	PrvTrl float32
 }
 
 // Params for for trace-based learning
 type MSNTraceParams struct {
 
-	// [def: true] use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
-	Deriv bool `def:"true" desc:"use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+	// use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
+	Deriv bool `def:"true"`
 
-	// [def: 1] [min: 0] multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes
-	Decay float32 `def:"1" min:"0" desc:"multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes"`
+	// multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes
+	Decay float32 `def:"1" min:"0"`
 
 	// learning rate scale factor, if
-	GateLRScale float32 `desc:"learning rate scale factor, if "`
+	GateLRScale float32
 }
 
 // DelInhState contains extra variables for MSNLayer neurons -- stored separately
 type DelInhState struct {
 
 	// netin from previous quarter, used for delayed inhibition
-	GePrvQ float32 `desc:"netin from previous quarter, used for delayed inhibition"`
+	GePrvQ float32
 
 	// netin from previous "trial" (alpha cycle), used for delayed inhibition
 	GePrvTrl float32 `desc:"netin from previous \"trial\" (alpha cycle), used for delayed inhibition"`

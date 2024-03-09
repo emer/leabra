@@ -15,14 +15,14 @@ import (
 // This is mainly the running average activations that drive learning
 type LearnNeurParams struct {
 
-	// [view: inline] parameters for computing running average activations that drive learning
-	ActAvg LrnActAvgParams `view:"inline" desc:"parameters for computing running average activations that drive learning"`
+	// parameters for computing running average activations that drive learning
+	ActAvg LrnActAvgParams `view:"inline"`
 
-	// [view: inline] parameters for computing AvgL long-term running average
-	AvgL AvgLParams `view:"inline" desc:"parameters for computing AvgL long-term running average"`
+	// parameters for computing AvgL long-term running average
+	AvgL AvgLParams `view:"inline"`
 
-	// [view: inline] parameters for computing cosine diff between minus and plus phase
-	CosDiff CosDiffParams `view:"inline" desc:"parameters for computing cosine diff between minus and plus phase"`
+	// parameters for computing cosine diff between minus and plus phase
+	CosDiff CosDiffParams `view:"inline"`
 }
 
 func (ln *LearnNeurParams) Update() {
@@ -67,28 +67,28 @@ func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 type LearnSynParams struct {
 
 	// enable learning for this projection
-	Learn bool `desc:"enable learning for this projection"`
+	Learn bool
 
-	// [viewif: Learn] current effective learning rate (multiplies DWt values, determining rate of change of weights)
-	Lrate float32 `viewif:"Learn" desc:"current effective learning rate (multiplies DWt values, determining rate of change of weights)"`
+	// current effective learning rate (multiplies DWt values, determining rate of change of weights)
+	Lrate float32 `viewif:"Learn"`
 
-	// [viewif: Learn] initial learning rate -- this is set from Lrate in UpdateParams, which is called when Params are updated, and used in LrateMult to compute a new learning rate for learning rate schedules.
-	LrateInit float32 `viewif:"Learn" desc:"initial learning rate -- this is set from Lrate in UpdateParams, which is called when Params are updated, and used in LrateMult to compute a new learning rate for learning rate schedules."`
+	// initial learning rate -- this is set from Lrate in UpdateParams, which is called when Params are updated, and used in LrateMult to compute a new learning rate for learning rate schedules.
+	LrateInit float32 `viewif:"Learn"`
 
-	// [view: inline] [viewif: Learn] parameters for the XCal learning rule
-	XCal XCalParams `viewif:"Learn" view:"inline" desc:"parameters for the XCal learning rule"`
+	// parameters for the XCal learning rule
+	XCal XCalParams `viewif:"Learn" view:"inline"`
 
-	// [view: inline] [viewif: Learn] parameters for the sigmoidal contrast weight enhancement
-	WtSig WtSigParams `viewif:"Learn" view:"inline" desc:"parameters for the sigmoidal contrast weight enhancement"`
+	// parameters for the sigmoidal contrast weight enhancement
+	WtSig WtSigParams `viewif:"Learn" view:"inline"`
 
-	// [view: inline] [viewif: Learn] parameters for normalizing weight changes by abs max dwt
-	Norm DWtNormParams `viewif:"Learn" view:"inline" desc:"parameters for normalizing weight changes by abs max dwt"`
+	// parameters for normalizing weight changes by abs max dwt
+	Norm DWtNormParams `viewif:"Learn" view:"inline"`
 
-	// [view: inline] [viewif: Learn] parameters for momentum across weight changes
-	Momentum MomentumParams `viewif:"Learn" view:"inline" desc:"parameters for momentum across weight changes"`
+	// parameters for momentum across weight changes
+	Momentum MomentumParams `viewif:"Learn" view:"inline"`
 
-	// [view: inline] [viewif: Learn] parameters for balancing strength of weight increases vs. decreases
-	WtBal WtBalParams `viewif:"Learn" view:"inline" desc:"parameters for balancing strength of weight increases vs. decreases"`
+	// parameters for balancing strength of weight increases vs. decreases
+	WtBal WtBalParams `viewif:"Learn" view:"inline"`
 }
 
 func (ls *LearnSynParams) Update() {
@@ -174,32 +174,32 @@ func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, s
 // to produce the running average activation values that then drive learning in the XCAL learning rules
 type LrnActAvgParams struct {
 
-	// [def: 2,4,7] [min: 1] time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the super-short time-scale avg_ss value -- this is provides a pre-integration step before integrating into the avg_s short time scale -- it is particularly important for spiking -- in general 4 is the largest value without starting to impair learning, but a value of 7 can be combined with m_in_s = 0 with somewhat worse results
-	SSTau float32 `def:"2,4,7"  min:"1" desc:"time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the super-short time-scale avg_ss value -- this is provides a pre-integration step before integrating into the avg_s short time scale -- it is particularly important for spiking -- in general 4 is the largest value without starting to impair learning, but a value of 7 can be combined with m_in_s = 0 with somewhat worse results"`
+	// time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the super-short time-scale avg_ss value -- this is provides a pre-integration step before integrating into the avg_s short time scale -- it is particularly important for spiking -- in general 4 is the largest value without starting to impair learning, but a value of 7 can be combined with m_in_s = 0 with somewhat worse results
+	SSTau float32 `def:"2,4,7"  min:"1"`
 
-	// [def: 2] [min: 1] time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the short time-scale avg_s value from the super-short avg_ss value (cascade mode) -- avg_s represents the plus phase learning signal that reflects the most recent past information
-	STau float32 `def:"2" min:"1" desc:"time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the short time-scale avg_s value from the super-short avg_ss value (cascade mode) -- avg_s represents the plus phase learning signal that reflects the most recent past information"`
+	// time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the short time-scale avg_s value from the super-short avg_ss value (cascade mode) -- avg_s represents the plus phase learning signal that reflects the most recent past information
+	STau float32 `def:"2" min:"1"`
 
-	// [def: 10] [min: 1] time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the medium time-scale avg_m value from the short avg_s value (cascade mode) -- avg_m represents the minus phase learning signal that reflects the expectation representation prior to experiencing the outcome (in addition to the outcome) -- the default value of 10 generally cannot be exceeded without impairing learning
-	MTau float32 `def:"10" min:"1" desc:"time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the medium time-scale avg_m value from the short avg_s value (cascade mode) -- avg_m represents the minus phase learning signal that reflects the expectation representation prior to experiencing the outcome (in addition to the outcome) -- the default value of 10 generally cannot be exceeded without impairing learning"`
+	// time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life), for continuously updating the medium time-scale avg_m value from the short avg_s value (cascade mode) -- avg_m represents the minus phase learning signal that reflects the expectation representation prior to experiencing the outcome (in addition to the outcome) -- the default value of 10 generally cannot be exceeded without impairing learning
+	MTau float32 `def:"10" min:"1"`
 
-	// [def: 0.1,0] [min: 0] [max: 1] how much of the medium term average activation to mix in with the short (plus phase) to compute the Neuron AvgSLrn variable that is used for the unit's short-term average in learning. This is important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place -- typically need faster time constant for updating S such that this trace of the M signal is lost -- can set SSTau=7 and set this to 0 but learning is generally somewhat worse
-	LrnM float32 `def:"0.1,0" min:"0" max:"1" desc:"how much of the medium term average activation to mix in with the short (plus phase) to compute the Neuron AvgSLrn variable that is used for the unit's short-term average in learning. This is important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place -- typically need faster time constant for updating S such that this trace of the M signal is lost -- can set SSTau=7 and set this to 0 but learning is generally somewhat worse"`
+	// how much of the medium term average activation to mix in with the short (plus phase) to compute the Neuron AvgSLrn variable that is used for the unit's short-term average in learning. This is important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place -- typically need faster time constant for updating S such that this trace of the M signal is lost -- can set SSTau=7 and set this to 0 but learning is generally somewhat worse
+	LrnM float32 `def:"0.1,0" min:"0" max:"1"`
 
-	// [def: 0.15] [min: 0] [max: 1] initial value for average
-	Init float32 `def:"0.15" min:"0" max:"1" desc:"initial value for average"`
+	// initial value for average
+	Init float32 `def:"0.15" min:"0" max:"1"`
 
-	// [view: -] rate = 1 / tau
-	SSDt float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	SSDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 
-	// [view: -] rate = 1 / tau
-	SDt float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	SDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 
-	// [view: -] rate = 1 / tau
-	MDt float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	MDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 
-	// [view: -] 1-LrnM
-	LrnS float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"1-LrnM"`
+	// 1-LrnM
+	LrnS float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 }
 
 // AvgsFmAct computes averages based on current act
@@ -236,35 +236,35 @@ func (aa *LrnActAvgParams) Defaults() {
 // Also computes an adaptive amount of BCM learning, AvgLLrn, based on AvgL.
 type AvgLParams struct {
 
-	// [def: 0.4] [min: 0] [max: 1] initial AvgL value at start of training
-	Init float32 `def:"0.4" min:"0" max:"1" desc:"initial AvgL value at start of training"`
+	// initial AvgL value at start of training
+	Init float32 `def:"0.4" min:"0" max:"1"`
 
-	// [def: 1.5,2,2.5,3,4,5] [min: 0] gain multiplier on activation used in computing the running average AvgL value that is the key floating threshold in the BCM Hebbian learning rule -- when using the DELTA_FF_FB learning rule, it should generally be 2x what it was before with the old XCAL_CHL rule, i.e., default of 5 instead of 2.5 -- it is a good idea to experiment with this parameter a bit -- the default is on the high-side, so typically reducing a bit from initial default is a good direction
-	Gain float32 `def:"1.5,2,2.5,3,4,5" min:"0" desc:"gain multiplier on activation used in computing the running average AvgL value that is the key floating threshold in the BCM Hebbian learning rule -- when using the DELTA_FF_FB learning rule, it should generally be 2x what it was before with the old XCAL_CHL rule, i.e., default of 5 instead of 2.5 -- it is a good idea to experiment with this parameter a bit -- the default is on the high-side, so typically reducing a bit from initial default is a good direction"`
+	// gain multiplier on activation used in computing the running average AvgL value that is the key floating threshold in the BCM Hebbian learning rule -- when using the DELTA_FF_FB learning rule, it should generally be 2x what it was before with the old XCAL_CHL rule, i.e., default of 5 instead of 2.5 -- it is a good idea to experiment with this parameter a bit -- the default is on the high-side, so typically reducing a bit from initial default is a good direction
+	Gain float32 `def:"1.5,2,2.5,3,4,5" min:"0"`
 
-	// [def: 0.2] [min: 0] miniumum AvgL value -- running average cannot go lower than this value even when it otherwise would due to inactivity -- default value is generally good and typically does not need to be changed
-	Min float32 `def:"0.2" min:"0" desc:"miniumum AvgL value -- running average cannot go lower than this value even when it otherwise would due to inactivity -- default value is generally good and typically does not need to be changed"`
+	// miniumum AvgL value -- running average cannot go lower than this value even when it otherwise would due to inactivity -- default value is generally good and typically does not need to be changed
+	Min float32 `def:"0.2" min:"0"`
 
-	// [def: 10] [min: 1] time constant for updating the running average AvgL -- AvgL moves toward gain*act with this time constant on every alpha-cycle - longer time constants can also work fine, but the default of 10 allows for quicker reaction to beneficial weight changes
-	Tau float32 `def:"10" min:"1" desc:"time constant for updating the running average AvgL -- AvgL moves toward gain*act with this time constant on every alpha-cycle - longer time constants can also work fine, but the default of 10 allows for quicker reaction to beneficial weight changes"`
+	// time constant for updating the running average AvgL -- AvgL moves toward gain*act with this time constant on every alpha-cycle - longer time constants can also work fine, but the default of 10 allows for quicker reaction to beneficial weight changes
+	Tau float32 `def:"10" min:"1"`
 
-	// [def: 0.5] [min: 0] maximum AvgLLrn value, which is amount of learning driven by AvgL factor -- when AvgL is at its maximum value (i.e., gain, as act does not exceed 1), then AvgLLrn will be at this maximum value -- by default, strong amounts of this homeostatic Hebbian form of learning can be used when the receiving unit is highly active -- this will then tend to bring down the average activity of units -- the default of 0.5, in combination with the err_mod flag, works well for most models -- use around 0.0004 for a single fixed value (with err_mod flag off)
-	LrnMax float32 `def:"0.5" min:"0" desc:"maximum AvgLLrn value, which is amount of learning driven by AvgL factor -- when AvgL is at its maximum value (i.e., gain, as act does not exceed 1), then AvgLLrn will be at this maximum value -- by default, strong amounts of this homeostatic Hebbian form of learning can be used when the receiving unit is highly active -- this will then tend to bring down the average activity of units -- the default of 0.5, in combination with the err_mod flag, works well for most models -- use around 0.0004 for a single fixed value (with err_mod flag off)"`
+	// maximum AvgLLrn value, which is amount of learning driven by AvgL factor -- when AvgL is at its maximum value (i.e., gain, as act does not exceed 1), then AvgLLrn will be at this maximum value -- by default, strong amounts of this homeostatic Hebbian form of learning can be used when the receiving unit is highly active -- this will then tend to bring down the average activity of units -- the default of 0.5, in combination with the err_mod flag, works well for most models -- use around 0.0004 for a single fixed value (with err_mod flag off)
+	LrnMax float32 `def:"0.5" min:"0"`
 
-	// [def: 0.0001,0.0004] [min: 0] miniumum AvgLLrn value (amount of learning driven by AvgL factor) -- if AvgL is at its minimum value, then AvgLLrn will be at this minimum value -- neurons that are not overly active may not need to increase the contrast of their weights as much -- use around 0.0004 for a single fixed value (with err_mod flag off)
-	LrnMin float32 `def:"0.0001,0.0004" min:"0" desc:"miniumum AvgLLrn value (amount of learning driven by AvgL factor) -- if AvgL is at its minimum value, then AvgLLrn will be at this minimum value -- neurons that are not overly active may not need to increase the contrast of their weights as much -- use around 0.0004 for a single fixed value (with err_mod flag off)"`
+	// miniumum AvgLLrn value (amount of learning driven by AvgL factor) -- if AvgL is at its minimum value, then AvgLLrn will be at this minimum value -- neurons that are not overly active may not need to increase the contrast of their weights as much -- use around 0.0004 for a single fixed value (with err_mod flag off)
+	LrnMin float32 `def:"0.0001,0.0004" min:"0"`
 
-	// [def: true] modulate amount learning by normalized level of error within layer
-	ErrMod bool `def:"true" desc:"modulate amount learning by normalized level of error within layer"`
+	// modulate amount learning by normalized level of error within layer
+	ErrMod bool `def:"true"`
 
-	// [def: 0.01] [viewif: ErrMod=true] minimum modulation value for ErrMod-- ensures a minimum amount of self-organizing learning even for network / layers that have a very small level of error signal
-	ModMin float32 `def:"0.01" viewif:"ErrMod=true" desc:"minimum modulation value for ErrMod-- ensures a minimum amount of self-organizing learning even for network / layers that have a very small level of error signal"`
+	// minimum modulation value for ErrMod-- ensures a minimum amount of self-organizing learning even for network / layers that have a very small level of error signal
+	ModMin float32 `def:"0.01" viewif:"ErrMod=true"`
 
-	// [view: -] rate = 1 / tau
-	Dt float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	Dt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 
-	// [view: -] (LrnMax - LrnMin) / (Gain - Min)
-	LrnFact float32 `view:"-" json:"-" xml:"-" inactive:"+" desc:"(LrnMax - LrnMin) / (Gain - Min)"`
+	// (LrnMax - LrnMin) / (Gain - Min)
+	LrnFact float32 `view:"-" json:"-" xml:"-" inactive:"+"`
 }
 
 // AvgLFmAvgM computes long-term average activation value, and learning factor, from given
@@ -311,14 +311,14 @@ func (al *AvgLParams) Defaults() {
 // Used to modulate amount of hebbian learning, and overall learning rate.
 type CosDiffParams struct {
 
-	// [def: 100] [min: 1] time constant in alpha-cycles (roughly how long significant change takes, 1.4 x half-life) for computing running average CosDiff value for the layer, CosDiffAvg = cosine difference between ActM and ActP -- this is an important statistic for how much phase-based difference there is between phases in this layer -- it is used in standard X_COS_DIFF modulation of l_mix in LeabraConSpec, and for modulating learning rate as a function of predictability in the DeepLeabra predictive auto-encoder learning -- running average variance also computed with this: cos_diff_var
-	Tau float32 `def:"100" min:"1" desc:"time constant in alpha-cycles (roughly how long significant change takes, 1.4 x half-life) for computing running average CosDiff value for the layer, CosDiffAvg = cosine difference between ActM and ActP -- this is an important statistic for how much phase-based difference there is between phases in this layer -- it is used in standard X_COS_DIFF modulation of l_mix in LeabraConSpec, and for modulating learning rate as a function of predictability in the DeepLeabra predictive auto-encoder learning -- running average variance also computed with this: cos_diff_var"`
+	// time constant in alpha-cycles (roughly how long significant change takes, 1.4 x half-life) for computing running average CosDiff value for the layer, CosDiffAvg = cosine difference between ActM and ActP -- this is an important statistic for how much phase-based difference there is between phases in this layer -- it is used in standard X_COS_DIFF modulation of l_mix in LeabraConSpec, and for modulating learning rate as a function of predictability in the DeepLeabra predictive auto-encoder learning -- running average variance also computed with this: cos_diff_var
+	Tau float32 `def:"100" min:"1"`
 
-	// [view: -] rate constant = 1 / Tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant = 1 / Tau"`
+	// rate constant = 1 / Tau
+	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 
-	// [view: -] complement of rate constant = 1 - Dt
-	DtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement of rate constant = 1 - Dt"`
+	// complement of rate constant = 1 - Dt
+	DtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 }
 
 func (cd *CosDiffParams) Update() {
@@ -370,19 +370,19 @@ func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
 type CosDiffStats struct {
 
 	// cosine (normalized dot product) activation difference between ActP and ActM on this alpha-cycle for this layer -- computed by CosDiffFmActs at end of QuarterFinal for quarter = 3
-	Cos float32 `desc:"cosine (normalized dot product) activation difference between ActP and ActM on this alpha-cycle for this layer -- computed by CosDiffFmActs at end of QuarterFinal for quarter = 3"`
+	Cos float32
 
 	// running average of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, and used for modulating BCM Hebbian learning (see AvgLrn) and overall learning rate
-	Avg float32 `desc:"running average of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, and used for modulating BCM Hebbian learning (see AvgLrn) and overall learning rate"`
+	Avg float32
 
 	// running variance of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, used for modulating overall learning rate
-	Var float32 `desc:"running variance of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, used for modulating overall learning rate"`
+	Var float32
 
 	// 1 - Avg and 0 for non-Hidden layers
-	AvgLrn float32 `desc:"1 - Avg and 0 for non-Hidden layers"`
+	AvgLrn float32
 
 	// 1 - AvgLrn and 0 for non-Hidden layers -- this is the value of Avg used for AvgLParams ErrMod modulation of the AvgLLrn factor if enabled
-	ModAvgLLrn float32 `desc:"1 - AvgLrn and 0 for non-Hidden layers -- this is the value of Avg used for AvgLParams ErrMod modulation of the AvgLLrn factor if enabled"`
+	ModAvgLLrn float32
 }
 
 func (cd *CosDiffStats) Init() {
@@ -400,26 +400,26 @@ func (cd *CosDiffStats) Init() {
 // which is the standard learning equation for leabra .
 type XCalParams struct {
 
-	// [def: 1] [min: 0] multiplier on learning based on the medium-term floating average threshold which produces error-driven learning -- this is typically 1 when error-driven learning is being used, and 0 when pure Hebbian learning is used. The long-term floating average threshold is provided by the receiving unit
-	MLrn float32 `def:"1" min:"0" desc:"multiplier on learning based on the medium-term floating average threshold which produces error-driven learning -- this is typically 1 when error-driven learning is being used, and 0 when pure Hebbian learning is used. The long-term floating average threshold is provided by the receiving unit"`
+	// multiplier on learning based on the medium-term floating average threshold which produces error-driven learning -- this is typically 1 when error-driven learning is being used, and 0 when pure Hebbian learning is used. The long-term floating average threshold is provided by the receiving unit
+	MLrn float32 `def:"1" min:"0"`
 
-	// [def: false] if true, set a fixed AvgLLrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1. If false, then the receiving unit's AvgLLrn factor is used, which dynamically modulates the amount of the long-term component as a function of how active overall it is
-	SetLLrn bool `def:"false" desc:"if true, set a fixed AvgLLrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1. If false, then the receiving unit's AvgLLrn factor is used, which dynamically modulates the amount of the long-term component as a function of how active overall it is"`
+	// if true, set a fixed AvgLLrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1. If false, then the receiving unit's AvgLLrn factor is used, which dynamically modulates the amount of the long-term component as a function of how active overall it is
+	SetLLrn bool `def:"false"`
 
-	// [viewif: SetLLrn] fixed l_lrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1.
-	LLrn float32 `viewif:"SetLLrn" desc:"fixed l_lrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1."`
+	// fixed l_lrn weighting factor that determines how much of the long-term floating average threshold (i.e., BCM, Hebbian) component of learning is used -- this is useful for setting a fully Hebbian learning connection, e.g., by setting MLrn = 0 and LLrn = 1.
+	LLrn float32 `viewif:"SetLLrn"`
 
-	// [def: 0.1] [min: 0] [max: 0.99] proportional point within LTD range where magnitude reverses to go back down to zero at zero -- err-driven svm component does better with smaller values, and BCM-like mvl component does better with larger values -- 0.1 is a compromise
-	DRev float32 `def:"0.1" min:"0" max:"0.99" desc:"proportional point within LTD range where magnitude reverses to go back down to zero at zero -- err-driven svm component does better with smaller values, and BCM-like mvl component does better with larger values -- 0.1 is a compromise"`
+	// proportional point within LTD range where magnitude reverses to go back down to zero at zero -- err-driven svm component does better with smaller values, and BCM-like mvl component does better with larger values -- 0.1 is a compromise
+	DRev float32 `def:"0.1" min:"0" max:"0.99"`
 
-	// [def: 0.0001,0.01] [min: 0] minimum LTD threshold value below which no weight change occurs -- this is now *relative* to the threshold
-	DThr float32 `def:"0.0001,0.01" min:"0" desc:"minimum LTD threshold value below which no weight change occurs -- this is now *relative* to the threshold"`
+	// minimum LTD threshold value below which no weight change occurs -- this is now *relative* to the threshold
+	DThr float32 `def:"0.0001,0.01" min:"0"`
 
-	// [def: 0.01] xcal learning threshold -- don't learn when sending unit activation is below this value in both phases -- due to the nature of the learning function being 0 when the sr coproduct is 0, it should not affect learning in any substantial way -- nonstandard learning algorithms that have different properties should ignore it
-	LrnThr float32 `def:"0.01" desc:"xcal learning threshold -- don't learn when sending unit activation is below this value in both phases -- due to the nature of the learning function being 0 when the sr coproduct is 0, it should not affect learning in any substantial way -- nonstandard learning algorithms that have different properties should ignore it"`
+	// xcal learning threshold -- don't learn when sending unit activation is below this value in both phases -- due to the nature of the learning function being 0 when the sr coproduct is 0, it should not affect learning in any substantial way -- nonstandard learning algorithms that have different properties should ignore it
+	LrnThr float32 `def:"0.01"`
 
-	// [view: -] -(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!
-	DRevRatio float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"-(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!"`
+	// -(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!
+	DRevRatio float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 }
 
 func (xc *XCalParams) Update() {
@@ -467,14 +467,14 @@ func (xc *XCalParams) LongLrate(avgLLrn float32) float32 {
 // WtSigParams are sigmoidal weight contrast enhancement function parameters
 type WtSigParams struct {
 
-	// [def: 1,6] [min: 0] gain (contrast, sharpness) of the weight contrast function (1 = linear)
-	Gain float32 `def:"1,6" min:"0" desc:"gain (contrast, sharpness) of the weight contrast function (1 = linear)"`
+	// gain (contrast, sharpness) of the weight contrast function (1 = linear)
+	Gain float32 `def:"1,6" min:"0"`
 
-	// [def: 1] [min: 0] offset of the function (1=centered at .5, >1=higher, <1=lower) -- 1 is standard for XCAL
-	Off float32 `def:"1" min:"0" desc:"offset of the function (1=centered at .5, >1=higher, <1=lower) -- 1 is standard for XCAL"`
+	// offset of the function (1=centered at .5, >1=higher, <1=lower) -- 1 is standard for XCAL
+	Off float32 `def:"1" min:"0"`
 
-	// [def: true] apply exponential soft bounding to the weight changes
-	SoftBound bool `def:"true" desc:"apply exponential soft bounding to the weight changes"`
+	// apply exponential soft bounding to the weight changes
+	SoftBound bool `def:"true"`
 }
 
 func (ws *WtSigParams) Update() {
@@ -563,26 +563,26 @@ func (ws *WtSigParams) LinFmSigWt(sw float32) float32 {
 // Serves as an estimate of the variance in the weight changes, assuming zero net mean overall.
 type DWtNormParams struct {
 
-	// [def: true] whether to use dwt normalization, only on error-driven dwt component, based on projection-level max_avg value -- slowly decays and instantly resets to any current max
-	On bool `def:"true" desc:"whether to use dwt normalization, only on error-driven dwt component, based on projection-level max_avg value -- slowly decays and instantly resets to any current max"`
+	// whether to use dwt normalization, only on error-driven dwt component, based on projection-level max_avg value -- slowly decays and instantly resets to any current max
+	On bool `def:"true"`
 
-	// [def: 1000,10000] [viewif: On] [min: 1] time constant for decay of dwnorm factor -- generally should be long-ish, between 1000-10000 -- integration rate factor is 1/tau
-	DecayTau float32 `viewif:"On" min:"1" def:"1000,10000" desc:"time constant for decay of dwnorm factor -- generally should be long-ish, between 1000-10000 -- integration rate factor is 1/tau"`
+	// time constant for decay of dwnorm factor -- generally should be long-ish, between 1000-10000 -- integration rate factor is 1/tau
+	DecayTau float32 `viewif:"On" min:"1" def:"1000,10000"`
 
-	// [def: 0.001] [viewif: On] [min: 0] minimum effective value of the normalization factor -- provides a lower bound to how much normalization can be applied
-	NormMin float32 `viewif:"On" min:"0" def:"0.001" desc:"minimum effective value of the normalization factor -- provides a lower bound to how much normalization can be applied"`
+	// minimum effective value of the normalization factor -- provides a lower bound to how much normalization can be applied
+	NormMin float32 `viewif:"On" min:"0" def:"0.001"`
 
-	// [def: 0.15] [viewif: On] [min: 0] overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels
-	LrComp float32 `viewif:"On" min:"0" def:"0.15" desc:"overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels"`
+	// overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels
+	LrComp float32 `viewif:"On" min:"0" def:"0.15"`
 
-	// [def: false] [viewif: On] record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection
-	Stats bool `viewif:"On" def:"false" desc:"record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection"`
+	// record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection
+	Stats bool `viewif:"On" def:"false"`
 
-	// [view: -] rate constant of decay = 1 / decay_tau
-	DecayDt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant of decay = 1 / decay_tau"`
+	// rate constant of decay = 1 / decay_tau
+	DecayDt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 
-	// [view: -] complement rate constant of decay = 1 - (1 / decay_tau)
-	DecayDtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement rate constant of decay = 1 - (1 / decay_tau)"`
+	// complement rate constant of decay = 1 - (1 / decay_tau)
+	DecayDtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 }
 
 // DWtNormParams updates the dwnorm running max_abs, slowly decaying value
@@ -617,20 +617,20 @@ func (dn *DWtNormParams) Defaults() {
 // cancels out dithering -- biologically captures slower timecourse of longer-term plasticity mechanisms.
 type MomentumParams struct {
 
-	// [def: true] whether to use standard simple momentum
-	On bool `def:"true" desc:"whether to use standard simple momentum"`
+	// whether to use standard simple momentum
+	On bool `def:"true"`
 
-	// [def: 10] [viewif: On] [min: 1] time constant factor for integration of momentum -- 1/tau is dt (e.g., .1), and 1-1/tau (e.g., .95 or .9) is traditional momentum time-integration factor
-	MTau float32 `viewif:"On" min:"1" def:"10" desc:"time constant factor for integration of momentum -- 1/tau is dt (e.g., .1), and 1-1/tau (e.g., .95 or .9) is traditional momentum time-integration factor"`
+	// time constant factor for integration of momentum -- 1/tau is dt (e.g., .1), and 1-1/tau (e.g., .95 or .9) is traditional momentum time-integration factor
+	MTau float32 `viewif:"On" min:"1" def:"10"`
 
-	// [def: 0.1] [viewif: On] [min: 0] overall learning rate multiplier to compensate for changes due to JUST momentum without normalization -- allows for a common master learning rate to be used between different conditions -- generally should use .1 to compensate for just momentum itself
-	LrComp float32 `viewif:"On" min:"0" def:"0.1" desc:"overall learning rate multiplier to compensate for changes due to JUST momentum without normalization -- allows for a common master learning rate to be used between different conditions -- generally should use .1 to compensate for just momentum itself"`
+	// overall learning rate multiplier to compensate for changes due to JUST momentum without normalization -- allows for a common master learning rate to be used between different conditions -- generally should use .1 to compensate for just momentum itself
+	LrComp float32 `viewif:"On" min:"0" def:"0.1"`
 
-	// [view: -] rate constant of momentum integration = 1 / m_tau
-	MDt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant of momentum integration = 1 / m_tau"`
+	// rate constant of momentum integration = 1 / m_tau
+	MDt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 
-	// [view: -] complement rate constant of momentum integration = 1 - (1 / m_tau)
-	MDtC float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"complement rate constant of momentum integration = 1 - (1 / m_tau)"`
+	// complement rate constant of momentum integration = 1 - (1 / m_tau)
+	MDtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
 }
 
 // MomentFmDWt updates synaptic moment variable based on dwt weight change value
@@ -662,25 +662,25 @@ func (mp *MomentumParams) Defaults() {
 type WtBalParams struct {
 
 	// perform weight balance soft normalization?  if so, maintains overall weight balance across units by progressively penalizing weight increases as a function of amount of averaged receiver weight above a high threshold (hi_thr) and long time-average activation above an act_thr -- this is generally very beneficial for larger models where hog units are a problem, but not as much for smaller models where the additional constraints are not beneficial -- uses a sigmoidal function: WbInc = 1 / (1 + HiGain*(WbAvg - HiThr) + ActGain * (nrn.ActAvg - ActThr)))
-	On bool `desc:"perform weight balance soft normalization?  if so, maintains overall weight balance across units by progressively penalizing weight increases as a function of amount of averaged receiver weight above a high threshold (hi_thr) and long time-average activation above an act_thr -- this is generally very beneficial for larger models where hog units are a problem, but not as much for smaller models where the additional constraints are not beneficial -- uses a sigmoidal function: WbInc = 1 / (1 + HiGain*(WbAvg - HiThr) + ActGain * (nrn.ActAvg - ActThr)))"`
+	On bool
 
 	// apply soft bounding to target layers -- appears to be beneficial but still testing
-	Targs bool `desc:"apply soft bounding to target layers -- appears to be beneficial but still testing"`
+	Targs bool
 
-	// [def: 0.25] [viewif: On] threshold on weight value for inclusion into the weight average that is then subject to the further HiThr threshold for then driving a change in weight balance -- this AvgThr allows only stronger weights to contribute so that weakening of lower weights does not dilute sensitivity to number and strength of strong weights
-	AvgThr float32 `viewif:"On" def:"0.25" desc:"threshold on weight value for inclusion into the weight average that is then subject to the further HiThr threshold for then driving a change in weight balance -- this AvgThr allows only stronger weights to contribute so that weakening of lower weights does not dilute sensitivity to number and strength of strong weights"`
+	// threshold on weight value for inclusion into the weight average that is then subject to the further HiThr threshold for then driving a change in weight balance -- this AvgThr allows only stronger weights to contribute so that weakening of lower weights does not dilute sensitivity to number and strength of strong weights
+	AvgThr float32 `viewif:"On" def:"0.25"`
 
-	// [def: 0.4] [viewif: On] high threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors
-	HiThr float32 `viewif:"On" def:"0.4" desc:"high threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors"`
+	// high threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors
+	HiThr float32 `viewif:"On" def:"0.4"`
 
-	// [def: 4] [viewif: On] gain multiplier applied to above-HiThr thresholded weight averages -- higher values turn weight increases down more rapidly as the weights become more imbalanced
-	HiGain float32 `viewif:"On" def:"4" desc:"gain multiplier applied to above-HiThr thresholded weight averages -- higher values turn weight increases down more rapidly as the weights become more imbalanced"`
+	// gain multiplier applied to above-HiThr thresholded weight averages -- higher values turn weight increases down more rapidly as the weights become more imbalanced
+	HiGain float32 `viewif:"On" def:"4"`
 
-	// [def: 0.4] [viewif: On] low threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors
-	LoThr float32 `viewif:"On" def:"0.4" desc:"low threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors"`
+	// low threshold on weight average (subject to AvgThr) before it drives changes in weight increase vs. decrease factors
+	LoThr float32 `viewif:"On" def:"0.4"`
 
-	// [def: 6,0] [viewif: On] gain multiplier applied to below-lo_thr thresholded weight averages -- higher values turn weight increases up more rapidly as the weights become more imbalanced -- generally beneficial but sometimes not -- worth experimenting with either 6 or 0
-	LoGain float32 `viewif:"On" def:"6,0" desc:"gain multiplier applied to below-lo_thr thresholded weight averages -- higher values turn weight increases up more rapidly as the weights become more imbalanced -- generally beneficial but sometimes not -- worth experimenting with either 6 or 0"`
+	// gain multiplier applied to below-lo_thr thresholded weight averages -- higher values turn weight increases up more rapidly as the weights become more imbalanced -- generally beneficial but sometimes not -- worth experimenting with either 6 or 0
+	LoGain float32 `viewif:"On" def:"6,0"`
 }
 
 func (wb *WtBalParams) Update() {

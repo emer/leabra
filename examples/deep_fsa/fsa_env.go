@@ -18,43 +18,43 @@ import (
 type FSAEnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
+	Nm string
 
 	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Dsc string
 
-	// [view: no-inline] transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
-	TMat etensor.Float64 `view:"no-inline" desc:"transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state"`
+	// transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
+	TMat etensor.Float64 `view:"no-inline"`
 
 	// transition labels, one for each transition cell in TMat matrix
-	Labels etensor.String `desc:"transition labels, one for each transition cell in TMat matrix"`
+	Labels etensor.String
 
 	// automaton state within FSA that we're in
-	AState env.CurPrvInt `desc:"automaton state within FSA that we're in"`
+	AState env.CurPrvInt
 
 	// number of next states in current state output (scalar)
-	NNext etensor.Int `desc:"number of next states in current state output (scalar)"`
+	NNext etensor.Int
 
 	// next states that have non-zero probability, with actual randomly chosen next state at start
-	NextStates etensor.Int `desc:"next states that have non-zero probability, with actual randomly chosen next state at start"`
+	NextStates etensor.Int
 
 	// transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start
-	NextLabels etensor.String `desc:"transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start"`
+	NextLabels etensor.String
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Ctr `view:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Ctr `view:"inline"`
 
-	// [view: inline] sequence counter within epoch
-	Seq env.Ctr `view:"inline" desc:"sequence counter within epoch"`
+	// sequence counter within epoch
+	Seq env.Ctr `view:"inline"`
 
-	// [view: inline] tick counter within sequence
-	Tick env.Ctr `view:"inline" desc:"tick counter within sequence"`
+	// tick counter within sequence
+	Tick env.Ctr `view:"inline"`
 
-	// [view: inline] trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
-	Trial env.Ctr `view:"inline" desc:"trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence"`
+	// trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
+	Trial env.Ctr `view:"inline"`
 }
 
 func (ev *FSAEnv) Name() string { return ev.Nm }

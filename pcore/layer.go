@@ -19,7 +19,7 @@ type Layer struct {
 	glong.AlphaMaxLayer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+"`
 }
 
 var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)

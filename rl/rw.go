@@ -23,10 +23,10 @@ type RWPredLayer struct {
 	leabra.Layer
 
 	// default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance
-	PredRange minmax.F32 `desc:"default 0.1..0.99 range of predictions that can be represented -- having a truncated range preserves some sensitivity in dopamine at the extremes of good or poor performance"`
+	PredRange minmax.F32
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+"`
 }
 
 var KiT_RWPredLayer = kit.Types.AddType(&RWPredLayer{}, leabra.LayerProps)
@@ -65,16 +65,16 @@ type RWDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed
-	RewLay string `desc:"name of Reward-representing layer from which this computes DA -- if nothing clamped, no dopamine computed"`
+	RewLay string
 
 	// name of RWPredLayer layer that is subtracted from the reward value
-	RWPredLay string `desc:"name of RWPredLayer layer that is subtracted from the reward value"`
+	RWPredLay string
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+"`
 }
 
 var KiT_RWDaLayer = kit.Types.AddType(&RWDaLayer{}, leabra.LayerProps)
@@ -167,7 +167,7 @@ type RWPrjn struct {
 	leabra.Prjn
 
 	// tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal
-	DaTol float32 `desc:"tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal"`
+	DaTol float32
 }
 
 var KiT_RWPrjn = kit.Types.AddType(&RWPrjn{}, deep.PrjnProps)

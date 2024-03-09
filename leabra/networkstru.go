@@ -37,53 +37,53 @@ type LayFunChan chan func(ly LeabraLayer)
 // leabra.NetworkStru holds the basic structural components of a network (layers)
 type NetworkStru struct {
 
-	// [view: -] we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary.
-	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	// we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary.
+	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-"`
 
 	// overall name of network -- helps discriminate if there are multiple
-	Nm string `desc:"overall name of network -- helps discriminate if there are multiple"`
+	Nm string
 
 	// list of layers
-	Layers emer.Layers `desc:"list of layers"`
+	Layers emer.Layers
 
 	// filename of last weights file loaded or saved
-	WtsFile string `desc:"filename of last weights file loaded or saved"`
+	WtsFile string
 
-	// [view: -] map of name to layers -- layer names must be unique
-	LayMap map[string]emer.Layer `view:"-" desc:"map of name to layers -- layer names must be unique"`
+	// map of name to layers -- layer names must be unique
+	LayMap map[string]emer.Layer `view:"-"`
 
-	// [view: -] map of layer classes -- made during Build
-	LayClassMap map[string][]string `view:"-" desc:"map of layer classes -- made during Build"`
+	// map of layer classes -- made during Build
+	LayClassMap map[string][]string `view:"-"`
 
-	// [view: -] minimum display position in network
-	MinPos mat32.Vec3 `view:"-" desc:"minimum display position in network"`
+	// minimum display position in network
+	MinPos mat32.Vec3 `view:"-"`
 
-	// [view: -] maximum display position in network
-	MaxPos mat32.Vec3 `view:"-" desc:"maximum display position in network"`
+	// maximum display position in network
+	MaxPos mat32.Vec3 `view:"-"`
 
 	// optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save
-	MetaData map[string]string `desc:"optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save"`
+	MetaData map[string]string
 
 	// number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network
-	NThreads int `inactive:"+" desc:"number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network"`
+	NThreads int `inactive:"+"`
 
 	// if set, runtime.LockOSThread() is called on the compute threads, which can be faster on large networks on some architectures -- experimentation is recommended
-	LockThreads bool `desc:"if set, runtime.LockOSThread() is called on the compute threads, which can be faster on large networks on some architectures -- experimentation is recommended"`
+	LockThreads bool
 
-	// [view: -] layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build
-	ThrLay [][]emer.Layer `view:"-" inactive:"+" desc:"layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build"`
+	// layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build
+	ThrLay [][]emer.Layer `view:"-" inactive:"+"`
 
-	// [view: -] layer function channels, per thread
-	ThrChans []LayFunChan `view:"-" desc:"layer function channels, per thread"`
+	// layer function channels, per thread
+	ThrChans []LayFunChan `view:"-"`
 
-	// [view: -] timers for each thread, so you can see how evenly the workload is being distributed
-	ThrTimes []timer.Time `view:"-" desc:"timers for each thread, so you can see how evenly the workload is being distributed"`
+	// timers for each thread, so you can see how evenly the workload is being distributed
+	ThrTimes []timer.Time `view:"-"`
 
-	// [view: -] timers for each major function (step of processing)
-	FunTimes map[string]*timer.Time `view:"-" desc:"timers for each major function (step of processing)"`
+	// timers for each major function (step of processing)
+	FunTimes map[string]*timer.Time `view:"-"`
 
-	// [view: -] network-level wait group for synchronizing threaded layer calls
-	WaitGp sync.WaitGroup `view:"-" desc:"network-level wait group for synchronizing threaded layer calls"`
+	// network-level wait group for synchronizing threaded layer calls
+	WaitGp sync.WaitGroup `view:"-"`
 }
 
 // InitName MUST be called to initialize the network's pointer to itself as an emer.Network

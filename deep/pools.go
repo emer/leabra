@@ -18,10 +18,10 @@ import (
 type EPool struct {
 
 	// layer name
-	LayNm string `desc:"layer name"`
+	LayNm string
 
 	// general scaling factor for how much excitation from this pool
-	Wt float32 `desc:"general scaling factor for how much excitation from this pool"`
+	Wt float32
 }
 
 func (ep *EPool) Defaults() {
@@ -59,19 +59,19 @@ func (ep *EPools) Validate(net emer.Network, ctxt string) error {
 type IPool struct {
 
 	// layer name
-	LayNm string `desc:"layer name"`
+	LayNm string
 
 	// general scaling factor for how much overall inhibition from this pool contributes, in a non-pool-specific manner
-	Wt float32 `desc:"general scaling factor for how much overall inhibition from this pool contributes, in a non-pool-specific manner"`
+	Wt float32
 
 	// scaling factor for how much corresponding pools contribute in a pool-spcific manner, using offsets and averaging across pools as needed to match geometry
-	PoolWt float32 `desc:"scaling factor for how much corresponding pools contribute in a pool-spcific manner, using offsets and averaging across pools as needed to match geometry"`
+	PoolWt float32
 
 	// offset into source, sending layer
-	SOff evec.Vec2i `desc:"offset into source, sending layer"`
+	SOff evec.Vec2i
 
 	// offset into our own receiving layer
-	ROff evec.Vec2i `desc:"offset into our own receiving layer"`
+	ROff evec.Vec2i
 }
 
 func (ip *IPool) Defaults() {

@@ -24,19 +24,19 @@ package knadapt
 type Chan struct {
 
 	// if On, use this component of K-Na adaptation
-	On bool `desc:"if On, use this component of K-Na adaptation"`
+	On bool
 
-	// [viewif: On] Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
-	Rise float32 `viewif:"On" desc:"Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate"`
+	// Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
+	Rise float32 `viewif:"On"`
 
-	// [viewif: On] Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
-	Max float32 `viewif:"On" desc:"Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here"`
+	// Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
+	Max float32 `viewif:"On"`
 
-	// [viewif: On] time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
-	Tau float32 `viewif:"On" desc:"time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)"`
+	// time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
+	Tau float32 `viewif:"On"`
 
-	// [view: -] 1/Tau rate constant
-	Dt float32 `view:"-" desc:"1/Tau rate constant"`
+	// 1/Tau rate constant
+	Dt float32 `view:"-"`
 }
 
 func (ka *Chan) Defaults() {
@@ -80,19 +80,19 @@ func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
 type Params struct {
 
 	// if On, apply K-Na adaptation
-	On bool `desc:"if On, apply K-Na adaptation"`
+	On bool
 
-	// [def: 0.8] [viewif: On] extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
-	Rate float32 `viewif:"On" def:"0.8" desc:"extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking"`
+	// extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
+	Rate float32 `viewif:"On" def:"0.8"`
 
-	// [view: inline] fast time-scale adaptation
-	Fast Chan `view:"inline" desc:"fast time-scale adaptation"`
+	// fast time-scale adaptation
+	Fast Chan `view:"inline"`
 
-	// [view: inline] medium time-scale adaptation
-	Med Chan `view:"inline" desc:"medium time-scale adaptation"`
+	// medium time-scale adaptation
+	Med Chan `view:"inline"`
 
-	// [view: inline] slow time-scale adaptation
-	Slow Chan `view:"inline" desc:"slow time-scale adaptation"`
+	// slow time-scale adaptation
+	Slow Chan `view:"inline"`
 }
 
 func (ka *Params) Defaults() {

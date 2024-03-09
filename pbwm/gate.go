@@ -21,13 +21,13 @@ import (
 type GateShape struct {
 
 	// overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels
-	Y int `desc:"overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels"`
+	Y int
 
 	// how many pools in the X dimension are Maint gating pools -- rest are Out
-	MaintX int `desc:"how many pools in the X dimension are Maint gating pools -- rest are Out"`
+	MaintX int
 
 	// how many pools in the X dimension are Out gating pools -- comes after Maint
-	OutX int `desc:"how many pools in the X dimension are Out gating pools -- comes after Maint"`
+	OutX int
 }
 
 // Set sets the shape parameters: number of Y dimension pools, and
@@ -97,13 +97,13 @@ func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
 type GateState struct {
 
 	// gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle
-	Act float32 `desc:"gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle"`
+	Act float32
 
 	// gating timing signal -- true if this is the moment when gating takes place
-	Now bool `desc:"gating timing signal -- true if this is the moment when gating takes place"`
+	Now bool
 
 	// unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating.
-	Cnt int `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
+	Cnt int `copy:"-"`
 }
 
 // Init initializes the values -- call during InitActs()
@@ -128,10 +128,10 @@ type GateLayer struct {
 	Layer
 
 	// shape of overall Maint + Out gating system that this layer is part of
-	GateShp GateShape `desc:"shape of overall Maint + Out gating system that this layer is part of"`
+	GateShp GateShape
 
 	// slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out
-	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
+	GateStates []GateState
 }
 
 var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, leabra.LayerProps)

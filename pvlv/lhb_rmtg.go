@@ -18,45 +18,45 @@ import (
 type LHbRMTgGains struct {
 
 	// final overall gain on everything
-	All float32 `desc:"final overall gain on everything"`
+	All float32
 
 	// patch D1 APPETITIVE pathway - versus pos PV outcomes
-	VSPatchPosD1 float32 `desc:"patch D1 APPETITIVE pathway - versus pos PV outcomes"`
+	VSPatchPosD1 float32
 
 	// patch D2 APPETITIVE pathway versus vspatch_pos_D1
-	VSPatchPosD2 float32 `desc:"patch D2 APPETITIVE pathway versus vspatch_pos_D1"`
+	VSPatchPosD2 float32
 
 	// proportion of positive reward prediction error (RPE) to use if RPE results from a predicted omission of positive
-	VSPatchPosDisinhib float32 `desc:"proportion of positive reward prediction error (RPE) to use if RPE results from a predicted omission of positive"`
+	VSPatchPosDisinhib float32
 
 	// gain on VS matrix D1 APPETITIVE guys
-	VSMatrixPosD1 float32 `desc:"gain on VS matrix D1 APPETITIVE guys"`
+	VSMatrixPosD1 float32
 
 	// VS matrix D2 APPETITIVE
-	VSMatrixPosD2 float32 `desc:"VS matrix D2 APPETITIVE"`
+	VSMatrixPosD2 float32
 
 	// VS patch D1 pathway versus neg PV outcomes
-	VSPatchNegD1 float32 `desc:"VS patch D1 pathway versus neg PV outcomes"`
+	VSPatchNegD1 float32
 
 	// VS patch D2 pathway versus vspatch_neg_D1
-	VSPatchNegD2 float32 `desc:"VS patch D2 pathway versus vspatch_neg_D1"`
+	VSPatchNegD2 float32
 
 	// VS matrix D1 AVERSIVE
-	VSMatrixNegD1 float32 `desc:"VS matrix D1 AVERSIVE"`
+	VSMatrixNegD1 float32
 
 	// VS matrix D2 AVERSIVE
-	VSMatrixNegD2 float32 `desc:"VS matrix D2 AVERSIVE"`
+	VSMatrixNegD2 float32
 }
 
 type LHbRMTgLayer struct {
 	leabra.Layer
 	RcvFrom emer.LayNames
 
-	// [view: inline]
+	//
 	Gains LHbRMTgGains `view:"inline"`
 
 	// reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes
-	PVNegDiscount float32              `desc:"reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes"`
+	PVNegDiscount float32
 	InternalState LHBRMTgInternalState // for debugging
 }
 

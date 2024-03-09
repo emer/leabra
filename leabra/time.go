@@ -13,25 +13,25 @@ import (
 type Time struct {
 
 	// accumulated amount of time the network has been running, in simulation-time (not real world time), in seconds
-	Time float32 `desc:"accumulated amount of time the network has been running, in simulation-time (not real world time), in seconds"`
+	Time float32
 
 	// cycle counter: number of iterations of activation updating (settling) on the current alpha-cycle (100 msec / 10 Hz) trial -- this counts time sequentially through the entire trial, typically from 0 to 99 cycles
-	Cycle int `desc:"cycle counter: number of iterations of activation updating (settling) on the current alpha-cycle (100 msec / 10 Hz) trial -- this counts time sequentially through the entire trial, typically from 0 to 99 cycles"`
+	Cycle int
 
 	// total cycle count -- this increments continuously from whenever it was last reset -- typically this is number of milliseconds in simulation time
-	CycleTot int `desc:"total cycle count -- this increments continuously from whenever it was last reset -- typically this is number of milliseconds in simulation time"`
+	CycleTot int
 
-	// [0-3] current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3.
-	Quarter int `desc:"[0-3] current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3."`
+	// current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3.
+	Quarter int
 
 	// true if this is the plus phase (final quarter = 3) -- else minus phase
-	PlusPhase bool `desc:"true if this is the plus phase (final quarter = 3) -- else minus phase"`
+	PlusPhase bool
 
-	// [def: 0.001] amount of time to increment per cycle
-	TimePerCyc float32 `def:"0.001" desc:"amount of time to increment per cycle"`
+	// amount of time to increment per cycle
+	TimePerCyc float32 `def:"0.001"`
 
-	// [def: 25] number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle
-	CycPerQtr int `def:"25" desc:"number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle"`
+	// number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle
+	CycPerQtr int `def:"25"`
 }
 
 // NewTime returns a new Time struct with default parameters

@@ -20,10 +20,10 @@ type CTLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
 	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions.
-	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
+	BurstQtr leabra.Quarters
 
 	// slice of context (temporally delayed) excitatory conducances.
-	CtxtGes []float32 `desc:"slice of context (temporally delayed) excitatory conducances."`
+	CtxtGes []float32
 }
 
 var KiT_CTLayer = kit.Types.AddType(&CTLayer{}, LayerProps)

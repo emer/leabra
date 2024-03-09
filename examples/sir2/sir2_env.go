@@ -36,52 +36,52 @@ const (
 type SIREnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
+	Nm string
 
 	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Dsc string
 
 	// number of different stimuli that can be maintained
-	NStim int `desc:"number of different stimuli that can be maintained"`
+	NStim int
 
 	// value for reward, based on whether model output = target
-	RewVal float32 `desc:"value for reward, based on whether model output = target"`
+	RewVal float32
 
 	// value for non-reward
-	NoRewVal float32 `desc:"value for non-reward"`
+	NoRewVal float32
 
 	// current action
-	Act Actions `desc:"current action"`
+	Act Actions
 
 	// current stimulus
-	Stim int `desc:"current stimulus"`
+	Stim int
 
 	// current stimulus being maintained
-	Maint1 int `desc:"current stimulus being maintained"`
+	Maint1 int
 
 	// current stimulus being maintained
-	Maint2 int `desc:"current stimulus being maintained"`
+	Maint2 int
 
 	// stimulus input pattern
-	Input etensor.Float64 `desc:"stimulus input pattern"`
+	Input etensor.Float64
 
 	// input pattern with action
-	CtrlInput etensor.Float64 `desc:"input pattern with action"`
+	CtrlInput etensor.Float64
 
 	// output pattern of what to respond
-	Output etensor.Float64 `desc:"output pattern of what to respond"`
+	Output etensor.Float64
 
 	// reward value
-	Reward etensor.Float64 `desc:"reward value"`
+	Reward etensor.Float64
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Ctr `view:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Ctr `view:"inline"`
 
-	// [view: inline] trial is the step counter within epoch
-	Trial env.Ctr `view:"inline" desc:"trial is the step counter within epoch"`
+	// trial is the step counter within epoch
+	Trial env.Ctr `view:"inline"`
 }
 
 func (ev *SIREnv) Name() string { return ev.Nm }

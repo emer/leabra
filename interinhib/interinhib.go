@@ -30,13 +30,13 @@ import (
 type InterInhib struct {
 
 	// layers to receive inhibition from
-	Lays emer.LayNames `desc:"layers to receive inhibition from"`
+	Lays emer.LayNames
 
 	// multiplier on Gi from other layers
-	Gi float32 `desc:"multiplier on Gi from other layers"`
+	Gi float32
 
 	// add inhibition -- otherwise Max
-	Add bool `desc:"add inhibition -- otherwise Max"`
+	Add bool
 }
 
 func (il *InterInhib) Defaults() {

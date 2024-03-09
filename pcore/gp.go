@@ -16,7 +16,7 @@ type GPLayer struct {
 	Layer
 
 	// type of GP layer
-	GPLay GPLays `desc:"type of GP layer"`
+	GPLay GPLays
 }
 
 var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)

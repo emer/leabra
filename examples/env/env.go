@@ -20,34 +20,34 @@ import (
 type ExEnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
+	Nm string
 
 	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Dsc string
 
 	// size of each dimension in 2D input
-	Size int `desc:"size of each dimension in 2D input"`
+	Size int
 
 	// X,Y coordinates of point
-	Point image.Point `desc:"X,Y coordinates of point"`
+	Point image.Point
 
 	// input state, 2D Size x Size
-	Input etensor.Float32 `desc:"input state, 2D Size x Size"`
+	Input etensor.Float32
 
 	// X as a one-hot state 1D Size
-	X etensor.Float32 `desc:"X as a one-hot state 1D Size"`
+	X etensor.Float32
 
 	// Y  as a one-hot state 1D Size
-	Y etensor.Float32 `desc:"Y  as a one-hot state 1D Size"`
+	Y etensor.Float32
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Ctr `view:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Ctr `view:"inline"`
 
-	// [view: inline] trial increments over input states -- could add Event as a lower level
-	Trial env.Ctr `view:"inline" desc:"trial increments over input states -- could add Event as a lower level"`
+	// trial increments over input states -- could add Event as a lower level
+	Trial env.Ctr `view:"inline"`
 }
 
 func (ev *ExEnv) Name() string { return ev.Nm }

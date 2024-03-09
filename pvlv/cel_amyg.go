@@ -34,10 +34,10 @@ type CElAmygLayer struct {
 	ModLayer
 
 	// basic parameters determining what type CEl layer this is
-	CElTyp CElAmygLayerType `desc:"basic parameters determining what type CEl layer this is"`
+	CElTyp CElAmygLayerType
 
 	// use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal
-	AcqDeepMod bool `desc:"use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal"`
+	AcqDeepMod bool
 }
 
 var KiT_CElAmygLayer = kit.Types.AddType(&CElAmygLayer{}, nil)
@@ -45,10 +45,10 @@ var KiT_CElAmygLayer = kit.Types.AddType(&CElAmygLayer{}, nil)
 type CElAmygLayerType struct {
 
 	// acquisition or extinction
-	AcqExt AcqExt `desc:"acquisition or extinction"`
+	AcqExt AcqExt
 
 	// positive or negative DA valence
-	Valence Valence `desc:"positive or negative DA valence"`
+	Valence Valence
 }
 
 func (ly *CElAmygLayer) Build() error {

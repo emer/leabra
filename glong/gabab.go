@@ -12,26 +12,26 @@ import (
 // parameters.  We have to do some things to make it work for rate code neurons..
 type GABABParams struct {
 
-	// [def: 45] rise time for bi-exponential time dynamics of GABA-B
-	RiseTau float32 `def:"45" desc:"rise time for bi-exponential time dynamics of GABA-B"`
+	// rise time for bi-exponential time dynamics of GABA-B
+	RiseTau float32 `def:"45"`
 
-	// [def: 50] decay time for bi-exponential time dynamics of GABA-B
-	DecayTau float32 `def:"50" desc:"decay time for bi-exponential time dynamics of GABA-B"`
+	// decay time for bi-exponential time dynamics of GABA-B
+	DecayTau float32 `def:"50"`
 
-	// [def: 0.2] overall strength multiplier of GABA-B current
-	Gbar float32 `def:"0.2" desc:"overall strength multiplier of GABA-B current"`
+	// overall strength multiplier of GABA-B current
+	Gbar float32 `def:"0.2"`
 
-	// [def: 0.2] baseline level of GABA-B channels open independent of inhibitory input (is added to spiking-produced conductance)
-	Gbase float32 `def:"0.2" desc:"baseline level of GABA-B channels open independent of inhibitory input (is added to spiking-produced conductance)"`
+	// baseline level of GABA-B channels open independent of inhibitory input (is added to spiking-produced conductance)
+	Gbase float32 `def:"0.2"`
 
-	// [def: 15] multiplier for converting Gi from FFFB to GABA spikes
-	Smult float32 `def:"15" desc:"multiplier for converting Gi from FFFB to GABA spikes"`
+	// multiplier for converting Gi from FFFB to GABA spikes
+	Smult float32 `def:"15"`
 
 	// time offset when peak conductance occurs, in msec, computed from RiseTau and DecayTau
-	MaxTime float32 `inactive:"+" desc:"time offset when peak conductance occurs, in msec, computed from RiseTau and DecayTau"`
+	MaxTime float32 `inactive:"+"`
 
-	// [view: -] time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float32 `view:"-" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
+	TauFact float32 `view:"-"`
 }
 
 func (gp *GABABParams) Defaults() {

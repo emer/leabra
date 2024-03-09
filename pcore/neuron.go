@@ -41,10 +41,10 @@ func init() {
 type STNNeuron struct {
 
 	// intracellular Calcium concentration -- increased by bursting and elevated levels of activation, drives KCa currents that result in hyperpolarization / inhibition.
-	Ca float32 `desc:"intracellular Calcium concentration -- increased by bursting and elevated levels of activation, drives KCa currents that result in hyperpolarization / inhibition."`
+	Ca float32
 
 	// Calcium-gated potassium channel conductance level, computed using function from gillies & Willshaw 2006 as function of Ca.
-	KCa float32 `desc:"Calcium-gated potassium channel conductance level, computed using function from gillies & Willshaw 2006 as function of Ca."`
+	KCa float32
 }
 
 var (

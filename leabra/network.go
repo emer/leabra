@@ -25,11 +25,11 @@ import (
 type Network struct {
 	NetworkStru
 
-	// [def: 10] how frequently to update the weight balance average weight factor -- relatively expensive
-	WtBalInterval int `def:"10" desc:"how frequently to update the weight balance average weight factor -- relatively expensive"`
+	// how frequently to update the weight balance average weight factor -- relatively expensive
+	WtBalInterval int `def:"10"`
 
 	// counter for how long it has been since last WtBal
-	WtBalCtr int `inactive:"+" desc:"counter for how long it has been since last WtBal"`
+	WtBalCtr int `inactive:"+"`
 }
 
 var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)

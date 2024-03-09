@@ -22,7 +22,7 @@ type GPiThalPrjn struct {
 	leabra.Prjn // access as .Prjn
 
 	// per-recv, per-prjn raw excitatory input
-	GeRaw []float32 `desc:"per-recv, per-prjn raw excitatory input"`
+	GeRaw []float32
 }
 
 var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, leabra.PrjnProps)
@@ -72,10 +72,10 @@ func (pj *GPiThalPrjn) RecvGInc() {
 type GPiTimingParams struct {
 
 	// Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the PFC GateQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions.
-	GateQtr leabra.Quarters `desc:"Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the PFC GateQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
+	GateQtr leabra.Quarters
 
-	// [def: 18] cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way.
-	Cycle int `def:"18" desc:"cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way."`
+	// cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way.
+	Cycle int `def:"18"`
 }
 
 func (gt *GPiTimingParams) Defaults() {
@@ -87,17 +87,17 @@ func (gt *GPiTimingParams) Defaults() {
 // GPiGateParams has gating parameters for gating in GPiThal layer, including threshold
 type GPiGateParams struct {
 
-	// [def: 3] extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
-	GeGain float32 `def:"3" desc:"extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)"`
+	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
+	GeGain float32 `def:"3"`
 
-	// [def: 1,0.1] [min: 0] how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
-	NoGo float32 `min:"0" def:"1,0.1" desc:"how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction"`
+	// how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
+	NoGo float32 `min:"0" def:"1,0.1"`
 
-	// [def: 0.2] threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
-	Thr float32 `def:"0.2" desc:"threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal"`
+	// threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
+	Thr float32 `def:"0.2"`
 
-	// [def: true] Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
-	ThrAct bool `def:"true" desc:"Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation"`
+	// Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
+	ThrAct bool `def:"true"`
 }
 
 func (gp *GPiGateParams) Defaults() {
@@ -116,7 +116,7 @@ func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
 type GPiNeuron struct {
 
 	// gating activation -- the activity value when gating occurred in this pool
-	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	ActG float32
 }
 
 // GPiThalLayer represents the combined Winner-Take-All dynamic of GPi (SNr) and Thalamus.
@@ -126,17 +126,17 @@ type GPiNeuron struct {
 type GPiThalLayer struct {
 	GateLayer
 
-	// [view: inline] timing parameters determining when gating happens
-	Timing GPiTimingParams `view:"inline" desc:"timing parameters determining when gating happens"`
+	// timing parameters determining when gating happens
+	Timing GPiTimingParams `view:"inline"`
 
-	// [view: inline] gating parameters determining threshold for gating etc
-	Gate GPiGateParams `view:"inline" desc:"gating parameters determining threshold for gating etc"`
+	// gating parameters determining threshold for gating etc
+	Gate GPiGateParams `view:"inline"`
 
 	// list of layers to send GateState to
-	SendTo []string `desc:"list of layers to send GateState to"`
+	SendTo []string
 
 	// slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
-	GPiNeurs []GPiNeuron `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	GPiNeurs []GPiNeuron
 }
 
 var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, leabra.LayerProps)

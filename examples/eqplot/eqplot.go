@@ -41,37 +41,37 @@ const LogPrec = 4
 type Sim struct {
 
 	// rise time constant
-	RiseTau float64 `desc:"rise time constant"`
+	RiseTau float64
 
 	// decay time constant -- must NOT be same as RiseTau
-	DecayTau float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
+	DecayTau float64
 
 	// initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start
-	GsXInit float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
+	GsXInit float64
 
 	// time when peak conductance occurs, in TimeInc units
-	MaxTime float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
+	MaxTime float64 `inactive:"+"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+	TauFact float64 `inactive:"+"`
 
 	// total number of time steps to take
-	TimeSteps int `desc:"total number of time steps to take"`
+	TimeSteps int
 
 	// time increment per step
-	TimeInc float64 `desc:"time increment per step"`
+	TimeInc float64
 
-	// [view: no-inline] table for plot
-	Table *etable.Table `view:"no-inline" desc:"table for plot"`
+	// table for plot
+	Table *etable.Table `view:"no-inline"`
 
-	// [view: -] the plot
-	Plot *eplot.Plot2D `view:"-" desc:"the plot"`
+	// the plot
+	Plot *eplot.Plot2D `view:"-"`
 
-	// [view: -] main GUI window
-	Win *gi.Window `view:"-" desc:"main GUI window"`
+	// main GUI window
+	Win *gi.Window `view:"-"`
 
-	// [view: -] the master toolbar
-	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
+	// the master toolbar
+	ToolBar *gi.ToolBar `view:"-"`
 }
 
 // TheSim is the overall state for this simulation

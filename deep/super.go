@@ -18,13 +18,13 @@ import (
 type BurstParams struct {
 
 	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions.
-	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
+	BurstQtr leabra.Quarters
 
-	// [def: 0.1,0.2,0.5] [max: 1] Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds.
-	ThrRel float32 `max:"1" def:"0.1,0.2,0.5" desc:"Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	// Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds.
+	ThrRel float32 `max:"1" def:"0.1,0.2,0.5"`
 
-	// [def: 0.1,0.2,0.5] [min: 0] [max: 1] Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds.
-	ThrAbs float32 `min:"0" max:"1" def:"0.1,0.2,0.5" desc:"Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	// Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds.
+	ThrAbs float32 `min:"0" max:"1" def:"0.1,0.2,0.5"`
 }
 
 func (db *BurstParams) Defaults() {
@@ -37,13 +37,13 @@ func (db *BurstParams) Defaults() {
 type TRCAttnParams struct {
 
 	// is attentional modulation active?
-	On bool `desc:"is attentional modulation active?"`
+	On bool
 
 	// minimum act multiplier if attention is 0
-	Min float32 `desc:"minimum act multiplier if attention is 0"`
+	Min float32
 
 	// name of TRC layer -- defaults to layer name + P
-	TRCLay string `desc:"name of TRC layer -- defaults to layer name + P"`
+	TRCLay string
 }
 
 func (at *TRCAttnParams) Defaults() {
@@ -60,14 +60,14 @@ func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
 type SuperLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
-	// [view: inline] parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)
-	Burst BurstParams `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
+	// parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)
+	Burst BurstParams `view:"inline"`
 
-	// [view: inline] determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer.
-	Attn TRCAttnParams `view:"inline" desc:"determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer."`
+	// determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer.
+	Attn TRCAttnParams `view:"inline"`
 
 	// slice of super neuron values -- same size as Neurons
-	SuperNeurs []SuperNeuron `desc:"slice of super neuron values -- same size as Neurons"`
+	SuperNeurs []SuperNeuron
 }
 
 var KiT_SuperLayer = kit.Types.AddType(&SuperLayer{}, LayerProps)

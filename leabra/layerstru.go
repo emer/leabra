@@ -17,50 +17,50 @@ import (
 // to any Layer type
 type LayerStru struct {
 
-	// [view: -] we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary.
-	LeabraLay LeabraLayer `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	// we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary.
+	LeabraLay LeabraLayer `copy:"-" json:"-" xml:"-" view:"-"`
 
-	// [view: -] our parent network, in case we need to use it to find other layers etc -- set when added by network
-	Network emer.Network `copy:"-" json:"-" xml:"-" view:"-" desc:"our parent network, in case we need to use it to find other layers etc -- set when added by network"`
+	// our parent network, in case we need to use it to find other layers etc -- set when added by network
+	Network emer.Network `copy:"-" json:"-" xml:"-" view:"-"`
 
 	// Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name
-	Nm string `desc:"Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name"`
+	Nm string
 
 	// Class is for applying parameter styles, can be space separated multple tags
-	Cls string `desc:"Class is for applying parameter styles, can be space separated multple tags"`
+	Cls string
 
 	// inactivate this layer -- allows for easy experimentation
-	Off bool `desc:"inactivate this layer -- allows for easy experimentation"`
+	Off bool
 
 	// shape of the layer -- can be 2D for basic layers and 4D for layers with sub-groups (hypercolumns) -- order is outer-to-inner (row major) so Y then X for 2D and for 4D: Y-X unit pools then Y-X neurons within pools
-	Shp etensor.Shape `desc:"shape of the layer -- can be 2D for basic layers and 4D for layers with sub-groups (hypercolumns) -- order is outer-to-inner (row major) so Y then X for 2D and for 4D: Y-X unit pools then Y-X neurons within pools"`
+	Shp etensor.Shape
 
 	// type of layer -- Hidden, Input, Target, Compare, or extended type in specialized algorithms -- matches against .Class parameter styles (e.g., .Hidden etc)
-	Typ emer.LayerType `desc:"type of layer -- Hidden, Input, Target, Compare, or extended type in specialized algorithms -- matches against .Class parameter styles (e.g., .Hidden etc)"`
+	Typ emer.LayerType
 
 	// the thread number (go routine) to use in updating this layer. The user is responsible for allocating layers to threads, trying to maintain an even distribution across layers and establishing good break-points.
-	Thr int `desc:"the thread number (go routine) to use in updating this layer. The user is responsible for allocating layers to threads, trying to maintain an even distribution across layers and establishing good break-points."`
+	Thr int
 
-	// [view: inline] Spatial relationship to other layer, determines positioning
-	Rel relpos.Rel `view:"inline" desc:"Spatial relationship to other layer, determines positioning"`
+	// Spatial relationship to other layer, determines positioning
+	Rel relpos.Rel `view:"inline"`
 
 	// position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis.
-	Ps mat32.Vec3 `desc:"position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis."`
+	Ps mat32.Vec3
 
 	// a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers.
-	Idx int `desc:"a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers."`
+	Idx int
 
 	// indexes of representative units in the layer, for computationally expensive stats or displays
-	RepIxs []int `desc:"indexes of representative units in the layer, for computationally expensive stats or displays"`
+	RepIxs []int
 
 	// shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape
-	RepShp etensor.Shape `desc:"shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape"`
+	RepShp etensor.Shape
 
 	// list of receiving projections into this layer from other layers
-	RcvPrjns LeabraPrjns `desc:"list of receiving projections into this layer from other layers"`
+	RcvPrjns LeabraPrjns
 
 	// list of sending projections from this layer to other layers
-	SndPrjns LeabraPrjns `desc:"list of sending projections from this layer to other layers"`
+	SndPrjns LeabraPrjns
 }
 
 // emer.Layer interface methods
