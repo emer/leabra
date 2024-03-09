@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"cogentcore.org/core/gi"
+	"cogentcore.org/core/icons"
 	"cogentcore.org/core/ki"
 	"cogentcore.org/core/mat32"
 	"github.com/emer/emergent/v2/egui"
@@ -49,7 +50,7 @@ func main() {
 func guirun() {
 	TheSim.Init()
 	TheSim.ConfigGUI()
-	win.StartEventLoop()
+	TheSim.GUI.Body.RunMainWindow()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -772,164 +773,168 @@ func (ss *Sim) ConfigGUI() {
 	ss.ViewUpdt.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdt = &ss.ViewUpdt
 
-	nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
-	nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
+	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
+	nv.SceneXYZ().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
 	ss.GUI.AddPlots(title, &ss.Logs)
 
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Init", Icon: "update",
-		Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			ss.Init()
-			ss.GUI.UpdateWindow()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Train",
-		Icon:    "run",
-		Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.Train()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Stop",
-		Icon:    "stop",
-		Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.",
-		Active:  egui.ActiveRunning,
-		Func: func() {
-			ss.Stop()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Trial",
-		Icon:    "step-fwd",
-		Tooltip: "Advances one training trial at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.TrainTrial()
-				ss.GUI.IsRunning = false
+	ss.GUI.Body.AddAppBar(func(tb *gi.Toolbar) {
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Init", Icon: "update",
+			Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				ss.Init()
 				ss.GUI.UpdateWindow()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Epoch",
-		Icon:    "fast-fwd",
-		Tooltip: "Advances one epoch (complete set of training patterns) at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.TrainEpoch()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Run",
-		Icon:    "fast-fwd",
-		Tooltip: "Advances one full training Run at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.TrainRun()
-			}
-		},
-	})
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Train",
+			Icon:    icons.ModelTraining,
+			Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.Train()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Stop",
+			Icon:    icons.Stop,
+			Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.",
+			Active:  egui.ActiveRunning,
+			Func: func() {
+				ss.Stop()
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Trial",
+			Icon:    icons.Step,
+			Tooltip: "Advances one training trial at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					ss.TrainTrial()
+					ss.GUI.IsRunning = false
+					ss.GUI.UpdateWindow()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Epoch",
+			Icon:    icons.FastForward,
+			Tooltip: "Advances one epoch (complete set of training patterns) at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.TrainEpoch()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Run",
+			Icon:    icons.FastForward,
+			Tooltip: "Advances one full training Run at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.TrainRun()
+				}
+			},
+		})
 
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("test")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test Trial",
-		Icon:    "fast-fwd",
-		Tooltip: "Runs the next testing trial.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.TestTrial(false) // don't return on change -- wrap
-				ss.GUI.IsRunning = false
-				ss.GUI.UpdateWindow()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test Item",
-		Icon:    "step-fwd",
-		Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test Trial",
+			Icon:    icons.FastForward,
+			Tooltip: "Runs the next testing trial.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					ss.TestTrial(false) // don't return on change -- wrap
+					ss.GUI.IsRunning = false
+					ss.GUI.UpdateWindow()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test Item",
+			Icon:    icons.Step,
+			Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				// TODO(v2)
+				// gi.StringPromptDialog(ss.GUI.ViewPort, "", "Test Item",
+				// 	gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
+				// 	ss.GUI.Win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+				// 		dlg := send.(*gi.Dialog)
+				// 		if sig == int64(gi.DialogAccepted) {
+				// 			val := gi.StringPromptDialogValue(dlg)
+				// 			idxs := []int{0} //TODO: //ss.TestEnv.Table.RowsByString("Name", val, etable.Contains, etable.IgnoreCase)
+				// 			if len(idxs) == 0 {
+				// 				gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, gi.AddOk, gi.NoCancel, nil, nil)
+				// 			} else {
+				// 				if !ss.GUI.IsRunning {
+				// 					ss.GUI.IsRunning = true
+				// 					fmt.Printf("testing index: %d\n", idxs[0])
+				// 					ss.TestItem(idxs[0])
+				// 					ss.GUI.IsRunning = false
+				// 					ss.GUI.ViewPort.SetNeedsFullRender()
+				// 				}
+				// 			}
+				// 		}
+				// 	})
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test All",
+			Icon:    icons.Step,
+			Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.RunTestAll()
+				}
+			},
+		})
 
-			gi.StringPromptDialog(ss.GUI.ViewPort, "", "Test Item",
-				gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
-				ss.GUI.Win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-					dlg := send.(*gi.Dialog)
-					if sig == int64(gi.DialogAccepted) {
-						val := gi.StringPromptDialogValue(dlg)
-						idxs := []int{0} //TODO: //ss.TestEnv.Table.RowsByString("Name", val, etable.Contains, etable.IgnoreCase)
-						if len(idxs) == 0 {
-							gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, gi.AddOk, gi.NoCancel, nil, nil)
-						} else {
-							if !ss.GUI.IsRunning {
-								ss.GUI.IsRunning = true
-								fmt.Printf("testing index: %d\n", idxs[0])
-								ss.TestItem(idxs[0])
-								ss.GUI.IsRunning = false
-								ss.GUI.ViewPort.SetNeedsFullRender()
-							}
-						}
-					}
-				})
-
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test All",
-		Icon:    "step-fwd",
-		Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.RunTestAll()
-			}
-		},
-	})
-
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("log")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Reset RunLog",
-		Icon:    "reset",
-		Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			ss.Logs.ResetLog(etime.Train, etime.Run)
-			ss.GUI.UpdatePlot(etime.Train, etime.Run)
-		},
-	})
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("misc")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "New Seed",
-		Icon:    "new",
-		Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			ss.NewRndSeed()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "README",
-		Icon:    "file-markdown",
-		Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
-		},
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Reset run log",
+			Icon:    icons.Reset,
+			Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				ss.Logs.ResetLog(etime.Train, etime.Run)
+				ss.GUI.UpdatePlot(etime.Train, etime.Run)
+			},
+		})
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "New Seed",
+			Icon:    icons.Add,
+			Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				ss.NewRndSeed()
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "README",
+			Icon:    icons.FileMarkdown,
+			Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				gi.TheApp.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+			},
+		})
 	})
 	ss.GUI.FinalizeGUI(false)
-	return ss.GUI.Win
 }
 
 // These props register Save methods so they can be used
@@ -985,7 +990,8 @@ func (ss *Sim) CmdArgs() {
 	}
 	if saveNetData {
 		ss.NetData = &netview.NetData{}
-		ss.NetData.Init(ss.Net, 200, true) // 200 = amount to save
+		// TODO(v2): is the second 200 correct?
+		ss.NetData.Init(ss.Net, 200, true, 200) // 200 = amount to save
 	}
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")

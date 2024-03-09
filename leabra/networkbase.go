@@ -131,6 +131,13 @@ func (nt *NetworkBase) MakeLayMap() {
 	}
 }
 
+// PrjnByNameTry returns a Prjn by looking it up by name in the list of projections
+// (nil if not found).
+func (nt *NetworkBase) PrjnByNameTry(name string) (emer.Prjn, error) {
+	// TODO(v2): PrjnByNameTry
+	return nil, nil
+}
+
 // LayersByClass returns a list of layer names by given class(es).
 // Lists are compiled when network Build() function called.
 // The layer Type is always included as a Class, along with any other
