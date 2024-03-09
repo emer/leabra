@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/enums"
 	"cogentcore.org/core/glop/indent"
 	"cogentcore.org/core/ki"
 	"cogentcore.org/core/mat32"
@@ -654,31 +655,28 @@ func (ly *Layer) InitWtSym() {
 
 // InitExt initializes external input state -- called prior to apply ext
 func (ly *Layer) InitExt() {
-	// TODO(v2)
-	// msk := bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
-	// for ni := range ly.Neurons {
-	// 	nrn := &ly.Neurons[ni]
-	// 	nrn.Ext = 0
-	// 	nrn.Targ = 0
-	// 	nrn.ClearMask(msk)
-	// }
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		nrn.Ext = 0
+		nrn.Targ = 0
+		nrn.SetFlag(false, NeurHasExt, NeurHasTarg, NeurHasCmpr)
+	}
 }
 
-// ApplyExtFlags gets the clear mask and set mask for updating neuron flags
+// ApplyExtFlags gets the flags that should cleared and set for updating neuron flags
 // based on layer type, and whether input should be applied to Targ (else Ext)
-func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
-	// TODO(v2)
-	// clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
-	// toTarg = false
-	// if ly.Typ == emer.Target {
-	// 	setmsk = bitflag.Mask32(int(NeurHasTarg))
-	// 	toTarg = true
-	// } else if ly.Typ == emer.Compare {
-	// 	setmsk = bitflag.Mask32(int(NeurHasCmpr))
-	// 	toTarg = true
-	// } else {
-	// 	setmsk = bitflag.Mask32(int(NeurHasExt))
-	// }
+func (ly *Layer) ApplyExtFlags() (clear, set []enums.BitFlag, toTarg bool) {
+	clear = []enums.BitFlag{NeurHasExt, NeurHasTarg, NeurHasCmpr}
+	toTarg = false
+	if ly.Typ == emer.Target {
+		set = []enums.BitFlag{NeurHasTarg}
+		toTarg = true
+	} else if ly.Typ == emer.Compare {
+		set = []enums.BitFlag{NeurHasCmpr}
+		toTarg = true
+	} else {
+		set = []enums.BitFlag{NeurHasExt}
+	}
 	return
 }
 
@@ -703,7 +701,7 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 
 // ApplyExt2D applies 2D tensor external input
 func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	ymx := min(ext.Dim(0), ly.Shp.Dim(0))
 	xmx := min(ext.Dim(1), ly.Shp.Dim(1))
 	for y := 0; y < ymx; y++ {
@@ -720,15 +718,15 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
 func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
 
 	ymx := min(ext.Dim(0), lNy)
@@ -747,15 +745,15 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt4D applies 4D tensor external input
 func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	ypmx := min(ext.Dim(0), ly.Shp.Dim(0))
 	xpmx := min(ext.Dim(1), ly.Shp.Dim(1))
 	ynmx := min(ext.Dim(2), ly.Shp.Dim(2))
@@ -776,8 +774,8 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 					} else {
 						nrn.Ext = vl
 					}
-					nrn.ClearMask(clrmsk)
-					nrn.SetMask(setmsk)
+					nrn.SetFlag(false, clear...)
+					nrn.SetFlag(true, set...)
 				}
 			}
 		}
@@ -788,7 +786,7 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
@@ -801,8 +799,8 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -810,7 +808,7 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D(ext []float64) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
@@ -823,8 +821,8 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -832,7 +830,7 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D32(ext []float32) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
@@ -845,8 +843,8 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -854,14 +852,14 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 // layer Type field -- call this if the Type has changed since the last
 // ApplyExt* method call.
 func (ly *Layer) UpdateExtFlags() {
-	clrmsk, setmsk, _ := ly.ApplyExtFlags()
+	clear, set, _ := ly.ApplyExtFlags()
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -1244,7 +1242,7 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 			nrn.ActM = nrn.Act
 			if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
 				nrn.Ext = nrn.Targ
-				nrn.SetFlag(NeurHasExt)
+				nrn.SetFlag(true, NeurHasExt)
 			}
 		case 3:
 			nrn.ActP = nrn.Act
@@ -1424,7 +1422,7 @@ func (ly *Layer) SSE(tol float32) float64 {
 func (ly *Layer) UnLesionNeurons() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		nrn.ClearFlag(NeurOff)
+		nrn.SetFlag(false, NeurOff)
 	}
 }
 
@@ -1445,7 +1443,7 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 	nl := int(prop * float32(nn))
 	for i := 0; i < nl; i++ {
 		nrn := &ly.Neurons[p[i]]
-		nrn.SetFlag(NeurOff)
+		nrn.SetFlag(true, NeurOff)
 	}
 	return nl
 }

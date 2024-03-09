@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"cogentcore.org/core/enums"
 	"cogentcore.org/core/mat32"
 )
 
@@ -187,12 +188,12 @@ func (nrn *Neuron) VarByName(varNm string) (float32, error) {
 	return nrn.VarByIndex(i), nil
 }
 
-func (nrn *Neuron) HasFlag(flag NeurFlags) bool {
-	return nrn.Flags.HasFlag(flag)
+func (nrn *Neuron) HasFlag(f NeurFlags) bool {
+	return nrn.Flags.HasFlag(f)
 }
 
-func (nrn *Neuron) SetFlag(on bool, flag NeurFlags) {
-	nrn.Flags.SetFlag(on, flag)
+func (nrn *Neuron) SetFlag(on bool, f ...enums.BitFlag) {
+	nrn.Flags.SetFlag(on, f...)
 }
 
 // IsOff returns true if the neuron has been turned off (lesioned)

@@ -11,16 +11,16 @@ import (
 	"cogentcore.org/core/enums"
 )
 
-var _ActNoiseTypeValues = []ActNoiseType{0, 1, 2, 3, 4, 5}
+var _ActNoiseTypeValues = []ActNoiseType{0, 1, 2, 3, 4}
 
 // ActNoiseTypeN is the highest valid value for type ActNoiseType, plus one.
-const ActNoiseTypeN ActNoiseType = 6
+const ActNoiseTypeN ActNoiseType = 5
 
-var _ActNoiseTypeValueMap = map[string]ActNoiseType{`NoNoise`: 0, `VmNoise`: 1, `GeNoise`: 2, `ActNoise`: 3, `GeMultNoise`: 4, `ActNoiseTypeN`: 5}
+var _ActNoiseTypeValueMap = map[string]ActNoiseType{`NoNoise`: 0, `VmNoise`: 1, `GeNoise`: 2, `ActNoise`: 3, `GeMultNoise`: 4}
 
-var _ActNoiseTypeDescMap = map[ActNoiseType]string{0: `NoNoise means no noise added`, 1: `VmNoise means noise is added to the membrane potential. IMPORTANT: this should NOT be used for rate-code (NXX1) activations, because they do not depend directly on the vm -- this then has no effect`, 2: `GeNoise means noise is added to the excitatory conductance (Ge). This should be used for rate coded activations (NXX1)`, 3: `ActNoise means noise is added to the final rate code activation`, 4: `GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values`, 5: ``}
+var _ActNoiseTypeDescMap = map[ActNoiseType]string{0: `NoNoise means no noise added`, 1: `VmNoise means noise is added to the membrane potential. IMPORTANT: this should NOT be used for rate-code (NXX1) activations, because they do not depend directly on the vm -- this then has no effect`, 2: `GeNoise means noise is added to the excitatory conductance (Ge). This should be used for rate coded activations (NXX1)`, 3: `ActNoise means noise is added to the final rate code activation`, 4: `GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values`}
 
-var _ActNoiseTypeMap = map[ActNoiseType]string{0: `NoNoise`, 1: `VmNoise`, 2: `GeNoise`, 3: `ActNoise`, 4: `GeMultNoise`, 5: `ActNoiseTypeN`}
+var _ActNoiseTypeMap = map[ActNoiseType]string{0: `NoNoise`, 1: `VmNoise`, 2: `GeNoise`, 3: `ActNoise`, 4: `GeMultNoise`}
 
 // String returns the string representation of this ActNoiseType value.
 func (i ActNoiseType) String() string { return enums.String(i, _ActNoiseTypeMap) }
