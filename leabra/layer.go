@@ -80,8 +80,7 @@ func (ly *Layer) UpdateParams() {
 // SetParam sets parameter at given path to given value.
 // returns error if path not found or value cannot be set.
 func (ly *Layer) SetParam(path, val string) error {
-	// TODO(v2): SetParam
-	return params.SetParam(&struct{}{}, path, val)
+	return params.SetParam(ly, path, val)
 }
 
 // JsonToParams reformates json output to suitable params display output

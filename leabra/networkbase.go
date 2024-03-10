@@ -97,7 +97,7 @@ func (nt *NetworkBase) Label() string                 { return nt.Nm }
 func (nt *NetworkBase) NLayers() int                  { return len(nt.Layers) }
 func (nt *NetworkBase) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
 func (nt *NetworkBase) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
-func (nt *NetworkBase) MaxParallelData() int          { return 1 } // TODO(v2): what should this be?
+func (nt *NetworkBase) MaxParallelData() int          { return 1 }
 func (nt *NetworkBase) NParallelData() int            { return 1 }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
@@ -134,8 +134,15 @@ func (nt *NetworkBase) MakeLayMap() {
 // PrjnByNameTry returns a Prjn by looking it up by name in the list of projections
 // (nil if not found).
 func (nt *NetworkBase) PrjnByNameTry(name string) (emer.Prjn, error) {
-	// TODO(v2): PrjnByNameTry
-	return nil, nil
+	for _, ly := range nt.Layers {
+		for i := range ly.NRecvPrjns() {
+			pj := ly.RecvPrjn(i)
+			if name == pj.Name() {
+				return pj, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("could not find prjn with name %q", name)
 }
 
 // LayersByClass returns a list of layer names by given class(es).

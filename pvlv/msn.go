@@ -111,7 +111,7 @@ func (ly *MSNLayer) GetMonitorVal(data []string) float64 {
 			fmt.Printf("Unit value name \"%v\" unknown\n", valType)
 			val = 0
 		} else {
-			val = ly.UnitVal1D(idx, unitIdx, 0) // TODO(v2): what should di be?
+			val = ly.UnitVal1D(idx, unitIdx, 0)
 		}
 	}
 	return float64(val)
