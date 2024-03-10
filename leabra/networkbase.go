@@ -97,8 +97,8 @@ func (nt *NetworkBase) Label() string                 { return nt.Nm }
 func (nt *NetworkBase) NLayers() int                  { return len(nt.Layers) }
 func (nt *NetworkBase) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
 func (nt *NetworkBase) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
-func (nt *NetworkBase) MaxParallelData() int          { return 0 } // TODO(v2): should this be 0?
-func (nt *NetworkBase) NParallelData() int            { return 0 }
+func (nt *NetworkBase) MaxParallelData() int          { return 1 } // TODO(v2): what should this be?
+func (nt *NetworkBase) NParallelData() int            { return 1 }
 
 // LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
 // Will create the layer map if it is nil or a different size than layers slice,
@@ -116,7 +116,7 @@ func (nt *NetworkBase) LayerByName(name string) emer.Layer {
 func (nt *NetworkBase) LayerByNameTry(name string) (emer.Layer, error) {
 	ly := nt.LayerByName(name)
 	if ly == nil {
-		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Nm)
+		err := fmt.Errorf("Layer named: %v not found in Network: %v", name, nt.Nm)
 		log.Println(err)
 		return ly, err
 	}

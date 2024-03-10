@@ -769,6 +769,7 @@ func (ss *Sim) ConfigGUI() {
 	ss.GUI.CycleUpdateInterval = 10
 
 	nv := ss.GUI.AddNetView("NetView")
+	nv.Params.MaxRecs = 300
 	nv.SetNet(ss.Net)
 	ss.ViewUpdt.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdt = &ss.ViewUpdt
@@ -990,7 +991,6 @@ func (ss *Sim) CmdArgs() {
 	}
 	if saveNetData {
 		ss.NetData = &netview.NetData{}
-		// TODO(v2): is the second 200 correct?
 		ss.NetData.Init(ss.Net, 200, true, 200) // 200 = amount to save
 	}
 	if ss.SaveWts {
