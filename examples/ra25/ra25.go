@@ -815,9 +815,10 @@ func (ss *Sim) ConfigGUI() {
 			Func: func() {
 				if !ss.GUI.IsRunning {
 					ss.GUI.IsRunning = true
-					ss.TrainTrial()
-					ss.GUI.IsRunning = false
-					ss.GUI.UpdateWindow()
+					go func() {
+						ss.TrainTrial()
+						ss.GUI.IsRunning = false
+					}()
 				}
 			},
 		})
@@ -857,9 +858,10 @@ func (ss *Sim) ConfigGUI() {
 			Func: func() {
 				if !ss.GUI.IsRunning {
 					ss.GUI.IsRunning = true
-					ss.TestTrial(false) // don't return on change -- wrap
-					ss.GUI.IsRunning = false
-					ss.GUI.UpdateWindow()
+					go func() {
+						ss.TestTrial(false) // don't return on change -- wrap
+						ss.GUI.IsRunning = false
+					}()
 				}
 			},
 		})
