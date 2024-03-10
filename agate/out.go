@@ -7,19 +7,18 @@ package agate
 import (
 	"log"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // OutParams determine the behavior of OutLayer
 type OutParams struct {
 
 	// threshold on activation, above which the ClearLays will be reset
-	ResetThr float32 `desc:"threshold on activation, above which the ClearLays will be reset"`
+	ResetThr float32
 
 	// name of corresponding layers that are reset when this layer gets activated
-	ClearLays emer.LayNames `desc:"name of corresponding layers that are reset when this layer gets activated"`
+	ClearLays emer.LayNames
 }
 
 func (np *OutParams) Defaults() {
@@ -32,10 +31,8 @@ type OutLayer struct {
 	MaintLayer
 
 	// Parameters for output layer function
-	Out OutParams `desc:"Parameters for output layer function"`
+	Out OutParams
 }
-
-var KiT_OutLayer = kit.Types.AddType(&OutLayer{}, leabra.LayerProps)
 
 func (ly *OutLayer) Defaults() {
 	ly.MaintLayer.Defaults()

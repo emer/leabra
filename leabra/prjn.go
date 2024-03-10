@@ -11,45 +11,40 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/weights"
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/glop/indent"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/weights"
+	"github.com/emer/etable/v2/etensor"
 )
 
-// leabra.Prjn is a basic Leabra projection with synaptic learning parameters
+// Prjn is a basic Leabra projection with synaptic learning parameters
 type Prjn struct {
-	PrjnStru
+	PrjnBase
 
-	// [view: inline] initial random weight distribution
-	WtInit WtInitParams `view:"inline" desc:"initial random weight distribution"`
+	// initial random weight distribution
+	WtInit WtInitParams `view:"inline"`
 
-	// [view: inline] weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors
-	WtScale WtScaleParams `view:"inline" desc:"weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors"`
+	// weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors
+	WtScale WtScaleParams `view:"inline"`
 
-	// [view: add-fields] synaptic-level learning parameters
-	Learn LearnSynParams `view:"add-fields" desc:"synaptic-level learning parameters"`
+	// synaptic-level learning parameters
+	Learn LearnSynParams `view:"add-fields"`
 
 	// synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
-	Syns []Synapse `desc:"synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+	Syns []Synapse
 
 	// scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels
-	GScale float32 `desc:"scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels"`
+	GScale float32
 
 	// local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe
-	GInc []float32 `desc:"local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe"`
+	GInc []float32
 
 	// weight balance state variables for this projection, one per recv neuron
-	WbRecv []WtBalRecvPrjn `desc:"weight balance state variables for this projection, one per recv neuron"`
+	WbRecv []WtBalRecvPrjn
 }
-
-var KiT_Prjn = kit.Types.AddType(&Prjn{}, PrjnProps)
-
-var PrjnProps = ki.Props{}
 
 // AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
 // this to return the base Prjn type, so that the LeabraPrjn interface does not
@@ -86,6 +81,12 @@ func (pj *Prjn) AllParams() string {
 	b, _ = json.MarshalIndent(&pj.Learn, "", " ")
 	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " XCal: {", "\n  XCal: {", -1)
 	return str
+}
+
+// SetParam sets parameter at given path to given value.
+// returns error if path not found or value cannot be set.
+func (pj *Prjn) SetParam(path, val string) error {
+	return params.SetParam(pj, path, val)
 }
 
 func (pj *Prjn) SynVarNames() []string {
@@ -311,7 +312,7 @@ func (pj *Prjn) SetWts(pw *weights.Prjn) error {
 }
 
 // Build constructs the full connectivity among the layers as specified in this projection.
-// Calls PrjnStru.BuildStru and then allocates the synaptic values in Syns accordingly.
+// Calls PrjnBase.BuildStru and then allocates the synaptic values in Syns accordingly.
 func (pj *Prjn) Build() error {
 	if err := pj.BuildStru(); err != nil {
 		return err
@@ -693,16 +694,16 @@ func (pj *Prjn) LrateMult(mult float32) {
 type WtBalRecvPrjn struct {
 
 	// average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn
-	Avg float32 `desc:"average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn"`
+	Avg float32
 
 	// overall weight balance factor that drives changes in WbInc vs. WbDec via a sigmoidal function -- this is the net strength of weight balance changes
-	Fact float32 `desc:"overall weight balance factor that drives changes in WbInc vs. WbDec via a sigmoidal function -- this is the net strength of weight balance changes"`
+	Fact float32
 
 	// weight balance increment factor -- extra multiplier to add to weight increases to maintain overall weight balance
-	Inc float32 `desc:"weight balance increment factor -- extra multiplier to add to weight increases to maintain overall weight balance"`
+	Inc float32
 
 	// weight balance decrement factor -- extra multiplier to add to weight decreases to maintain overall weight balance
-	Dec float32 `desc:"weight balance decrement factor -- extra multiplier to add to weight decreases to maintain overall weight balance"`
+	Dec float32
 }
 
 func (wb *WtBalRecvPrjn) Init() {

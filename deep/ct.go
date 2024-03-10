@@ -7,9 +7,8 @@ package deep
 import (
 	"fmt"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // CTLayer implements the corticothalamic projecting layer 6 deep neurons
@@ -20,19 +19,17 @@ type CTLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
 	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions.
-	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
+	BurstQtr leabra.Quarters
 
 	// slice of context (temporally delayed) excitatory conducances.
-	CtxtGes []float32 `desc:"slice of context (temporally delayed) excitatory conducances."`
+	CtxtGes []float32
 }
-
-var KiT_CTLayer = kit.Types.AddType(&CTLayer{}, LayerProps)
 
 func (ly *CTLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
 	ly.Act.Init.Decay = 0            // deep doesn't decay!
 	ly.Inhib.ActAvg.UseFirst = false // first activations can be very far off
-	ly.BurstQtr.Set(int(leabra.Q4))
+	ly.BurstQtr.SetFlag(true, leabra.Q4)
 	ly.Typ = CT
 }
 
@@ -76,7 +73,7 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
 func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.Has(ltime.Quarter) {
+	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -107,7 +104,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 // overall Ctxt value, only on Deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
 func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.Has(ltime.Quarter) {
+	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}
 	for ni := range ly.CtxtGes {
@@ -153,13 +150,13 @@ func (ly *CTLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CTLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CTLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = CtxtGes
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
+		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

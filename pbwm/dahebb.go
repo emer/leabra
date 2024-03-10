@@ -5,9 +5,8 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // DaHebbPrjn does dopamine-modulated Hebbian learning -- i.e., the 3-factor
@@ -15,8 +14,6 @@ import (
 type DaHebbPrjn struct {
 	leabra.Prjn
 }
-
-var KiT_DaHebbPrjn = kit.Types.AddType(&DaHebbPrjn{}, leabra.PrjnProps)
 
 func (pj *DaHebbPrjn) Defaults() {
 	pj.Prjn.Defaults()

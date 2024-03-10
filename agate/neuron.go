@@ -5,9 +5,9 @@
 package agate
 
 import (
-	"github.com/emer/leabra/deep"
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/pcore"
+	"github.com/emer/leabra/v2/deep"
+	"github.com/emer/leabra/v2/glong"
+	"github.com/emer/leabra/v2/pcore"
 )
 
 var (

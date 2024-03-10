@@ -7,10 +7,8 @@ package pcore
 import (
 	"fmt"
 
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/glong"
 )
 
 // Layer is the base layer type for PCore framework.
@@ -19,10 +17,8 @@ type Layer struct {
 	glong.AlphaMaxLayer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 
@@ -48,13 +44,13 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.AlphaMaxLayer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = DA
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.AlphaMaxLayer.UnitVal1D(varIdx, idx)
+		return ly.AlphaMaxLayer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

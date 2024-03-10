@@ -8,25 +8,25 @@ package data
 type RunParams struct {
 
 	// Name of the sequence
-	Nm string `desc:"Name of the sequence"`
+	Nm string
 
 	// Description
-	Desc string `desc:"Description"`
+	Desc string
 
 	// name of condition 1
-	Cond1Nm string `desc:"name of condition 1"`
+	Cond1Nm string
 
 	// name of condition 2
-	Cond2Nm string `desc:"name of condition 2"`
+	Cond2Nm string
 
 	// name of condition 3
-	Cond3Nm string `desc:"name of condition 3"`
+	Cond3Nm string
 
 	// name of condition 4
-	Cond4Nm string `desc:"name of condition 4"`
+	Cond4Nm string
 
 	// name of condition 5
-	Cond5Nm string `desc:"name of condition 5"`
+	Cond5Nm string
 }
 type RunParamsMap map[string]RunParams
 

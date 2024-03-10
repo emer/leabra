@@ -17,26 +17,26 @@ import "flag"
 "strings"
 "time"
 
-"github.com/emer/emergent/emer"
-"github.com/emer/emergent/env"
-"github.com/emer/emergent/netview"
-"github.com/emer/emergent/params"
-"github.com/emer/emergent/patgen"
-"github.com/emer/emergent/prjn"
-"github.com/emer/emergent/relpos"
-"github.com/emer/etable/agg"
-"github.com/emer/etable/eplot"
-"github.com/emer/etable/etable"
-"github.com/emer/etable/etensor"
-_ "github.com/emer/etable/etview" # include to get gui views
-"github.com/emer/etable/split"
-"github.com/emer/leabra/leabra"
-"github.com/goki/gi/gi"
-"github.com/goki/gi/gimain"
-"github.com/goki/gi/giv"
-"github.com/goki/ki/ki"
-"github.com/goki/ki/kit"
-"github.com/goki/mat32"
+"github.com/emer/emergent/v2/emer"
+"github.com/emer/emergent/v2/env"
+"github.com/emer/emergent/v2/netview"
+"github.com/emer/emergent/v2/params"
+"github.com/emer/emergent/v2/patgen"
+"github.com/emer/emergent/v2/prjn"
+"github.com/emer/emergent/v2/relpos"
+"github.com/emer/etable/v2/agg"
+"github.com/emer/etable/v2/eplot"
+"github.com/emer/etable/v2/etable"
+"github.com/emer/etable/v2/etensor"
+_ "github.com/emer/etable/v2/etview" # include to get gui views
+"github.com/emer/etable/v2/split"
+"github.com/emer/leabra/v2/leabra"
+"cogentcore.org/core/gi"
+"cogentcore.org/core/gimain"
+"cogentcore.org/core/giv"
+"cogentcore.org/core/ki"
+"cogentcore.org/core/laser"
+"cogentcore.org/core/mat32"
 
 def main():
     TheSim.New()
@@ -49,7 +49,7 @@ def main():
 
 def guirun():
     TheSim.Init()
-    win = TheSim.ConfigGui()
+    win = TheSim.ConfigGUI()
     win.StartEventLoop()
 
     # LogPrec is precision for saving float values in logs
@@ -512,7 +512,7 @@ class Sim(pygiv.ClassViewObj):
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
             print("Saving Weights to: %s\n" % fnm)
-            ss.Net.SaveWtsJSON(gi.FileName(fnm))
+            ss.Net.SaveWtsJSON(gi.Filename(fnm))
 
     def NewRun(ss):
         """
@@ -1161,9 +1161,9 @@ class Sim(pygiv.ClassViewObj):
         plt.SetColParams("CosDiff", eplot.Off, eplot.FixMin, 0, eplot.FixMax, 1)
         return plt
 
-    def ConfigGui(ss):
+    def ConfigGUI(ss):
         """
-        ConfigGui configures the GoGi gui interface for this simulation,
+        ConfigGUI configures the GoGi gui interface for this simulation,
         """
         width = 1600
         height = 1200

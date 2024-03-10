@@ -4,10 +4,11 @@
 
 package deep
 
+//go:generate core generate
+
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
+	"cogentcore.org/core/ki"
+	"github.com/emer/emergent/v2/emer"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -18,11 +19,7 @@ import (
 // redundancy here.
 
 // LayerType has the DeepLeabra extensions to the emer.LayerType types, for gui
-type LayerType emer.LayerType
-
-//go:generate stringer -type=LayerType
-
-var KiT_LayerType = kit.Enums.AddEnumExt(emer.KiT_LayerType, LayerTypeN, kit.NotBitFlag, nil)
+type LayerType emer.LayerType //enums:enum
 
 const (
 	// CT are layer 6 corticothalamic projecting neurons, which drive predictions
@@ -40,38 +37,37 @@ const (
 const (
 	CT_ LayerType = LayerType(emer.LayerTypeN) + iota
 	TRC_
-	LayerTypeN
 )
 
 // LayerProps are required to get the extended EnumType
 var LayerProps = ki.Props{
-	"EnumType:Typ": KiT_LayerType,
-	"ToolBar": ki.PropSlice{
-		{"Defaults", ki.Props{
-			"icon": "reset",
-			"desc": "return all parameters to their intial default values",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"LesionNeurons", ki.Props{
-			"icon": "close",
-			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-			"Args": ki.PropSlice{
-				{"Proportion", ki.Props{
-					"desc": "proportion (0 -- 1) of neurons to lesion",
-				}},
-			},
-		}},
-		{"UnLesionNeurons", ki.Props{
-			"icon": "reset",
-			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
-		}},
-	},
+	// "EnumType:Typ": KiT_LayerType,
+	// "ToolBar": ki.PropSlice{
+	// 	{"Defaults", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "return all parameters to their intial default values",
+	// 	}},
+	// 	{"InitWts", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+	// 	}},
+	// 	{"InitActs", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's activation values",
+	// 	}},
+	// 	{"sep-act", ki.BlankProp{}},
+	// 	{"LesionNeurons", ki.Props{
+	// 		"icon": "close",
+	// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+	// 		"Args": ki.PropSlice{
+	// 			{"Proportion", ki.Props{
+	// 				"desc": "proportion (0 -- 1) of neurons to lesion",
+	// 			}},
+	// 		},
+	// 	}},
+	// 	{"UnLesionNeurons", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+	// 	}},
+	// },
 }

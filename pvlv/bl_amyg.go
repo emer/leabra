@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/emer/leabra/interinhib"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/interinhib"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // IBlAmygLayer has one method, AsBlAmygLayer, that returns a pointer to the layer specifically as a BLA layer.
@@ -27,16 +26,14 @@ func (ly *BlAmygLayer) AsBlAmygLayer() *BlAmygLayer {
 type BlAmygLayer struct {
 
 	// modulation state
-	ModLayer `desc:"modulation state"`
+	ModLayer
 
 	// positive or negative valence
-	Valence Valence `desc:"positive or negative valence"`
+	Valence Valence
 
 	// inter-layer inhibition parameters and state
-	ILI interinhib.InterInhib `desc:"inter-layer inhibition parameters and state"`
+	ILI interinhib.InterInhib
 }
-
-var KiT_BlAmygLayer = kit.Types.AddType(&BlAmygLayer{}, nil)
 
 func (ly *BlAmygLayer) Build() error {
 	nu := ly.Shp.Len()

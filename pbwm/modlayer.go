@@ -5,8 +5,7 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // ModLayer provides DA modulated learning to basic Leabra layers.
@@ -14,10 +13,8 @@ type ModLayer struct {
 	Layer
 
 	// dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning.
-	DaMod DaModParams `desc:"dopamine modulation effects, typically affecting Ge or gain -- a phase-based difference in modulation will result in learning effects through standard error-driven learning."`
+	DaMod DaModParams
 }
-
-var KiT_ModLayer = kit.Types.AddType(&ModLayer{}, leabra.LayerProps)
 
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *ModLayer) GFmInc(ltime *leabra.Time) {

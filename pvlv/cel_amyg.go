@@ -7,9 +7,8 @@ package pvlv
 import (
 	"fmt"
 
-	_ "github.com/emer/etable/etensor"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	_ "github.com/emer/etable/v2/etensor"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 type ICElAmygLayer interface {
@@ -20,7 +19,7 @@ func (ly *CElAmygLayer) AsCElAmygLayer() *CElAmygLayer {
 	return ly
 }
 
-type AcqExt int
+type AcqExt int //enums:enum
 
 const (
 	Acq AcqExt = iota
@@ -28,27 +27,23 @@ const (
 	NAcqExt
 )
 
-var KiT_AcqExt = kit.Enums.AddEnum(NAcqExt, kit.NotBitFlag, nil)
-
 type CElAmygLayer struct {
 	ModLayer
 
 	// basic parameters determining what type CEl layer this is
-	CElTyp CElAmygLayerType `desc:"basic parameters determining what type CEl layer this is"`
+	CElTyp CElAmygLayerType
 
 	// use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal
-	AcqDeepMod bool `desc:"use deep_mod_net for value from acquisition / go units, instead of inhibition current (otherwise use gi_syn) -- allows simpler parameter setting without titrating inhibition and this learning modulation signal"`
+	AcqDeepMod bool
 }
-
-var KiT_CElAmygLayer = kit.Types.AddType(&CElAmygLayer{}, nil)
 
 type CElAmygLayerType struct {
 
 	// acquisition or extinction
-	AcqExt AcqExt `desc:"acquisition or extinction"`
+	AcqExt AcqExt
 
 	// positive or negative DA valence
-	Valence Valence `desc:"positive or negative DA valence"`
+	Valence Valence
 }
 
 func (ly *CElAmygLayer) Build() error {

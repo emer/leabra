@@ -5,11 +5,10 @@
 package pcore
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/relpos"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // pcore.Network has methods for configuring specialized PCore network components
@@ -17,10 +16,6 @@ import (
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
 
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {

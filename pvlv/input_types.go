@@ -11,8 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/kit"
+	"github.com/emer/etable/v2/etensor"
 )
 
 // var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")
@@ -21,7 +20,7 @@ var CtxRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_?([ABCDEFUVWXYZ
 // Stim : conditioned stimuli
 var StimInShape = []int{12, 1}
 
-type Stim int
+type Stim int //enums:enum
 
 const (
 	StmA    Stim = iota // A
@@ -37,7 +36,6 @@ const (
 	StmY                // Y
 	StmZ                // Z
 	StmNone             // NoStim
-	StimN   = StmNone
 )
 
 var StimMap = map[string]Stim{
@@ -79,14 +77,12 @@ func (stm Stim) TensorScaled(scale float32) etensor.Tensor {
 	return tsr
 }
 
-var KiT_Stim = kit.Enums.AddEnum(StimN+1, kit.NotBitFlag, nil)
-
 // end Stim
 
 // Context
 var ContextInShape = []int{20, 3}
 
-type Context int
+type Context int //enums:enum
 
 const (
 	CtxA      Context = iota // A
@@ -243,18 +239,15 @@ func (ctx Context) TensorScaled(scale float32) etensor.Tensor {
 	return tsr
 }
 
-var KiT_Context = kit.Enums.AddEnum(NContexts+1, kit.NotBitFlag, nil)
-
 // end Context
 
 // Valence
-type Valence int
+type Valence int //enums:enum
 
 const (
 	ValNone Valence = iota // NoValence
 	POS
 	NEG
-	ValenceN
 )
 
 var ValMap = map[string]Valence{
@@ -284,8 +277,6 @@ func (val Valence) TensorScaled(scale float32) etensor.Tensor {
 func (val Valence) Negate() Valence {
 	return Valence(1 - (int(val)))
 }
-
-var KiT_Valence = kit.Enums.AddEnum(ValenceN, kit.NotBitFlag, nil)
 
 var Fooey Inputs = POS // for testing
 //end Valence
@@ -338,8 +329,8 @@ func TensorScaled(us US, scale float32) etensor.Tensor {
 // end US
 
 // positive and negative subtypes of US
-type PosUS US
-type NegUS US
+type PosUS US //enums:enum -no-extend
+type NegUS US //enums:enum -no-extend
 
 const (
 	Water PosUS = iota
@@ -458,13 +449,10 @@ func (us US) String() string {
 	}
 }
 
-var kiTPosUS = kit.Enums.AddEnum(NPosUS+1, kit.NotBitFlag, nil)
-var kiTNegUS = kit.Enums.AddEnum(NNegUS+1, kit.NotBitFlag, nil)
-
 // end US subtypes
 
 // Tick
-type Tick int
+type Tick int //enums:enum
 
 const (
 	T0 Tick = iota
@@ -478,7 +466,6 @@ const (
 	T8
 	T9
 	TckNone
-	TickN = TckNone
 )
 
 var TickMap = map[string]Tick{
@@ -523,8 +510,6 @@ func (t Tick) TensorScaled(scale float32) etensor.Tensor {
 	return tsr
 }
 
-var KiT_Tick = kit.Enums.AddEnum(TickN+1, kit.NotBitFlag, nil)
-
 // Tick
 
 // USTimeIn
@@ -533,16 +518,16 @@ var USTimeInShape = []int{16, 2, 4, 5}
 type USTimeState struct {
 
 	// CS value
-	Stm Stim `desc:"CS value"`
+	Stm Stim
 
 	// a US value or absent (USNone)
-	US US `desc:"a US value or absent (USNone)"`
+	US US
 
 	// PV d, POS, NEG, or absent (ValNone)
-	Val Valence `desc:"PV d, POS, NEG, or absent (ValNone)"`
+	Val Valence
 
 	// Within-trial timestep
-	Tck Tick `desc:"Within-trial timestep"`
+	Tck Tick
 }
 type PackedUSTimeState int64
 
@@ -805,14 +790,3 @@ func (usts USTimeState) OneHot(scale float32) etensor.Tensor {
 	tsr.Set([]int{int(usts.Stm), int(usts.Tck), int(usts.Val) - 1, usts.US.Int()}, 1.0/scale)
 	return tsr
 }
-
-//go:generate stringer -linecomment -output=inputs_strings.go -type=Stim,PosUS,NegUS,Context,Tick
-
-//func main() {
-//	//uss := []US{Nausea, Food, Water, Mate, OtherPos, OtherNeg, Shock}
-//	//fmt.Println(1 << 0, 1 << 1)
-//	//for _, item := range uss {
-//	//	fmt.Println(item, item.Int(), item.Val(), item.PV(), item.OneHot(), OneHotUS(item), OneHotTsrUS(item))
-//	//}
-//
-//}

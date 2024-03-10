@@ -4,34 +4,29 @@
 
 package leabra
 
-import (
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/kit"
-)
-
 // leabra.Time contains all the timing state and parameter information for running a model
 type Time struct {
 
 	// accumulated amount of time the network has been running, in simulation-time (not real world time), in seconds
-	Time float32 `desc:"accumulated amount of time the network has been running, in simulation-time (not real world time), in seconds"`
+	Time float32
 
 	// cycle counter: number of iterations of activation updating (settling) on the current alpha-cycle (100 msec / 10 Hz) trial -- this counts time sequentially through the entire trial, typically from 0 to 99 cycles
-	Cycle int `desc:"cycle counter: number of iterations of activation updating (settling) on the current alpha-cycle (100 msec / 10 Hz) trial -- this counts time sequentially through the entire trial, typically from 0 to 99 cycles"`
+	Cycle int
 
 	// total cycle count -- this increments continuously from whenever it was last reset -- typically this is number of milliseconds in simulation time
-	CycleTot int `desc:"total cycle count -- this increments continuously from whenever it was last reset -- typically this is number of milliseconds in simulation time"`
+	CycleTot int
 
-	// [0-3] current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3.
-	Quarter int `desc:"[0-3] current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3."`
+	// current gamma-frequency (25 msec / 40 Hz) quarter of alpha-cycle (100 msec / 10 Hz) trial being processed.  Due to 0-based indexing, the first quarter is 0, second is 1, etc -- the plus phase final quarter is 3.
+	Quarter Quarters
 
 	// true if this is the plus phase (final quarter = 3) -- else minus phase
-	PlusPhase bool `desc:"true if this is the plus phase (final quarter = 3) -- else minus phase"`
+	PlusPhase bool
 
-	// [def: 0.001] amount of time to increment per cycle
-	TimePerCyc float32 `def:"0.001" desc:"amount of time to increment per cycle"`
+	// amount of time to increment per cycle
+	TimePerCyc float32 `def:"0.001"`
 
-	// [def: 25] number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle
-	CycPerQtr int `def:"25" desc:"number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle"`
+	// number of cycles per quarter to run -- 25 = standard 100 msec alpha-cycle
+	CycPerQtr int `def:"25"`
 }
 
 // NewTime returns a new Time struct with default parameters
@@ -84,7 +79,7 @@ func (tm *Time) QuarterInc() {
 
 // QuarterCycle returns the number of cycles into current quarter
 func (tm *Time) QuarterCycle() int {
-	qmin := tm.Quarter * tm.CycPerQtr
+	qmin := int(tm.Quarter) * tm.CycPerQtr
 	return tm.Cycle - qmin
 }
 
@@ -95,14 +90,7 @@ func (tm *Time) QuarterCycle() int {
 // for use in relevant timing parameters where quarters need to be specified.
 // The Q1..4 defined values are integer *bit positions* -- use Set, Has etc methods
 // to set bits from these bit positions.
-type Quarters int32
-
-//go:generate stringer -type=Quarters
-
-var KiT_Quarters = kit.Enums.AddEnum(QuartersN, kit.BitFlag, nil)
-
-func (qt Quarters) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(qt) }
-func (qt *Quarters) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(qt, b) }
+type Quarters int64 //enums:bitflag
 
 // The quarters
 const (
@@ -111,39 +99,23 @@ const (
 	Q2
 	Q3
 	Q4
-	QuartersN
 )
-
-// Set sets given quarter bit (adds to any existing) (qtr = 0..3 = same as Quarters)
-func (qt *Quarters) Set(qtr int) {
-	bitflag.Set32((*int32)(qt), qtr)
-}
-
-// Clear clears given quarter bit (qtr = 0..3 = same as Quarters)
-func (qt *Quarters) Clear(qtr int) {
-	bitflag.Clear32((*int32)(qt), qtr)
-}
-
-// Has returns true if the given quarter is set (qtr = 0..3 = same as Quarters)
-func (qt Quarters) Has(qtr int) bool {
-	return bitflag.Has32(int32(qt), qtr)
-}
 
 // HasNext returns true if the quarter after given quarter is set.
 // This wraps around from Q4 to Q1.  (qtr = 0..3 = same as Quarters)
-func (qt Quarters) HasNext(qtr int) bool {
+func (qt Quarters) HasNext(qtr Quarters) bool {
 	nqt := (qtr + 1) % 4
-	return qt.Has(nqt)
+	return qt.HasFlag(nqt)
 }
 
 // HasPrev returns true if the quarter before given quarter is set.
 // This wraps around from Q1 to Q4.  (qtr = 0..3 = same as Quarters)
-func (qt Quarters) HasPrev(qtr int) bool {
+func (qt Quarters) HasPrev(qtr Quarters) bool {
 	pqt := (qtr - 1)
 	if pqt < 0 {
 		pqt += 4
 	}
-	return qt.Has(pqt)
+	return qt.HasFlag(pqt)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -157,14 +129,7 @@ func (qt Quarters) HasPrev(qtr int) bool {
 // establish a common conceptual framework for time -- it can easily be extended in specific
 // simulations to add needed additional levels, although using one of the existing standard
 // values is recommended wherever possible.
-type TimeScales int32
-
-//go:generate stringer -type=TimeScales
-
-var KiT_TimeScales = kit.Enums.AddEnum(TimeScalesN, kit.NotBitFlag, nil)
-
-func (ev TimeScales) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *TimeScales) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type TimeScales int32 //enums:enum
 
 // The time scales
 const (
@@ -254,6 +219,4 @@ const (
 	// restaurant, attending a wedding or other "event".
 	// This could be a chapter in a book.
 	Episode
-
-	TimeScalesN
 )

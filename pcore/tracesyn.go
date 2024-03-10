@@ -4,16 +4,16 @@
 
 package pcore
 
-import "github.com/goki/mat32"
+import "cogentcore.org/core/mat32"
 
 // TraceSyn holds extra synaptic state for trace projections
 type TraceSyn struct {
 
 	// new trace = send * recv -- drives updates to trace value: sn.ActLrn * rn.ActLrn (subject to derivative too)
-	NTr float32 `desc:"new trace = send * recv -- drives updates to trace value: sn.ActLrn * rn.ActLrn (subject to derivative too)"`
+	NTr float32
 
 	//  current ongoing trace of activations, which drive learning -- adds ntr and clears after ACh-modulated learning on current values
-	Tr float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after ACh-modulated learning on current values"`
+	Tr float32
 }
 
 // VarByName returns synapse variable by name

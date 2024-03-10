@@ -5,8 +5,8 @@
 package hip
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // hip.EcCa1Prjn is for EC <-> CA1 projections, to perform error-driven

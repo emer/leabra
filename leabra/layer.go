@@ -15,42 +15,39 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/weights"
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/enums"
+	"cogentcore.org/core/glop/indent"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/erand"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/weights"
+	"github.com/emer/etable/v2/etensor"
 )
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
 type Layer struct {
-	LayerStru
+	LayerBase
 
-	// [view: add-fields] Activation parameters and methods for computing activations
-	Act ActParams `view:"add-fields" desc:"Activation parameters and methods for computing activations"`
+	// Activation parameters and methods for computing activations
+	Act ActParams `view:"add-fields"`
 
-	// [view: add-fields] Inhibition parameters and methods for computing layer-level inhibition
-	Inhib InhibParams `view:"add-fields" desc:"Inhibition parameters and methods for computing layer-level inhibition"`
+	// Inhibition parameters and methods for computing layer-level inhibition
+	Inhib InhibParams `view:"add-fields"`
 
-	// [view: add-fields] Learning parameters and methods that operate at the neuron level
-	Learn LearnNeurParams `view:"add-fields" desc:"Learning parameters and methods that operate at the neuron level"`
+	// Learning parameters and methods that operate at the neuron level
+	Learn LearnNeurParams `view:"add-fields"`
 
 	// slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values.
-	Neurons []Neuron `desc:"slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values."`
+	Neurons []Neuron
 
 	// inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values.
-	Pools []Pool `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
+	Pools []Pool
 
 	// cosine difference between ActM, ActP stats
-	CosDiff CosDiffStats `desc:"cosine difference between ActM, ActP stats"`
+	CosDiff CosDiffStats
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, LayerProps)
 
 // AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
 // this to return the base Layer type, so that the LeabraLayer interface does not
@@ -78,6 +75,12 @@ func (ly *Layer) UpdateParams() {
 	for _, pj := range ly.RcvPrjns {
 		pj.UpdateParams()
 	}
+}
+
+// SetParam sets parameter at given path to given value.
+// returns error if path not found or value cannot be set.
+func (ly *Layer) SetParam(path, val string) error {
+	return params.SetParam(ly, path, val)
 }
 
 // JsonToParams reformates json output to suitable params display output
@@ -134,7 +137,7 @@ func (ly *Layer) UnitVarNum() int {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
@@ -148,7 +151,7 @@ func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
 // UnitVals fills in values of given variable name on unit,
 // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
-func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
+func (ly *Layer) UnitVals(vals *[]float32, varNm string, di int) error {
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
@@ -164,14 +167,14 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
+		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i, di)
 	}
 	return nil
 }
 
 // UnitValsTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
+func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
 		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
 		log.Println(err)
@@ -187,7 +190,7 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		v := ly.LeabraLay.UnitVal1D(vidx, i)
+		v := ly.LeabraLay.UnitVal1D(vidx, i, di)
 		if mat32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -207,10 +210,10 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
 // set to a 1D shape to hold all the values if subset is defined,
 // otherwise it calls UnitValsTensor and is identical to that.
 // Returns error on invalid var name.
-func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
+func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string, di int) error {
 	nu := len(ly.RepIxs)
 	if nu == 0 {
-		return ly.UnitValsTensor(tsr, varNm)
+		return ly.UnitValsTensor(tsr, varNm, di)
 	}
 	if tsr == nil {
 		err := fmt.Errorf("axon.UnitValsRepTensor: Tensor is nil")
@@ -229,7 +232,7 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
 		return err
 	}
 	for i, ui := range ly.RepIxs {
-		v := ly.LeabraLay.UnitVal1D(vidx, ui)
+		v := ly.LeabraLay.UnitVal1D(vidx, ui, di)
 		if mat32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -241,13 +244,13 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
 
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
+func (ly *Layer) UnitVal(varNm string, idx []int, di int) float32 {
 	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
 	if err != nil {
 		return mat32.NaN()
 	}
 	fidx := ly.Shp.Offset(idx)
-	return ly.LeabraLay.UnitVal1D(vidx, fidx)
+	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
 }
 
 // RecvPrjnVals fills in values of given synapse variable name,
@@ -651,28 +654,27 @@ func (ly *Layer) InitWtSym() {
 
 // InitExt initializes external input state -- called prior to apply ext
 func (ly *Layer) InitExt() {
-	msk := bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		nrn.Ext = 0
 		nrn.Targ = 0
-		nrn.ClearMask(msk)
+		nrn.SetFlag(false, NeurHasExt, NeurHasTarg, NeurHasCmpr)
 	}
 }
 
-// ApplyExtFlags gets the clear mask and set mask for updating neuron flags
+// ApplyExtFlags gets the flags that should cleared and set for updating neuron flags
 // based on layer type, and whether input should be applied to Targ (else Ext)
-func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
-	clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
+func (ly *Layer) ApplyExtFlags() (clear, set []enums.BitFlag, toTarg bool) {
+	clear = []enums.BitFlag{NeurHasExt, NeurHasTarg, NeurHasCmpr}
 	toTarg = false
 	if ly.Typ == emer.Target {
-		setmsk = bitflag.Mask32(int(NeurHasTarg))
+		set = []enums.BitFlag{NeurHasTarg}
 		toTarg = true
 	} else if ly.Typ == emer.Compare {
-		setmsk = bitflag.Mask32(int(NeurHasCmpr))
+		set = []enums.BitFlag{NeurHasCmpr}
 		toTarg = true
 	} else {
-		setmsk = bitflag.Mask32(int(NeurHasExt))
+		set = []enums.BitFlag{NeurHasExt}
 	}
 	return
 }
@@ -698,9 +700,9 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 
 // ApplyExt2D applies 2D tensor external input
 func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	ymx := min(ext.Dim(0), ly.Shp.Dim(0))
+	xmx := min(ext.Dim(1), ly.Shp.Dim(1))
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
@@ -715,19 +717,19 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
 func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
+	clear, set, toTarg := ly.ApplyExtFlags()
 	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
 
-	ymx := ints.MinInt(ext.Dim(0), lNy)
-	xmx := ints.MinInt(ext.Dim(1), lNx)
+	ymx := min(ext.Dim(0), lNy)
+	xmx := min(ext.Dim(1), lNx)
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
@@ -742,19 +744,19 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt4D applies 4D tensor external input
 func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ypmx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xpmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
-	ynmx := ints.MinInt(ext.Dim(2), ly.Shp.Dim(2))
-	xnmx := ints.MinInt(ext.Dim(3), ly.Shp.Dim(3))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	ypmx := min(ext.Dim(0), ly.Shp.Dim(0))
+	xpmx := min(ext.Dim(1), ly.Shp.Dim(1))
+	ynmx := min(ext.Dim(2), ly.Shp.Dim(2))
+	xnmx := min(ext.Dim(3), ly.Shp.Dim(3))
 	for yp := 0; yp < ypmx; yp++ {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
@@ -771,8 +773,8 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 					} else {
 						nrn.Ext = vl
 					}
-					nrn.ClearMask(clrmsk)
-					nrn.SetMask(setmsk)
+					nrn.SetFlag(false, clear...)
+					nrn.SetFlag(true, set...)
 				}
 			}
 		}
@@ -783,8 +785,8 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(ext.Len(), len(ly.Neurons))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -796,8 +798,8 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -805,8 +807,8 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D(ext []float64) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -818,8 +820,8 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -827,8 +829,8 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D32(ext []float32) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -840,8 +842,8 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -849,14 +851,14 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 // layer Type field -- call this if the Type has changed since the last
 // ApplyExt* method call.
 func (ly *Layer) UpdateExtFlags() {
-	clrmsk, setmsk, _ := ly.ApplyExtFlags()
+	clear, set, _ := ly.ApplyExtFlags()
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -1239,7 +1241,7 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 			nrn.ActM = nrn.Act
 			if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
 				nrn.Ext = nrn.Targ
-				nrn.SetFlag(NeurHasExt)
+				nrn.SetFlag(true, NeurHasExt)
 			}
 		case 3:
 			nrn.ActP = nrn.Act
@@ -1419,7 +1421,7 @@ func (ly *Layer) SSE(tol float32) float64 {
 func (ly *Layer) UnLesionNeurons() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		nrn.ClearFlag(NeurOff)
+		nrn.SetFlag(false, NeurOff)
 	}
 }
 
@@ -1440,7 +1442,7 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 	nl := int(prop * float32(nn))
 	for i := 0; i < nl; i++ {
 		nrn := &ly.Neurons[p[i]]
-		nrn.SetFlag(NeurOff)
+		nrn.SetFlag(true, NeurOff)
 	}
 	return nl
 }
@@ -1449,32 +1451,32 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 //  Layer props for gui
 
 var LayerProps = ki.Props{
-	"ToolBar": ki.PropSlice{
-		{"Defaults", ki.Props{
-			"icon": "reset",
-			"desc": "return all parameters to their intial default values",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"LesionNeurons", ki.Props{
-			"icon": "close",
-			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-			"Args": ki.PropSlice{
-				{"Proportion", ki.Props{
-					"desc": "proportion (0 -- 1) of neurons to lesion",
-				}},
-			},
-		}},
-		{"UnLesionNeurons", ki.Props{
-			"icon": "reset",
-			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
-		}},
-	},
+	// "ToolBar": ki.PropSlice{
+	// 	{"Defaults", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "return all parameters to their intial default values",
+	// 	}},
+	// 	{"InitWts", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+	// 	}},
+	// 	{"InitActs", ki.Props{
+	// 		"icon": "update",
+	// 		"desc": "initialize the layer's activation values",
+	// 	}},
+	// 	{"sep-act", ki.BlankProp{}},
+	// 	{"LesionNeurons", ki.Props{
+	// 		"icon": "close",
+	// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+	// 		"Args": ki.PropSlice{
+	// 			{"Proportion", ki.Props{
+	// 				"desc": "proportion (0 -- 1) of neurons to lesion",
+	// 			}},
+	// 		},
+	// 	}},
+	// 	{"UnLesionNeurons", ki.Props{
+	// 		"icon": "reset",
+	// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+	// 	}},
+	// },
 }

@@ -19,9 +19,9 @@ Layer InhibFmGeAct method like this:
 package interinhib
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // InterInhib specifies inhibition between layers, where
@@ -30,13 +30,13 @@ import (
 type InterInhib struct {
 
 	// layers to receive inhibition from
-	Lays emer.LayNames `desc:"layers to receive inhibition from"`
+	Lays emer.LayNames
 
 	// multiplier on Gi from other layers
-	Gi float32 `desc:"multiplier on Gi from other layers"`
+	Gi float32
 
 	// add inhibition -- otherwise Max
-	Add bool `desc:"add inhibition -- otherwise Max"`
+	Add bool
 }
 
 func (il *InterInhib) Defaults() {

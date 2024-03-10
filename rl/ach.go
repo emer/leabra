@@ -5,9 +5,8 @@
 package rl
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // AChLayer is an interface for a layer with acetylcholine neuromodulator on it
@@ -75,13 +74,11 @@ type ClampAChLayer struct {
 	leabra.Layer
 
 	// list of layers to send acetylcholine to
-	SendACh SendACh `desc:"list of layers to send acetylcholine to"`
+	SendACh SendACh
 
 	// acetylcholine value for this layer
-	ACh float32 `desc:"acetylcholine value for this layer"`
+	ACh float32
 }
-
-var KiT_ClampAChLayer = kit.Types.AddType(&ClampAChLayer{}, leabra.LayerProps)
 
 // AChLayer interface:
 

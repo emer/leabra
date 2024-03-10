@@ -7,9 +7,8 @@ package rl
 import (
 	"log"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // TDRewPredLayer is the temporal differences reward prediction layer.
@@ -20,10 +19,8 @@ type TDRewPredLayer struct {
 	leabra.Layer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `inactive:"+"`
 }
-
-var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, leabra.LayerProps)
 
 // DALayer interface:
 
@@ -52,10 +49,10 @@ func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
 type TDRewIntegParams struct {
 
 	// discount factor -- how much to discount the future prediction from RewPred
-	Discount float32 `desc:"discount factor -- how much to discount the future prediction from RewPred"`
+	Discount float32
 
 	// name of TDRewPredLayer to get reward prediction from
-	RewPred string `desc:"name of TDRewPredLayer to get reward prediction from "`
+	RewPred string
 }
 
 func (tp *TDRewIntegParams) Defaults() {
@@ -74,13 +71,11 @@ type TDRewIntegLayer struct {
 	leabra.Layer
 
 	// parameters for reward integration
-	RewInteg TDRewIntegParams `desc:"parameters for reward integration"`
+	RewInteg TDRewIntegParams
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, leabra.LayerProps)
 
 func (ly *TDRewIntegLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -140,16 +135,14 @@ type TDDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// name of TDRewIntegLayer from which this computes the temporal derivative
-	RewInteg string `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
+	RewInteg string
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -226,8 +219,6 @@ func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
 type TDRewPredPrjn struct {
 	leabra.Prjn
 }
-
-var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, leabra.PrjnProps)
 
 func (pj *TDRewPredPrjn) Defaults() {
 	pj.Prjn.Defaults()

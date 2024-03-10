@@ -7,11 +7,10 @@ package pcore
 import (
 	"fmt"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/rl"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/rl"
 )
 
 // CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
@@ -24,19 +23,17 @@ type CINLayer struct {
 	leabra.Layer
 
 	// threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior
-	RewThr float32 `desc:"threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior"`
+	RewThr float32
 
 	// Reward-representing layer(s) from which this computes ACh as Max absolute value
-	RewLays emer.LayNames `desc:"Reward-representing layer(s) from which this computes ACh as Max absolute value"`
+	RewLays emer.LayNames
 
 	// list of layers to send acetylcholine to
-	SendACh rl.SendACh `desc:"list of layers to send acetylcholine to"`
+	SendACh rl.SendACh
 
 	// acetylcholine value for this layer
-	ACh float32 `desc:"acetylcholine value for this layer"`
+	ACh float32
 }
-
-var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
 func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -117,13 +114,13 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CINLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < 0 || varIdx > nn { // nn = ACh
 		return mat32.NaN()
 	}
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

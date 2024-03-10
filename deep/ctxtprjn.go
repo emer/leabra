@@ -5,11 +5,9 @@
 package deep
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // CtxtSender is an interface for layers that implement the SendCtxtGe method
@@ -31,13 +29,11 @@ type CTCtxtPrjn struct {
 	leabra.Prjn // access as .Prjn
 
 	// if true, this is the projection from corresponding Superficial layer -- should be OneToOne prjn, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true
-	FmSuper bool `desc:"if true, this is the projection from corresponding Superficial layer -- should be OneToOne prjn, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true"`
+	FmSuper bool
 
 	// local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value
-	CtxtGeInc []float32 `desc:"local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
+	CtxtGeInc []float32
 }
-
-var KiT_CTCtxtPrjn = kit.Types.AddType(&CTCtxtPrjn{}, PrjnProps)
 
 func (pj *CTCtxtPrjn) Defaults() {
 	pj.Prjn.Defaults()
@@ -192,11 +188,7 @@ func (pj *CTCtxtPrjn) DWt() {
 //  PrjnType
 
 // PrjnType has the DeepLeabra extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType
-
-//go:generate stringer -type=PrjnType
-
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
+type PrjnType emer.PrjnType //enums:enum
 
 // The DeepLeabra prjn types
 const (
@@ -211,9 +203,8 @@ const (
 // gui versions
 const (
 	CTCtxt_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
-	PrjnTypeN
 )
 
-var PrjnProps = ki.Props{
-	"EnumType:Typ": KiT_PrjnType,
-}
+// var PrjnProps = ki.Props{
+// 	"EnumType:Typ": KiT_PrjnType,
+// }

@@ -7,8 +7,7 @@ package pcore
 import (
 	"strings"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // VThalLayer represents the Ventral thalamus: VA / VM / VL,
@@ -16,8 +15,6 @@ import (
 type VThalLayer struct {
 	Layer
 }
-
-var KiT_VThalLayer = kit.Types.AddType(&VThalLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "VThalLayer", Desc: "defaults",

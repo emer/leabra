@@ -8,38 +8,38 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/rl"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/rl"
 )
 
 // Gain constants for inputs to the VTA
 type VTADAGains struct {
 
 	// overall multiplier for dopamine values
-	DA float32 `desc:"overall multiplier for dopamine values"`
+	DA float32
 
 	// gain on bursts from PPTg
-	PPTg float32 `desc:"gain on bursts from PPTg"`
+	PPTg float32
 
 	// gain on dips/bursts from LHbRMTg
-	LHb float32 `desc:"gain on dips/bursts from LHbRMTg"`
+	LHb float32
 
 	// gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)
-	PV float32 `desc:"gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)"`
+	PV float32
 
 	// gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)
-	PVIBurstShunt float32 `desc:"gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)"`
+	PVIBurstShunt float32
 
 	// gain on VSPatch projection that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)
-	PVIAntiBurstShunt float32 `desc:"gain on VSPatch projection that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)"`
+	PVIAntiBurstShunt float32
 
 	// gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial
-	PVIDipShunt float32 `desc:"gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial"`
+	PVIDipShunt float32
 
 	// gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)
-	PVIAntiDipShunt float32 `desc:"gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)"`
+	PVIAntiDipShunt float32
 }
 
 // VTA internal state
@@ -48,17 +48,17 @@ type VTALayer struct {
 	SendVal float32
 
 	// VTA layer DA valence, positive or negative
-	Valence Valence `desc:"VTA layer DA valence, positive or negative"`
+	Valence Valence
 
 	// set a tonic 'dopamine' (DA) level (offset to add to da values)
-	TonicDA float32 `desc:"set a tonic 'dopamine' (DA) level (offset to add to da values)"`
+	TonicDA float32
 
-	// [view: inline] gains for various VTA inputs
-	DAGains  VTADAGains `view:"inline" desc:"gains for various VTA inputs"`
+	// gains for various VTA inputs
+	DAGains  VTADAGains `view:"inline"`
 	RecvFrom map[string]emer.Layer
 
 	// input values--for debugging only
-	InternalState VTAState `desc:"input values--for debugging only"`
+	InternalState VTAState
 }
 
 // monitoring and debugging only. Received values from all inputs
@@ -178,7 +178,7 @@ func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 }
 
 func (ly *VTALayer) ActFmG(ltime *leabra.Time) {
-	if ltime.Quarter == int(leabra.Q4) {
+	if ltime.Quarter == leabra.Q4 {
 		ly.VTAAct(ltime)
 	} else {
 		nrn := &ly.Neurons[0]

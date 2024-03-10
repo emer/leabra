@@ -5,11 +5,10 @@
 package agate
 
 import (
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/interinhib"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/glong"
+	"github.com/emer/leabra/v2/interinhib"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // PulseClearParams are parameters for the synchronous pulse of activation /
@@ -17,7 +16,7 @@ import (
 type PulseClearParams struct {
 
 	// GABAB value activated by the inhibitory pulse
-	GABAB float32 `desc:"GABAB value activated by the inhibitory pulse"`
+	GABAB float32
 }
 
 func (pc *PulseClearParams) Defaults() {
@@ -31,13 +30,11 @@ type MaintLayer struct {
 	glong.Layer
 
 	// parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance.
-	PulseClear PulseClearParams `desc:"parameters for the synchronous pulse of activation / inhibition that clears NMDA maintenance."`
+	PulseClear PulseClearParams
 
 	// inhibition from output layer
-	InterInhib interinhib.InterInhib `desc:"inhibition from output layer"`
+	InterInhib interinhib.InterInhib
 }
-
-var KiT_MaintLayer = kit.Types.AddType(&MaintLayer{}, leabra.LayerProps)
 
 func (ly *MaintLayer) Defaults() {
 	ly.Layer.Defaults()

@@ -4,7 +4,7 @@
 
 package pvlv
 
-import "github.com/emer/etable/etensor"
+import "github.com/emer/etable/v2/etensor"
 
 type Inputs interface {
 	Empty() bool

@@ -4,12 +4,6 @@
 
 package pbwm
 
-import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
-)
-
 // GateShape defines the shape of the outer pool dimensions of gating layers,
 // organized into Maint and Out subsets which are arrayed along the X axis
 // with Maint first (to the left) then Out.  Individual layers may only
@@ -21,13 +15,13 @@ import (
 type GateShape struct {
 
 	// overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels
-	Y int `desc:"overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels"`
+	Y int
 
 	// how many pools in the X dimension are Maint gating pools -- rest are Out
-	MaintX int `desc:"how many pools in the X dimension are Maint gating pools -- rest are Out"`
+	MaintX int
 
 	// how many pools in the X dimension are Out gating pools -- comes after Maint
-	OutX int `desc:"how many pools in the X dimension are Out gating pools -- comes after Maint"`
+	OutX int
 }
 
 // Set sets the shape parameters: number of Y dimension pools, and
@@ -97,13 +91,13 @@ func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
 type GateState struct {
 
 	// gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle
-	Act float32 `desc:"gating activation value, reflecting thalamic gating layer activation at time of gating (when Now = true) -- will be 0 if gating below threshold for this pool, and prior to first Now for AlphaCycle"`
+	Act float32
 
 	// gating timing signal -- true if this is the moment when gating takes place
-	Now bool `desc:"gating timing signal -- true if this is the moment when gating takes place"`
+	Now bool
 
 	// unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating.
-	Cnt int `copy:"-" desc:"unique to each layer -- not copied.  Generally is a counter for interval between gating signals -- starts at -1, goes to 0 at first gating, counts up from there for subsequent gating.  Can be reset back to -1 when gate is reset (e.g., output gating) and counts down from -1 while not gating."`
+	Cnt int `copy:"-"`
 }
 
 // Init initializes the values -- call during InitActs()
@@ -128,13 +122,11 @@ type GateLayer struct {
 	Layer
 
 	// shape of overall Maint + Out gating system that this layer is part of
-	GateShp GateShape `desc:"shape of overall Maint + Out gating system that this layer is part of"`
+	GateShp GateShape
 
 	// slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out
-	GateStates []GateState `desc:"slice of gating state values for this layer, one for each separate gating pool, according to its GateType.  For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out"`
+	GateStates []GateState
 }
-
-var KiT_GateLayer = kit.Types.AddType(&GateLayer{}, leabra.LayerProps)
 
 func (ly *GateLayer) AsGate() *GateLayer {
 	return ly
@@ -165,7 +157,7 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 	}
 	switch {
 	case myt == typ:
-		mx := ints.MinInt(len(states), len(ly.GateStates))
+		mx := min(len(states), len(ly.GateStates))
 		for i := 0; i < mx; i++ {
 			ly.SetGateState(i, &states[i])
 		}
@@ -248,14 +240,7 @@ type GateLayerer interface {
 }
 
 // GateTypes for region of striatum
-type GateTypes int
-
-//go:generate stringer -type=GateTypes
-
-var KiT_GateTypes = kit.Enums.AddEnum(GateTypesN, kit.NotBitFlag, nil)
-
-func (ev GateTypes) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *GateTypes) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type GateTypes int //enums:enum
 
 const (
 	// Maint is maintenance gating -- toggles active maintenance in PFC

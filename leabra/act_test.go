@@ -7,7 +7,7 @@ package leabra
 import (
 	"testing"
 
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
 )
 
 // difTol is the numerical difference tolerance for comparing vs. target values

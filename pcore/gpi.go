@@ -7,8 +7,7 @@ package pcore
 import (
 	"strings"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // GPiLayer represents the GPi / SNr output nucleus of the BG.
@@ -18,8 +17,6 @@ import (
 type GPiLayer struct {
 	GPLayer
 }
-
-var KiT_GPiLayer = kit.Types.AddType(&GPiLayer{}, leabra.LayerProps)
 
 func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()

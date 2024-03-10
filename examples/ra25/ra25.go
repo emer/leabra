@@ -16,27 +16,27 @@ import (
 	"os"
 	"time"
 
-	"github.com/emer/emergent/egui"
-	"github.com/emer/emergent/elog"
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/env"
-	"github.com/emer/emergent/estats"
-	"github.com/emer/emergent/etime"
-	"github.com/emer/emergent/netview"
-	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/patgen"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/etable/agg"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
-	_ "github.com/emer/etable/etview" // include to get gui views
-	"github.com/emer/etable/split"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/events"
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/giv"
+	"cogentcore.org/core/icons"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/egui"
+	"github.com/emer/emergent/v2/elog"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/estats"
+	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/emergent/v2/netview"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/patgen"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/etable/v2/agg"
+	"github.com/emer/etable/v2/etable"
+	"github.com/emer/etable/v2/etensor"
+	"github.com/emer/etable/v2/split"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 func main() {
@@ -45,16 +45,14 @@ func main() {
 	if len(os.Args) > 1 {
 		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		guirun()
 	}
 }
 
 func guirun() {
 	TheSim.Init()
-	win := TheSim.ConfigGui()
-	win.StartEventLoop()
+	TheSim.ConfigGUI()
+	TheSim.GUI.Body.RunMainWindow()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -63,7 +61,7 @@ const LogPrec = 4
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
 var ParamSets = params.Sets{
-	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
+	"Base": {Desc: "these are the best params", Sheets: params.Sheets{
 		"NetSize": &params.Sheet{
 			{Sel: ".Hidden", Desc: "all hidden layers",
 				Params: params.Params{
@@ -101,7 +99,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "DefaultInhib", Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
+	"DefaultInhib": {Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "#Output", Desc: "go back to default",
 				Params: params.Params{
@@ -115,7 +113,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
+	"NoMomentum": {Desc: "no momentum or normalization", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "no norm or momentum",
 				Params: params.Params{
@@ -124,7 +122,7 @@ var ParamSets = params.Sets{
 				}},
 		},
 	}},
-	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
+	"WtBalOn": {Desc: "try with weight bal on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
 			{Sel: "Prjn", Desc: "weight bal on",
 				Params: params.Params{
@@ -141,79 +139,75 @@ var ParamSets = params.Sets{
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 
-	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
-	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	// the network -- click to view / edit parameters for layers, prjns, etc
+	Net *leabra.Network `view:"no-inline"`
 
-	// [view: inline] all parameter management
-	Params emer.Params `view:"inline" desc:"all parameter management"`
+	// all parameter management
+	Params emer.Params `view:"inline"`
 
 	// extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)
-	Tag string `desc:"extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)"`
+	Tag string
 
-	// [view: no-inline] the training patterns to use
-	Pats *etable.Table `view:"no-inline" desc:"the training patterns to use"`
+	// the training patterns to use
+	Pats *etable.Table `view:"no-inline"`
 
 	// contains computed statistic values
-	Stats estats.Stats `desc:"contains computed statistic values"`
+	Stats estats.Stats
 
 	// Contains all the logs and information about the logs.'
-	Logs elog.Logs `desc:"Contains all the logs and information about the logs.'"`
+	Logs elog.Logs
 
 	// starting run number -- typically 0 but can be set in command args for parallel runs on a cluster
-	StartRun int `desc:"starting run number -- typically 0 but can be set in command args for parallel runs on a cluster"`
+	StartRun int
 
 	// maximum number of model runs to perform (starting from StartRun)
-	MaxRuns int `desc:"maximum number of model runs to perform (starting from StartRun)"`
+	MaxRuns int
 
 	// maximum number of epochs to run per model run
-	MaxEpcs int `desc:"maximum number of epochs to run per model run"`
+	MaxEpcs int
 
 	// if a positive number, training will stop after this many epochs with zero SSE
-	NZeroStop int `desc:"if a positive number, training will stop after this many epochs with zero SSE"`
+	NZeroStop int
 
 	// Training environment -- contains everything about iterating over input / output patterns over training
-	TrainEnv env.FixedTable `desc:"Training environment -- contains everything about iterating over input / output patterns over training"`
+	TrainEnv env.FixedTable
 
 	// Testing environment -- manages iterating over testing
-	TestEnv env.FixedTable `desc:"Testing environment -- manages iterating over testing"`
+	TestEnv env.FixedTable
 
 	// leabra timing parameters and state
-	Time leabra.Time `desc:"leabra timing parameters and state"`
+	Time leabra.Time
 
-	// [view: inline] netview update parameters
-	ViewUpdt netview.ViewUpdt `view:"inline" desc:"netview update parameters"`
+	// netview update parameters
+	ViewUpdt netview.ViewUpdt `view:"inline"`
 
 	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
-	TestInterval int `desc:"how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing"`
+	TestInterval int
 
 	// how frequently (in epochs) to compute PCA on hidden representations to measure variance?
-	PCAInterval int `desc:"how frequently (in epochs) to compute PCA on hidden representations to measure variance?"`
+	PCAInterval int
 
-	// [view: -] manages all the gui elements
-	GUI egui.GUI `view:"-" desc:"manages all the gui elements"`
+	// manages all the gui elements
+	GUI egui.GUI `view:"-"`
 
-	// [view: -] for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-" desc:"for command-line run only, auto-save final weights after each run"`
+	// for command-line run only, auto-save final weights after each run
+	SaveWts bool `view:"-"`
 
-	// [view: -] if true, runing in no GUI mode
-	NoGui bool `view:"-" desc:"if true, runing in no GUI mode"`
+	// if true, runing in no GUI mode
+	NoGui bool `view:"-"`
 
-	// [view: -] if true, print message for all params that are set
-	LogSetParams bool `view:"-" desc:"if true, print message for all params that are set"`
+	// if true, print message for all params that are set
+	LogSetParams bool `view:"-"`
 
-	// [view: -] flag to initialize NewRun if last one finished
-	NeedsNewRun bool `view:"-" desc:"flag to initialize NewRun if last one finished"`
+	// flag to initialize NewRun if last one finished
+	NeedsNewRun bool `view:"-"`
 
-	// [view: -] a list of random seeds to use for each run
-	RndSeeds []int64 `view:"-" desc:"a list of random seeds to use for each run"`
+	// a list of random seeds to use for each run
+	RndSeeds []int64 `view:"-"`
 
-	// [view: -] net data for recording in nogui mode
-	NetData *netview.NetData `view:"-" desc:"net data for recording in nogui mode"`
+	// net data for recording in nogui mode
+	NetData *netview.NetData `view:"-"`
 }
-
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for filename for save methods.
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
 
 // TheSim is the overall state for this simulation
 var TheSim Sim
@@ -459,7 +453,7 @@ func (ss *Sim) RunEnd() {
 	if ss.SaveWts {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(gi.FileName(fnm))
+		ss.Net.SaveWtsJSON(gi.Filename(fnm))
 	}
 }
 
@@ -529,7 +523,7 @@ func (ss *Sim) Stopped() {
 
 // SaveWeights saves the network weights -- when called with giv.CallMethod
 // it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename gi.FileName) {
+func (ss *Sim) SaveWeights(filename gi.Filename) {
 	ss.Net.SaveWtsJSON(filename)
 }
 
@@ -770,175 +764,183 @@ func (ss *Sim) PCAStats() {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() {
 	title := "Leabra Random Associator"
-	ss.GUI.MakeWindow(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	ss.GUI.MakeBody(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 	ss.GUI.CycleUpdateInterval = 10
 
 	nv := ss.GUI.AddNetView("NetView")
+	nv.Params.MaxRecs = 300
 	nv.SetNet(ss.Net)
 	ss.ViewUpdt.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdt = &ss.ViewUpdt
 
-	nv.Scene().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
-	nv.Scene().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
+	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
+	nv.SceneXYZ().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
 	ss.GUI.AddPlots(title, &ss.Logs)
 
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Init", Icon: "update",
-		Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			ss.Init()
-			ss.GUI.UpdateWindow()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Train",
-		Icon:    "run",
-		Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.Train()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Stop",
-		Icon:    "stop",
-		Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.",
-		Active:  egui.ActiveRunning,
-		Func: func() {
-			ss.Stop()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Trial",
-		Icon:    "step-fwd",
-		Tooltip: "Advances one training trial at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.TrainTrial()
-				ss.GUI.IsRunning = false
+	ss.GUI.Body.AddAppBar(func(tb *gi.Toolbar) {
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Init", Icon: "update",
+			Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				ss.Init()
 				ss.GUI.UpdateWindow()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Epoch",
-		Icon:    "fast-fwd",
-		Tooltip: "Advances one epoch (complete set of training patterns) at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.TrainEpoch()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Step Run",
-		Icon:    "fast-fwd",
-		Tooltip: "Advances one full training Run at a time.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.TrainRun()
-			}
-		},
-	})
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Train",
+			Icon:    icons.ModelTraining,
+			Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.Train()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Stop",
+			Icon:    icons.Stop,
+			Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.",
+			Active:  egui.ActiveRunning,
+			Func: func() {
+				ss.Stop()
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Trial",
+			Icon:    icons.Step,
+			Tooltip: "Advances one training trial at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					go func() {
+						ss.TrainTrial()
+						ss.GUI.IsRunning = false
+					}()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Epoch",
+			Icon:    icons.FastForward,
+			Tooltip: "Advances one epoch (complete set of training patterns) at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.TrainEpoch()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Step Run",
+			Icon:    icons.FastForward,
+			Tooltip: "Advances one full training Run at a time.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.TrainRun()
+				}
+			},
+		})
 
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("test")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test Trial",
-		Icon:    "fast-fwd",
-		Tooltip: "Runs the next testing trial.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.TestTrial(false) // don't return on change -- wrap
-				ss.GUI.IsRunning = false
-				ss.GUI.UpdateWindow()
-			}
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test Item",
-		Icon:    "step-fwd",
-		Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-
-			gi.StringPromptDialog(ss.GUI.ViewPort, "", "Test Item",
-				gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
-				ss.GUI.Win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-					dlg := send.(*gi.Dialog)
-					if sig == int64(gi.DialogAccepted) {
-						val := gi.StringPromptDialogValue(dlg)
-						idxs := []int{0} //TODO: //ss.TestEnv.Table.RowsByString("Name", val, etable.Contains, etable.IgnoreCase)
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test Trial",
+			Icon:    icons.Step,
+			Tooltip: "Runs the next testing trial.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					go func() {
+						ss.TestTrial(false) // don't return on change -- wrap
+						ss.GUI.IsRunning = false
+					}()
+				}
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test Item",
+			Icon:    icons.Step,
+			Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				d := gi.NewBody().AddTitle("Test item").AddText("Enter the name of a given input pattern to test (case insensitive, contains given string.")
+				name := ""
+				giv.NewValue(d, &name)
+				d.AddBottomBar(func(pw gi.Widget) {
+					d.AddCancel(pw)
+					d.AddOk(pw).OnClick(func(e events.Event) {
+						idxs := ss.TestEnv.Table.RowsByString("Name", name, etable.Contains, etable.IgnoreCase)
 						if len(idxs) == 0 {
-							gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, gi.AddOk, gi.NoCancel, nil, nil)
+							gi.MessageSnackbar(tb, fmt.Sprintf("Name %q not found", name))
 						} else {
 							if !ss.GUI.IsRunning {
-								ss.GUI.IsRunning = true
-								fmt.Printf("testing index: %d\n", idxs[0])
-								ss.TestItem(idxs[0])
-								ss.GUI.IsRunning = false
-								ss.GUI.ViewPort.SetNeedsFullRender()
+								go func() {
+									ss.GUI.IsRunning = true
+									fmt.Printf("testing index: %d\n", idxs[0])
+									ss.TestItem(idxs[0])
+									ss.GUI.IsRunning = false
+								}()
 							}
 						}
-					}
+					})
 				})
+				d.NewDialog(tb).Run()
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test All",
+			Icon:    icons.FastForward,
+			Tooltip: "Run through the full set of testing items",
+			Active:  egui.ActiveStopped,
+			Func: func() {
+				if !ss.GUI.IsRunning {
+					ss.GUI.IsRunning = true
+					tb.ApplyStyleTree()
+					tb.NeedsRender()
+					go ss.RunTestAll()
+				}
+			},
+		})
 
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Test All",
-		Icon:    "step-fwd",
-		Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
-		Active:  egui.ActiveStopped,
-		Func: func() {
-			if !ss.GUI.IsRunning {
-				ss.GUI.IsRunning = true
-				ss.GUI.ToolBar.UpdateActions()
-				go ss.RunTestAll()
-			}
-		},
-	})
-
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("log")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "Reset RunLog",
-		Icon:    "reset",
-		Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			ss.Logs.ResetLog(etime.Train, etime.Run)
-			ss.GUI.UpdatePlot(etime.Train, etime.Run)
-		},
-	})
-	////////////////////////////////////////////////
-	ss.GUI.ToolBar.AddSeparator("misc")
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "New Seed",
-		Icon:    "new",
-		Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			ss.NewRndSeed()
-		},
-	})
-	ss.GUI.AddToolbarItem(egui.ToolbarItem{Label: "README",
-		Icon:    "file-markdown",
-		Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
-		Active:  egui.ActiveAlways,
-		Func: func() {
-			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
-		},
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Reset run log",
+			Icon:    icons.Reset,
+			Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				ss.Logs.ResetLog(etime.Train, etime.Run)
+				ss.GUI.UpdatePlot(etime.Train, etime.Run)
+			},
+		})
+		////////////////////////////////////////////////
+		gi.NewSeparator(tb)
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "New Seed",
+			Icon:    icons.Add,
+			Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				ss.NewRndSeed()
+			},
+		})
+		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "README",
+			Icon:    icons.FileMarkdown,
+			Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
+			Active:  egui.ActiveAlways,
+			Func: func() {
+				gi.TheApp.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+			},
+		})
 	})
 	ss.GUI.FinalizeGUI(false)
-	return ss.GUI.Win
 }
 
 // These props register Save methods so they can be used
@@ -994,7 +996,7 @@ func (ss *Sim) CmdArgs() {
 	}
 	if saveNetData {
 		ss.NetData = &netview.NetData{}
-		ss.NetData.Init(ss.Net, 200, true) // 200 = amount to save
+		ss.NetData.Init(ss.Net, 200, true, 200) // 200 = amount to save
 	}
 	if ss.SaveWts {
 		fmt.Printf("Saving final weights per run\n")
@@ -1009,6 +1011,6 @@ func (ss *Sim) CmdArgs() {
 
 	if saveNetData {
 		ndfn := ss.Net.Nm + "_" + ss.RunName() + ".netdata.gz"
-		ss.NetData.SaveJSON(gi.FileName(ndfn))
+		ss.NetData.SaveJSON(gi.Filename(ndfn))
 	}
 }

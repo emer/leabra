@@ -4,10 +4,11 @@
 
 package glong
 
+//go:generate core generate
+
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -21,17 +22,15 @@ import (
 type Layer struct {
 	leabra.Layer
 
-	// [view: inline] NMDA channel parameters plus more general params
-	NMDA NMDAParams `view:"inline" desc:"NMDA channel parameters plus more general params"`
+	// NMDA channel parameters plus more general params
+	NMDA NMDAParams `view:"inline"`
 
-	// [view: inline] GABA-B / GIRK channel parameters
-	GABAB GABABParams `view:"inline" desc:"GABA-B / GIRK channel parameters"`
+	// GABA-B / GIRK channel parameters
+	GABAB GABABParams `view:"inline"`
 
 	// slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
-	GlNeurs []Neuron `desc:"slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	GlNeurs []Neuron
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 func (ly *Layer) Defaults() {
 	ly.Layer.Defaults()
@@ -251,13 +250,13 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if varIdx < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

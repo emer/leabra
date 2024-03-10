@@ -11,15 +11,14 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/emer/etable/eplot"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
-	_ "github.com/emer/etable/etview" // include to get gui views
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/gi/giv"
-	"github.com/goki/ki/ki"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/gi"
+	"cogentcore.org/core/gimain"
+	"cogentcore.org/core/giv"
+	"cogentcore.org/core/ki"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/etable/v2/eplot"
+	"github.com/emer/etable/v2/etable"
+	"github.com/emer/etable/v2/etensor"
 )
 
 func main() {
@@ -30,7 +29,7 @@ func main() {
 }
 
 func guirun() {
-	win := TheSim.ConfigGui()
+	win := TheSim.ConfigGUI()
 	win.StartEventLoop()
 }
 
@@ -41,37 +40,37 @@ const LogPrec = 4
 type Sim struct {
 
 	// rise time constant
-	RiseTau float64 `desc:"rise time constant"`
+	RiseTau float64
 
 	// decay time constant -- must NOT be same as RiseTau
-	DecayTau float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
+	DecayTau float64
 
 	// initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start
-	GsXInit float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
+	GsXInit float64
 
 	// time when peak conductance occurs, in TimeInc units
-	MaxTime float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
+	MaxTime float64 `inactive:"+"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+	TauFact float64 `inactive:"+"`
 
 	// total number of time steps to take
-	TimeSteps int `desc:"total number of time steps to take"`
+	TimeSteps int
 
 	// time increment per step
-	TimeInc float64 `desc:"time increment per step"`
+	TimeInc float64
 
-	// [view: no-inline] table for plot
-	Table *etable.Table `view:"no-inline" desc:"table for plot"`
+	// table for plot
+	Table *etable.Table `view:"no-inline"`
 
-	// [view: -] the plot
-	Plot *eplot.Plot2D `view:"-" desc:"the plot"`
+	// the plot
+	Plot *eplot.Plot2D `view:"-"`
 
-	// [view: -] main GUI window
-	Win *gi.Window `view:"-" desc:"main GUI window"`
+	// main GUI window
+	Win *gi.Window `view:"-"`
 
-	// [view: -] the master toolbar
-	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
+	// the master toolbar
+	ToolBar *gi.ToolBar `view:"-"`
 }
 
 // TheSim is the overall state for this simulation
@@ -145,8 +144,8 @@ func (ss *Sim) ConfigPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
 	return plt
 }
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() *gi.Window {
 	width := 1600
 	height := 1200
 

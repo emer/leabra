@@ -5,9 +5,8 @@
 package rl
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // DALayer is an interface for a layer with dopamine neuromodulator on it
@@ -75,13 +74,11 @@ type ClampDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, leabra.LayerProps)
 
 func (ly *ClampDaLayer) Defaults() {
 	ly.Layer.Defaults()

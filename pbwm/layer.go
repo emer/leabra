@@ -7,9 +7,8 @@ package pbwm
 import (
 	"fmt"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // pbwm.Layer is the base layer type for PBWM framework -- has variables for the
@@ -19,16 +18,14 @@ type Layer struct {
 	leabra.Layer
 
 	// current dopamine level for this layer
-	DA float32 `inactive:"+" desc:"current dopamine level for this layer"`
+	DA float32 `inactive:"+"`
 
 	// current acetylcholine level for this layer
-	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
+	ACh float32 `inactive:"+"`
 
 	// current serotonin level for this layer
-	SE float32 `inactive:"+" desc:"current serotonin level for this layer"`
+	SE float32 `inactive:"+"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 
@@ -123,13 +120,13 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
 	if varIdx < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+		return ly.Layer.UnitVal1D(varIdx, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

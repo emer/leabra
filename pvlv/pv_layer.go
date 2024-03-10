@@ -7,16 +7,16 @@ package pvlv
 import (
 	"strconv"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/mat32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // Primary Value input layer. Sends activation directly to its receivers, bypassing the standard mechanisms.
 type PVLayer struct {
 	leabra.Layer
 	Net           *Network
-	SendPVQuarter int
+	SendPVQuarter leabra.Quarters
 	PVReceivers   emer.LayNames
 }
 
@@ -37,7 +37,7 @@ func (ly *PVLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	ly.SendPVQuarter = int(leabra.Q4)
+	ly.SendPVQuarter = leabra.Q4
 	return nil
 }
 

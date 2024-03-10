@@ -5,14 +5,13 @@
 package agate
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/deep"
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/pcore"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/relpos"
+	"github.com/emer/leabra/v2/deep"
+	"github.com/emer/leabra/v2/glong"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/pcore"
 )
 
 // agate.Network has methods for configuring specialized AGate network components
@@ -20,10 +19,6 @@ import (
 type Network struct {
 	deep.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = deep.NetworkProps
 
 // Defaults sets all the default parameters for all layers and projections
 func (nt *Network) Defaults() {
