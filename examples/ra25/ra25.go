@@ -16,7 +16,9 @@ import (
 	"os"
 	"time"
 
+	"cogentcore.org/core/events"
 	"cogentcore.org/core/gi"
+	"cogentcore.org/core/giv"
 	"cogentcore.org/core/icons"
 	"cogentcore.org/core/ki"
 	"cogentcore.org/core/mat32"
@@ -852,7 +854,7 @@ func (ss *Sim) ConfigGUI() {
 		////////////////////////////////////////////////
 		gi.NewSeparator(tb)
 		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test Trial",
-			Icon:    icons.FastForward,
+			Icon:    icons.Step,
 			Tooltip: "Runs the next testing trial.",
 			Active:  egui.ActiveStopped,
 			Func: func() {
@@ -870,32 +872,33 @@ func (ss *Sim) ConfigGUI() {
 			Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
 			Active:  egui.ActiveStopped,
 			Func: func() {
-				// TODO(v2)
-				// gi.StringPromptDialog(ss.GUI.ViewPort, "", "Test Item",
-				// 	gi.DlgOpts{Title: "Test Item", Prompt: "Enter the Name of a given input pattern to test (case insensitive, contains given string."},
-				// 	ss.GUI.Win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
-				// 		dlg := send.(*gi.Dialog)
-				// 		if sig == int64(gi.DialogAccepted) {
-				// 			val := gi.StringPromptDialogValue(dlg)
-				// 			idxs := []int{0} //TODO: //ss.TestEnv.Table.RowsByString("Name", val, etable.Contains, etable.IgnoreCase)
-				// 			if len(idxs) == 0 {
-				// 				gi.PromptDialog(nil, gi.DlgOpts{Title: "Name Not Found", Prompt: "No patterns found containing: " + val}, gi.AddOk, gi.NoCancel, nil, nil)
-				// 			} else {
-				// 				if !ss.GUI.IsRunning {
-				// 					ss.GUI.IsRunning = true
-				// 					fmt.Printf("testing index: %d\n", idxs[0])
-				// 					ss.TestItem(idxs[0])
-				// 					ss.GUI.IsRunning = false
-				// 					ss.GUI.ViewPort.SetNeedsFullRender()
-				// 				}
-				// 			}
-				// 		}
-				// 	})
+				d := gi.NewBody().AddTitle("Test item").AddText("Enter the name of a given input pattern to test (case insensitive, contains given string.")
+				name := ""
+				giv.NewValue(d, &name)
+				d.AddBottomBar(func(pw gi.Widget) {
+					d.AddCancel(pw)
+					d.AddOk(pw).OnClick(func(e events.Event) {
+						idxs := ss.TestEnv.Table.RowsByString("Name", name, etable.Contains, etable.IgnoreCase)
+						if len(idxs) == 0 {
+							gi.MessageSnackbar(tb, fmt.Sprintf("Name %q not found", name))
+						} else {
+							if !ss.GUI.IsRunning {
+								go func() {
+									ss.GUI.IsRunning = true
+									fmt.Printf("testing index: %d\n", idxs[0])
+									ss.TestItem(idxs[0])
+									ss.GUI.IsRunning = false
+								}()
+							}
+						}
+					})
+				})
+				d.NewDialog(tb).Run()
 			},
 		})
 		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test All",
-			Icon:    icons.Step,
-			Tooltip: "Prompts for a specific input pattern name to run, and runs it in testing mode.",
+			Icon:    icons.FastForward,
+			Tooltip: "Run through the full set of testing items",
 			Active:  egui.ActiveStopped,
 			Func: func() {
 				if !ss.GUI.IsRunning {
