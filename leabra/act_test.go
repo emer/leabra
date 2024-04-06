@@ -13,7 +13,7 @@ import (
 // difTol is the numerical difference tolerance for comparing vs. target values
 const difTol = float32(1.0e-5)
 
-func TestActUpdt(t *testing.T) {
+func TestActUpdate(t *testing.T) {
 	// note: these values have been validated against emergent v8.5.6 svn 11473 in
 	// demo/leabra/basic_leabra_test.proj, TestAct program
 	geinc := []float32{.01, .02, .03, .04, .05, .1, .2, .3}

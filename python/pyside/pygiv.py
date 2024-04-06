@@ -75,9 +75,9 @@ class ClassViewInline(object):
             return self.Tags[field]
         return ""
 
-    def FieldTagVal(self, field, key):
+    def FieldTagValue(self, field, key):
         """returns the value for given key in tags for given field, empty string if none"""
-        return giv.StructTagVal(key, self.FieldTags(field))
+        return giv.StructTagValue(key, self.FieldTags(field))
 
     def Config(self):
         self.Lay = gi.Layout()
@@ -100,7 +100,7 @@ class ClassViewInline(object):
             lbl.Redrawable = True
             lbl.SetProp("horizontal-align", "left")
             lbl.SetText(nm)
-            dsc = self.FieldTagVal(nm, "desc")
+            dsc = self.FieldTagValue(nm, "desc")
             if dsc != "":
                 lbl.Tooltip = dsc
             if isinstance(val, go.GoClass):
@@ -135,7 +135,7 @@ class ClassViewInline(object):
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
-                PyObjUpdtView(val, vw, nm)
+                PyObjUpdateView(val, vw, nm)
         self.Lay.UpdateEnd(updt)
 
 
@@ -168,9 +168,9 @@ class ClassView(object):
             return self.Tags[field]
         return ""
 
-    def FieldTagVal(self, field, key):
+    def FieldTagValue(self, field, key):
         """returns the value for given key in tags for given field, empty string if none"""
-        return giv.StructTagVal(key, self.FieldTags(field))
+        return giv.StructTagValue(key, self.FieldTags(field))
 
     def Config(self):
         self.Frame.SetStretchMaxWidth()
@@ -194,7 +194,7 @@ class ClassView(object):
                 continue
             lbl = gi.Label(self.Frame.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
             lbl.SetText(nm)
-            dsc = self.FieldTagVal(nm, "desc")
+            dsc = self.FieldTagValue(nm, "desc")
             if dsc != "":
                 lbl.Tooltip = dsc
             if isinstance(val, go.GoClass):
@@ -229,7 +229,7 @@ class ClassView(object):
                 vv.UpdateWidget()
             elif nm in self.Widgets:
                 vw = self.Widgets[nm]
-                PyObjUpdtView(val, vw, nm)
+                PyObjUpdateView(val, vw, nm)
         self.Frame.UpdateEnd(updt)
 
 
@@ -241,10 +241,10 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     """
     dlg = gi.NewStdDialog(opts.ToGiOpts(), opts.Ok, opts.Cancel)
     frame = dlg.Frame()
-    prIdx = dlg.PromptWidgetIdx(frame)
+    prIndex = dlg.PromptWidgetIndex(frame)
 
     cv = obj.NewClassView(name)
-    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIdx + 1, "cv-frame"))
+    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIndex + 1, "cv-frame"))
     cv.Config()
 
     # sv.Viewport = dlg.Embed(gi.KiT_Viewport2D).(*gi.Viewport2D)
@@ -263,12 +263,12 @@ classviews = {}
 
 def TagValue(tags, key):
     """returns tag value for given key"""
-    return giv.StructTagVal(key, tags)
+    return giv.StructTagValue(key, tags)
 
 
 def HasTagValue(tags, key, value):
     """returns true if given key has given value"""
-    tval = giv.StructTagVal(key, tags)
+    tval = giv.StructTagValue(key, tags)
     return tval == value
 
 
@@ -338,14 +338,14 @@ def PyObjView(val, nm, frame, ctxt, tags):
     return vw
 
 
-def PyObjUpdtView(val, vw, nm):
+def PyObjUpdateView(val, vw, nm):
     """
     updates the given view widget for given value
     """
     if isinstance(val, Enum):
         if isinstance(vw, gi.ComboBox):
             svw = gi.ComboBox(vw)
-            svw.SetCurVal(val.name)
+            svw.SetCurValue(val.name)
         else:
             print("epygiv; Enum value: %s doesn't have ComboBox widget" % nm)
     elif isinstance(val, go.GoClass):
@@ -438,7 +438,7 @@ def ItemsFromEnum(cb, enm):
         if en.name != nnm:
             nms.append(en.name)
     cb.ItemsFromStringList(go.Slice_string(nms), False, 0)
-    cb.SetCurVal(enm.name)
+    cb.SetCurValue(enm.name)
 
 
 def SetEnumCB(recv, send, sig, data):

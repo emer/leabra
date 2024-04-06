@@ -204,7 +204,7 @@ func (ac *ActParams) VmFmG(nrn *Neuron) {
 	if ac.Noise.Type == VmNoise {
 		nwVm += nrn.Noise
 	}
-	nrn.Vm = ac.VmRange.ClipVal(nwVm)
+	nrn.Vm = ac.VmRange.ClipValue(nwVm)
 }
 
 // GeThrFmG computes the threshold for Ge based on all other conductances,
@@ -269,7 +269,7 @@ func (ac *ActParams) HardClamp(nrn *Neuron) {
 	if ac.Noise.Type == ActNoise {
 		ext += nrn.Noise
 	}
-	clmp := ac.Clamp.Range.ClipVal(ext)
+	clmp := ac.Clamp.Range.ClipValue(ext)
 	nrn.Act = clmp + nrn.Noise
 	nrn.ActLrn = clmp
 	nrn.Vm = ac.XX1.Thr + nrn.Act/ac.XX1.Gain

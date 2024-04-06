@@ -75,8 +75,8 @@ func (nrn *Neuron) VarNames() []string {
 	return NeuronVars
 }
 
-// NeuronVarIdxByName returns the index of the variable in the Neuron, or error
-func NeuronVarIdxByName(varNm string) (int, error) {
+// NeuronVarIndexByName returns the index of the variable in the Neuron, or error
+func NeuronVarIndexByName(varNm string) (int, error) {
 	i, ok := NeuronVarsMap[varNm]
 	if !ok {
 		return 0, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
@@ -92,7 +92,7 @@ func (nrn *Neuron) VarByIndex(idx int) float32 {
 
 // VarByName returns variable by name, or error
 func (nrn *Neuron) VarByName(varNm string) (float32, error) {
-	i, err := NeuronVarIdxByName(varNm)
+	i, err := NeuronVarIndexByName(varNm)
 	if err != nil {
 		return 0, err
 	}

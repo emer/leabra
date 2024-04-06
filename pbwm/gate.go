@@ -139,13 +139,13 @@ func (ly *GateLayer) GateShape() *GateShape {
 // note: each layer must define its own GateType() method!
 
 // GateState returns the GateState for given pool index (0 based) on this layer
-func (ly *GateLayer) GateState(poolIdx int) *GateState {
-	return &ly.GateStates[poolIdx]
+func (ly *GateLayer) GateState(poolIndex int) *GateState {
+	return &ly.GateStates[poolIndex]
 }
 
 // SetGateState sets the GateState for given pool index (individual pools start at 1) on this layer
-func (ly *GateLayer) SetGateState(poolIdx int, state *GateState) {
-	gs := &ly.GateStates[poolIdx]
+func (ly *GateLayer) SetGateState(poolIndex int, state *GateState) {
+	gs := &ly.GateStates[poolIndex]
 	gs.CopyFrom(state)
 }
 
@@ -172,9 +172,9 @@ func (ly *GateLayer) SetGateStates(states []GateState, typ GateTypes) {
 	}
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *GateLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *GateLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	nrn := &ly.Neurons[idx]
 	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based
 	switch vidx {
@@ -230,10 +230,10 @@ type GateLayerer interface {
 	GateShape() *GateShape
 
 	// GateState returns the GateState for given pool index (0-based) on this layer
-	GateState(poolIdx int) *GateState
+	GateState(poolIndex int) *GateState
 
 	// SetGateState sets the GateState for given pool index (0-based) on this layer
-	SetGateState(poolIdx int, state *GateState)
+	SetGateState(poolIndex int, state *GateState)
 
 	// SetGateStates sets the GateStates from given source states, of given gating type
 	SetGateStates(states []GateState, typ GateTypes)

@@ -132,10 +132,10 @@ func (dag *VTADAGains) Defaults() {
 }
 
 // GetMonitorVal is for monitoring during run. Includes values beyond the scope of neuron fields.
-func (ly *VTALayer) GetMonitorVal(data []string) float64 {
+func (ly *VTALayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	valType := data[0]
-	unitIdx, _ := strconv.Atoi(data[1])
+	unitIndex, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "PPTgDAp":
 		val = ly.InternalState.PPTgDAp
@@ -164,11 +164,11 @@ func (ly *VTALayer) GetMonitorVal(data []string) float64 {
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "PoolActAvg":
-		val = ly.Pools[unitIdx].Inhib.Act.Avg
+		val = ly.Pools[unitIndex].Inhib.Act.Avg
 	case "PoolActMax":
-		val = ly.Pools[unitIdx].Inhib.Act.Max
+		val = ly.Pools[unitIndex].Inhib.Act.Max
 	case "Act":
-		val = ly.Neurons[unitIdx].Act
+		val = ly.Neurons[unitIndex].Act
 	case "DA":
 		val = ly.DA
 	default:

@@ -71,27 +71,27 @@ func (ly *BlAmygLayer) Defaults() {
 }
 
 // GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
-func (ly *BlAmygLayer) GetMonitorVal(data []string) float64 {
+func (ly *BlAmygLayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	var err error
 	valType := data[0]
-	unitIdx, _ := strconv.Atoi(data[1])
+	unitIndex, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "PoolActAvg":
-		val = ly.Pools[unitIdx].Inhib.Act.Avg
+		val = ly.Pools[unitIndex].Inhib.Act.Avg
 	case "PoolActMax":
-		val = ly.Pools[unitIdx].Inhib.Act.Max
+		val = ly.Pools[unitIndex].Inhib.Act.Max
 	case "Act":
-		val = ly.Neurons[unitIdx].Act
+		val = ly.Neurons[unitIndex].Act
 	case "ActDiff":
-		val = ly.Neurons[unitIdx].Act - ly.ModNeurs[unitIdx].ModAct
+		val = ly.Neurons[unitIndex].Act - ly.ModNeurs[unitIndex].ModAct
 	default:
-		mnr := &ly.ModNeurs[unitIdx]
+		mnr := &ly.ModNeurs[unitIndex]
 		val, err = mnr.VarByName(valType)
 		if err != nil {
-			nrn := &ly.Neurons[unitIdx]
+			nrn := &ly.Neurons[unitIndex]
 			val, err = nrn.VarByName(valType)
 			if err != nil {
 				fmt.Printf("VarByName error: %v\n", err)

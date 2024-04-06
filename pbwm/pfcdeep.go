@@ -112,9 +112,9 @@ func (ly *PFCDeepLayer) GateType() GateTypes {
 	}
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *PFCDeepLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *PFCDeepLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	pnrn := &ly.PFCNeurs[idx]
 	switch vidx {
 	case ActG:
@@ -124,7 +124,7 @@ func (ly *PFCDeepLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	case MaintGe:
 		return pnrn.MaintGe
 	default:
-		return ly.GateLayer.UnitValByIdx(vidx, idx)
+		return ly.GateLayer.UnitValueByIndex(vidx, idx)
 	}
 }
 
@@ -248,7 +248,7 @@ func (ly *PFCDeepLayer) ClearMaint(pool int) {
 // QuarterFinal does updating after end of a quarter
 func (ly *PFCDeepLayer) QuarterFinal(ltime *leabra.Time) {
 	ly.GateLayer.QuarterFinal(ltime)
-	ly.UpdtGateCnt(ltime)
+	ly.UpdateGateCnt(ltime)
 	ly.DeepMaint(ltime)
 }
 
@@ -303,8 +303,8 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 	}
 }
 
-// UpdtGateCnt updates the gate counter
-func (ly *PFCDeepLayer) UpdtGateCnt(ltime *leabra.Time) {
+// UpdateGateCnt updates the gate counter
+func (ly *PFCDeepLayer) UpdateGateCnt(ltime *leabra.Time) {
 	if !ly.Gate.GateQtr.HasFlag(ltime.Quarter) {
 		return
 	}
@@ -328,7 +328,7 @@ func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
 			continue
 		}
 		pl := &ly.Pools[1+gi]
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue

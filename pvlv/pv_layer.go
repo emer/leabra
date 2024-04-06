@@ -58,20 +58,20 @@ func (ly *PVLayer) CyclePost(ltime *leabra.Time) {
 	}
 }
 
-func (ly *PVLayer) GetMonitorVal(data []string) float64 {
+func (ly *PVLayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	valType := data[0]
-	unitIdx, _ := strconv.Atoi(data[1])
+	unitIndex, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "Act":
-		val = ly.Neurons[unitIdx].Act
+		val = ly.Neurons[unitIndex].Act
 	case "PoolActAvg":
-		pl := &ly.Pools[unitIdx].Inhib.Act
+		pl := &ly.Pools[unitIndex].Inhib.Act
 		val = pl.Avg * float32(pl.N)
 	case "PoolActMax":
-		pl := &ly.Pools[unitIdx].Inhib.Act
+		pl := &ly.Pools[unitIndex].Inhib.Act
 		val = pl.Max * float32(pl.N)
 	}
 	return float64(val)

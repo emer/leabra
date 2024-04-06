@@ -16,7 +16,7 @@ import (
 type Pool struct {
 
 	// starting and ending (exlusive) indexes for the list of neurons in this pool
-	StIdx, EdIdx int
+	StIndex, EdIndex int
 
 	// FFFB inhibition computed values, including Ge and Act AvgMax which drive inhibition
 	Inhib fffb.Inhib

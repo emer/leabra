@@ -52,14 +52,14 @@ type PrjnBase struct {
 	// average and maximum number of recv connections in the receiving layer
 	RConNAvgMax minmax.AvgMax32 `inactive:"+" view:"inline"`
 
-	// starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN
-	RConIdxSt []int32 `view:"-"`
+	// starting index into ConIndex list for each neuron in receiving layer -- just a list incremented by ConN
+	RConIndexSt []int32 `view:"-"`
 
-	// index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
-	RConIdx []int32 `view:"-"`
+	// index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIndexSt), and then by the sending layer's units within that
+	RConIndex []int32 `view:"-"`
 
 	// index of synaptic state values for each recv unit x connection, for the receiver projection which does not own the synapses, and instead indexes into sender-ordered list
-	RSynIdx []int32 `view:"-"`
+	RSynIndex []int32 `view:"-"`
 
 	// number of sending connections for each neuron in the sending layer, as a flat list
 	SConN []int32 `view:"-"`
@@ -67,11 +67,11 @@ type PrjnBase struct {
 	// average and maximum number of sending connections in the sending layer
 	SConNAvgMax minmax.AvgMax32 `inactive:"+" view:"inline"`
 
-	// starting index into ConIdx list for each neuron in sending layer -- just a list incremented by ConN
-	SConIdxSt []int32 `view:"-"`
+	// starting index into ConIndex list for each neuron in sending layer -- just a list incremented by ConN
+	SConIndexSt []int32 `view:"-"`
 
-	// index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
-	SConIdx []int32 `view:"-"`
+	// index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIndexSt), and then by the sending layer's units within that
+	SConIndex []int32 `view:"-"`
 }
 
 // emer.Prjn interface
@@ -149,14 +149,14 @@ func (ps *PrjnBase) BuildStru() error {
 	sendn, recvn, cons := ps.Pat.Connect(ssh, rsh, ps.Recv == ps.Send)
 	slen := ssh.Len()
 	rlen := rsh.Len()
-	tcons := ps.SetNIdxSt(&ps.SConN, &ps.SConNAvgMax, &ps.SConIdxSt, sendn)
-	tconr := ps.SetNIdxSt(&ps.RConN, &ps.RConNAvgMax, &ps.RConIdxSt, recvn)
+	tcons := ps.SetNIndexSt(&ps.SConN, &ps.SConNAvgMax, &ps.SConIndexSt, sendn)
+	tconr := ps.SetNIndexSt(&ps.RConN, &ps.RConNAvgMax, &ps.RConIndexSt, recvn)
 	if tconr != tcons {
 		log.Printf("%v programmer error: total recv cons %v != total send cons %v\n", ps.String(), tconr, tcons)
 	}
-	ps.RConIdx = make([]int32, tconr)
-	ps.RSynIdx = make([]int32, tconr)
-	ps.SConIdx = make([]int32, tcons)
+	ps.RConIndex = make([]int32, tconr)
+	ps.RSynIndex = make([]int32, tconr)
+	ps.SConIndex = make([]int32, tcons)
 
 	sconN := make([]int32, slen) // temporary mem needed to tracks cur n of sending cons
 
@@ -164,18 +164,18 @@ func (ps *PrjnBase) BuildStru() error {
 	for ri := 0; ri < rlen; ri++ {
 		rbi := ri * slen     // recv bit index
 		rtcn := ps.RConN[ri] // number of cons
-		rst := ps.RConIdxSt[ri]
+		rst := ps.RConIndexSt[ri]
 		rci := int32(0)
 		for si := 0; si < slen; si++ {
 			if !cbits.Index(rbi + si) { // no connection
 				continue
 			}
-			sst := ps.SConIdxSt[si]
+			sst := ps.SConIndexSt[si]
 			if rci >= rtcn {
 				log.Printf("%v programmer error: recv target total con number: %v exceeded at recv idx: %v, send idx: %v\n", ps.String(), rtcn, ri, si)
 				break
 			}
-			ps.RConIdx[rst+rci] = int32(si)
+			ps.RConIndex[rst+rci] = int32(si)
 
 			sci := sconN[si]
 			stcn := ps.SConN[si]
@@ -183,8 +183,8 @@ func (ps *PrjnBase) BuildStru() error {
 				log.Printf("%v programmer error: send target total con number: %v exceeded at recv idx: %v, send idx: %v\n", ps.String(), stcn, ri, si)
 				break
 			}
-			ps.SConIdx[sst+sci] = int32(ri)
-			ps.RSynIdx[rst+rci] = sst + sci
+			ps.SConIndex[sst+sci] = int32(ri)
+			ps.RSynIndex[rst+rci] = sst + sci
 			(sconN[si])++
 			rci++
 		}
@@ -192,9 +192,9 @@ func (ps *PrjnBase) BuildStru() error {
 	return nil
 }
 
-// SetNIdxSt sets the *ConN and *ConIdxSt values given n tensor from Pat.
+// SetNIndexSt sets the *ConN and *ConIndexSt values given n tensor from Pat.
 // Returns total number of connections for this direction.
-func (ps *PrjnBase) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int32, tn *etensor.Int32) int32 {
+func (ps *PrjnBase) SetNIndexSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int32, tn *etensor.Int32) int32 {
 	ln := tn.Len()
 	tnv := tn.Values
 	*n = make([]int32, ln)
@@ -206,7 +206,7 @@ func (ps *PrjnBase) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int3
 		(*n)[i] = nv
 		(*idxst)[i] = idx
 		idx += nv
-		avgmax.UpdateVal(float32(nv), int32(i))
+		avgmax.UpdateValue(float32(nv), int32(i))
 	}
 	avgmax.CalcAvg()
 	return idx

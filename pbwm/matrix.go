@@ -127,9 +127,9 @@ func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
 	return da
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *MatrixLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *MatrixLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	mnrn := &ly.MatrixNeurs[idx]
 	nrn := &ly.Neurons[idx]
 	gs := ly.GateState(int(nrn.SubPool) - 1) // 0-based
@@ -257,7 +257,7 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 			continue
 		}
 		pl := &ly.Pools[1+gi]
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue

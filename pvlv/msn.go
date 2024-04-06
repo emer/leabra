@@ -88,30 +88,30 @@ type DelInhState struct {
 	GePrvTrl float32 `desc:"netin from previous \"trial\" (alpha cycle), used for delayed inhibition"`
 }
 
-func (ly *MSNLayer) GetMonitorVal(data []string) float64 {
+func (ly *MSNLayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	valType := data[0]
-	unitIdx, _ := strconv.Atoi(data[1])
+	unitIndex, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "Act":
-		val = ly.Neurons[unitIdx].Act
+		val = ly.Neurons[unitIndex].Act
 	case "Inet":
-		val = ly.Neurons[unitIdx].Inet
+		val = ly.Neurons[unitIndex].Inet
 	case "ModAct":
-		val = ly.ModNeurs[unitIdx].ModAct
+		val = ly.ModNeurs[unitIndex].ModAct
 	case "ModLevel":
-		val = ly.ModNeurs[unitIdx].ModLevel
+		val = ly.ModNeurs[unitIndex].ModLevel
 	case "PVAct":
-		val = ly.ModNeurs[unitIdx].PVAct
+		val = ly.ModNeurs[unitIndex].PVAct
 	default:
-		idx, err := ly.UnitVarIdx(valType)
+		idx, err := ly.UnitVarIndex(valType)
 		if err != nil {
 			fmt.Printf("Unit value name \"%v\" unknown\n", valType)
 			val = 0
 		} else {
-			val = ly.UnitVal1D(idx, unitIdx, 0)
+			val = ly.UnitVal1D(idx, unitIndex, 0)
 		}
 	}
 	return float64(val)
@@ -249,7 +249,7 @@ func (ly *MSNLayer) InitActs() {
 //  Cycle
 
 func (ly *MSNLayer) PoolDelayedInhib(pl *leabra.Pool) {
-	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		dis := &ly.DIState[ni]
 		if nrn.IsOff() {

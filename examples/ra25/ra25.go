@@ -179,7 +179,7 @@ type Sim struct {
 	Time leabra.Time
 
 	// netview update parameters
-	ViewUpdt netview.ViewUpdt `view:"inline"`
+	ViewUpdate netview.ViewUpdate `view:"inline"`
 
 	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
 	TestInterval int
@@ -253,18 +253,18 @@ func (ss *Sim) ConfigEnv() {
 
 	ss.TrainEnv.Nm = "TrainEnv"
 	ss.TrainEnv.Dsc = "training params and state"
-	ss.TrainEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TrainEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
 	ss.TestEnv.Dsc = "testing params and state"
-	ss.TestEnv.Table = etable.NewIdxView(ss.Pats)
+	ss.TestEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
 
 	// note: to create a train / test split of pats, do this:
-	// all := etable.NewIdxView(ss.Pats)
+	// all := etable.NewIndexView(ss.Pats)
 	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
 	// ss.TrainEnv.Table = splits.Splits[0]
 	// ss.TestEnv.Table = splits.Splits[1]
@@ -330,7 +330,7 @@ func (ss *Sim) Init() {
 	ss.Params.SetMsg = ss.LogSetParams
 	ss.Params.SetAll()
 	ss.NewRun()
-	ss.ViewUpdt.Update()
+	ss.ViewUpdate.Update()
 }
 
 // InitRndSeed initializes the random seed based on current training run number
@@ -368,20 +368,20 @@ func (ss *Sim) AlphaCyc(train bool) {
 				ss.Log(etime.Test, etime.Cycle)
 			}
 			ss.Time.CycleInc()
-			ss.ViewUpdt.UpdateCycle(cyc)
+			ss.ViewUpdate.UpdateCycle(cyc)
 		}
 		ss.Net.QuarterFinal(&ss.Time)
 		ss.Time.QuarterInc()
-		ss.ViewUpdt.UpdateTime(etime.GammaCycle)
+		ss.ViewUpdate.UpdateTime(etime.GammaCycle)
 	}
 	ss.StatCounters(train)
 
 	if train {
 		ss.Net.DWt()
-		ss.ViewUpdt.RecordSyns() // note: critical to update weights here so DWt is visible
+		ss.ViewUpdate.RecordSyns() // note: critical to update weights here so DWt is visible
 		ss.Net.WtFmDWt()
 	}
-	ss.ViewUpdt.UpdateTime(etime.AlphaCycle)
+	ss.ViewUpdate.UpdateTime(etime.AlphaCycle)
 	if !train {
 		ss.GUI.UpdatePlot(etime.Test, etime.Cycle) // make sure always updated at end
 	}
@@ -421,7 +421,7 @@ func (ss *Sim) TrainTrial() {
 			ss.PCAStats()
 		}
 		ss.Log(etime.Train, etime.Epoch)
-		ss.ViewUpdt.UpdateTime(etime.Epoch)
+		ss.ViewUpdate.UpdateTime(etime.Epoch)
 		if ss.TestInterval > 0 && epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
 			ss.TestAll()
 		}
@@ -537,7 +537,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	// Query counters FIRST
 	_, _, chg := ss.TestEnv.Counter(env.Epoch)
 	if chg {
-		ss.ViewUpdt.UpdateTime(etime.Epoch)
+		ss.ViewUpdate.UpdateTime(etime.Epoch)
 		ss.Log(etime.Test, etime.Epoch)
 		if returnOnChg {
 			return
@@ -549,7 +549,7 @@ func (ss *Sim) TestTrial(returnOnChg bool) {
 	ss.TrialStats()
 	ss.Log(etime.Test, etime.Trial)
 	if ss.NetData != nil { // offline record net data from testing, just final state
-		ss.NetData.Record(ss.ViewUpdt.Text, -1, 1)
+		ss.NetData.Record(ss.ViewUpdate.Text, -1, 1)
 	}
 }
 
@@ -666,7 +666,7 @@ func (ss *Sim) StatCounters(train bool) {
 	ss.Stats.SetInt("Trial", ev.Trial.Cur)
 	ss.Stats.SetString("TrialName", ev.TrialName.Cur)
 	ss.Stats.SetInt("Cycle", ss.Time.Cycle)
-	ss.ViewUpdt.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
+	ss.ViewUpdate.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "AvgSSE", "TrlErr", "TrlCosDiff"})
 }
 
 // TrialStats computes the trial-level statistics.
@@ -730,7 +730,7 @@ func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
 func (ss *Sim) LogTestErrors() {
 	sk := etime.Scope(etime.Test, etime.Trial)
 	lt := ss.Logs.TableDetailsScope(sk)
-	ix, _ := lt.NamedIdxView("TestErrors")
+	ix, _ := lt.NamedIndexView("TestErrors")
 	ix.Filter(func(et *etable.Table, row int) bool {
 		return et.CellFloat("Err", row) > 0 // include error trials
 	})
@@ -746,7 +746,7 @@ func (ss *Sim) LogTestErrors() {
 func (ss *Sim) LogRunStats() {
 	sk := etime.Scope(etime.Train, etime.Run)
 	lt := ss.Logs.TableDetailsScope(sk)
-	ix, _ := lt.NamedIdxView("RunStats")
+	ix, _ := lt.NamedIndexView("RunStats")
 
 	spl := split.GroupBy(ix, []string{"Params"})
 	split.Desc(spl, "FirstZero")
@@ -757,7 +757,7 @@ func (ss *Sim) LogRunStats() {
 // PCAStats computes PCA statistics on recorded hidden activation patterns
 // from Analyze, Trial log data
 func (ss *Sim) PCAStats() {
-	ss.Stats.PCAStats(ss.Logs.IdxView(etime.Analyze, etime.Trial), "ActM", ss.Net.LayersByClass("Hidden"))
+	ss.Stats.PCAStats(ss.Logs.IndexView(etime.Analyze, etime.Trial), "ActM", ss.Net.LayersByClass("Hidden"))
 	ss.Logs.ResetLog(etime.Analyze, etime.Trial)
 }
 
@@ -773,8 +773,8 @@ func (ss *Sim) ConfigGUI() {
 	nv := ss.GUI.AddNetView("NetView")
 	nv.Params.MaxRecs = 300
 	nv.SetNet(ss.Net)
-	ss.ViewUpdt.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
-	ss.GUI.ViewUpdt = &ss.ViewUpdt
+	ss.ViewUpdate.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
+	ss.GUI.ViewUpdate = &ss.ViewUpdate
 
 	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
 	nv.SceneXYZ().Camera.LookAt(mat32.Vec3{0, 0, 0}, mat32.Vec3{0, 1, 0})
@@ -877,7 +877,7 @@ func (ss *Sim) ConfigGUI() {
 				giv.NewValue(d, &name)
 				d.AddBottomBar(func(pw gi.Widget) {
 					d.AddCancel(pw)
-					d.AddOk(pw).OnClick(func(e events.Event) {
+					d.AddOK(pw).OnClick(func(e events.Event) {
 						idxs := ss.TestEnv.Table.RowsByString("Name", name, etable.Contains, etable.IgnoreCase)
 						if len(idxs) == 0 {
 							gi.MessageSnackbar(tb, fmt.Sprintf("Name %q not found", name))

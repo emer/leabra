@@ -283,7 +283,7 @@ var Fooey Inputs = POS // for testing
 
 // US, either positive or negative Valence
 type IUS interface {
-	Val() Valence
+	Value() Valence
 	String() string
 	Int() int
 }
@@ -294,7 +294,7 @@ func (us US) Int() int {
 	return int(us)
 }
 
-func (us US) Val() Valence {
+func (us US) Value() Valence {
 	var ius interface{} = us
 	switch ius.(IUS).(type) {
 	case PosUS:
@@ -374,7 +374,7 @@ func (neg NegUS) NegUSEmpty() bool {
 }
 
 func (us US) Empty() bool {
-	if us.Val() == POS {
+	if us.Value() == POS {
 		return NegUS(us).NegUSEmpty()
 	} else {
 		return PosUS(us).PosUSEmpty()
@@ -382,7 +382,7 @@ func (us US) Empty() bool {
 }
 
 func (us US) FromString(s string) Inputs {
-	if us.Val() == POS {
+	if us.Value() == POS {
 		return US(PosSMap[s])
 	} else {
 		return US(NegSMap[s])
@@ -406,10 +406,10 @@ func (us US) OneHot() int {
 	return OneHotUS(us)
 }
 
-func (pos PosUS) Val() Valence {
+func (pos PosUS) Value() Valence {
 	return POS
 }
-func (neg NegUS) Val() Valence {
+func (neg NegUS) Value() Valence {
 	return NEG
 }
 
@@ -442,7 +442,7 @@ func (us US) TensorScaled(scale float32) etensor.Tensor {
 }
 
 func (us US) String() string {
-	if us.Val() == POS {
+	if us.Value() == POS {
 		return PosUS(us).String()
 	} else {
 		return NegUS(us).String()
@@ -660,7 +660,7 @@ var StmGrpMap = map[Stim]int{
 
 const NoUSTimeIn = 320
 
-func (usts USTimeState) EnumVal() int {
+func (usts USTimeState) EnumValue() int {
 	mults := []int{5, 2, 4, 8}
 	stim, ok := StmGrpMap[usts.Stm]
 	if !ok {

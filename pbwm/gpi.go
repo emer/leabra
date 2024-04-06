@@ -160,11 +160,11 @@ func (ly *GPiThalLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *GPiThalLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *GPiThalLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	if vidx != ActG {
-		return ly.GateLayer.UnitValByIdx(vidx, idx)
+		return ly.GateLayer.UnitValueByIndex(vidx, idx)
 	}
 	gnrn := &ly.GPiNeurs[idx]
 	return gnrn.ActG
@@ -386,7 +386,7 @@ func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
 			continue
 		}
 		pl := &ly.Pools[1+gi]
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue

@@ -215,39 +215,39 @@ const (
 )
 
 // GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
-func (ly *ModLayer) GetMonitorVal(data []string) float64 {
+func (ly *ModLayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	var err error
 	valType := data[0]
-	unitIdx, _ := strconv.Atoi(data[1])
+	unitIndex, _ := strconv.Atoi(data[1])
 	switch valType {
 	case "TotalAct":
 		val = TotalAct(ly)
 	case "ModAct":
-		val = ly.ModNeurs[unitIdx].ModAct
+		val = ly.ModNeurs[unitIndex].ModAct
 	case "ModLevel":
-		val = ly.ModNeurs[unitIdx].ModLevel
+		val = ly.ModNeurs[unitIndex].ModLevel
 	case "ModNet":
-		val = ly.ModNeurs[unitIdx].ModNet
+		val = ly.ModNeurs[unitIndex].ModNet
 	case "ModLrn":
-		val = ly.ModNeurs[unitIdx].ModLrn
+		val = ly.ModNeurs[unitIndex].ModLrn
 	case "PVAct":
-		val = ly.ModNeurs[unitIdx].PVAct
+		val = ly.ModNeurs[unitIndex].PVAct
 	case "PoolActAvg":
-		val = ly.Pools[unitIdx].Inhib.Act.Avg
+		val = ly.Pools[unitIndex].Inhib.Act.Avg
 	case "PoolActMax":
-		val = ly.Pools[unitIdx].Inhib.Act.Max
+		val = ly.Pools[unitIndex].Inhib.Act.Max
 	case "ModPoolAvg":
-		val = ly.ModPools[unitIdx].ModNetStats.Avg
+		val = ly.ModPools[unitIndex].ModNetStats.Avg
 	case "DA":
-		val = ly.ModNeurs[unitIdx].DA
+		val = ly.ModNeurs[unitIndex].DA
 	case "DALrn":
-		val = ly.DALrnFmDA(ly.ModNeurs[unitIdx].DA)
+		val = ly.DALrnFmDA(ly.ModNeurs[unitIndex].DA)
 	default:
-		mnr := &ly.ModNeurs[unitIdx]
+		mnr := &ly.ModNeurs[unitIndex]
 		val, err = mnr.VarByName(valType)
 		if err != nil {
-			nrn := &ly.Neurons[unitIdx]
+			nrn := &ly.Neurons[unitIndex]
 			val, err = nrn.VarByName(valType)
 			if err != nil {
 				fmt.Printf("VarByName error: %v\n", err)
@@ -257,9 +257,9 @@ func (ly *ModLayer) GetMonitorVal(data []string) float64 {
 	return float64(val)
 }
 
-// UnitValByIdx returns value of given variable by variable index
+// UnitValueByIndex returns value of given variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *ModLayer) UnitValByIdx(vidx ModNeuronVar, idx int) float32 {
+func (ly *ModLayer) UnitValueByIndex(vidx ModNeuronVar, idx int) float32 {
 	switch vidx {
 	case DA:
 		return ly.ModNeurs[idx].DA
@@ -282,15 +282,15 @@ func (ly *ModLayer) UnitValByIdx(vidx ModNeuronVar, idx int) float32 {
 	}
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *ModLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *ModLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarIdxByName(varNm)
+	vidx, err = NeuronVarIndexByName(varNm)
 	if err != nil {
 		return vidx, err
 	}
@@ -302,21 +302,21 @@ func (ly *ModLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *ModLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
+func (ly *ModLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	if varIdx < 0 || varIdx >= len(ModNeuronVarsAll) {
+	if varIndex < 0 || varIndex >= len(ModNeuronVarsAll) {
 		return mat32.NaN()
 	}
 	nn := len(leabra.NeuronVars)
-	if varIdx < nn {
+	if varIndex < nn {
 		nrn := &ly.Neurons[idx]
-		return nrn.VarByIndex(varIdx)
+		return nrn.VarByIndex(varIndex)
 	}
-	varIdx -= nn
+	varIndex -= nn
 	mnr := &ly.ModNeurs[idx]
-	return mnr.VarByIndex(varIdx)
+	return mnr.VarByIndex(varIndex)
 }
 
 func (ly *ModLayer) Init() {
@@ -578,13 +578,13 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		mpl := &ly.ModPools[pi]
 		pl := &ly.Pools[pi]
 		mpl.ModNetStats.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			mnr := &ly.ModNeurs[ni]
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			mpl.ModNetStats.UpdateVal(mnr.ModNet, int32(ni))
+			mpl.ModNetStats.UpdateValue(mnr.ModNet, int32(ni))
 		}
 		mpl.ModNetStats.CalcAvg()
 		if mpl.ModNetStats.Max == 0 { // HACK!!!

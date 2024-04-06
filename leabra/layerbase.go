@@ -48,7 +48,7 @@ type LayerBase struct {
 	Ps mat32.Vec3
 
 	// a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers.
-	Idx int
+	Index int
 
 	// indexes of representative units in the layer, for computationally expensive stats or displays
 	RepIxs []int
@@ -94,15 +94,15 @@ func (ls *LayerBase) SetThread(thr int)          { ls.Thr = thr }
 func (ls *LayerBase) RelPos() relpos.Rel         { return ls.Rel }
 func (ls *LayerBase) Pos() mat32.Vec3            { return ls.Ps }
 func (ls *LayerBase) SetPos(pos mat32.Vec3)      { ls.Ps = pos }
-func (ls *LayerBase) Index() int                 { return ls.Idx }
-func (ls *LayerBase) SetIndex(idx int)           { ls.Idx = idx }
+func (ls *LayerBase) Index() int                 { return ls.Index }
+func (ls *LayerBase) SetIndex(idx int)           { ls.Index = idx }
 func (ls *LayerBase) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
 func (ls *LayerBase) NRecvPrjns() int            { return len(ls.RcvPrjns) }
 func (ls *LayerBase) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
 func (ls *LayerBase) SendPrjns() *LeabraPrjns    { return &ls.SndPrjns }
 func (ls *LayerBase) NSendPrjns() int            { return len(ls.SndPrjns) }
 func (ls *LayerBase) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
-func (ls *LayerBase) RepIdxs() []int             { return ls.RepIxs }
+func (ls *LayerBase) RepIndexes() []int          { return ls.RepIxs }
 
 func (ly *LayerBase) SendNameTry(sender string) (emer.Prjn, error) {
 	return emer.SendNameTry(ly.LeabraLay, sender)
@@ -125,7 +125,7 @@ func (ly *LayerBase) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
 	return emer.RecvNameTypeTry(ly.LeabraLay, receiver, typ)
 }
 
-func (ls *LayerBase) Idx4DFrom2D(x, y int) ([]int, bool) {
+func (ls *LayerBase) Index4DFrom2D(x, y int) ([]int, bool) {
 	lshp := ls.Shape()
 	nux := lshp.Dim(3)
 	nuy := lshp.Dim(2)
@@ -134,7 +134,7 @@ func (ls *LayerBase) Idx4DFrom2D(x, y int) ([]int, bool) {
 	px := x / nux
 	py := y / nuy
 	idx := []int{py, px, uy, ux}
-	if !lshp.IdxIsValid(idx) {
+	if !lshp.IndexIsValid(idx) {
 		return nil, false
 	}
 	return idx, true
@@ -175,8 +175,8 @@ func (ls *LayerBase) SetShape(shape []int) {
 	ls.Shp.SetShape(shape, nil, dnms) // row major default
 }
 
-// SetRepIdxsShape sets the RepIdxs, and RepShape and as list of dimension sizes
-func (ls *LayerBase) SetRepIdxsShape(idxs, shape []int) {
+// SetRepIndexesShape sets the RepIndexes, and RepShape and as list of dimension sizes
+func (ls *LayerBase) SetRepIndexesShape(idxs, shape []int) {
 	ls.RepIxs = idxs
 	var dnms []string
 	if len(shape) == 2 {

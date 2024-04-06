@@ -33,8 +33,8 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 }
 
 // VarByIndex returns synapse variable by index
-func (sy *TraceSyn) VarByIndex(varIdx int) float32 {
-	switch varIdx {
+func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
+	switch varIndex {
 	case 0:
 		return sy.NTr
 	case 1:
@@ -104,7 +104,7 @@ type MatrixTracePrjn struct {
 	// special parameters for matrix trace learning
 	Trace TraceParams `view:"inline"`
 
-	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn
 }
 
@@ -120,7 +120,7 @@ func (pj *MatrixTracePrjn) Defaults() {
 
 func (pj *MatrixTracePrjn) Build() error {
 	err := pj.Prjn.Build()
-	pj.TrSyns = make([]TraceSyn, len(pj.SConIdx))
+	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
@@ -149,10 +149,10 @@ func (pj *MatrixTracePrjn) DWt() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
 		trsyns := pj.TrSyns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -160,10 +160,10 @@ func (pj *MatrixTracePrjn) DWt() {
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
 
-			da := rlayi.UnitValByIdx(DA, int(ri)) // note: more efficient to just assume same for all units
-			daLrn := rlayi.UnitValByIdx(DALrn, int(ri))
-			ach := rlayi.UnitValByIdx(ACh, int(ri))
-			gateAct := rlayi.UnitValByIdx(GateAct, int(ri))
+			da := rlayi.UnitValueByIndex(DA, int(ri)) // note: more efficient to just assume same for all units
+			daLrn := rlayi.UnitValueByIndex(DALrn, int(ri))
+			ach := rlayi.UnitValueByIndex(ACh, int(ri))
+			gateAct := rlayi.UnitValueByIndex(GateAct, int(ri))
 			achDk := mat32.Min(1, ach*pj.Trace.AChDecay)
 			tr := trsy.Tr
 
@@ -225,13 +225,13 @@ func (pj *MatrixTracePrjn) DWt() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SynVals
+// SynValues
 
-// SynVarIdx returns the index of given variable within the synapse,
+// SynVarIndex returns the index of given variable within the synapse,
 // according to *this prjn's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *MatrixTracePrjn) SynVarIdx(varNm string) (int, error) {
-	vidx, err := pj.Prjn.SynVarIdx(varNm)
+func (pj *MatrixTracePrjn) SynVarIndex(varNm string) (int, error) {
+	vidx, err := pj.Prjn.SynVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -242,25 +242,25 @@ func (pj *MatrixTracePrjn) SynVarIdx(varNm string) (int, error) {
 	case "Tr":
 		return nn + 1, nil
 	}
-	return -1, fmt.Errorf("MatrixTracePrjn SynVarIdx: variable name: %v not valid", varNm)
+	return -1, fmt.Errorf("MatrixTracePrjn SynVarIndex: variable name: %v not valid", varNm)
 }
 
-// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MatrixTracePrjn) SynVal1D(varIdx int, synIdx int) float32 {
-	if varIdx < 0 || varIdx >= len(SynVarsAll) {
+func (pj *MatrixTracePrjn) SynVal1D(varIndex int, synIndex int) float32 {
+	if varIndex < 0 || varIndex >= len(SynVarsAll) {
 		return mat32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
-	if varIdx < nn {
-		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	if varIndex < nn {
+		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
-	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
+	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	sy := &pj.TrSyns[synIdx]
-	return sy.VarByIndex(varIdx)
+	varIndex -= nn
+	sy := &pj.TrSyns[synIndex]
+	return sy.VarByIndex(varIndex)
 }

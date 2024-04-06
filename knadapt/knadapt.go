@@ -161,7 +161,7 @@ public:
   STATE_DECO_KEY("UnitSpec");
   STATE_TA_STD_CODE_SPEC(KNaAdaptMiscSpec);
 
-  // STATE_UAE( UpdtDts(); );
+  // STATE_UAE( UpdateDts(); );
 
 private:
   void        Initialize()      { Defaults_init(); }

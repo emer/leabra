@@ -230,15 +230,15 @@ func (ly *Layer) Build() error {
 	return nil
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarIdxByName(varNm)
+	vidx, err = NeuronVarIndexByName(varNm)
 	if err != nil {
 		return -1, err
 	}
@@ -250,23 +250,23 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
-	if varIdx < 0 {
+func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx, di)
+	if varIndex < nn {
+		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	if varIdx > len(NeuronVars) {
+	varIndex -= nn
+	if varIndex > len(NeuronVars) {
 		return mat32.NaN()
 	}
 	gnr := &ly.GlNeurs[idx]
-	return gnr.VarByIndex(varIdx)
+	return gnr.VarByIndex(varIndex)
 }
 
 // UnitVarNum returns the number of Neuron-level variables

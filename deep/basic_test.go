@@ -172,13 +172,13 @@ func TestNetAct(t *testing.T) {
 				ltime.CycleInc()
 
 				if printCycs {
-					inLay.UnitVals(&inActs, "Act")
-					hidLay.UnitVals(&hidActs, "Act")
-					hidLay.UnitVals(&hidGes, "Ge")
-					hidLay.UnitVals(&hidGis, "Gi")
-					outLay.UnitVals(&outActs, "Act")
-					outLay.UnitVals(&outGes, "Ge")
-					outLay.UnitVals(&outGis, "Gi")
+					inLay.UnitValues(&inActs, "Act")
+					hidLay.UnitValues(&hidActs, "Act")
+					hidLay.UnitValues(&hidGes, "Ge")
+					hidLay.UnitValues(&hidGis, "Gi")
+					outLay.UnitValues(&outActs, "Act")
+					outLay.UnitValues(&outGes, "Ge")
+					outLay.UnitValues(&outGis, "Gi")
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 				}
 			}
@@ -189,13 +189,13 @@ func TestNetAct(t *testing.T) {
 				fmt.Printf("=============================\n")
 			}
 
-			inLay.UnitVals(&inActs, "Act")
-			hidLay.UnitVals(&hidActs, "Act")
-			hidLay.UnitVals(&hidGes, "Ge")
-			hidLay.UnitVals(&hidGis, "Gi")
-			outLay.UnitVals(&outActs, "Act")
-			outLay.UnitVals(&outGes, "Ge")
-			outLay.UnitVals(&outGis, "Gi")
+			inLay.UnitValues(&inActs, "Act")
+			hidLay.UnitValues(&hidActs, "Act")
+			hidLay.UnitValues(&hidGes, "Ge")
+			hidLay.UnitValues(&hidGis, "Gi")
+			outLay.UnitValues(&outActs, "Act")
+			outLay.UnitValues(&outGes, "Ge")
+			outLay.UnitValues(&outGis, "Gi")
 
 			if printQtrs {
 				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ltime.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
@@ -330,15 +330,15 @@ func TestNetLearn(t *testing.T) {
 					TestNet.Cycle(ltime)
 					ltime.CycleInc()
 
-					hidLay.UnitVals(&hidAct, "Act")
-					hidLay.UnitVals(&hidGes, "Ge")
-					hidLay.UnitVals(&hidGis, "Gi")
-					hidLay.UnitVals(&hidAvgSS, "AvgSS")
-					hidLay.UnitVals(&hidAvgS, "AvgS")
-					hidLay.UnitVals(&hidAvgM, "AvgM")
+					hidLay.UnitValues(&hidAct, "Act")
+					hidLay.UnitValues(&hidGes, "Ge")
+					hidLay.UnitValues(&hidGis, "Gi")
+					hidLay.UnitValues(&hidAvgSS, "AvgSS")
+					hidLay.UnitValues(&hidAvgS, "AvgS")
+					hidLay.UnitValues(&hidAvgM, "AvgM")
 
-					outLay.UnitVals(&outAvgS, "AvgS")
-					outLay.UnitVals(&outAvgM, "AvgM")
+					outLay.UnitValues(&outAvgS, "AvgS")
+					outLay.UnitValues(&outAvgM, "AvgM")
 
 					if printCycs {
 						fmt.Printf("pat: %v qtr: %v cyc: %v\nhid act: %v ges: %v gis: %v\nhid avgss: %v avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAct, hidGes, hidGis, hidAvgSS, hidAvgS, hidAvgM, outAvgS, outAvgM)
@@ -348,11 +348,11 @@ func TestNetLearn(t *testing.T) {
 				TestNet.QuarterFinal(ltime)
 				ltime.QuarterInc()
 
-				hidLay.UnitVals(&hidAvgS, "AvgS")
-				hidLay.UnitVals(&hidAvgM, "AvgM")
+				hidLay.UnitValues(&hidAvgS, "AvgS")
+				hidLay.UnitValues(&hidAvgM, "AvgM")
 
-				outLay.UnitVals(&outAvgS, "AvgS")
-				outLay.UnitVals(&outAvgM, "AvgM")
+				outLay.UnitValues(&outAvgS, "AvgS")
+				outLay.UnitValues(&outAvgM, "AvgM")
 
 				if printQtrs {
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nhid avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAvgS, hidAvgM, outAvgS, outAvgM)
@@ -376,10 +376,10 @@ func TestNetLearn(t *testing.T) {
 				fmt.Printf("=============================\n")
 			}
 
-			hidLay.UnitVals(&hidAvgL, "AvgL")
-			hidLay.UnitVals(&hidAvgLLrn, "AvgLLrn")
-			outLay.UnitVals(&outAvgL, "AvgL")
-			outLay.UnitVals(&outAvgLLrn, "AvgLLrn")
+			hidLay.UnitValues(&hidAvgL, "AvgL")
+			hidLay.UnitValues(&hidAvgLLrn, "AvgLLrn")
+			outLay.UnitValues(&outAvgL, "AvgL")
+			outLay.UnitValues(&outAvgLLrn, "AvgLLrn")
 			_ = outAvgL
 			_ = outAvgLLrn
 
@@ -390,17 +390,17 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx] = hidLay.RcvPrjns[0].SynVal("DWt", pi, pi)
-			outdwt[didx] = outLay.RcvPrjns[0].SynVal("DWt", pi, pi)
-			hidnorm[didx] = hidLay.RcvPrjns[0].SynVal("Norm", pi, pi)
-			outnorm[didx] = outLay.RcvPrjns[0].SynVal("Norm", pi, pi)
-			hidmoment[didx] = hidLay.RcvPrjns[0].SynVal("Moment", pi, pi)
-			outmoment[didx] = outLay.RcvPrjns[0].SynVal("Moment", pi, pi)
+			hiddwt[didx] = hidLay.RcvPrjns[0].SynValue("DWt", pi, pi)
+			outdwt[didx] = outLay.RcvPrjns[0].SynValue("DWt", pi, pi)
+			hidnorm[didx] = hidLay.RcvPrjns[0].SynValue("Norm", pi, pi)
+			outnorm[didx] = outLay.RcvPrjns[0].SynValue("Norm", pi, pi)
+			hidmoment[didx] = hidLay.RcvPrjns[0].SynValue("Moment", pi, pi)
+			outmoment[didx] = outLay.RcvPrjns[0].SynValue("Moment", pi, pi)
 
 			TestNet.WtFmDWt()
 
-			hidwt[didx] = hidLay.RcvPrjns[0].SynVal("Wt", pi, pi)
-			outwt[didx] = outLay.RcvPrjns[0].SynVal("Wt", pi, pi)
+			hidwt[didx] = hidLay.RcvPrjns[0].SynValue("Wt", pi, pi)
+			outwt[didx] = outLay.RcvPrjns[0].SynValue("Wt", pi, pi)
 
 			switch pi {
 			case 0:

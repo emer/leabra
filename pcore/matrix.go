@@ -203,11 +203,11 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 	}
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *MatrixLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -226,21 +226,21 @@ func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
+func (ly *MatrixLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := len(leabra.NeuronVars)
-	if varIdx < 0 || varIdx > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
+	if varIndex < 0 || varIndex > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
 		return mat32.NaN()
 	}
-	if varIdx <= nn { //
-		return ly.Layer.UnitVal1D(varIdx, idx, di)
+	if varIndex <= nn { //
+		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	if varIdx > nn+2 {
+	if varIndex > nn+2 {
 		return mat32.NaN()
 	}
-	if varIdx == nn+1 { // DALrn
+	if varIndex == nn+1 { // DALrn
 		return ly.DALrn
 	}
 	return ly.ACh
@@ -279,7 +279,7 @@ type MatrixPrjn struct {
 	// special parameters for matrix trace learning
 	Trace MatrixTraceParams `view:"inline"`
 
-	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn
 }
 
@@ -295,7 +295,7 @@ func (pj *MatrixPrjn) Defaults() {
 
 func (pj *MatrixPrjn) Build() error {
 	err := pj.Prjn.Build()
-	pj.TrSyns = make([]TraceSyn, len(pj.SConIdx))
+	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
@@ -329,10 +329,10 @@ func (pj *MatrixPrjn) DWt() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
 		trsyns := pj.TrSyns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -392,13 +392,13 @@ func (pj *MatrixPrjn) DWt() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SynVals
+// SynValues
 
-// SynVarIdx returns the index of given variable within the synapse,
+// SynVarIndex returns the index of given variable within the synapse,
 // according to *this prjn's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *MatrixPrjn) SynVarIdx(varNm string) (int, error) {
-	vidx, err := pj.Prjn.SynVarIdx(varNm)
+func (pj *MatrixPrjn) SynVarIndex(varNm string) (int, error) {
+	vidx, err := pj.Prjn.SynVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -409,27 +409,27 @@ func (pj *MatrixPrjn) SynVarIdx(varNm string) (int, error) {
 	case "Tr":
 		return nn + 1, nil
 	}
-	return -1, fmt.Errorf("MatrixPrjn SynVarIdx: variable name: %v not valid", varNm)
+	return -1, fmt.Errorf("MatrixPrjn SynVarIndex: variable name: %v not valid", varNm)
 }
 
-// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MatrixPrjn) SynVal1D(varIdx int, synIdx int) float32 {
-	if varIdx < 0 || varIdx >= len(SynVarsAll) {
+func (pj *MatrixPrjn) SynVal1D(varIndex int, synIndex int) float32 {
+	if varIndex < 0 || varIndex >= len(SynVarsAll) {
 		return mat32.NaN()
 	}
 	nn := pj.Prjn.SynVarNum()
-	if varIdx < nn {
-		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	if varIndex < nn {
+		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
-	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
+	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	sy := &pj.TrSyns[synIdx]
-	return sy.VarByIndex(varIdx)
+	varIndex -= nn
+	sy := &pj.TrSyns[synIndex]
+	return sy.VarByIndex(varIndex)
 }
 
 // SynVarNum returns the number of synapse-level variables

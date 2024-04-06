@@ -29,14 +29,14 @@ const (
 
 func (ss *Sim) SettleMinus(train bool) {
 	ev := &ss.Env
-	viewUpdt := ss.TrainUpdt
+	viewUpdate := ss.TrainUpdate
 	if !train {
-		viewUpdt = ss.TestUpdt
+		viewUpdate = ss.TestUpdate
 	}
 	for qtr := 0; qtr < 3; qtr++ {
 		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
 			ss.Net.Cycle(&ss.Time)
-			if ss.CycleLogUpdt == leabra.Cycle {
+			if ss.CycleLogUpdate == leabra.Cycle {
 				ev.GlobalStep++
 				ss.LogCycleData()
 			}
@@ -46,7 +46,7 @@ func (ss *Sim) SettleMinus(train bool) {
 			}
 			//ss.MaybeUpdate(train, false, leabra.FastSpike)
 			if ss.ViewOn {
-				switch viewUpdt {
+				switch viewUpdate {
 				case leabra.Cycle:
 					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
 						ss.UpdateView()
@@ -60,7 +60,7 @@ func (ss *Sim) SettleMinus(train bool) {
 		}
 		ss.Net.QuarterFinal(&ss.Time)
 		if ss.ViewOn {
-			switch viewUpdt {
+			switch viewUpdate {
 			case leabra.Quarter:
 				ss.UpdateView()
 			case leabra.Phase:
@@ -70,7 +70,7 @@ func (ss *Sim) SettleMinus(train bool) {
 			}
 		}
 		ss.Time.QuarterInc()
-		if ss.CycleLogUpdt == leabra.Quarter {
+		if ss.CycleLogUpdate == leabra.Quarter {
 			ev.GlobalStep++
 			ss.LogCycleData()
 		}
@@ -82,13 +82,13 @@ func (ss *Sim) SettleMinus(train bool) {
 
 func (ss *Sim) SettlePlus(train bool) {
 	ev := &ss.Env
-	viewUpdt := ss.TrainUpdt
+	viewUpdate := ss.TrainUpdate
 	if !train {
-		viewUpdt = ss.TestUpdt
+		viewUpdate = ss.TestUpdate
 	}
 	for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
 		ss.Net.Cycle(&ss.Time)
-		if ss.CycleLogUpdt == leabra.Cycle {
+		if ss.CycleLogUpdate == leabra.Cycle {
 			ev.GlobalStep++
 			ss.LogCycleData()
 		}
@@ -97,7 +97,7 @@ func (ss *Sim) SettlePlus(train bool) {
 			return
 		}
 		if ss.ViewOn {
-			switch viewUpdt {
+			switch viewUpdate {
 			case leabra.Cycle:
 				if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
 					ss.UpdateView()
@@ -111,13 +111,13 @@ func (ss *Sim) SettlePlus(train bool) {
 	}
 	ss.Net.QuarterFinal(&ss.Time)
 	if ss.ViewOn {
-		switch viewUpdt {
+		switch viewUpdate {
 		case leabra.Quarter, leabra.Phase:
 			ss.UpdateView()
 		}
 	}
 	ss.Time.QuarterInc()
-	if ss.CycleLogUpdt == leabra.Quarter {
+	if ss.CycleLogUpdate == leabra.Quarter {
 		ev.GlobalStep++
 		ss.LogCycleData()
 	}
@@ -132,11 +132,11 @@ func (ss *Sim) TrialStart(train bool) {
 }
 
 func (ss *Sim) TrialEnd(_ *PVLVEnv, train bool) {
-	viewUpdt := ss.TrainUpdt
+	viewUpdate := ss.TrainUpdate
 	if !train {
-		viewUpdt = ss.TestUpdt
+		viewUpdate = ss.TestUpdate
 	}
-	if ss.ViewOn && viewUpdt == leabra.Trial {
+	if ss.ViewOn && viewUpdate == leabra.Trial {
 		ss.UpdateView()
 	}
 }
@@ -189,7 +189,7 @@ func (ev *PVLVEnv) RunOneTrialBlk(ss *Sim) {
 		curTG = ev.TrialInstances.ReadNext()
 		ev.AlphaCycle.Max = curTG.AlphaTicksPerTrialGp
 		blockDone = ev.RunOneTrial(ss, curTG) // run one instantiated trial type (aka "trial group")
-		if ss.ViewOn && ss.TrainUpdt == leabra.Trial {
+		if ss.ViewOn && ss.TrainUpdate == leabra.Trial {
 			ss.UpdateView()
 		}
 		if ss.Stepper.StepPoint(int(SGTrial)) {
@@ -202,7 +202,7 @@ func (ev *PVLVEnv) RunOneTrialBlk(ss *Sim) {
 	if ss.Stepper.StepPoint(int(TrialBlock)) {
 		return
 	}
-	if ss.ViewOn && ss.TrainUpdt >= leabra.Epoch {
+	if ss.ViewOn && ss.TrainUpdate >= leabra.Epoch {
 		ss.UpdateView()
 	}
 }
@@ -220,7 +220,7 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (blockDone
 		if ss.Stepper.StepPoint(int(AlphaFull)) {
 			return
 		}
-		if ss.ViewOn && ss.TrainUpdt <= leabra.Quarter {
+		if ss.ViewOn && ss.TrainUpdate <= leabra.Quarter {
 			ss.UpdateView()
 		}
 	}
@@ -228,7 +228,7 @@ func (ev *PVLVEnv) RunOneTrial(ss *Sim, curTrial *data.TrialInstance) (blockDone
 	blockDone = ev.TrialCt.Incr()
 	ss.TrialEnd(ev, train)
 	//ss.LogTrialData(ev) // accumulate
-	if ss.ViewOn && ss.TrainUpdt == leabra.Trial {
+	if ss.ViewOn && ss.TrainUpdate == leabra.Trial {
 		ss.UpdateView()
 	}
 	return blockDone
@@ -258,7 +258,7 @@ func (ev *PVLVEnv) RunOneAlphaCycle(ss *Sim, trial *data.TrialInstance) {
 		}
 		ss.Net.WtFmDWt()
 	}
-	if ss.ViewOn && ss.TrainUpdt == leabra.AlphaCycle {
+	if ss.ViewOn && ss.TrainUpdate == leabra.AlphaCycle {
 		ss.UpdateView()
 	}
 	ss.LogTrialTypeData()

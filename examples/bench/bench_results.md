@@ -127,7 +127,7 @@ Net_Input     8.91    43.1
 Net_InInteg       0.71     3.43
 Activation    1.95     9.43
 Weight_Change 4.3     20.8
-Weight_Updt       2.85    13.8
+Weight_Update       2.85    13.8
 Net_InStats       0.177    0.855
 Inhibition    0.00332  0.016
 Act_post      1.63     7.87

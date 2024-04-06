@@ -252,11 +252,11 @@ func (nt *NetworkBase) Layout() {
 			lstly = ly
 		}
 	}
-	nt.BoundsUpdt()
+	nt.BoundsUpdate()
 }
 
-// BoundsUpdt updates the Min / Max display bounds for 3D display
-func (nt *NetworkBase) BoundsUpdt() {
+// BoundsUpdate updates the Min / Max display bounds for 3D display
+func (nt *NetworkBase) BoundsUpdate() {
 	mn := mat32.V3Scalar(mat32.Infinity)
 	mx := mat32.Vec3{}
 	for _, ly := range nt.Layers {

@@ -63,8 +63,8 @@ func (mnr *ModNeuron) VarNames() []string {
 	return ModNeuronVars
 }
 
-// NeuronVarIdxByName returns the index of the variable in the Neuron, or error
-func NeuronVarIdxByName(varNm string) (int, error) {
+// NeuronVarIndexByName returns the index of the variable in the Neuron, or error
+func NeuronVarIndexByName(varNm string) (int, error) {
 	i, ok := ModNeuronVarsMap[varNm]
 	if !ok {
 		return -1, fmt.Errorf("Neuron VarByName: variable name: %v not valid", varNm)
@@ -82,20 +82,20 @@ func (mnr *ModNeuron) VarByIndex(idx int) float32 {
 func (mnr *ModNeuron) VarByName(varNm string) (float32, error) {
 	var i int
 	var err error
-	i, err = NeuronVarIdxByName(varNm)
+	i, err = NeuronVarIndexByName(varNm)
 	if err != nil {
 		return mat32.NaN(), err
 	}
 	return mnr.VarByIndex(i), nil
 }
 
-// // UnitVals fills in values of given variable name on unit,
+// // UnitValues fills in values of given variable name on unit,
 // // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // // Returns error on invalid var name.
-func (ly *ModLayer) UnitVals(vals *[]float32, varNm string, di int) error {
+func (ly *ModLayer) UnitValues(vals *[]float32, varNm string, di int) error {
 	vidx, ok := ModNeuronVarsMap[varNm]
 	if !ok {
-		return ly.Layer.UnitVals(vals, "Act", di)
+		return ly.Layer.UnitValues(vals, "Act", di)
 	}
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -104,26 +104,26 @@ func (ly *ModLayer) UnitVals(vals *[]float32, varNm string, di int) error {
 		*vals = (*vals)[0:nn]
 	}
 	for i := 0; i < nn; i++ {
-		(*vals)[i] = ly.LeabraLay.(IModLayer).AsMod().UnitValByIdx(ModNeuronVar(vidx), i)
+		(*vals)[i] = ly.LeabraLay.(IModLayer).AsMod().UnitValueByIndex(ModNeuronVar(vidx), i)
 	}
 	return nil
 }
 
-// // UnitValsTensor returns values of given variable name on unit
+// // UnitValuesTensor returns values of given variable name on unit
 // // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error {
+func (ly *ModLayer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
+		err := fmt.Errorf("leabra.UnitValuesTensor: Tensor is nil")
 		log.Println(err)
 		return err
 	}
 	vidx, ok := ModNeuronVarsMap[varNm]
 	if !ok {
-		return ly.Layer.UnitValsTensor(tsr, varNm, di)
+		return ly.Layer.UnitValuesTensor(tsr, varNm, di)
 	}
 	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
 	for i := range ly.ModNeurs {
-		vl := ly.LeabraLay.(*ModLayer).UnitValByIdx(ModNeuronVar(vidx), i)
+		vl := ly.LeabraLay.(*ModLayer).UnitValueByIndex(ModNeuronVar(vidx), i)
 		tsr.SetFloat1D(i, float64(vl))
 	}
 	return nil
@@ -132,11 +132,11 @@ func (ly *ModLayer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) err
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-func (ly *ModLayer) ModUnitVals(vals *[]float32, varNm string, di int) error {
+func (ly *ModLayer) ModUnitValues(vals *[]float32, varNm string, di int) error {
 
-	vidx, err := NeuronVarIdxByName(varNm)
+	vidx, err := NeuronVarIndexByName(varNm)
 	if err != nil {
-		return ly.ModUnitVals(vals, varNm, di)
+		return ly.ModUnitValues(vals, varNm, di)
 	}
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {

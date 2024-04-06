@@ -48,16 +48,16 @@ type SuperNeuron struct {
 	Attn float32
 }
 
-// SuperNeuronVarIdxByName returns the index of the variable in the SuperNeuron, or error
-func SuperNeuronVarIdxByName(varNm string) (int, error) {
+// SuperNeuronVarIndexByName returns the index of the variable in the SuperNeuron, or error
+func SuperNeuronVarIndexByName(varNm string) (int, error) {
 	i, ok := SuperNeuronVarsMap[varNm]
 	if !ok {
-		return 0, fmt.Errorf("SuperNeuron VarIdxByName: variable name: %v not valid", varNm)
+		return 0, fmt.Errorf("SuperNeuron VarIndexByName: variable name: %v not valid", varNm)
 	}
 	return i, nil
 }
 
-func (sn *SuperNeuron) VarByIdx(idx int) float32 {
+func (sn *SuperNeuron) VarByIndex(idx int) float32 {
 	fv := (*float32)(unsafe.Pointer(uintptr(unsafe.Pointer(sn)) + uintptr(4*idx)))
 	return *fv
 }

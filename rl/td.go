@@ -240,9 +240,9 @@ func (pj *TDRewPredPrjn) DWt() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		// scons := pj.SConIdx[st : st+nc]
+		// scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]

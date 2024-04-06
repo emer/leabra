@@ -563,7 +563,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 	devs := make([]float32, initN)
 	ord := rand.Perm(nl)
 	minDev := float32(1.0e20)
-	minDevIdx := -1
+	minDevIndex := -1
 	for ti := 0; ti < initN; ti++ {
 		thds := &thrs[ti]
 		*thds = make([]td, nThread)
@@ -584,7 +584,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 		dev := devFunc(*thds)
 		if dev < minDev {
 			minDev = dev
-			minDevIdx = ti
+			minDevIndex = ti
 		}
 		devs[ti] = dev
 		erand.PermuteInts(ord)
@@ -596,7 +596,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 	var b strings.Builder
 	b.WriteString(nt.ThreadReport())
 
-	fmt.Fprintf(&b, "Deviation: %s \t Idx: %d\n", (datasize.ByteSize)(minDev).HumanReadable(), minDevIdx)
+	fmt.Fprintf(&b, "Deviation: %s \t Index: %d\n", (datasize.ByteSize)(minDev).HumanReadable(), minDevIndex)
 
 	nt.StopThreads()
 	nt.BuildThreads()

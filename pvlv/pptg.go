@@ -74,7 +74,7 @@ func (ly *PPTgLayer) QuarterFinal(ltime *leabra.Time) {
 }
 
 // GetMonitorVal retrieves a value for a trace of some quantity, possibly more than just a variable
-func (ly *PPTgLayer) GetMonitorVal(data []string) float64 {
+func (ly *PPTgLayer) GetMonitorValue(data []string) float64 {
 	var val float32
 	idx, _ := strconv.Atoi(data[1])
 	switch data[0] {

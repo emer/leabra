@@ -42,7 +42,7 @@ type MSNPrjn struct {
 	// special parameters for striatum trace learning
 	Trace MSNTraceParams `view:"inline"`
 
-	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn
 
 	// sending layer activation variable name
@@ -78,7 +78,7 @@ func (pj *MSNPrjn) Defaults() {
 
 func (pj *MSNPrjn) Build() error {
 	err := pj.Prjn.Build()
-	pj.TrSyns = make([]TraceSyn, len(pj.SConIdx))
+	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
@@ -110,10 +110,10 @@ func (pj *MSNPrjn) DWt() {
 		sn := &slay.Neurons[si]
 		snAct := sn.ActP
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
 		trsyns := pj.TrSyns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -235,21 +235,21 @@ func (tr *TraceSyn) SetVarByName(varNm string, val float32) error {
 	return nil
 }
 
-func (pj *MSNPrjn) SynVal(varNm string, sidx, ridx int) float32 {
-	vidx, err := pj.SynVarIdx(varNm)
+func (pj *MSNPrjn) SynValue(varNm string, sidx, ridx int) float32 {
+	vidx, err := pj.SynVarIndex(varNm)
 	if err != nil {
 		return mat32.NaN()
 	}
-	synIdx := pj.SynIdx(sidx, ridx)
-	return pj.LeabraPrj.SynVal1D(vidx, synIdx)
+	synIndex := pj.SynIndex(sidx, ridx)
+	return pj.LeabraPrj.SynVal1D(vidx, synIndex)
 }
 
-func (pj *MSNPrjn) SynVarIdx(varNm string) (int, error) {
+func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
 	return SynapseVarByName(varNm)
 }
 
-//func (pj *MSNPrjn) SynVarIdx(varNm string) (int, error) {
-//	vidx, err := pj.Prjn.SynVarIdx(varNm)
+//func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
+//	vidx, err := pj.Prjn.SynVarIndex(varNm)
 //	if err == nil {
 //		return vidx, err
 //	}
@@ -260,30 +260,30 @@ func (pj *MSNPrjn) SynVarIdx(varNm string) (int, error) {
 //	case "Tr":
 //		return nn + 1, nil
 //	}
-//	return -1, fmt.Errorf("MatrixTracePrjn SynVarIdx: variable name: %v not valid", varNm)
+//	return -1, fmt.Errorf("MatrixTracePrjn SynVarIndex: variable name: %v not valid", varNm)
 //}
 
-// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MSNPrjn) SynVal1D(varIdx int, synIdx int) float32 {
-	if varIdx < 0 || varIdx >= len(SynapseVarsAll) {
+func (pj *MSNPrjn) SynVal1D(varIndex int, synIndex int) float32 {
+	if varIndex < 0 || varIndex >= len(SynapseVarsAll) {
 		return mat32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
-	if varIdx < nn {
-		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	if varIndex < nn {
+		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
-	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
+	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	sy := &pj.TrSyns[synIdx]
-	return sy.VarByIndex(varIdx)
+	varIndex -= nn
+	sy := &pj.TrSyns[synIndex]
+	return sy.VarByIndex(varIndex)
 }
 
-func (ly *MSNLayer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int, prjnType string) error {
+func (ly *MSNLayer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, prjnType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -311,12 +311,12 @@ func (ly *MSNLayer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Lay
 		return err
 	}
 	for ri := range ly.Neurons {
-		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
+		(*vals)[ri] = pj.SynValue(varNm, sendIndex1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
 }
 
-func (ly *MSNLayer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int, prjnType string) error {
+func (ly *MSNLayer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, prjnType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -344,7 +344,7 @@ func (ly *MSNLayer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Lay
 		return err
 	}
 	for si := range ly.Neurons {
-		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
+		(*vals)[si] = pj.SynValue(varNm, si, recvIndex1D)
 	}
 	return nil
 }

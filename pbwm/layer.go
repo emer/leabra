@@ -82,10 +82,10 @@ func (ly *Layer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // This must be updated for specialized PBWM layer types to return correct variables!
-func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *Layer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	switch vidx {
 	case DA:
 		return ly.DA
@@ -99,11 +99,11 @@ func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	return mat32.NaN()
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -120,19 +120,19 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
-	if varIdx < 0 {
+func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx, di)
+	if varIndex < nn {
+		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeurVars(varIdx), idx)
+	varIndex -= nn
+	return ly.LeabraLay.(PBWMLayer).UnitValueByIndex(NeurVars(varIndex), idx)
 }
 
 // UnitVarNum returns the number of Neuron-level variables

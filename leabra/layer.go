@@ -120,11 +120,11 @@ func (ly *Layer) UnitVarProps() map[string]string {
 	return NeuronVarProps
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to *this layer's* UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	return NeuronVarIdxByName(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	return NeuronVarIndexByName(varNm)
 }
 
 // UnitVarNum returns the number of Neuron-level variables
@@ -137,28 +137,28 @@ func (ly *Layer) UnitVarNum() int {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int, di int) float32 {
+func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	if varIdx < 0 || varIdx >= ly.UnitVarNum() {
+	if varIndex < 0 || varIndex >= ly.UnitVarNum() {
 		return mat32.NaN()
 	}
 	nrn := &ly.Neurons[idx]
-	return nrn.VarByIndex(varIdx)
+	return nrn.VarByIndex(varIndex)
 }
 
-// UnitVals fills in values of given variable name on unit,
+// UnitValues fills in values of given variable name on unit,
 // for each unit in the layer, into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
-func (ly *Layer) UnitVals(vals *[]float32, varNm string, di int) error {
+func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
 		*vals = make([]float32, nn)
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
 		nan := mat32.NaN()
 		for i := range ly.Neurons {
@@ -172,16 +172,16 @@ func (ly *Layer) UnitVals(vals *[]float32, varNm string, di int) error {
 	return nil
 }
 
-// UnitValsTensor returns values of given variable name on unit
+// UnitValuesTensor returns values of given variable name on unit
 // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error {
+func (ly *Layer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
+		err := fmt.Errorf("leabra.UnitValuesTensor: Tensor is nil")
 		log.Println(err)
 		return err
 	}
 	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
 		nan := math.NaN()
 		for i := range ly.Neurons {
@@ -200,30 +200,30 @@ func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string, di int) error 
 	return nil
 }
 
-// UnitValsRepTensor fills in values of given variable name on unit
+// UnitValuesRepTensor fills in values of given variable name on unit
 // for a smaller subset of representative units in the layer, into given tensor.
 // This is used for computationally intensive stats or displays that work
 // much better with a smaller number of units.
-// The set of representative units are defined by SetRepIdxs -- all units
+// The set of representative units are defined by SetRepIndexes -- all units
 // are used if no such subset has been defined.
 // If tensor is not already big enough to hold the values, it is
 // set to a 1D shape to hold all the values if subset is defined,
-// otherwise it calls UnitValsTensor and is identical to that.
+// otherwise it calls UnitValuesTensor and is identical to that.
 // Returns error on invalid var name.
-func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string, di int) error {
+func (ly *Layer) UnitValuesRepTensor(tsr etensor.Tensor, varNm string, di int) error {
 	nu := len(ly.RepIxs)
 	if nu == 0 {
-		return ly.UnitValsTensor(tsr, varNm, di)
+		return ly.UnitValuesTensor(tsr, varNm, di)
 	}
 	if tsr == nil {
-		err := fmt.Errorf("axon.UnitValsRepTensor: Tensor is nil")
+		err := fmt.Errorf("axon.UnitValuesRepTensor: Tensor is nil")
 		log.Println(err)
 		return err
 	}
 	if tsr.Len() != nu {
 		tsr.SetShape([]int{nu}, nil, []string{"Units"})
 	}
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
 		nan := math.NaN()
 		for i, _ := range ly.RepIxs {
@@ -244,8 +244,8 @@ func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string, di int) err
 
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int, di int) float32 {
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
+func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
+	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
 		return mat32.NaN()
 	}
@@ -253,7 +253,7 @@ func (ly *Layer) UnitVal(varNm string, idx []int, di int) float32 {
 	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
 }
 
-// RecvPrjnVals fills in values of given synapse variable name,
+// RecvPrjnValues fills in values of given synapse variable name,
 // for projection into given sending layer and neuron 1D index,
 // for all receiving neurons in this layer,
 // into given float32 slice (only resized if not big enough).
@@ -263,7 +263,7 @@ func (ly *Layer) UnitVal(varNm string, idx []int, di int) float32 {
 // If the receiving neuron is not connected to the given sending layer or neuron
 // then the value is set to mat32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int, prjnType string) error {
+func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, prjnType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -294,12 +294,12 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 		return fmt.Errorf("projection is off")
 	}
 	for ri := 0; ri < nn; ri++ {
-		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
+		(*vals)[ri] = pj.SynValue(varNm, sendIndex1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
 }
 
-// SendPrjnVals fills in values of given synapse variable name,
+// SendPrjnValues fills in values of given synapse variable name,
 // for projection into given receiving layer and neuron 1D index,
 // for all sending neurons in this layer,
 // into given float32 slice (only resized if not big enough).
@@ -309,7 +309,7 @@ func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer,
 // If the sending neuron is not connected to the given receiving layer or neuron
 // then the value is set to mat32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int, prjnType string) error {
+func (ly *Layer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, prjnType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -340,7 +340,7 @@ func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer,
 		return fmt.Errorf("projection is off")
 	}
 	for si := 0; si < nn; si++ {
-		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
+		(*vals)[si] = pj.SynValue(varNm, si, recvIndex1D)
 	}
 	return nil
 }
@@ -389,9 +389,9 @@ func (ly *Layer) BuildSubPools() {
 			soff := ly.Shp.Offset([]int{py, px, 0, 0})
 			eoff := ly.Shp.Offset([]int{py, px, sh[2] - 1, sh[3] - 1}) + 1
 			pl := &ly.Pools[pi]
-			pl.StIdx = soff
-			pl.EdIdx = eoff
-			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+			pl.StIndex = soff
+			pl.EdIndex = eoff
+			for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 				nrn := &ly.Neurons[ni]
 				nrn.SubPool = int32(pi)
 			}
@@ -405,8 +405,8 @@ func (ly *Layer) BuildPools(nu int) error {
 	np := 1 + ly.NPools()
 	ly.Pools = make([]Pool, np)
 	lpl := &ly.Pools[0]
-	lpl.StIdx = 0
-	lpl.EdIdx = nu
+	lpl.StIndex = 0
+	lpl.EdIndex = nu
 	if np > 1 {
 		ly.BuildSubPools()
 	}
@@ -558,7 +558,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 		return
 	}
 	vidx := 0
-	vidx, err = NeuronVarIdxByName(varNm)
+	vidx, err = NeuronVarIndexByName(varNm)
 	if err != nil {
 		return
 	}
@@ -706,7 +706,7 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatVal(idx))
+			vl := float32(ext.FloatValue(idx))
 			i := ly.Shp.Offset(idx)
 			nrn := &ly.Neurons[i]
 			if nrn.IsOff() {
@@ -733,8 +733,8 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatVal(idx))
-			ui := etensor.Prjn2DIdx(&ly.Shp, false, y, x)
+			vl := float32(ext.FloatValue(idx))
+			ui := etensor.Prjn2DIndex(&ly.Shp, false, y, x)
 			nrn := &ly.Neurons[ui]
 			if nrn.IsOff() {
 				continue
@@ -762,7 +762,7 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, xn}
-					vl := float32(ext.FloatVal(idx))
+					vl := float32(ext.FloatValue(idx))
 					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]
 					if nrn.IsOff() {
@@ -792,7 +792,7 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 		if nrn.IsOff() {
 			continue
 		}
-		vl := float32(ext.FloatVal1D(i))
+		vl := float32(ext.FloatValue1D(i))
 		if toTarg {
 			nrn.Targ = vl
 		} else {
@@ -1006,7 +1006,7 @@ func (ly *Layer) DecayState(decay float32) {
 func (ly *Layer) DecayStatePool(pool int, decay float32) {
 	pi := int32(pool + 1) // 1 based
 	pl := &ly.Pools[pi]
-	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
@@ -1120,12 +1120,12 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Ge.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Ge.UpdateVal(nrn.Ge, int32(ni))
+			pl.Inhib.Ge.UpdateValue(nrn.Ge, int32(ni))
 		}
 		pl.Inhib.Ge.CalcAvg()
 	}
@@ -1194,12 +1194,12 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Act.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Act.UpdateVal(nrn.Act, int32(ni))
+			pl.Inhib.Act.UpdateValue(nrn.Act, int32(ni))
 		}
 		pl.Inhib.Act.CalcAvg()
 	}

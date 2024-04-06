@@ -28,8 +28,8 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 }
 
 // VarByIndex returns synapse variable by index
-func (sy *TraceSyn) VarByIndex(varIdx int) float32 {
-	switch varIdx {
+func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
+	switch varIndex {
 	case 0:
 		return sy.NTr
 	case 1:

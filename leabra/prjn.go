@@ -33,7 +33,7 @@ type Prjn struct {
 	// synaptic-level learning parameters
 	Learn LearnSynParams `view:"add-fields"`
 
-	// synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
+	// synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	Syns []Synapse
 
 	// scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels
@@ -98,14 +98,14 @@ func (pj *Prjn) SynVarProps() map[string]string {
 	return SynapseVarProps
 }
 
-// SynIdx returns the index of the synapse between given send, recv unit indexes
+// SynIndex returns the index of the synapse between given send, recv unit indexes
 // (1D, flat indexes). Returns -1 if synapse not found between these two neurons.
 // Requires searching within connections for receiving unit.
-func (pj *Prjn) SynIdx(sidx, ridx int) int {
+func (pj *Prjn) SynIndex(sidx, ridx int) int {
 	nc := int(pj.SConN[sidx])
-	st := int(pj.SConIdxSt[sidx])
+	st := int(pj.SConIndexSt[sidx])
 	for ci := 0; ci < nc; ci++ {
-		ri := int(pj.SConIdx[st+ci])
+		ri := int(pj.SConIndex[st+ci])
 		if ri != ridx {
 			continue
 		}
@@ -114,10 +114,10 @@ func (pj *Prjn) SynIdx(sidx, ridx int) int {
 	return -1
 }
 
-// SynVarIdx returns the index of given variable within the synapse,
+// SynVarIndex returns the index of given variable within the synapse,
 // according to *this prjn's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *Prjn) SynVarIdx(varNm string) (int, error) {
+func (pj *Prjn) SynVarIndex(varNm string) (int, error) {
 	return SynapseVarByName(varNm)
 }
 
@@ -128,32 +128,32 @@ func (pj *Prjn) SynVarNum() int {
 }
 
 // Syn1DNum returns the number of synapses for this prjn as a 1D array.
-// This is the max idx for SynVal1D and the number of vals set by SynVals.
+// This is the max idx for SynVal1D and the number of vals set by SynValues.
 func (pj *Prjn) Syn1DNum() int {
 	return len(pj.Syns)
 }
 
-// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *Prjn) SynVal1D(varIdx int, synIdx int) float32 {
-	if synIdx < 0 || synIdx >= len(pj.Syns) {
+func (pj *Prjn) SynVal1D(varIndex int, synIndex int) float32 {
+	if synIndex < 0 || synIndex >= len(pj.Syns) {
 		return mat32.NaN()
 	}
-	if varIdx < 0 || varIdx >= pj.SynVarNum() {
+	if varIndex < 0 || varIndex >= pj.SynVarNum() {
 		return mat32.NaN()
 	}
-	sy := &pj.Syns[synIdx]
-	return sy.VarByIndex(varIdx)
+	sy := &pj.Syns[synIndex]
+	return sy.VarByIndex(varIndex)
 }
 
-// SynVals sets values of given variable name for each synapse, using the natural ordering
+// SynValues sets values of given variable name for each synapse, using the natural ordering
 // of the synapses (sender based for Leabra),
 // into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
-func (pj *Prjn) SynVals(vals *[]float32, varNm string) error {
-	vidx, err := pj.LeabraPrj.SynVarIdx(varNm)
+func (pj *Prjn) SynValues(vals *[]float32, varNm string) error {
+	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return err
 	}
@@ -172,28 +172,28 @@ func (pj *Prjn) SynVals(vals *[]float32, varNm string) error {
 // SynVal returns value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes).
 // Returns mat32.NaN() for access errors (see SynValTry for error message)
-func (pj *Prjn) SynVal(varNm string, sidx, ridx int) float32 {
-	vidx, err := pj.LeabraPrj.SynVarIdx(varNm)
+func (pj *Prjn) SynValue(varNm string, sidx, ridx int) float32 {
+	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return mat32.NaN()
 	}
-	synIdx := pj.SynIdx(sidx, ridx)
-	return pj.LeabraPrj.SynVal1D(vidx, synIdx)
+	synIndex := pj.SynIndex(sidx, ridx)
+	return pj.LeabraPrj.SynVal1D(vidx, synIndex)
 }
 
 // SetSynVal sets value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes)
 // returns error for access errors.
-func (pj *Prjn) SetSynVal(varNm string, sidx, ridx int, val float32) error {
-	vidx, err := pj.LeabraPrj.SynVarIdx(varNm)
+func (pj *Prjn) SetSynValue(varNm string, sidx, ridx int, val float32) error {
+	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return err
 	}
-	synIdx := pj.SynIdx(sidx, ridx)
-	if synIdx < 0 || synIdx >= len(pj.Syns) {
+	synIndex := pj.SynIndex(sidx, ridx)
+	if synIndex < 0 || synIndex >= len(pj.Syns) {
 		return err
 	}
-	sy := &pj.Syns[synIdx]
+	sy := &pj.Syns[synIndex]
 	sy.SetVarByIndex(vidx, val)
 	if varNm == "Wt" {
 		pj.Learn.LWtFmWt(sy)
@@ -229,7 +229,7 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 	depth++
 	for ri := 0; ri < nr; ri++ {
 		nc := int(pj.RConN[ri])
-		st := int(pj.RConIdxSt[ri])
+		st := int(pj.RConIndexSt[ri])
 		w.Write(indent.TabBytes(depth))
 		w.Write([]byte("{\n"))
 		depth++
@@ -240,7 +240,7 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 		w.Write(indent.TabBytes(depth))
 		w.Write([]byte("\"Si\": [ "))
 		for ci := 0; ci < nc; ci++ {
-			si := pj.RConIdx[st+ci]
+			si := pj.RConIndex[st+ci]
 			w.Write([]byte(fmt.Sprintf("%v", si)))
 			if ci == nc-1 {
 				w.Write([]byte(" "))
@@ -252,7 +252,7 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 		w.Write(indent.TabBytes(depth))
 		w.Write([]byte("\"Wt\": [ "))
 		for ci := 0; ci < nc; ci++ {
-			rsi := pj.RSynIdx[st+ci]
+			rsi := pj.RSynIndex[st+ci]
 			sy := &pj.Syns[rsi]
 			w.Write([]byte(strconv.FormatFloat(float64(sy.Wt), 'g', weights.Prec, 32)))
 			if ci == nc-1 {
@@ -302,7 +302,7 @@ func (pj *Prjn) SetWts(pw *weights.Prjn) error {
 	for i := range pw.Rs {
 		pr := &pw.Rs[i]
 		for si := range pr.Si {
-			er := pj.SetSynVal("Wt", pr.Si[si], pr.Ri, pr.Wt[si]) // updates lin wt
+			er := pj.SetSynValue("Wt", pr.Si[si], pr.Ri, pr.Wt[si]) // updates lin wt
 			if er != nil {
 				err = er
 			}
@@ -317,7 +317,7 @@ func (pj *Prjn) Build() error {
 	if err := pj.BuildStru(); err != nil {
 		return err
 	}
-	pj.Syns = make([]Synapse, len(pj.SConIdx))
+	pj.Syns = make([]Synapse, len(pj.SConIndex))
 	rsh := pj.Recv.Shape()
 	//	ssh := pj.Send.Shape()
 	rlen := rsh.Len()
@@ -359,12 +359,12 @@ func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
 					}
 					scst := (ruy*rNuX + rux) * rfsz
 					nc := int(pj.RConN[ri])
-					st := int(pj.RConIdxSt[ri])
+					st := int(pj.RConIndexSt[ri])
 					for ci := 0; ci < nc; ci++ {
-						// si := int(pj.RConIdx[st+ci]) // could verify coords etc
-						rsi := pj.RSynIdx[st+ci]
+						// si := int(pj.RConIndex[st+ci]) // could verify coords etc
+						rsi := pj.RSynIndex[st+ci]
 						sy := &pj.Syns[rsi]
-						sc := scales.FloatVal1D(scst + ci)
+						sc := scales.FloatValue1D(scst + ci)
 						sy.Scale = float32(sc)
 					}
 				}
@@ -382,11 +382,11 @@ func (pj *Prjn) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) flo
 
 	for ri := 0; ri < rn; ri++ {
 		nc := int(pj.RConN[ri])
-		st := int(pj.RConIdxSt[ri])
+		st := int(pj.RConIndexSt[ri])
 		for ci := 0; ci < nc; ci++ {
-			si := int(pj.RConIdx[st+ci])
+			si := int(pj.RConIndex[st+ci])
 			wt := wtFun(si, ri, ssh, rsh)
-			rsi := pj.RSynIdx[st+ci]
+			rsi := pj.RSynIndex[st+ci]
 			sy := &pj.Syns[rsi]
 			sy.Wt = wt * sy.Scale
 			pj.Learn.LWtFmWt(sy)
@@ -403,11 +403,11 @@ func (pj *Prjn) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shap
 
 	for ri := 0; ri < rn; ri++ {
 		nc := int(pj.RConN[ri])
-		st := int(pj.RConIdxSt[ri])
+		st := int(pj.RConIndexSt[ri])
 		for ci := 0; ci < nc; ci++ {
-			si := int(pj.RConIdx[st+ci])
+			si := int(pj.RConIndex[st+ci])
 			sc := scaleFun(si, ri, ssh, rsh)
-			rsi := pj.RSynIdx[st+ci]
+			rsi := pj.RSynIndex[st+ci]
 			sy := &pj.Syns[rsi]
 			sy.Scale = sc
 		}
@@ -458,10 +458,10 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 	ns := int32(len(slay.Neurons))
 	for si := int32(0); si < ns; si++ {
 		nc := pj.SConN[si]
-		st := pj.SConIdxSt[si]
+		st := pj.SConIndexSt[si]
 		for ci := int32(0); ci < nc; ci++ {
 			sy := &pj.Syns[st+ci]
-			ri := pj.SConIdx[st+ci]
+			ri := pj.SConIndex[st+ci]
 			// now we need to find the reciprocal synapse on rpj!
 			// look in ri for sending connections
 			rsi := ri
@@ -472,10 +472,10 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 			if rsnc == 0 {
 				continue
 			}
-			rsst := rpj.SConIdxSt[rsi]
-			rist := rpj.SConIdx[rsst]        // starting index in recv prjn
-			ried := rpj.SConIdx[rsst+rsnc-1] // ending index
-			if si < rist || si > ried {      // fast reject -- prjns are always in order!
+			rsst := rpj.SConIndexSt[rsi]
+			rist := rpj.SConIndex[rsst]        // starting index in recv prjn
+			ried := rpj.SConIndex[rsst+rsnc-1] // ending index
+			if si < rist || si > ried {        // fast reject -- prjns are always in order!
 				continue
 			}
 			// start at index proportional to si relative to rist
@@ -490,7 +490,7 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 				if up < rsnc {
 					doing = true
 					rrii := rsst + up
-					rri := rpj.SConIdx[rrii]
+					rri := rpj.SConIndex[rrii]
 					if rri == si {
 						rsy := &rpj.Syns[rrii]
 						rsy.Wt = sy.Wt
@@ -504,7 +504,7 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 				if dn >= 0 {
 					doing = true
 					rrii := rsst + dn
-					rri := rpj.SConIdx[rrii]
+					rri := rpj.SConIndex[rrii]
 					if rri == si {
 						rsy := &rpj.Syns[rrii]
 						rsy.Wt = sy.Wt
@@ -539,9 +539,9 @@ func (pj *Prjn) InitGInc() {
 func (pj *Prjn) SendGDelta(si int, delta float32) {
 	scdel := delta * pj.GScale
 	nc := pj.SConN[si]
-	st := pj.SConIdxSt[si]
+	st := pj.SConIndexSt[si]
 	syns := pj.Syns[st : st+nc]
-	scons := pj.SConIdx[st : st+nc]
+	scons := pj.SConIndex[st : st+nc]
 	for ci := range syns {
 		ri := scons[ci]
 		pj.GInc[ri] += scdel * syns[ci].Wt
@@ -582,9 +582,9 @@ func (pj *Prjn) DWt() {
 			continue
 		}
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 		for ci := range syns {
 			sy := &syns[ci]
 			ri := scons[ci]
@@ -630,7 +630,7 @@ func (pj *Prjn) WtFmDWt() {
 	if pj.Learn.WtBal.On {
 		for si := range pj.Syns {
 			sy := &pj.Syns[si]
-			ri := pj.SConIdx[si]
+			ri := pj.SConIndex[si]
 			wb := &pj.WbRecv[ri]
 			pj.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
@@ -658,8 +658,8 @@ func (pj *Prjn) WtBalFmWt() {
 			continue
 		}
 		wb := &pj.WbRecv[ri]
-		st := int(pj.RConIdxSt[ri])
-		rsidxs := pj.RSynIdx[st : st+nc]
+		st := int(pj.RConIndexSt[ri])
+		rsidxs := pj.RSynIndex[st : st+nc]
 		sumWt := float32(0)
 		sumN := 0
 		for ci := range rsidxs {

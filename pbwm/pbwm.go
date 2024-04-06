@@ -19,9 +19,9 @@ type PBWMLayer interface {
 	// AsGate returns this layer as a pbwm.GateLayer (gated layer type) -- nil if not impl
 	AsGate() *GateLayer
 
-	// UnitValByIdx returns value of given PBWM-specific variable by variable index
+	// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 	// and flat neuron index (from layer or neuron-specific one).
-	UnitValByIdx(vidx NeurVars, idx int) float32
+	UnitValueByIndex(vidx NeurVars, idx int) float32
 
 	// GateSend updates gating state and sends it along to other layers.
 	// Called after std Cycle methods.

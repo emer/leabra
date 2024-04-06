@@ -95,11 +95,11 @@ func (ly *CINLayer) CyclePost(ltime *leabra.Time) {
 	ly.SendACh.SendACh(ly.Network, act)
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *CINLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -114,13 +114,13 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CINLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
+func (ly *CINLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < 0 || varIdx > nn { // nn = ACh
+	if varIndex < 0 || varIndex > nn { // nn = ACh
 		return mat32.NaN()
 	}
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx, di)
+	if varIndex < nn {
+		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

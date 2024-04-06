@@ -120,9 +120,9 @@ func (pj *AmygModPrjn) DWt() {
 		sn := &slay.Neurons[si]
 		snAct := sn.ActQ0
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]

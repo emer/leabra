@@ -72,8 +72,8 @@ func (fb *Params) FBInhib(avgAct float32) float32 {
 	return fbi
 }
 
-// FBUpdt updates feedback inhibition using time-integration rate constant
-func (fb *Params) FBUpdt(fbi *float32, newFbi float32) {
+// FBUpdate updates feedback inhibition using time-integration rate constant
+func (fb *Params) FBUpdate(fbi *float32, newFbi float32) {
 	*fbi += fb.FBDt * (newFbi - *fbi)
 }
 
@@ -90,7 +90,7 @@ func (fb *Params) Inhib(inh *Inhib) {
 	fbi := fb.FBInhib(inh.Act.Avg)
 
 	inh.FFi = ffi
-	fb.FBUpdt(&inh.FBi, fbi)
+	fb.FBUpdate(&inh.FBi, fbi)
 
 	inh.Gi = fb.Gi * (ffi + inh.FBi)
 	inh.GiOrig = inh.Gi

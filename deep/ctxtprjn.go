@@ -102,9 +102,9 @@ func (pj *CTCtxtPrjn) RecvGInc() {
 func (pj *CTCtxtPrjn) SendCtxtGe(si int, dburst float32) {
 	scdb := dburst * pj.GScale
 	nc := pj.SConN[si]
-	st := pj.SConIdxSt[si]
+	st := pj.SConIndexSt[si]
 	syns := pj.Syns[st : st+nc]
-	scons := pj.SConIdx[st : st+nc]
+	scons := pj.SConIndex[st : st+nc]
 	for ci := range syns {
 		ri := scons[ci]
 		pj.CtxtGeInc[ri] += scdb * syns[ci].Wt
@@ -142,9 +142,9 @@ func (pj *CTCtxtPrjn) DWt() {
 			sact = slay.Neurons[si].ActQ0
 		}
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 		for ci := range syns {
 			sy := &syns[ci]
 			ri := scons[ci]

@@ -138,9 +138,9 @@ func (pj *CHLPrjn) DWtCHL() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 		snActM := pj.CHL.MinusAct(sn.ActM, sn.ActQ1)
 
 		savgCor := pj.SAvgCor(slay)

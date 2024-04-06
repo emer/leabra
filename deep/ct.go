@@ -131,11 +131,11 @@ func (ly *CTLayer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *CTLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
+func (ly *CTLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.TopoInhibLayer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -150,13 +150,13 @@ func (ly *CTLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CTLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
+func (ly *CTLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := ly.TopoInhibLayer.UnitVarNum()
-	if varIdx < 0 || varIdx > nn { // nn = CtxtGes
+	if varIndex < 0 || varIndex > nn { // nn = CtxtGes
 		return mat32.NaN()
 	}
-	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx, di)
+	if varIndex < nn {
+		return ly.TopoInhibLayer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()

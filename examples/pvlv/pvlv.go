@@ -62,7 +62,7 @@ func guirun(ss *Sim) {
 // MonitorVal is similar to the Neuron field mechanism, but allows us to implement monitors for arbitrary
 // quanities without messing with fields that are intrinsic to the workings of our model.
 type MonitorVal interface {
-	GetMonitorVal([]string) float64
+	GetMonitorValue([]string) float64
 }
 
 // LogPrec is precision for saving float values in logs
@@ -128,7 +128,7 @@ type Sim struct {
 	TestMode bool `inactive:"+"`
 
 	// time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented
-	CycleLogUpdt leabra.TimeScales
+	CycleLogUpdate leabra.TimeScales
 
 	// turn this OFF to see cycle-level updating
 	NetTimesCycleQtr             bool
@@ -165,10 +165,10 @@ type Sim struct {
 	ViewOn bool
 
 	// at what time scale to update the display during training?  Anything longer than TrialGp updates at TrialGp in this model
-	TrainUpdt leabra.TimeScales
+	TrainUpdate leabra.TimeScales
 
 	// at what time scale to update the display during testing?  Anything longer than TrialGp updates at TrialGp in this model
-	TestUpdt leabra.TimeScales
+	TestUpdate leabra.TimeScales
 
 	// names of layers to record activations etc of during testing
 	TstRecLays []string `view:"-"`
@@ -261,7 +261,7 @@ type Sim struct {
 	RunFile *os.File `view:"-"`
 
 	// for holding layer values
-	ValsTsrs map[string]*etensor.Float32 `view:"-"`
+	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
 
 	// if true, print message for all params that are set
 	LogSetParams bool `view:"-"`
@@ -340,9 +340,9 @@ func (ss *Sim) Defaults() {
 	if err != nil {
 		panic(err)
 	}
-	ss.TrainUpdt = leabra.AlphaCycle
-	ss.TestUpdt = leabra.AlphaCycle
-	ss.CycleLogUpdt = leabra.Quarter
+	ss.TrainUpdate = leabra.AlphaCycle
+	ss.TestUpdate = leabra.AlphaCycle
+	ss.CycleLogUpdate = leabra.Quarter
 	ss.NetTimesCycleQtr = true
 	ss.TrialAnalysisTimeLogInterval = 1
 	ss.TrialAnalUpdateCmpGraphs = true
@@ -358,9 +358,9 @@ func (ss *Sim) MaybeUpdate(train, exact bool, checkTS leabra.TimeScales) {
 	}
 	var ts leabra.TimeScales
 	if train {
-		ts = ss.TrainUpdt
+		ts = ss.TrainUpdate
 	} else {
-		ts = ss.TestUpdt
+		ts = ss.TestUpdate
 	}
 	if (exact && ts == checkTS) || ts <= checkTS {
 		ss.UpdateView()
@@ -671,7 +671,7 @@ func (ss *Sim) ConfigTrialTypeBlockFirstPlot(plt *eplot.Plot2D, dt *etable.Table
 		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act", "CElAcqNegD2_US0_act"} {
 		plt.SetColParams(colNm, eplot.Off, eplot.FixMin, -1, eplot.FixMax, 1)
 		cp := plt.ColParams(colNm)
-		cp.TensorIdx = -1
+		cp.TensorIndex = -1
 		if colNm == "VTAp_act" {
 			cp.On = eplot.On
 		}
@@ -763,7 +763,7 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 		}
 		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
 	})
-	cb.SetCurVal(ss.RunParamsNm)
+	cb.SetCurValue(ss.RunParamsNm)
 
 	eplot.PlotColorNames = []string{ // these are set to give a good set of colors in the TrialTypeData plot
 		"yellow", "black", "blue", "red", "ForestGreen", "lightgreen", "purple", "orange", "brown", "navy",
@@ -796,7 +796,7 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 	split.SetSplits(.3, .7)
 
 	tbar.AddAction(gi.ActOpts{Label: "Init", Icon: "update", Tooltip: "Block init code. Global variables retain current values unless reset in the init code", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(!ss.IsRunning)
+		act.SetActiveStateUpdate(!ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.Stepper.Stop()
 		if !ss.InitHasRun {
@@ -826,7 +826,7 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 
 	tbar.AddAction(gi.ActOpts{Label: "Run", Icon: "run", Tooltip: "Run the currently selected scenario. If not initialized, will run initialization first",
 		UpdateFunc: func(act *gi.Action) {
-			act.SetActiveStateUpdt(!ss.IsRunning)
+			act.SetActiveStateUpdate(!ss.IsRunning)
 		}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.IsRunning = true
 		tbar.UpdateActions()
@@ -849,7 +849,7 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 	})
 
 	tbar.AddAction(gi.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Stop the current program at its next natural stopping point (i.e., cleanly stopping when appropriate chunks of computation have completed).", UpdateFunc: func(act *gi.Action) {
-		act.SetActiveStateUpdt(ss.IsRunning)
+		act.SetActiveStateUpdate(ss.IsRunning)
 	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		fmt.Println("STOP!")
 		ss.Stepper.Pause()
@@ -865,49 +865,49 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 
 		tbar.AddAction(gi.ActOpts{Label: "Cycle", Icon: "step-fwd", Tooltip: "Step to the end of a Cycle.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(Cycle, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Quarter", Icon: "step-fwd", Tooltip: "Step to the end of a Quarter.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(Quarter, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Minus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Minus Phase.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(AlphaMinus, tbar)
 		})
 
 		//tbar.AddAction(gi.ActOpts{Label: "Plus Phase", Icon: "step-fwd", Tooltip: "Step to the end of the Plus Phase.",
 		//	UpdateFunc: func(act *gi.Action) {
-		//		act.SetActiveStateUpdt(!ss.IsRunning)
+		//		act.SetActiveStateUpdate(!ss.IsRunning)
 		//	}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 		//	ss.RunSteps(AlphaPlus, tbar)
 		//})
 
 		tbar.AddAction(gi.ActOpts{Label: "Alpha Cycle", Icon: "step-fwd", Tooltip: "Step to the end of an Alpha Cycle.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(AlphaFull, tbar)
 		})
 
 		tbar.AddAction(gi.ActOpts{Label: "Selected grain -->", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(ss.StepGrain, tbar)
 		})
 	} else {
 		tbar.AddAction(gi.ActOpts{Label: "StepRun", Icon: "fast-fwd", Tooltip: "Step by the selected granularity.",
 			UpdateFunc: func(act *gi.Action) {
-				act.SetActiveStateUpdt(!ss.IsRunning)
+				act.SetActiveStateUpdate(!ss.IsRunning)
 			}}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
 			ss.RunSteps(ss.StepGrain, tbar)
 		})
@@ -929,7 +929,7 @@ func (ss *Sim) ConfigGUI() *gi.Window {
 	sg.ComboSig.Connect(tbar, func(recv, send ki.Ki, sig int64, data interface{}) {
 		ss.StepGrain = StepGrain(sig)
 	})
-	sg.SetCurVal(ss.StepGrain.String())
+	sg.SetCurValue(ss.StepGrain.String())
 
 	nLabel := gi.AddNewLabel(tbar, "n", "StepN:")
 	nLabel.SetProp("font-size", "large")
@@ -1129,15 +1129,15 @@ func (ss *Sim) ParamsName() string {
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
-// ValsTsr gets value tensor of given name, creating if not yet made
-func (ss *Sim) ValsTsr(name string) *etensor.Float32 {
-	if ss.ValsTsrs == nil {
-		ss.ValsTsrs = make(map[string]*etensor.Float32)
+// ValuesTsr gets value tensor of given name, creating if not yet made
+func (ss *Sim) ValuesTsr(name string) *etensor.Float32 {
+	if ss.ValuesTsrs == nil {
+		ss.ValuesTsrs = make(map[string]*etensor.Float32)
 	}
-	tsr, ok := ss.ValsTsrs[name]
+	tsr, ok := ss.ValuesTsrs[name]
 	if !ok {
 		tsr = &etensor.Float32{}
-		ss.ValsTsrs[name] = tsr
+		ss.ValuesTsrs[name] = tsr
 	}
 	return tsr
 }
@@ -1305,7 +1305,7 @@ func (ss *Sim) ExecuteRun() bool {
 		if allDone || ss.Stopped() {
 			break
 		}
-		if ss.ViewOn && ss.TrainUpdt >= leabra.Run {
+		if ss.ViewOn && ss.TrainUpdate >= leabra.Run {
 			ss.UpdateView()
 		}
 		ss.Stepper.StepPoint(int(Condition))
@@ -1520,9 +1520,9 @@ func (ss *Sim) LogTrialTypeData() {
 			if parts[1] != "act" {
 				// ??
 			}
-			tsr := ss.ValsTsr(lnm)
+			tsr := ss.ValuesTsr(lnm)
 			ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-			err := ly.UnitValsTensor(tsr, "Act") // get minus phase act
+			err := ly.UnitValuesTensor(tsr, "Act") // get minus phase act
 			if err == nil {
 				dt.SetCellTensor(colNm, row, tsr)
 			} else {
@@ -1547,23 +1547,23 @@ func (ss *Sim) LogTrialTypeData() {
 	ss.TrialTypeDataPlot.GoUpdate()
 }
 
-func GetLeabraMonitorVal(ly *leabra.Layer, data []string) float64 {
+func GetLeabraMonitorValue(ly *leabra.Layer, data []string) float64 {
 	var val float32
 	var err error
-	var varIdx int
+	var varIndex int
 	valType := data[0]
-	varIdx, err = pvlv.NeuronVarIdxByName(valType)
+	varIndex, err = pvlv.NeuronVarIndexByName(valType)
 	if err != nil {
-		varIdx, err = leabra.NeuronVarIdxByName(valType)
+		varIndex, err = leabra.NeuronVarIndexByName(valType)
 		if err != nil {
 			fmt.Printf("index lookup failed for %v_%v_%v_%v: \n", ly.Name(), data[1], valType, err)
 		}
 	}
-	unitIdx, err := strconv.Atoi(data[1])
+	unitIndex, err := strconv.Atoi(data[1])
 	if err != nil {
 		fmt.Printf("string to int conversion failed for %v_%v_%v%v: \n", ly.Name(), data[1], valType, err)
 	}
-	val = ly.UnitVal1D(varIdx, unitIdx)
+	val = ly.UnitVal1D(varIndex, unitIndex)
 	return float64(val)
 }
 
@@ -1593,16 +1593,16 @@ func (ss *Sim) LogCycleData() {
 			ly := ss.Net.LayerByName(lnm)
 			switch ly.(type) {
 			case *leabra.Layer:
-				val = GetLeabraMonitorVal(ly.(*leabra.Layer), monData)
+				val = GetLeabraMonitorValue(ly.(*leabra.Layer), monData)
 			default:
-				val = ly.(MonitorVal).GetMonitorVal(monData)
+				val = ly.(MonitorVal).GetMonitorValue(monData)
 			}
 			dt.SetCellFloat(colNm, row, val)
 		}
 	}
 	label := fmt.Sprintf("%20s: %3d", ev.AlphaTrialName, row)
 	ss.CycleDataPlot.Params.XAxisLabel = label
-	if ss.CycleLogUpdt == leabra.Quarter || row%25 == 0 {
+	if ss.CycleLogUpdate == leabra.Quarter || row%25 == 0 {
 		ss.CycleDataPlot.GoUpdate()
 	}
 }

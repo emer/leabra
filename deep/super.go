@@ -50,7 +50,7 @@ func (at *TRCAttnParams) Defaults() {
 }
 
 // ModVal returns the attn-modulated value
-func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
+func (at *TRCAttnParams) ModValue(val float32, attn float32) float32 {
 	return val * (at.Min + (1-at.Min)*attn)
 }
 
@@ -152,7 +152,7 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 		snr := &ly.SuperNeurs[ni]
 		gpavg := trc.Pools[nrn.SubPool].Inhib.Act.Avg // note: requires same shape, validated
 		snr.Attn = gpavg / laymax
-		nrn.Act = ly.Attn.ModVal(nrn.Act, snr.Attn)
+		nrn.Act = ly.Attn.ModValue(nrn.Act, snr.Attn)
 	}
 }
 
@@ -281,15 +281,15 @@ func (ly *SuperLayer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
+func (ly *SuperLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.TopoInhibLayer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = SuperNeuronVarIdxByName(varNm)
+	vidx, err = SuperNeuronVarIndexByName(varNm)
 	if err != nil {
 		return vidx, err
 	}
@@ -301,23 +301,23 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *SuperLayer) UnitVal1D(varIdx int, idx int, di int) float32 {
-	if varIdx < 0 {
+func (ly *SuperLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
 		return mat32.NaN()
 	}
 	nn := ly.TopoInhibLayer.UnitVarNum()
-	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx, di)
+	if varIndex < nn {
+		return ly.TopoInhibLayer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return mat32.NaN()
 	}
-	varIdx -= nn
-	if varIdx >= len(SuperNeuronVars) {
+	varIndex -= nn
+	if varIndex >= len(SuperNeuronVars) {
 		return mat32.NaN()
 	}
 	snr := &ly.SuperNeurs[idx]
-	return snr.VarByIdx(varIdx)
+	return snr.VarByIndex(varIndex)
 }
 
 // UnitVarNum returns the number of Neuron-level variables
