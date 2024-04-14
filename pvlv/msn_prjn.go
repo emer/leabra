@@ -9,7 +9,7 @@ import (
 	_ "fmt"
 	"reflect"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -132,7 +132,7 @@ func (pj *MSNPrjn) DWt() {
 			rnAct := rn.ActP
 			//rnAct := rn.Act
 			effModLevel := mn.ModNet
-			effRnAct := mat32.Max(rnAct, mat32.Min(effModLevel, pj.MaxVSActMod))
+			effRnAct := math32.Max(rnAct, math32.Min(effModLevel, pj.MaxVSActMod))
 			rawDWt := float32(0)
 			switch pj.LearningRule {
 			case TraceNoThalVS:
@@ -146,7 +146,7 @@ func (pj *MSNPrjn) DWt() {
 				rawDWt = daLrn * tr // multiplied by learning rate below
 
 				newNTr := pj.Trace.MSNActLrnFactor(effRnAct) * snAct
-				decay := mat32.Abs(newNTr) // decay is function of new trace
+				decay := math32.Abs(newNTr) // decay is function of new trace
 				if decay > 1 {
 					decay = 1
 				}
@@ -238,7 +238,7 @@ func (tr *TraceSyn) SetVarByName(varNm string, val float32) error {
 func (pj *MSNPrjn) SynValue(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.SynVarIndex(varNm)
 	if err != nil {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	synIndex := pj.SynIndex(sidx, ridx)
 	return pj.LeabraPrj.SynVal1D(vidx, synIndex)
@@ -269,14 +269,14 @@ func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MSNPrjn) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynapseVarsAll) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIndex < nn {
 		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	sy := &pj.TrSyns[synIndex]
@@ -291,7 +291,7 @@ func (ly *MSNLayer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.L
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := mat32.NaN()
+	nan := math32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}
@@ -324,7 +324,7 @@ func (ly *MSNLayer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.L
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := mat32.NaN()
+	nan := math32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}

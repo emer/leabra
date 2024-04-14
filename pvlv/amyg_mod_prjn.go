@@ -5,7 +5,7 @@
 package pvlv
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -90,8 +90,8 @@ func (pj *AmygModPrjn) InitWts() {
 // given send and recv layers according to Gaussian Sigma and MaxWt.
 func (pj *AmygModPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 	scale := float32(pj.WtInit.Gen(-1))
-	scale = mat32.Max(pj.SetScaleMin, scale)
-	scale = mat32.Min(pj.SetScaleMax, scale)
+	scale = math32.Max(pj.SetScaleMin, scale)
+	scale = math32.Min(pj.SetScaleMax, scale)
 	return scale
 }
 
@@ -135,7 +135,7 @@ func (pj *AmygModPrjn) DWt() {
 			}
 			// filter any tiny spurious da signals on t2 & t4 trials - best for ext guys since
 			// they have zero dalr_base value
-			if mat32.Abs(mn.DA) < pj.DALrnThr {
+			if math32.Abs(mn.DA) < pj.DALrnThr {
 				mn.DA = 0
 			}
 
@@ -152,12 +152,12 @@ func (pj *AmygModPrjn) DWt() {
 			}
 
 			rnActDelta := mn.ModAct - rn.ActQ0
-			if mat32.Abs(rnActDelta) < pj.ActDeltaThr {
+			if math32.Abs(rnActDelta) < pj.ActDeltaThr {
 				rnActDelta = 0
 			}
 			delta := lRateEff * snAct * rnActDelta
 			// dopamine signal further modulates learning
-			daLRate := pj.DALRBase + pj.DALRGain*mat32.Abs(mn.DA)
+			daLRate := pj.DALRBase + pj.DALRGain*math32.Abs(mn.DA)
 			sy.DWt += daLRate * delta
 		}
 	}

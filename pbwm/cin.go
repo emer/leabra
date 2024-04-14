@@ -7,7 +7,7 @@ package pbwm
 import (
 	"fmt"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/rl"
@@ -65,8 +65,8 @@ func (ly *CINLayer) MaxAbsRew() float32 {
 			continue
 		}
 		ly := lyi.(leabra.LeabraLayer).AsLeabra()
-		act := mat32.Abs(ly.Pools[0].Inhib.Act.Max)
-		mx = mat32.Max(mx, act)
+		act := math32.Abs(ly.Pools[0].Inhib.Act.Max)
+		mx = math32.Max(mx, act)
 	}
 	return mx
 }
@@ -117,13 +117,13 @@ func (ly *CINLayer) UnitVarIndex(varNm string) (int, error) {
 func (ly *CINLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIndex < 0 || varIndex > nn { // nn = ACh
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < nn {
 		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	return ly.ACh
 }

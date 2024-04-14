@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -125,7 +125,7 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	np := len(ly.Pools)
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
-		laymax = mat32.Max(laymax, pl.Inhib.Act.Avg)
+		laymax = math32.Max(laymax, pl.Inhib.Act.Avg)
 	}
 	return laymax
 }
@@ -194,7 +194,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 	actMax := lpl.Inhib.Act.Max
 	actAvg := lpl.Inhib.Act.Avg
 	thr := actAvg + ly.Burst.ThrRel*(actMax-actAvg)
-	thr = mat32.Max(thr, ly.Burst.ThrAbs)
+	thr = math32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -303,18 +303,18 @@ func (ly *SuperLayer) UnitVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *SuperLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if varIndex < 0 {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIndex < nn {
 		return ly.TopoInhibLayer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	if varIndex >= len(SuperNeuronVars) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	snr := &ly.SuperNeurs[idx]
 	return snr.VarByIndex(varIndex)

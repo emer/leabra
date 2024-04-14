@@ -9,7 +9,7 @@ import (
 	"log"
 	"unsafe"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -84,7 +84,7 @@ func (mnr *ModNeuron) VarByName(varNm string) (float32, error) {
 	var err error
 	i, err = NeuronVarIndexByName(varNm)
 	if err != nil {
-		return mat32.NaN(), err
+		return math32.NaN(), err
 	}
 	return mnr.VarByIndex(i), nil
 }

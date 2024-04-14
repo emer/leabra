@@ -7,7 +7,7 @@ package glong
 //go:generate core generate
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -187,7 +187,7 @@ func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		gnr.AlphaMax = mat32.Max(gnr.AlphaMax, nrn.Act)
+		gnr.AlphaMax = math32.Max(gnr.AlphaMax, nrn.Act)
 	}
 }
 
@@ -212,7 +212,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		mx = mat32.Max(gnr.AlphaMax, mx)
+		mx = math32.Max(gnr.AlphaMax, mx)
 	}
 	return mx
 }
@@ -252,18 +252,18 @@ func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if varIndex < 0 {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIndex < nn {
 		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	if varIndex > len(NeuronVars) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	gnr := &ly.GlNeurs[idx]
 	return gnr.VarByIndex(varIndex)

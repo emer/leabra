@@ -5,7 +5,7 @@
 package deep
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/efuns"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -97,7 +97,7 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 	np := len(ly.Pools)
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
-		laymax = mat32.Max(laymax, pl.Inhib.GiOrig)
+		laymax = math32.Max(laymax, pl.Inhib.GiOrig)
 	}
 
 	laymax *= ly.TopoInhib.LayGi
@@ -107,15 +107,15 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 			max := laymax
 			for iy := 1; iy <= wd; iy++ {
 				for ix := 1; ix <= wd; ix++ {
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px+ix, min(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px+ix, min(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px-ix, min(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px-ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py+iy, px+ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py-iy, px+ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py+iy, px-ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py-iy, px-ix, min(iy-1, ix-1)))
 				}
 			}
 			pi := py*pxn + px
 			pl := &ly.Pools[pi+1]
-			pl.Inhib.Gi = mat32.Max(max, pl.Inhib.Gi)
+			pl.Inhib.Gi = math32.Max(max, pl.Inhib.Gi)
 		}
 	}
 }

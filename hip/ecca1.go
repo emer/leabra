@@ -5,7 +5,7 @@
 package hip
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -61,7 +61,7 @@ func (pj *EcCa1Prjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

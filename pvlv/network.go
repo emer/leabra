@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -17,7 +17,7 @@ func TotalAct(ly emer.Layer) float32 {
 	lly := ly.(leabra.LeabraLayer).AsLeabra()
 	pl := lly.Pools[0].Inhib.Act
 	res := pl.Avg * float32(pl.N)
-	if mat32.IsNaN(res) {
+	if math32.IsNaN(res) {
 		fmt.Println("NaN in TotalAct")
 	}
 	return res

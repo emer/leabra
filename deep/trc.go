@@ -9,7 +9,7 @@ import (
 	"log"
 	"math"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -257,7 +257,7 @@ func (ly *TRCLayer) SetDriverActs() {
 		}
 		sly, issuper := dly.LeabraLay.(*SuperLayer)
 		drvMax := dly.Pools[0].Inhib.Act.Max
-		drvInhib := mat32.Min(1, drvMax/ly.TRC.MaxInhib)
+		drvInhib := math32.Min(1, drvMax/ly.TRC.MaxInhib)
 
 		if dly.Is2D() {
 			if ly.Is2D() {
@@ -293,7 +293,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = mat32.Max(max, act)
+							max = math32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -317,7 +317,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = mat32.Max(max, act)
+							max = math32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -356,7 +356,7 @@ func (ly *TRCLayer) SetDriverActs() {
 									pi := (dpy*dpxn + dpx)
 									dpni := pi*dnun + dni
 									act := DriveAct(dpni, dly, sly, issuper)
-									max = mat32.Max(max, act)
+									max = math32.Max(max, act)
 									pmax := dly.Pools[1+pi].Inhib.Act.Max
 									if pmax > 0.5 {
 										avg += act

@@ -5,7 +5,7 @@
 package glong
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 )
 
 // GABABParams control the GABAB dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
@@ -44,21 +44,21 @@ func (gp *GABABParams) Defaults() {
 }
 
 func (gp *GABABParams) Update() {
-	gp.TauFact = mat32.Pow(gp.DecayTau/gp.RiseTau, gp.RiseTau/(gp.DecayTau-gp.RiseTau))
-	gp.MaxTime = ((gp.RiseTau * gp.DecayTau) / (gp.DecayTau - gp.RiseTau)) * mat32.Log(gp.DecayTau/gp.RiseTau)
+	gp.TauFact = math32.Pow(gp.DecayTau/gp.RiseTau, gp.RiseTau/(gp.DecayTau-gp.RiseTau))
+	gp.MaxTime = ((gp.RiseTau * gp.DecayTau) / (gp.DecayTau - gp.RiseTau)) * math32.Log(gp.DecayTau/gp.RiseTau)
 }
 
 // GFmV returns the GABA-B conductance as a function of normalized membrane potential
 func (gp *GABABParams) GFmV(v float32) float32 {
-	vbio := mat32.Max(v*100-100, -90) // critical to not go past -90
-	return 1 / (1 + mat32.FastExp(0.1*((vbio+90)+10)))
+	vbio := math32.Max(v*100-100, -90) // critical to not go past -90
+	return 1 / (1 + math32.FastExp(0.1*((vbio+90)+10)))
 }
 
 // GFmS returns the GABA-B conductance as a function of GABA spiking rate,
 // based on normalized spiking factor (i.e., Gi from FFFB etc)
 func (gp *GABABParams) GFmS(s float32) float32 {
 	ss := s * gp.Smult // convert to spikes
-	return 1 / (1 + mat32.FastExp(-(ss-7.1)/1.4))
+	return 1 / (1 + math32.FastExp(-(ss-7.1)/1.4))
 }
 
 // BiExp computes bi-exponential update, returns dG and dX deltas to add to g and x

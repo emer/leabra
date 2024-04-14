@@ -7,7 +7,7 @@ package pbwm
 import (
 	"fmt"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -96,7 +96,7 @@ func (ly *Layer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	case SE:
 		return ly.SE
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 // UnitVarIndex returns the index of given variable within the Neuron,
@@ -122,14 +122,14 @@ func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if varIndex < 0 {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
 	if varIndex < nn {
 		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	return ly.LeabraLay.(PBWMLayer).UnitValueByIndex(NeurVars(varIndex), idx)

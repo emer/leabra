@@ -7,7 +7,7 @@ package pcore
 import (
 	"fmt"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/glong"
 )
 
@@ -47,13 +47,13 @@ func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
 func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := ly.AlphaMaxLayer.UnitVarNum()
 	if varIndex < 0 || varIndex > nn { // nn = DA
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < nn {
 		return ly.AlphaMaxLayer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	return ly.DA
 }

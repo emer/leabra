@@ -7,7 +7,7 @@ package glong
 import (
 	"fmt"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -70,7 +70,7 @@ func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 			continue
 		}
 		max := &ly.AlphaMaxs[ni]
-		*max = mat32.Max(*max, nrn.Act)
+		*max = math32.Max(*max, nrn.Act)
 	}
 }
 
@@ -94,7 +94,7 @@ func (ly *AlphaMaxLayer) MaxAlphaMax() float32 {
 			continue
 		}
 		amx := ly.AlphaMaxs[ni]
-		mx = mat32.Max(amx, mx)
+		mx = math32.Max(amx, mx)
 	}
 	return mx
 }
@@ -121,13 +121,13 @@ func (ly *AlphaMaxLayer) UnitVarIndex(varNm string) (int, error) {
 func (ly *AlphaMaxLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
 	if varIndex < 0 || varIndex > nn { // nn = AlphaMax
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < nn {
 		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	return ly.AlphaMaxs[idx]
 }

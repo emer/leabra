@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/leabra"
@@ -278,7 +278,7 @@ func (ly *ModLayer) UnitValueByIndex(vidx ModNeuronVar, idx int) float32 {
 	case PVAct:
 		return ly.ModNeurs[idx].PVAct
 	default:
-		return mat32.NaN()
+		return math32.NaN()
 	}
 }
 
@@ -304,10 +304,10 @@ func (ly *ModLayer) UnitVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *ModLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < 0 || varIndex >= len(ModNeuronVarsAll) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := len(leabra.NeuronVars)
 	if varIndex < nn {
@@ -417,7 +417,7 @@ func (ly *ModLayer) SendMods(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mpl := &ly.ModPools[nrn.SubPool]
-		if mat32.Abs(nrn.Act) > ly.Act.OptThresh.Send {
+		if math32.Abs(nrn.Act) > ly.Act.OptThresh.Send {
 			mpl.ModSent += nrn.Act
 		}
 	}
@@ -468,9 +468,9 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 				}
 			} else {
 				newLrn := mnr.ModNet / plMax
-				if mat32.IsInf(newLrn, 1) || mat32.IsNaN(newLrn) {
+				if math32.IsInf(newLrn, 1) || math32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
-				} else if mat32.IsInf(newLrn, -1) {
+				} else if math32.IsInf(newLrn, -1) {
 					mnr.ModLrn = -1
 				} else {
 					mnr.ModLrn = newLrn
@@ -588,7 +588,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		}
 		mpl.ModNetStats.CalcAvg()
 		if mpl.ModNetStats.Max == 0 { // HACK!!!
-			mpl.ModNetStats.Max = mat32.SmallestNonzeroFloat32
+			mpl.ModNetStats.Max = math32.SmallestNonzeroFloat32
 		}
 	}
 }

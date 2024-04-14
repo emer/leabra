@@ -16,9 +16,9 @@ import (
 	"strings"
 
 	"cogentcore.org/core/enums"
-	"cogentcore.org/core/glop/indent"
+	"cogentcore.org/core/gox/indent"
 	"cogentcore.org/core/ki"
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/params"
@@ -139,10 +139,10 @@ func (ly *Layer) UnitVarNum() int {
 // so it is the only one that needs to be updated for derived layer types.
 func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < 0 || varIndex >= ly.UnitVarNum() {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nrn := &ly.Neurons[idx]
 	return nrn.VarByIndex(varIndex)
@@ -160,7 +160,7 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 	}
 	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
-		nan := mat32.NaN()
+		nan := math32.NaN()
 		for i := range ly.Neurons {
 			(*vals)[i] = nan
 		}
@@ -191,7 +191,7 @@ func (ly *Layer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) erro
 	}
 	for i := range ly.Neurons {
 		v := ly.LeabraLay.UnitVal1D(vidx, i, di)
-		if mat32.IsNaN(v) {
+		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
 			tsr.SetFloat1D(i, float64(v))
@@ -233,7 +233,7 @@ func (ly *Layer) UnitValuesRepTensor(tsr etensor.Tensor, varNm string, di int) e
 	}
 	for i, ui := range ly.RepIxs {
 		v := ly.LeabraLay.UnitVal1D(vidx, ui, di)
-		if mat32.IsNaN(v) {
+		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
 			tsr.SetFloat1D(i, float64(v))
@@ -247,7 +247,7 @@ func (ly *Layer) UnitValuesRepTensor(tsr etensor.Tensor, varNm string, di int) e
 func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
 	if err != nil {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	fidx := ly.Shp.Offset(idx)
 	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
@@ -261,7 +261,7 @@ func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 // useful when there are multiple projections between two layers.
 // Returns error on invalid var name.
 // If the receiving neuron is not connected to the given sending layer or neuron
-// then the value is set to mat32.NaN().
+// then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
 func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, prjnType string) error {
 	var err error
@@ -271,7 +271,7 @@ func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Laye
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := mat32.NaN()
+	nan := math32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}
@@ -307,7 +307,7 @@ func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Laye
 // useful when there are multiple projections between two layers.
 // Returns error on invalid var name.
 // If the sending neuron is not connected to the given receiving layer or neuron
-// then the value is set to mat32.NaN().
+// then the value is set to math32.NaN().
 // Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
 func (ly *Layer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, prjnType string) error {
 	var err error
@@ -317,7 +317,7 @@ func (ly *Layer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Laye
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	nan := mat32.NaN()
+	nan := math32.NaN()
 	for i := 0; i < nn; i++ {
 		(*vals)[i] = nan
 	}
@@ -1061,7 +1061,7 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
-			if mat32.Abs(delta) > ly.Act.OptThresh.Delta {
+			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
 				for _, sp := range ly.SndPrjns {
 					if sp.IsOff() {
 						continue
@@ -1152,9 +1152,9 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 		ly.Inhib.Pool.Inhib(&pl.Inhib)
 		if lyInhib {
 			pl.Inhib.LayGi = lpl.Inhib.Gi
-			pl.Inhib.Gi = mat32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
+			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
 		} else {
-			lpl.Inhib.Gi = mat32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
+			lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
 		}
 	}
 	if !lyInhib {
@@ -1275,7 +1275,7 @@ func (ly *Layer) CosDiffFmActs() {
 		ssp += ap * ap
 	}
 
-	dist := mat32.Sqrt(ssm * ssp)
+	dist := math32.Sqrt(ssm * ssp)
 	if dist != 0 {
 		cosv /= dist
 	}
@@ -1396,7 +1396,7 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 		} else {
 			d = nrn.ActP - nrn.ActM
 		}
-		if mat32.Abs(d) < tol {
+		if math32.Abs(d) < tol {
 			continue
 		}
 		sse += float64(d * d)

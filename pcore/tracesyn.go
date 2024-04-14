@@ -4,7 +4,7 @@
 
 package pcore
 
-import "cogentcore.org/core/mat32"
+import "cogentcore.org/core/math32"
 
 // TraceSyn holds extra synaptic state for trace projections
 type TraceSyn struct {
@@ -24,7 +24,7 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 	case "Tr":
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 // VarByIndex returns synapse variable by index
@@ -35,7 +35,7 @@ func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
 	case 1:
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 var TraceSynVars = []string{"NTr", "Tr"}

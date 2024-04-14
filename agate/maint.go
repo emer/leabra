@@ -5,7 +5,7 @@
 package agate
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/glong"
 	"github.com/emer/leabra/v2/interinhib"
 	"github.com/emer/leabra/v2/leabra"
@@ -51,7 +51,7 @@ func (ly *MaintLayer) Defaults() {
 func (ly *MaintLayer) InhibFmGeAct(ltime *leabra.Time) {
 	lpl := &ly.Pools[0]
 	mxact := ly.InterInhibMaxAct(ltime)
-	lpl.Inhib.Act.Avg = mat32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
+	lpl.Inhib.Act.Avg = math32.Max(ly.InterInhib.Gi*mxact, lpl.Inhib.Act.Avg)
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
 	ly.PoolInhibFmGeAct(ltime)
 	ly.InhibFmPool(ltime)

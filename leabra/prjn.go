@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"cogentcore.org/core/glop/indent"
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/gox/indent"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
@@ -139,10 +139,10 @@ func (pj *Prjn) Syn1DNum() int {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *Prjn) SynVal1D(varIndex int, synIndex int) float32 {
 	if synIndex < 0 || synIndex >= len(pj.Syns) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex < 0 || varIndex >= pj.SynVarNum() {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	sy := &pj.Syns[synIndex]
 	return sy.VarByIndex(varIndex)
@@ -171,11 +171,11 @@ func (pj *Prjn) SynValues(vals *[]float32, varNm string) error {
 
 // SynVal returns value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes).
-// Returns mat32.NaN() for access errors (see SynValTry for error message)
+// Returns math32.NaN() for access errors (see SynValTry for error message)
 func (pj *Prjn) SynValue(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	synIndex := pj.SynIndex(sidx, ridx)
 	return pj.LeabraPrj.SynVal1D(vidx, synIndex)
@@ -596,7 +596,7 @@ func (pj *Prjn) DWt() {
 			dwt := bcm + err
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

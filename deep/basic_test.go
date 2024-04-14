@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
@@ -114,7 +114,7 @@ func TestInPats(t *testing.T) {
 
 func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 	for i := range out {
-		dif := mat32.Abs(out[i] - cor[i])
+		dif := math32.Abs(out[i] - cor[i])
 		if dif > difTol { // allow for small numerical diffs
 			t.Errorf("%v err: out: %v, cor: %v, dif: %v\n", msg, out[i], cor[i], dif)
 		}

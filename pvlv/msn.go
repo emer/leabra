@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -275,7 +275,7 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 				mnr.ModLevel = 1
 			} else {
 				newLrn := mnr.ModNet / plMax
-				if mat32.IsInf(newLrn, 0) || mat32.IsNaN(newLrn) {
+				if math32.IsInf(newLrn, 0) || math32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
 				} else {
 					mnr.ModLrn = newLrn
@@ -291,9 +291,9 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 				}
 			} else {
 				newLrn := mnr.ModNet / plMax
-				if mat32.IsInf(newLrn, 1) || mat32.IsNaN(newLrn) {
+				if math32.IsInf(newLrn, 1) || math32.IsNaN(newLrn) {
 					mnr.ModLrn = 1
-				} else if mat32.IsInf(newLrn, -1) {
+				} else if math32.IsInf(newLrn, -1) {
 					mnr.ModLrn = -1
 				} else {
 					mnr.ModLrn = newLrn
@@ -315,7 +315,7 @@ func (ly *MSNLayer) InhibFmGeAct(ltime *leabra.Time) {
 			for pi := 1; pi < np; pi++ {
 				pl := &ly.Pools[pi]
 				ly.Inhib.Pool.Inhib(&pl.Inhib)
-				pl.Inhib.Gi = mat32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
+				pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi)
 				ly.PoolDelayedInhib(pl)
 			}
 		} else {

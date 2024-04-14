@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/c2h5oh/datasize"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
@@ -539,7 +539,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 		avg := avgFunc(thds)
 		dev := float32(0)
 		for i := range thds {
-			dev += mat32.Abs(float32(thds[i].Tot) - avg)
+			dev += math32.Abs(float32(thds[i].Tot) - avg)
 		}
 		return float32(dev) / float32(len(thds))
 	}

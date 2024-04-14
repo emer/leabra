@@ -19,7 +19,7 @@ Layer InhibFmGeAct method like this:
 package interinhib
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -50,7 +50,7 @@ func (il *InterInhib) Inhib(ly *leabra.Layer) {
 	if il.Add {
 		lpl.Inhib.Gi += ogi
 	} else {
-		lpl.Inhib.Gi = mat32.Max(ogi, lpl.Inhib.Gi)
+		lpl.Inhib.Gi = math32.Max(ogi, lpl.Inhib.Gi)
 	}
 }
 
@@ -68,7 +68,7 @@ func (il *InterInhib) OtherGi(net emer.Network) float32 {
 		if il.Add {
 			gi += ogi
 		} else {
-			gi = mat32.Max(gi, ogi)
+			gi = math32.Max(gi, ogi)
 		}
 	}
 	return gi

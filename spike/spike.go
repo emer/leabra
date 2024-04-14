@@ -5,7 +5,7 @@
 package spike
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -54,7 +54,7 @@ func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
 		// add spike current if relevant
 		if sk.Spike.Exp {
 			inet2 += sk.Gbar.L * sk.Spike.ExpSlope *
-				mat32.Exp((vmEff-sk.XX1.Thr)/sk.Spike.ExpSlope)
+				math32.Exp((vmEff-sk.XX1.Thr)/sk.Spike.ExpSlope)
 		}
 		nwVm += sk.Dt.VmDt * inet2
 		nrn.Inet = inet2

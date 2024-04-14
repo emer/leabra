@@ -7,7 +7,7 @@ package pbwm
 import (
 	"fmt"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -29,7 +29,7 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 	case "Tr":
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 // VarByIndex returns synapse variable by index
@@ -40,7 +40,7 @@ func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
 	case 1:
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 var TraceSynVars = []string{"NTr", "Tr"}
@@ -164,7 +164,7 @@ func (pj *MatrixTracePrjn) DWt() {
 			daLrn := rlayi.UnitValueByIndex(DALrn, int(ri))
 			ach := rlayi.UnitValueByIndex(ACh, int(ri))
 			gateAct := rlayi.UnitValueByIndex(GateAct, int(ri))
-			achDk := mat32.Min(1, ach*pj.Trace.AChDecay)
+			achDk := math32.Min(1, ach*pj.Trace.AChDecay)
 			tr := trsy.Tr
 
 			dwt := float32(0)
@@ -185,7 +185,7 @@ func (pj *MatrixTracePrjn) DWt() {
 				ntr = -pj.Trace.NotGatedLR * newNTr // opposite sign for non-gated
 			}
 
-			decay := pj.Trace.Decay * mat32.Abs(ntr) // decay is function of new trace
+			decay := pj.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
 			if decay > 1 {
 				decay = 1
 			}
@@ -195,7 +195,7 @@ func (pj *MatrixTracePrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
@@ -251,14 +251,14 @@ func (pj *MatrixTracePrjn) SynVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MatrixTracePrjn) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynVarsAll) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIndex < nn {
 		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	sy := &pj.TrSyns[synIndex]

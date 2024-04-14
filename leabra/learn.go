@@ -5,7 +5,7 @@
 package leabra
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 )
 
 ///////////////////////////////////////////////////////////////////////
@@ -283,7 +283,7 @@ func (al *AvgLParams) ErrModFmLayErr(layCosDiffAvg float32) float32 {
 	if !al.ErrMod {
 		return mod
 	}
-	mod *= mat32.Max(layCosDiffAvg, al.ModMin)
+	mod *= math32.Max(layCosDiffAvg, al.ModMin)
 	return mod
 }
 
@@ -355,7 +355,7 @@ func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
 // 	if vr <= 0 {
 // 		return 1
 // 	}
-// 	zval := (cos - avg) / mat32.Sqrt(vr) // stdev = sqrt of var
+// 	zval := (cos - avg) / math32.Sqrt(vr) // stdev = sqrt of var
 // 	// z-normal value is starting point for learning rate factor
 // 	//    if zval < lrmod_z_thr {
 // 	// 	return 0
@@ -494,7 +494,7 @@ func SigFun(w, gain, off float32) float32 {
 	if w >= 1 {
 		return 1
 	}
-	return (1 / (1 + mat32.Pow((off*(1-w))/w, gain)))
+	return (1 / (1 + math32.Pow((off*(1-w))/w, gain)))
 }
 
 // SigFun61 is the sigmoid function for value w in 0-1 range, with default gain = 6, offset = 1 params
@@ -517,7 +517,7 @@ func SigInvFun(w, gain, off float32) float32 {
 	if w >= 1 {
 		return 1
 	}
-	return 1.0 / (1.0 + mat32.Pow((1.0-w)/w, 1/gain)/off)
+	return 1.0 / (1.0 + math32.Pow((1.0-w)/w, 1/gain)/off)
 }
 
 // SigInvFun61 is the inverse of the sigmoid function, with default gain = 6, offset = 1 params
@@ -528,7 +528,7 @@ func SigInvFun61(w float32) float32 {
 	if w >= 1 {
 		return 1
 	}
-	rval := 1.0 / (1.0 + mat32.Pow((1.0-w)/w, 1.0/6.0))
+	rval := 1.0 / (1.0 + math32.Pow((1.0-w)/w, 1.0/6.0))
 	return rval
 }
 
@@ -589,11 +589,11 @@ type DWtNormParams struct {
 // jumps up to max(abs_dwt) and slowly decays
 // returns the effective normalization factor, as a multiplier, including lrate comp
 func (dn *DWtNormParams) NormFmAbsDWt(norm *float32, absDwt float32) float32 {
-	*norm = mat32.Max(dn.DecayDtC**norm, absDwt)
+	*norm = math32.Max(dn.DecayDtC**norm, absDwt)
 	if *norm == 0 {
 		return 1
 	}
-	return dn.LrComp / mat32.Max(*norm, dn.NormMin)
+	return dn.LrComp / math32.Max(*norm, dn.NormMin)
 }
 
 func (dn *DWtNormParams) Update() {

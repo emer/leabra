@@ -5,7 +5,7 @@
 package glong
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -41,8 +41,8 @@ func (np *NMDAParams) VmEff(vm, act float32) float32 {
 
 // GFmV returns the NMDA conductance as a function of normalized membrane potential
 func (np *NMDAParams) GFmV(v float32) float32 {
-	vbio := mat32.Min(v*100-100, 0) // critical to not go past 0
-	return 1 / (1 + 0.28*mat32.FastExp(-0.062*vbio))
+	vbio := math32.Min(v*100-100, 0) // critical to not go past 0
+	return 1 / (1 + 0.28*math32.FastExp(-0.062*vbio))
 }
 
 // NMDA returns the updated NMDA activation from current NMDA and NMDASyn input

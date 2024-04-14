@@ -5,7 +5,7 @@
 package hip
 
 import (
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -124,7 +124,7 @@ func (pj *CHLPrjn) DWt() {
 // correction factor (typically makes layer appear more sparse than it is)
 func (pj *CHLPrjn) SAvgCor(slay *leabra.Layer) float32 {
 	savg := .5 + pj.CHL.SAvgCor*(slay.Pools[0].ActAvg.ActPAvgEff-0.5)
-	savg = mat32.Max(pj.CHL.SAvgThr, savg) // keep this computed value within bounds
+	savg = math32.Max(pj.CHL.SAvgThr, savg) // keep this computed value within bounds
 	return 0.5 / savg
 }
 
@@ -157,7 +157,7 @@ func (pj *CHLPrjn) DWtCHL() {
 			dwt := pj.CHL.DWt(hebb, err)
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
 				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)

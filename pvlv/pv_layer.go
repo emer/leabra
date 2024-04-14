@@ -7,7 +7,7 @@ package pvlv
 import (
 	"strconv"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -47,7 +47,7 @@ func (ly *PVLayer) SendPVAct() {
 		for pi := range ly.Neurons {
 			pnr := &ly.Neurons[pi] // WARNING: both layers must have the same shape!
 			mnr := &rly.ModNeurs[pi]
-			mnr.PVAct = mat32.Max(pnr.Act, pnr.Ext)
+			mnr.PVAct = math32.Max(pnr.Act, pnr.Ext)
 		}
 	}
 }

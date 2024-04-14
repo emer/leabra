@@ -9,7 +9,7 @@ import (
 	"log"
 	"strings"
 
-	"cogentcore.org/core/mat32"
+	"cogentcore.org/core/math32"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -229,16 +229,16 @@ func (ly *MatrixLayer) UnitVarIndex(varNm string) (int, error) {
 func (ly *MatrixLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 	nn := len(leabra.NeuronVars)
 	if varIndex < 0 || varIndex > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex <= nn { //
 		return ly.Layer.UnitVal1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex > nn+2 {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	if varIndex == nn+1 { // DALrn
 		return ly.DALrn
@@ -324,7 +324,7 @@ func (pj *MatrixPrjn) DWt() {
 	daLrn := rlay.DALrn // includes d2 reversal etc
 
 	ach := rlay.ACh
-	achDk := mat32.Min(1, ach*pj.Trace.Decay)
+	achDk := math32.Min(1, ach*pj.Trace.Decay)
 
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
@@ -362,7 +362,7 @@ func (pj *MatrixPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
@@ -418,14 +418,14 @@ func (pj *MatrixPrjn) SynVarIndex(varNm string) (int, error) {
 // so it is the only one that needs to be updated for derived layer types.
 func (pj *MatrixPrjn) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynVarsAll) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	nn := pj.Prjn.SynVarNum()
 	if varIndex < nn {
 		return pj.Prjn.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	varIndex -= nn
 	sy := &pj.TrSyns[synIndex]
