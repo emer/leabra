@@ -211,19 +211,19 @@ class HipParams(pyviews.ClassViewObj):
 
     def __init__(self):
         super(HipParams, self).__init__()
-        self.ECSize = evec.Vec2i()
+        self.ECSize = evec.Vector2i()
         self.SetTags(
             "ECSize", 'desc:"size of EC in terms of overall pools (outer dimension)"'
         )
-        self.ECPool = evec.Vec2i()
+        self.ECPool = evec.Vector2i()
         self.SetTags("ECPool", 'desc:"size of one EC pool"')
-        self.CA1Pool = evec.Vec2i()
+        self.CA1Pool = evec.Vector2i()
         self.SetTags("CA1Pool", 'desc:"size of one CA1 pool"')
-        self.CA3Size = evec.Vec2i()
+        self.CA3Size = evec.Vector2i()
         self.SetTags("CA3Size", 'desc:"size of CA3"')
         self.DGRatio = float()
         self.SetTags("DGRatio", 'desc:"size of DG / CA3"')
-        self.DGSize = evec.Vec2i()
+        self.DGSize = evec.Vector2i()
         self.SetTags("DGSize", 'inactive:"+" desc:"size of DG"')
         self.DGPCon = float()
         self.SetTags("DGPCon", 'desc:"percent connectivity into DG"')

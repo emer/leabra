@@ -68,10 +68,10 @@ type IPool struct {
 	PoolWt float32
 
 	// offset into source, sending layer
-	SOff evec.Vec2i
+	SOff evec.Vector2i
 
 	// offset into our own receiving layer
-	ROff evec.Vec2i
+	ROff evec.Vector2i
 }
 
 func (ip *IPool) Defaults() {

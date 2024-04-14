@@ -1309,7 +1309,7 @@ func (ss *Sim) ConfigRunPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D 
 func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
 	// nv.Scene().Camera.Pose.Pos.Set(0, 1.5, 3.0) // more "head on" than default which is more "top down"
-	// nv.Scene().Camera.LookAt(math32.Vec3{0, 0, 0}, math32.Vec3{0, 1, 0})
+	// nv.Scene().Camera.LookAt(math32.Vector3{0, 0, 0}, math32.Vector3{0, 1, 0})
 
 	nv.ConfigLabels(InputNames)
 
@@ -1320,7 +1320,7 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 		lbl.Pose.Pos.Y += .2
 		lbl.Pose.Pos.Z += .02
 		lbl.Pose.Pos.X += 0.05 + float32(li)*.06
-		lbl.Pose.Scale.SetMul(math32.Vec3{0.6, 0.4, 0.5})
+		lbl.Pose.Scale.SetMul(math32.Vector3{0.6, 0.4, 0.5})
 	}
 }
 

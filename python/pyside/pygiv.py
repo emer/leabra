@@ -98,7 +98,7 @@ class ClassViewInline(object):
                 continue
             lbl = core.Label(self.Lay.AddNewChild(core.KiT_Label(), "lbl_" + nm))
             lbl.Redrawable = True
-            lbl.SetProp("horizontal-align", "left")
+            lbl.SetProperty("horizontal-align", "left")
             lbl.SetText(nm)
             dsc = self.FieldTagValue(nm, "desc")
             if dsc != "":
@@ -334,7 +334,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
         vw.TextFieldSig.Connect(frame, SetStrValCB)
         mv = TagValue(tags, "width")
         if mv != "":
-            vw.SetProp("width", mv + "ch")
+            vw.SetProperty("width", mv + "ch")
     if HasTagValue(tags, "inactive", "+"):
         vw.SetInactive()
     return vw

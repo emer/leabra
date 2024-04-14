@@ -680,9 +680,9 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 	nv.ViewDefaults()
 	pos := nv.Scene().Camera.Pose.Pos
 	nv.Scene().Camera.Pose.Pos.Set(pos.X, pos.Y, 2)
-	nv.Scene().Camera.LookAt(math32.Vec3{Y: 0.5, Z: 1}, math32.Vec3{Y: 1})
+	nv.Scene().Camera.LookAt(math32.Vector3{Y: 0.5, Z: 1}, math32.Vector3{Y: 1})
 	ctrs := nv.Counters()
-	ctrs.SetProp("font-family", "Go Mono")
+	ctrs.SetProperty("font-family", "Go Mono")
 	nv.Record(ss.Counters(), -1)
 }
 
@@ -857,7 +857,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	if ss.devMenuSetup {
 		tbar.AddSeparator("stepSep")
 		stepLabel := core.AddNewLabel(tbar, "stepLabel", "Step to end of:")
-		stepLabel.SetProp("font-size", "large")
+		stepLabel.SetProperty("font-size", "large")
 
 		tbar.AddAction(core.ActOpts{Label: "Cycle", Icon: "step-fwd", Tooltip: "Step to the end of a Cycle.",
 			UpdateFunc: func(act *core.Action) {
@@ -908,7 +908,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 			ss.RunSteps(ss.StepGrain, tbar)
 		})
 		stepLabel := core.AddNewLabel(tbar, "stepLabel", "StepGrain:")
-		stepLabel.SetProp("font-size", "large")
+		stepLabel.SetProperty("font-size", "large")
 
 	}
 
@@ -928,7 +928,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	sg.SetCurValue(ss.StepGrain.String())
 
 	nLabel := core.AddNewLabel(tbar, "n", "StepN:")
-	nLabel.SetProp("font-size", "large")
+	nLabel.SetProperty("font-size", "large")
 	ss.nStepsBox = core.AddNewSpinBox(tbar, "nStepsSpinbox")
 	stepsProps := tree.Props{"has-min": true, "min": 1, "has-max": false, "step": 1, "pagestep": 10}
 	ss.nStepsBox.SetProps(stepsProps)

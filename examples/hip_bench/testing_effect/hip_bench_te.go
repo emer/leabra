@@ -70,22 +70,22 @@ const LogPrec = 4
 type HipParams struct {
 
 	// size of EC in terms of overall pools (outer dimension)
-	ECSize evec.Vec2i
+	ECSize evec.Vector2i
 
 	// size of one EC pool
-	ECPool evec.Vec2i
+	ECPool evec.Vector2i
 
 	// size of one CA1 pool
-	CA1Pool evec.Vec2i
+	CA1Pool evec.Vector2i
 
 	// size of CA3
-	CA3Size evec.Vec2i
+	CA3Size evec.Vector2i
 
 	// size of DG / CA3
 	DGRatio float32
 
 	// size of DG
-	DGSize evec.Vec2i `inactive:"+"`
+	DGSize evec.Vector2i `inactive:"+"`
 
 	// percent connectivity into DG
 	DGPCon float32

@@ -9,7 +9,6 @@ require (
 	github.com/go-python/gopy v0.4.6
 	cogentcore.org/core/gi v1.3.18
 	cogentcore.org/core/ki v1.1.11
-	github.com/goki/math32 v1.0.15
 )
 
 require (

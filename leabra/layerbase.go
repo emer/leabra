@@ -45,7 +45,7 @@ type LayerBase struct {
 	Rel relpos.Rel `view:"inline"`
 
 	// position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis.
-	Ps math32.Vec3
+	Ps math32.Vector3
 
 	// a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers.
 	Index int
@@ -92,8 +92,8 @@ func (ls *LayerBase) Is4D() bool                 { return ls.Shp.NumDims() == 4 
 func (ls *LayerBase) Thread() int                { return ls.Thr }
 func (ls *LayerBase) SetThread(thr int)          { ls.Thr = thr }
 func (ls *LayerBase) RelPos() relpos.Rel         { return ls.Rel }
-func (ls *LayerBase) Pos() math32.Vec3           { return ls.Ps }
-func (ls *LayerBase) SetPos(pos math32.Vec3)     { ls.Ps = pos }
+func (ls *LayerBase) Pos() math32.Vector3        { return ls.Ps }
+func (ls *LayerBase) SetPos(pos math32.Vector3)  { ls.Ps = pos }
 func (ls *LayerBase) Index() int                 { return ls.Index }
 func (ls *LayerBase) SetIndex(idx int)           { ls.Index = idx }
 func (ls *LayerBase) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
@@ -147,19 +147,19 @@ func (ls *LayerBase) SetRelPos(rel relpos.Rel) {
 	}
 }
 
-func (ls *LayerBase) Size() math32.Vec2 {
+func (ls *LayerBase) Size() math32.Vector2 {
 	if ls.Rel.Scale == 0 {
 		ls.Rel.Defaults()
 	}
-	var sz math32.Vec2
+	var sz math32.Vector2
 	switch {
 	case ls.Is2D():
-		sz = math32.Vec2{float32(ls.Shp.Dim(1)), float32(ls.Shp.Dim(0))} // Y, X
+		sz = math32.Vector2{float32(ls.Shp.Dim(1)), float32(ls.Shp.Dim(0))} // Y, X
 	case ls.Is4D():
 		// note: pool spacing is handled internally in display and does not affect overall size
-		sz = math32.Vec2{float32(ls.Shp.Dim(1) * ls.Shp.Dim(3)), float32(ls.Shp.Dim(0) * ls.Shp.Dim(2))} // Y, X
+		sz = math32.Vector2{float32(ls.Shp.Dim(1) * ls.Shp.Dim(3)), float32(ls.Shp.Dim(0) * ls.Shp.Dim(2))} // Y, X
 	default:
-		sz = math32.Vec2{float32(ls.Shp.Len()), 1}
+		sz = math32.Vector2{float32(ls.Shp.Len()), 1}
 	}
 	return sz.MulScalar(ls.Rel.Scale)
 }
