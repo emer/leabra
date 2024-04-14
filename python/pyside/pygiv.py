@@ -44,14 +44,14 @@ class ClassViewObj(object):
             self.ClassViewDialog.Win.Raise()
             return
         self.ClassViewDialog = ClassViewDialog(
-            vp, self, name, tags, giv.DlgOpts(Title=name)
+            vp, self, name, tags, views.DlgOpts(Title=name)
         )
         return self.ClassViewDialog
 
 
 class ClassViewInline(object):
     """
-    ClassViewInline provides GoGi giv.StructViewInline like inline editor for
+    ClassViewInline provides GoGi views.StructViewInline like inline editor for
     python class objects under GoGi.
     Due to limitations on calling python callbacks across threads, you must pass a unique
     name to the constructor.  The object must be a ClassViewObj, with tags using same
@@ -77,12 +77,12 @@ class ClassViewInline(object):
 
     def FieldTagValue(self, field, key):
         """returns the value for given key in tags for given field, empty string if none"""
-        return giv.StructTagValue(key, self.FieldTags(field))
+        return views.StructTagValue(key, self.FieldTags(field))
 
     def Config(self):
-        self.Lay = gi.Layout()
+        self.Lay = core.Layout()
         self.Lay.InitName(self.Lay, self.Name)
-        self.Lay.Lay = gi.LayoutHoriz
+        self.Lay.Lay = core.LayoutHoriz
         self.Lay.SetStretchMaxWidth()
         updt = self.Lay.UpdateStart()
         flds = self.Class.__dict__
@@ -96,7 +96,7 @@ class ClassViewInline(object):
                 or nm.startswith("ClassView")
             ):
                 continue
-            lbl = gi.Label(self.Lay.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
+            lbl = core.Label(self.Lay.AddNewChild(core.KiT_Label(), "lbl_" + nm))
             lbl.Redrawable = True
             lbl.SetProp("horizontal-align", "left")
             lbl.SetText(nm)
@@ -111,8 +111,8 @@ class ClassViewInline(object):
                         % (fnm, str(self.Class))
                     )
                     continue
-                vv = giv.ToValueView(val, tags)
-                giv.SetSoloValueIface(vv, val)
+                vv = views.ToValueView(val, tags)
+                views.SetSoloValueIface(vv, val)
                 vw = self.Lay.AddNewChild(vv.WidgetType(), fnm)
                 vv.ConfigWidget(vw)
                 self.Views[nm] = vv
@@ -129,7 +129,7 @@ class ClassViewInline(object):
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
-                giv.SetSoloValueIface(
+                views.SetSoloValueIface(
                     vv, val
                 )  # always update in case it might have changed
                 vv.UpdateWidget()
@@ -141,7 +141,7 @@ class ClassViewInline(object):
 
 class ClassView(object):
     """
-    ClassView provides GoGi giv.StructView like editor for python class objects under GoGi.
+    ClassView provides GoGi views.StructView like editor for python class objects under GoGi.
     Due to limitations on calling python callbacks across threads, you must pass a unique
     name to the constructor.  The object must be a ClassViewObj, with tags using same
     syntax as the struct field tags in Go: https://cogentcore.org/core/gi/wiki/Tags
@@ -159,8 +159,8 @@ class ClassView(object):
         self.Widgets = {}  # dict of Widget reps of Python objs
 
     def AddFrame(self, par):
-        """Add a new gi.Frame for the view to given parent gi object"""
-        self.Frame = gi.Frame(par.AddNewChild(gi.KiT_Frame(), "classview"))
+        """Add a new core.Frame for the view to given parent gi object"""
+        self.Frame = core.Frame(par.AddNewChild(core.KiT_Frame(), "classview"))
 
     def FieldTags(self, field):
         """returns the full string of tags for given field, empty string if none"""
@@ -170,13 +170,13 @@ class ClassView(object):
 
     def FieldTagValue(self, field, key):
         """returns the value for given key in tags for given field, empty string if none"""
-        return giv.StructTagValue(key, self.FieldTags(field))
+        return views.StructTagValue(key, self.FieldTags(field))
 
     def Config(self):
         self.Frame.SetStretchMaxWidth()
         self.Frame.SetStretchMaxHeight()
-        self.Frame.Lay = gi.LayoutGrid
-        self.Frame.Stripes = gi.RowStripes
+        self.Frame.Lay = core.LayoutGrid
+        self.Frame.Stripes = core.RowStripes
         self.Frame.SetPropInt("columns", 2)
         updt = self.Frame.UpdateStart()
         self.Frame.SetFullReRender()
@@ -192,7 +192,7 @@ class ClassView(object):
                 or nm.startswith("ClassView")
             ):
                 continue
-            lbl = gi.Label(self.Frame.AddNewChild(gi.KiT_Label(), "lbl_" + nm))
+            lbl = core.Label(self.Frame.AddNewChild(core.KiT_Label(), "lbl_" + nm))
             lbl.SetText(nm)
             dsc = self.FieldTagValue(nm, "desc")
             if dsc != "":
@@ -205,8 +205,8 @@ class ClassView(object):
                         % (fnm, str(self.Class))
                     )
                     continue
-                vv = giv.ToValueView(val, tags)
-                giv.SetSoloValueIface(vv, val)
+                vv = views.ToValueView(val, tags)
+                views.SetSoloValueIface(vv, val)
                 vw = self.Frame.AddNewChild(vv.WidgetType(), fnm)
                 vv.ConfigWidget(vw)
                 self.Views[nm] = vv
@@ -223,7 +223,7 @@ class ClassView(object):
         for nm, val in flds.items():
             if nm in self.Views:
                 vv = self.Views[nm]
-                giv.SetSoloValueIface(
+                views.SetSoloValueIface(
                     vv, val
                 )  # always update in case it might have changed
                 vv.UpdateWidget()
@@ -237,17 +237,19 @@ def ClassViewDialog(vp, obj, name, tags, opts):
     """
     ClassViewDialog returns a dialog with ClassView editor for python
     class objects under GoGi.
-    opts must be a giv.DlgOpts instance
+    opts must be a views.DlgOpts instance
     """
-    dlg = gi.NewStdDialog(opts.ToGiOpts(), opts.Ok, opts.Cancel)
+    dlg = core.NewStdDialog(opts.ToGiOpts(), opts.Ok, opts.Cancel)
     frame = dlg.Frame()
     prIndex = dlg.PromptWidgetIndex(frame)
 
     cv = obj.NewClassView(name)
-    cv.Frame = gi.Frame(frame.InsertNewChild(gi.KiT_Frame(), prIndex + 1, "cv-frame"))
+    cv.Frame = core.Frame(
+        frame.InsertNewChild(core.KiT_Frame(), prIndex + 1, "cv-frame")
+    )
     cv.Config()
 
-    # sv.Viewport = dlg.Embed(gi.KiT_Viewport2D).(*gi.Viewport2D)
+    # sv.Viewport = dlg.Embed(core.KiT_Viewport2D).(*core.Viewport2D)
     # if opts.Inactive {
     #     sv.SetInactive()
     # }
@@ -263,26 +265,26 @@ classviews = {}
 
 def TagValue(tags, key):
     """returns tag value for given key"""
-    return giv.StructTagValue(key, tags)
+    return views.StructTagValue(key, tags)
 
 
 def HasTagValue(tags, key, value):
     """returns true if given key has given value"""
-    tval = giv.StructTagValue(key, tags)
+    tval = views.StructTagValue(key, tags)
     return tval == value
 
 
 def PyObjView(val, nm, frame, ctxt, tags):
     """
-    PyObjView returns a gi.Widget representing the given Python value,
+    PyObjView returns a core.Widget representing the given Python value,
     with given name.
-    frame = gi.Frame or layout to add widgets to -- also callback recv
+    frame = core.Frame or layout to add widgets to -- also callback recv
     ctxt = context for this object (e.g., name of owning struct)
     """
     vw = 0
     fnm = ctxt + ":" + nm
     if isinstance(val, Enum):
-        vw = gi.AddNewComboBox(frame, fnm)
+        vw = core.AddNewComboBox(frame, fnm)
         vw.SetText(nm)
         vw.SetPropStr("padding", "2px")
         vw.SetPropStr("margin", "2px")
@@ -295,18 +297,18 @@ def PyObjView(val, nm, frame, ctxt, tags):
             frame.AddChild(sv.Lay)
             vw = sv.Lay
         else:
-            vw = gi.AddNewAction(frame, fnm)
+            vw = core.AddNewAction(frame, fnm)
             vw.SetText(nm)
             vw.SetPropStr("padding", "2px")
             vw.SetPropStr("margin", "2px")
             vw.SetPropStr("border-radius", "4px")
             vw.ActionSig.Connect(frame, EditObjCB)
     elif isinstance(val, bool):
-        vw = gi.AddNewCheckBox(frame, fnm)
+        vw = core.AddNewCheckBox(frame, fnm)
         vw.SetChecked(val)
         vw.ButtonSig.Connect(frame, SetBoolValCB)
     elif isinstance(val, (int, float)):
-        vw = gi.AddNewSpinBox(frame, fnm)
+        vw = core.AddNewSpinBox(frame, fnm)
         vw.SetValue(val)
         if isinstance(val, int):
             vw.SpinBoxSig.Connect(frame, SetIntValCB)
@@ -326,7 +328,7 @@ def PyObjView(val, nm, frame, ctxt, tags):
         if mv != "":
             vw.Format = mv
     else:
-        vw = gi.AddNewTextField(frame, fnm)
+        vw = core.AddNewTextField(frame, fnm)
         vw.SetText(str(val))
         vw.SetPropStr("min-width", "10em")
         vw.TextFieldSig.Connect(frame, SetStrValCB)
@@ -343,8 +345,8 @@ def PyObjUpdateView(val, vw, nm):
     updates the given view widget for given value
     """
     if isinstance(val, Enum):
-        if isinstance(vw, gi.ComboBox):
-            svw = gi.ComboBox(vw)
+        if isinstance(vw, core.ComboBox):
+            svw = core.ComboBox(vw)
             svw.SetCurValue(val.name)
         else:
             print("epygiv; Enum value: %s doesn't have ComboBox widget" % nm)
@@ -354,20 +356,20 @@ def PyObjUpdateView(val, vw, nm):
         val.UpdateClassViewInline()
         val.UpdateClassView()
     elif isinstance(val, bool):
-        if isinstance(vw, gi.CheckBox):
-            svw = gi.CheckBox(vw)
+        if isinstance(vw, core.CheckBox):
+            svw = core.CheckBox(vw)
             svw.SetChecked(val)
         else:
             print("epygiv; bool value: %s doesn't have CheckBox widget" % nm)
     elif isinstance(val, (int, float)):
-        if isinstance(vw, gi.SpinBox):
-            svw = gi.SpinBox(vw)
+        if isinstance(vw, core.SpinBox):
+            svw = core.SpinBox(vw)
             svw.SetValue(val)
         else:
             print("epygiv; numerical value: %s doesn't have SpinBox widget" % nm)
     else:
-        if isinstance(vw, gi.TextField):
-            tvw = gi.TextField(vw)
+        if isinstance(vw, core.TextField):
+            tvw = core.TextField(vw)
             tvw.SetText(str(val))
         else:
             print(
@@ -377,7 +379,7 @@ def PyObjUpdateView(val, vw, nm):
 
 
 def SetIntValCB(recv, send, sig, data):
-    vw = gi.SpinBox(handle=send)
+    vw = core.SpinBox(handle=send)
     nm = vw.Name()
     nms = nm.split(":")
     cv = classviews[nms[0]]
@@ -385,7 +387,7 @@ def SetIntValCB(recv, send, sig, data):
 
 
 def SetFloatValCB(recv, send, sig, data):
-    vw = gi.SpinBox(handle=send)
+    vw = core.SpinBox(handle=send)
     nm = vw.Name()
     nms = nm.split(":")
     cv = classviews[nms[0]]
@@ -393,7 +395,7 @@ def SetFloatValCB(recv, send, sig, data):
 
 
 def EditObjCB(recv, send, sig, data):
-    vw = gi.Action(handle=send)
+    vw = core.Action(handle=send)
     nm = vw.Name()
     nms = nm.split(":")
     cv = classviews[nms[0]]
@@ -404,9 +406,9 @@ def EditObjCB(recv, send, sig, data):
 
 
 def SetStrValCB(recv, send, sig, data):
-    if sig != gi.TextFieldDone:
+    if sig != core.TextFieldDone:
         return
-    vw = gi.TextField(handle=send)
+    vw = core.TextField(handle=send)
     nm = vw.Name()
     nms = nm.split(":")
     cv = classviews[nms[0]]
@@ -414,9 +416,9 @@ def SetStrValCB(recv, send, sig, data):
 
 
 def SetBoolValCB(recv, send, sig, data):
-    if sig != gi.ButtonToggled:
+    if sig != core.ButtonToggled:
         return
-    vw = gi.CheckBox(handle=send)
+    vw = core.CheckBox(handle=send)
     nm = vw.Name()
     # print("cb name:", nm)
     nms = nm.split(":")
@@ -442,7 +444,7 @@ def ItemsFromEnum(cb, enm):
 
 
 def SetEnumCB(recv, send, sig, data):
-    vw = gi.ComboBox(handle=send)
+    vw = core.ComboBox(handle=send)
     nm = vw.Name()
     nms = nm.split(":")
     idx = vw.CurIndex

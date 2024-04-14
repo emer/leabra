@@ -115,19 +115,19 @@ def TestTrialCB(recv, send, sig, data):
 
 
 def TestItemCB2(recv, send, sig, data):
-    win = gi.Window(handle=recv)
+    win = core.Window(handle=recv)
     vp = win.WinViewport2D()
-    dlg = gi.Dialog(handle=send)
-    if sig != gi.DialogAccepted:
+    dlg = core.Dialog(handle=send)
+    if sig != core.DialogAccepted:
         return
-    val = gi.StringPromptDialogValue(dlg)
+    val = core.StringPromptDialogValue(dlg)
     idxs = TheSim.TestEnv.Table.RowsByString(
         "Name", val, True, True
     )  # contains, ignoreCase
     if len(idxs) == 0:
-        gi.PromptDialog(
+        core.PromptDialog(
             vp,
-            gi.DlgOpts(
+            core.DlgOpts(
                 Title="Name Not Found", Prompt="No patterns found containing: " + val
             ),
             True,
@@ -145,12 +145,12 @@ def TestItemCB2(recv, send, sig, data):
 
 
 def TestItemCB(recv, send, sig, data):
-    win = gi.Window(handle=recv)
-    gi.StringPromptDialog(
+    win = core.Window(handle=recv)
+    core.StringPromptDialog(
         win.WinViewport2D(),
         "",
         "Test Item",
-        gi.DlgOpts(
+        core.DlgOpts(
             Title="Test Item",
             Prompt="Enter the Name of a given input pattern to test (case insensitive, contains given string.",
         ),
@@ -176,7 +176,7 @@ def NewRndSeedCB(recv, send, sig, data):
 
 
 def ReadmeCB(recv, send, sig, data):
-    gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/hip/README.md")
+    core.OpenURL("https://github.com/emer/leabra/blob/master/examples/hip/README.md")
 
 
 def FilterSSE(et, row):
@@ -203,7 +203,7 @@ def UpdateFuncRunning(act):
 #     Sim
 
 
-class HipParams(pygiv.ClassViewObj):
+class HipParams(pyviews.ClassViewObj):
     """
     see def_params.go for the default params, and params.go for user-saved versions
     from the gui.
@@ -267,7 +267,7 @@ class HipParams(pygiv.ClassViewObj):
         )
 
 
-class PatParams(pygiv.ClassViewObj):
+class PatParams(pyviews.ClassViewObj):
     """
     PatParams have the pattern parameters
     """
@@ -304,7 +304,7 @@ class PatParams(pygiv.ClassViewObj):
         pp.DriftPct = 0.2
 
 
-class Sim(pygiv.ClassViewObj):
+class Sim(pyviews.ClassViewObj):
     """
     Sim encapsulates the entire simulation model, and we define all the
     functionality as methods on this struct.  This structure keeps all relevant
@@ -1035,7 +1035,7 @@ class Sim(pygiv.ClassViewObj):
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
             print("Saving Weights to: %s\n" % fnm)
-            ss.Net.SaveWtsJSON(gi.Filename(fnm))
+            ss.Net.SaveWtsJSON(core.Filename(fnm))
 
     def NewRun(ss):
         """
@@ -1215,7 +1215,7 @@ class Sim(pygiv.ClassViewObj):
 
     def SaveWeights(ss, filename):
         """
-        SaveWeights saves the network weights -- when called with giv.CallMethod
+        SaveWeights saves the network weights -- when called with views.CallMethod
         it will auto-prompt for filename
         """
         ss.Net.SaveWtsJSON(filename)
@@ -1372,7 +1372,7 @@ class Sim(pygiv.ClassViewObj):
                 pyparams.ApplyParams(ss.Pat, simp, setMsg)
 
     def OpenPat(ss, dt, fname, name, desc):
-        err = dt.OpenCSV(gi.Filename(fname), etable.Tab)
+        err = dt.OpenCSV(core.Filename(fname), etable.Tab)
         if err != 0:
             log.Println(err)
             return
@@ -2269,12 +2269,12 @@ class Sim(pygiv.ClassViewObj):
         width = 1600
         height = 1200
 
-        gi.SetAppName("hip_bench")
-        gi.SetAppAbout(
+        core.SetAppName("hip_bench")
+        core.SetAppAbout(
             'This demonstrates a basic Hippocampus model in Leabra. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>'
         )
 
-        win = gi.NewMainWindow("hip_bench", "Hippocampus AB-AC", width, height)
+        win = core.NewMainWindow("hip_bench", "Hippocampus AB-AC", width, height)
         ss.Win = win
 
         vp = win.WinViewport2D()
@@ -2283,11 +2283,11 @@ class Sim(pygiv.ClassViewObj):
 
         mfr = win.SetMainFrame()
 
-        tbar = gi.AddNewToolBar(mfr, "tbar")
+        tbar = core.AddNewToolBar(mfr, "tbar")
         tbar.SetStretchMaxWidth()
         ss.ToolBar = tbar
 
-        split = gi.AddNewSplitView(mfr, "split")
+        split = core.AddNewSplitView(mfr, "split")
         split.Dim = math32.X
         split.SetStretchMax()
 
@@ -2295,7 +2295,7 @@ class Sim(pygiv.ClassViewObj):
         cv.AddFrame(split)
         cv.Config()
 
-        tv = gi.AddNewTabView(split, "tv")
+        tv = core.AddNewTabView(split, "tv")
 
         nv = netview.NetView()
         tv.AddTab(nv, "NetView")
@@ -2332,7 +2332,7 @@ class Sim(pygiv.ClassViewObj):
         recv = win.This()
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Init",
                 Icon="update",
                 Tooltip="Initialize everything including network weights, and start over.  Also applies current params.",
@@ -2343,7 +2343,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Train",
                 Icon="run",
                 Tooltip="Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
@@ -2354,7 +2354,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Stop",
                 Icon="stop",
                 Tooltip="Interrupts running.  Hitting Train again will pick back up where it left off.",
@@ -2365,7 +2365,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Step Trial",
                 Icon="step-fwd",
                 Tooltip="Advances one training trial at a time.",
@@ -2376,7 +2376,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Step Epoch",
                 Icon="fast-fwd",
                 Tooltip="Advances one epoch (complete set of training patterns) at a time.",
@@ -2387,7 +2387,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Step Run",
                 Icon="fast-fwd",
                 Tooltip="Advances one full training Run at a time.",
@@ -2400,7 +2400,7 @@ class Sim(pygiv.ClassViewObj):
         tbar.AddSeparator("test")
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Test Trial",
                 Icon="step-fwd",
                 Tooltip="Runs the next testing trial.",
@@ -2411,7 +2411,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Test Item",
                 Icon="step-fwd",
                 Tooltip="Prompts for a specific input pattern name to run, and runs it in testing mode.",
@@ -2422,7 +2422,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Test All",
                 Icon="fast-fwd",
                 Tooltip="Tests all of the testing trials.",
@@ -2434,12 +2434,12 @@ class Sim(pygiv.ClassViewObj):
 
         tbar.AddSeparator("log")
 
-        # tbar.AddAction(gi.ActOpts(Label= "Env", Icon= "gear", Tooltip= "select training input patterns: AB or AC."), win.This(),
+        # tbar.AddAction(core.ActOpts(Label= "Env", Icon= "gear", Tooltip= "select training input patterns: AB or AC."), win.This(),
         #     funcrecv, send, sig, data:
-        #         giv.CallMethod(ss, "SetEnv", vp))
+        #         views.CallMethod(ss, "SetEnv", vp))
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="Reset RunLog",
                 Icon="reset",
                 Tooltip="Resets the accumulated log of all Runs, which are tagged with the ParamSet used",
@@ -2451,7 +2451,7 @@ class Sim(pygiv.ClassViewObj):
         tbar.AddSeparator("misc")
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="New Seed",
                 Icon="new",
                 Tooltip="Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
@@ -2461,7 +2461,7 @@ class Sim(pygiv.ClassViewObj):
         )
 
         tbar.AddAction(
-            gi.ActOpts(
+            core.ActOpts(
                 Label="README",
                 Icon="file-markdown",
                 Tooltip="Opens your browser on the README file that contains instructions for how to run this model.",
@@ -2471,26 +2471,26 @@ class Sim(pygiv.ClassViewObj):
         )
 
         # main menu
-        appnm = gi.AppName()
+        appnm = core.AppName()
         mmen = win.MainMenu
         mmen.ConfigMenus(go.Slice_string([appnm, "File", "Edit", "Window"]))
 
-        amen = gi.Action(win.MainMenu.ChildByName(appnm, 0))
+        amen = core.Action(win.MainMenu.ChildByName(appnm, 0))
         amen.Menu.AddAppMenu(win)
 
-        emen = gi.Action(win.MainMenu.ChildByName("Edit", 1))
+        emen = core.Action(win.MainMenu.ChildByName("Edit", 1))
         emen.Menu.AddCopyCutPaste(win)
 
         # note: Command in shortcuts is automatically translated into Control for
         # Linux, Windows or Meta for MacOS
-        # fmen := win.MainMenu.ChildByName("File", 0).(*gi.Action)
-        # fmen.Menu.AddAction(gi.ActOpts{Label: "Open", Shortcut: "Command+O"},
-        #   win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        # fmen := win.MainMenu.ChildByName("File", 0).(*core.Action)
+        # fmen.Menu.AddAction(core.ActOpts{Label: "Open", Shortcut: "Command+O"},
+        #   win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
         #       FileViewOpenSVG(vp)
         #   })
         # fmen.Menu.AddSeparator("csep")
-        # fmen.Menu.AddAction(gi.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
-        #   win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        # fmen.Menu.AddAction(core.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
+        #   win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
         #       win.Close()
         #   })
 

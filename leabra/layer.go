@@ -17,7 +17,6 @@ import (
 
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/gox/indent"
-	"cogentcore.org/core/ki"
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
@@ -1450,31 +1449,31 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Layer props for gui
 
-var LayerProps = ki.Props{
-	// "ToolBar": ki.PropSlice{
-	// 	{"Defaults", ki.Props{
+var LayerProps = tree.Props{
+	// "ToolBar": tree.PropSlice{
+	// 	{"Defaults", tree.Props{
 	// 		"icon": "reset",
 	// 		"desc": "return all parameters to their intial default values",
 	// 	}},
-	// 	{"InitWts", ki.Props{
+	// 	{"InitWts", tree.Props{
 	// 		"icon": "update",
 	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
 	// 	}},
-	// 	{"InitActs", ki.Props{
+	// 	{"InitActs", tree.Props{
 	// 		"icon": "update",
 	// 		"desc": "initialize the layer's activation values",
 	// 	}},
-	// 	{"sep-act", ki.BlankProp{}},
-	// 	{"LesionNeurons", ki.Props{
+	// 	{"sep-act", tree.BlankProp{}},
+	// 	{"LesionNeurons", tree.Props{
 	// 		"icon": "close",
 	// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-	// 		"Args": ki.PropSlice{
-	// 			{"Proportion", ki.Props{
+	// 		"Args": tree.PropSlice{
+	// 			{"Proportion", tree.Props{
 	// 				"desc": "proportion (0 -- 1) of neurons to lesion",
 	// 			}},
 	// 		},
 	// 	}},
-	// 	{"UnLesionNeurons", ki.Props{
+	// 	{"UnLesionNeurons", tree.Props{
 	// 		"icon": "reset",
 	// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
 	// 	}},

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"sync"
 
-	"cogentcore.org/core/gi"
+	"cogentcore.org/core/core"
 	"cogentcore.org/core/gox/indent"
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
@@ -524,7 +524,7 @@ func (nt *NetworkBase) Build() error {
 
 // SaveWtsJSON saves network weights (and any other state that adapts with learning)
 // to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *NetworkBase) SaveWtsJSON(filename gi.Filename) error {
+func (nt *NetworkBase) SaveWtsJSON(filename core.Filename) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -546,7 +546,7 @@ func (nt *NetworkBase) SaveWtsJSON(filename gi.Filename) error {
 
 // OpenWtsJSON opens network weights (and any other state that adapts with learning)
 // from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsJSON(filename gi.Filename) error {
+func (nt *NetworkBase) OpenWtsJSON(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -654,7 +654,7 @@ func (nt *NetworkBase) SetWts(nw *weights.Network) error {
 
 // OpenWtsCpp opens network weights (and any other state that adapts with learning)
 // from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsCpp(filename gi.Filename) error {
+func (nt *NetworkBase) OpenWtsCpp(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {

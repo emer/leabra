@@ -8,7 +8,7 @@ import (
 	"errors"
 	"log"
 
-	"cogentcore.org/core/giv"
+	"cogentcore.org/core/views"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/prjn"
@@ -250,6 +250,6 @@ func (ps *PrjnBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
 // are not at their default values -- useful for setting param styles etc.
 func (ps *PrjnBase) NonDefaultParams() string {
 	pth := ps.Recv.Name() + "." + ps.Name() // redundant but clearer..
-	nds := giv.StructNonDefFieldsStr(ps.LeabraPrj, pth)
+	nds := views.StructNonDefFieldsStr(ps.LeabraPrj, pth)
 	return nds
 }

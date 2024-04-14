@@ -5,8 +5,8 @@
 package leabra
 
 import (
-	"cogentcore.org/core/giv"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/views"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/relpos"
@@ -261,7 +261,7 @@ func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 // NonDefaultParams returns a listing of all parameters in the Layer that
 // are not at their default values -- useful for setting param styles etc.
 func (ls *LayerBase) NonDefaultParams() string {
-	nds := giv.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
+	nds := views.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
 	for _, pj := range ls.RcvPrjns {
 		pnd := pj.NonDefaultParams()
 		nds += pnd

@@ -633,74 +633,74 @@ func (nt *Network) ThreadReport() string {
 
 // TODO(v2): props
 
-// var NetworkProps = ki.Props{
-// 	"ToolBar": ki.PropSlice{
-// 		{"SaveWtsJSON", ki.Props{
+// var NetworkProps = tree.Props{
+// 	"ToolBar": tree.PropSlice{
+// 		{"SaveWtsJSON", tree.Props{
 // 			"label": "Save Wts...",
 // 			"icon":  "file-save",
 // 			"desc":  "Save json-formatted weights",
-// 			"Args": ki.PropSlice{
-// 				{"Weights File Name", ki.Props{
+// 			"Args": tree.PropSlice{
+// 				{"Weights File Name", tree.Props{
 // 					"default-field": "WtsFile",
 // 					"ext":           ".wts,.wts.gz",
 // 				}},
 // 			},
 // 		}},
-// 		{"OpenWtsJSON", ki.Props{
+// 		{"OpenWtsJSON", tree.Props{
 // 			"label": "Open Wts...",
 // 			"icon":  "file-open",
 // 			"desc":  "Open json-formatted weights",
-// 			"Args": ki.PropSlice{
-// 				{"Weights File Name", ki.Props{
+// 			"Args": tree.PropSlice{
+// 				{"Weights File Name", tree.Props{
 // 					"default-field": "WtsFile",
 // 					"ext":           ".wts,.wts.gz",
 // 				}},
 // 			},
 // 		}},
-// 		{"sep-file", ki.BlankProp{}},
-// 		{"Build", ki.Props{
+// 		{"sep-file", tree.BlankProp{}},
+// 		{"Build", tree.Props{
 // 			"icon": "update",
 // 			"desc": "build the network's neurons and synapses according to current params",
 // 		}},
-// 		{"InitWts", ki.Props{
+// 		{"InitWts", tree.Props{
 // 			"icon": "update",
 // 			"desc": "initialize the network weight values according to prjn parameters",
 // 		}},
-// 		{"InitActs", ki.Props{
+// 		{"InitActs", tree.Props{
 // 			"icon": "update",
 // 			"desc": "initialize the network activation values",
 // 		}},
-// 		{"sep-act", ki.BlankProp{}},
-// 		{"AddLayer", ki.Props{
+// 		{"sep-act", tree.BlankProp{}},
+// 		{"AddLayer", tree.Props{
 // 			"label": "Add Layer...",
 // 			"icon":  "new",
 // 			"desc":  "add a new layer to network",
-// 			"Args": ki.PropSlice{
-// 				{"Layer Name", ki.Props{}},
-// 				{"Layer Shape", ki.Props{
+// 			"Args": tree.PropSlice{
+// 				{"Layer Name", tree.Props{}},
+// 				{"Layer Shape", tree.Props{
 // 					"desc": "shape of layer, typically 2D (Y, X) or 4D (Pools Y, Pools X, Units Y, Units X)",
 // 				}},
-// 				{"Layer Type", ki.Props{
+// 				{"Layer Type", tree.Props{
 // 					"desc": "type of layer -- used for determining how inputs are applied",
 // 				}},
 // 			},
 // 		}},
-// 		{"ConnectLayerNames", ki.Props{
+// 		{"ConnectLayerNames", tree.Props{
 // 			"label": "Connect Layers...",
 // 			"icon":  "new",
 // 			"desc":  "add a new connection between layers in the network",
-// 			"Args": ki.PropSlice{
-// 				{"Send Layer Name", ki.Props{}},
-// 				{"Recv Layer Name", ki.Props{}},
-// 				{"Pattern", ki.Props{
+// 			"Args": tree.PropSlice{
+// 				{"Send Layer Name", tree.Props{}},
+// 				{"Recv Layer Name", tree.Props{}},
+// 				{"Pattern", tree.Props{
 // 					"desc": "pattern to connect with",
 // 				}},
-// 				{"Prjn Type", ki.Props{
+// 				{"Prjn Type", tree.Props{
 // 					"desc": "type of projection -- direction, or other more specialized factors",
 // 				}},
 // 			},
 // 		}},
-// 		{"AllWtScales", ki.Props{
+// 		{"AllWtScales", tree.Props{
 // 			"icon":        "file-sheet",
 // 			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
 // 			"show-return": true,

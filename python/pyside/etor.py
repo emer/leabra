@@ -83,7 +83,7 @@ class NetView(object):
         width = 1600
         height = 1200
 
-        win = gi.NewMainWindow("netview", "eTorch NetView", width, height)
+        win = core.NewMainWindow("netview", "eTorch NetView", width, height)
         ss.Win = win
 
         vp = win.WinViewport2D()
@@ -99,14 +99,14 @@ class NetView(object):
         ss.NetView = nv
 
         # main menu
-        appnm = gi.AppName()
+        appnm = core.AppName()
         mmen = win.MainMenu
         mmen.ConfigMenus(go.Slice_string([appnm, "File", "Edit", "Window"]))
 
-        amen = gi.Action(win.MainMenu.ChildByName(appnm, 0))
+        amen = core.Action(win.MainMenu.ChildByName(appnm, 0))
         amen.Menu.AddAppMenu(win)
 
-        emen = gi.Action(win.MainMenu.ChildByName("Edit", 1))
+        emen = core.Action(win.MainMenu.ChildByName("Edit", 1))
         emen.Menu.AddCopyCutPaste(win)
         win.MainMenuUpdated()
         vp.UpdateEndNoSig(updt)

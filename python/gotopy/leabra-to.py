@@ -331,7 +331,7 @@ replaces = [
     ),
     (
         [
-            """        sv = giv.AddNewStructView(split, "sv")""",
+            """        sv = views.AddNewStructView(split, "sv")""",
             """        sv.SetStruct(ss)""",
         ],
         [

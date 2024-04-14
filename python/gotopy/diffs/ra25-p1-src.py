@@ -91,15 +91,15 @@ def TestTrialCB(recv, send, sig, data):
         TheSim.vp.SetNeedsFullRender()
 
 def TestItemCB2(recv, send, sig, data):
-    win = gi.Window(handle=recv)
+    win = core.Window(handle=recv)
     vp = win.WinViewport2D()
-    dlg = gi.Dialog(handle=send)
-    if sig != gi.DialogAccepted:
+    dlg = core.Dialog(handle=send)
+    if sig != core.DialogAccepted:
         return
-    val = gi.StringPromptDialogValue(dlg)
+    val = core.StringPromptDialogValue(dlg)
     idxs = TheSim.TestEnv.Table.RowsByString("Name", val, True, True) # contains, ignoreCase
     if len(idxs) == 0:
-        gi.PromptDialog(vp, gi.DlgOpts(Title="Name Not Found", Prompt="No patterns found containing: " + val), True, False, go.nil, go.nil)
+        core.PromptDialog(vp, core.DlgOpts(Title="Name Not Found", Prompt="No patterns found containing: " + val), True, False, go.nil, go.nil)
     else:
         if not TheSim.IsRunning:
             TheSim.IsRunning = True
@@ -109,9 +109,9 @@ def TestItemCB2(recv, send, sig, data):
             vp.SetNeedsFullRender()
 
 def TestItemCB(recv, send, sig, data):
-    win = gi.Window(handle=recv)
-    gi.StringPromptDialog(win.WinViewport2D(), "", "Test Item",
-        gi.DlgOpts(Title="Test Item", Prompt="Enter the Name of a given input pattern to test (case insensitive, contains given string."), win, TestItemCB2)
+    win = core.Window(handle=recv)
+    core.StringPromptDialog(win.WinViewport2D(), "", "Test Item",
+        core.DlgOpts(Title="Test Item", Prompt="Enter the Name of a given input pattern to test (case insensitive, contains given string."), win, TestItemCB2)
 
 def TestAllCB(recv, send, sig, data):
     if not TheSim.IsRunning:
@@ -127,7 +127,7 @@ def NewRndSeedCB(recv, send, sig, data):
     TheSim.NewRndSeed()
 
 def ReadmeCB(recv, send, sig, data):
-    gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+    core.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
 
 def FilterSSE(et, row):
     return etable.Table(handle=et).CellFloat("SSE", row) > 0 # include error trials    
@@ -142,7 +142,7 @@ def UpdateFuncRunning(act):
 #####################################################    
 #     Sim
 
-class Sim(pygiv.ClassViewObj):
+class Sim(pyviews.ClassViewObj):
     """
     Sim encapsulates the entire simulation model, and we define all the
     functionality as methods on this struct.  This structure keeps all relevant
@@ -526,7 +526,7 @@ class Sim(pygiv.ClassViewObj):
         if ss.SaveWts:
             fnm = ss.WeightsFileName()
             print("Saving Weights to: %s\n" % fnm)
-            ss.Net.SaveWtsJSON(gi.Filename(fnm))
+            ss.Net.SaveWtsJSON(core.Filename(fnm))
 
     def NewRun(ss):
         """
@@ -639,7 +639,7 @@ class Sim(pygiv.ClassViewObj):
 
     def SaveWeights(ss, filename):
         """
-        SaveWeights saves the network weights -- when called with giv.CallMethod
+        SaveWeights saves the network weights -- when called with views.CallMethod
         it will auto-prompt for filename
         """
         ss.Net.SaveWtsJSON(filename)
@@ -1178,10 +1178,10 @@ class Sim(pygiv.ClassViewObj):
         width = 1600
         height = 1200
 
-        gi.SetAppName("ra25")
-        gi.SetAppAbout('This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>')
+        core.SetAppName("ra25")
+        core.SetAppAbout('This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>')
 
-        win = gi.NewMainWindow("ra25", "Leabra Random Associator", width, height)
+        win = core.NewMainWindow("ra25", "Leabra Random Associator", width, height)
         ss.Win = win
 
         vp = win.WinViewport2D()
@@ -1189,18 +1189,18 @@ class Sim(pygiv.ClassViewObj):
 
         mfr = win.SetMainFrame()
 
-        tbar = gi.AddNewToolBar(mfr, "tbar")
+        tbar = core.AddNewToolBar(mfr, "tbar")
         tbar.SetStretchMaxWidth()
         ss.ToolBar = tbar
 
-        split = gi.AddNewSplitView(mfr, "split")
+        split = core.AddNewSplitView(mfr, "split")
         split.Dim = math32.X
         split.SetStretchMax()
 
-        sv = giv.AddNewStructView(split, "sv")
+        sv = views.AddNewStructView(split, "sv")
         sv.SetStruct(ss)
 
-        tv = gi.AddNewTabView(split, "tv")
+        tv = core.AddNewTabView(split, "tv")
 
         nv = *netview.NetView(tv.AddNewTab(netview.KiT_NetView, "NetView"))
         nv.Var = "Act"
@@ -1224,74 +1224,74 @@ class Sim(pygiv.ClassViewObj):
 
         split.SetSplits(.2, .8)
         
-        tbar.AddAction(gi.ActOpts(Label="Init", Icon="update", Tooltip="Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc=UpdateFuncNotRunning), recv, InitCB)
+        tbar.AddAction(core.ActOpts(Label="Init", Icon="update", Tooltip="Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc=UpdateFuncNotRunning), recv, InitCB)
 
-        tbar.AddAction(gi.ActOpts(Label="Train", Icon="run", Tooltip="Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.", UpdateFunc=UpdateFuncNotRunning), recv, TrainCB)
+        tbar.AddAction(core.ActOpts(Label="Train", Icon="run", Tooltip="Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.", UpdateFunc=UpdateFuncNotRunning), recv, TrainCB)
         
-        tbar.AddAction(gi.ActOpts(Label="Stop", Icon="stop", Tooltip="Interrupts running.  Hitting Train again will pick back up where it left off.", UpdateFunc=UpdateFuncRunning), recv, StopCB)
+        tbar.AddAction(core.ActOpts(Label="Stop", Icon="stop", Tooltip="Interrupts running.  Hitting Train again will pick back up where it left off.", UpdateFunc=UpdateFuncRunning), recv, StopCB)
         
-        tbar.AddAction(gi.ActOpts(Label="Step Trial", Icon="step-fwd", Tooltip="Advances one training trial at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepTrialCB)
+        tbar.AddAction(core.ActOpts(Label="Step Trial", Icon="step-fwd", Tooltip="Advances one training trial at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepTrialCB)
         
-        tbar.AddAction(gi.ActOpts(Label="Step Epoch", Icon="fast-fwd", Tooltip="Advances one epoch (complete set of training patterns) at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepEpochCB)
+        tbar.AddAction(core.ActOpts(Label="Step Epoch", Icon="fast-fwd", Tooltip="Advances one epoch (complete set of training patterns) at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepEpochCB)
 
-        tbar.AddAction(gi.ActOpts(Label="Step Run", Icon="fast-fwd", Tooltip="Advances one full training Run at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepRunCB)
+        tbar.AddAction(core.ActOpts(Label="Step Run", Icon="fast-fwd", Tooltip="Advances one full training Run at a time.", UpdateFunc=UpdateFuncNotRunning), recv, StepRunCB)
         
         tbar.AddSeparator("test")
         
-        tbar.AddAction(gi.ActOpts(Label="Test Trial", Icon="step-fwd", Tooltip="Runs the next testing trial.", UpdateFunc=UpdateFuncNotRunning), recv, TestTrialCB)
+        tbar.AddAction(core.ActOpts(Label="Test Trial", Icon="step-fwd", Tooltip="Runs the next testing trial.", UpdateFunc=UpdateFuncNotRunning), recv, TestTrialCB)
         
-        tbar.AddAction(gi.ActOpts(Label="Test Item", Icon="step-fwd", Tooltip="Prompts for a specific input pattern name to run, and runs it in testing mode.", UpdateFunc=UpdateFuncNotRunning), recv, TestItemCB)
+        tbar.AddAction(core.ActOpts(Label="Test Item", Icon="step-fwd", Tooltip="Prompts for a specific input pattern name to run, and runs it in testing mode.", UpdateFunc=UpdateFuncNotRunning), recv, TestItemCB)
         
-        tbar.AddAction(gi.ActOpts(Label="Test All", Icon="fast-fwd", Tooltip="Tests all of the testing trials.", UpdateFunc=UpdateFuncNotRunning), recv, TestAllCB)
+        tbar.AddAction(core.ActOpts(Label="Test All", Icon="fast-fwd", Tooltip="Tests all of the testing trials.", UpdateFunc=UpdateFuncNotRunning), recv, TestAllCB)
 
         tbar.AddSeparator("log")
         
-        tbar.AddAction(gi.ActOpts(Label="Reset RunLog", Icon="reset", Tooltip="Resets the accumulated log of all Runs, which are tagged with the ParamSet used"), recv, ResetRunLogCB)
+        tbar.AddAction(core.ActOpts(Label="Reset RunLog", Icon="reset", Tooltip="Resets the accumulated log of all Runs, which are tagged with the ParamSet used"), recv, ResetRunLogCB)
 
         tbar.AddSeparator("misc")
         
-        tbar.AddAction(gi.ActOpts(Label="New Seed", Icon="new", Tooltip="Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time."), recv, NewRndSeedCB)
+        tbar.AddAction(core.ActOpts(Label="New Seed", Icon="new", Tooltip="Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time."), recv, NewRndSeedCB)
 
-        tbar.AddAction(gi.ActOpts(Label="README", Icon="file-markdown", Tooltip="Opens your browser on the README file that contains instructions for how to run this model."), recv, ReadmeCB)
+        tbar.AddAction(core.ActOpts(Label="README", Icon="file-markdown", Tooltip="Opens your browser on the README file that contains instructions for how to run this model."), recv, ReadmeCB)
 
         # main menu
-        appnm = gi.AppName()
+        appnm = core.AppName()
         mmen = win.MainMenu
         mmen.ConfigMenus(go.Slice_string([appnm, "File", "Edit", "Window"]))
 
-        amen = *gi.Action(win.MainMenu.ChildByName(appnm, 0))
+        amen = *core.Action(win.MainMenu.ChildByName(appnm, 0))
         amen.Menu.AddAppMenu(win)
 
-        emen = *gi.Action(win.MainMenu.ChildByName("Edit", 1))
+        emen = *core.Action(win.MainMenu.ChildByName("Edit", 1))
         emen.Menu.AddCopyCutPaste(win)
 
         # note: Command in shortcuts is automatically translated into Control for
         # Linux, Windows or Meta for MacOS
-        # fmen := win.MainMenu.ChildByName("File", 0).(*gi.Action)
-        # fmen.Menu.AddAction(gi.ActOpts{Label: "Open", Shortcut: "Command+O"},
-        #     win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        # fmen := win.MainMenu.ChildByName("File", 0).(*core.Action)
+        # fmen.Menu.AddAction(core.ActOpts{Label: "Open", Shortcut: "Command+O"},
+        #     win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
         #         FileViewOpenSVG(vp)
         #     })
         # fmen.Menu.AddSeparator("csep")
-        # fmen.Menu.AddAction(gi.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
-        #     win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+        # fmen.Menu.AddAction(core.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
+        #     win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
         #         win.Close()
         #     })
 
         inQuitPrompt = False
-        gi.SetQuitReqFunc(func:
+        core.SetQuitReqFunc(func:
             if inQuitPrompt:
                 return
             inQuitPrompt = True
-            gi.PromptDialog(vp, gi.DlgOpts(Title= "Really Quit?",
-                Prompt= "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"), gi.AddOk, gi.AddCancel,
+            core.PromptDialog(vp, core.DlgOpts(Title= "Really Quit?",
+                Prompt= "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"), core.AddOk, core.AddCancel,
                 win.This(), funcrecv, send, sig, data:
-                    if sig == int64(gi.DialogAccepted):
-                        gi.Quit()
+                    if sig == int64(core.DialogAccepted):
+                        core.Quit()
                     else:
                         inQuitPrompt = False))
 
-        # gi.SetQuitCleanFunc(func() {
+        # core.SetQuitCleanFunc(func() {
         #     print("Doing final Quit cleanup here..\n")
         # })
 
@@ -1300,16 +1300,16 @@ class Sim(pygiv.ClassViewObj):
             if inClosePrompt:
                 return
             inClosePrompt = True
-            gi.PromptDialog(vp, gi.DlgOpts(Title= "Really Close Window?",
-                Prompt= "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"), gi.AddOk, gi.AddCancel,
+            core.PromptDialog(vp, core.DlgOpts(Title= "Really Close Window?",
+                Prompt= "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"), core.AddOk, core.AddCancel,
                 win.This(), funcrecv, send, sig, data:
-                    if sig == int64(gi.DialogAccepted):
-                        gi.Quit()
+                    if sig == int64(core.DialogAccepted):
+                        core.Quit()
                     else:
                         inClosePrompt = False))
 
         win.SetCloseCleanFunc(funcw:
-            go gi.Quit())# once main window is closed, quit
+            go core.Quit())# once main window is closed, quit
 
         win.MainMenuUpdated()
         return win

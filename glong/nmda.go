@@ -104,6 +104,6 @@ const (
 	NMDA_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
 )
 
-// var PrjnProps = ki.Props{
+// var PrjnProps = tree.Props{
 // 	"EnumType:Typ": KiT_PrjnType,
 // }
