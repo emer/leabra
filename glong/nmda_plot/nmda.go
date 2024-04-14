@@ -12,6 +12,7 @@ import (
 
 	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tree"
 	"github.com/emer/etable/v2/eplot"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
@@ -234,18 +235,18 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(core.ActOpts{Label: "V-G Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
+	tbar.AddAction(core.ActOpts{Label: "V-G Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		ss.Run()
 		vp.SetNeedsFullRender()
 	})
 
-	tbar.AddAction(core.ActOpts{Label: "Time Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Ki, sig int64, data interface{}) {
+	tbar.AddAction(core.ActOpts{Label: "Time Run", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		ss.TimeRun()
 		vp.SetNeedsFullRender()
 	})
 
 	tbar.AddAction(core.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
-		func(recv, send tree.Ki, sig int64, data interface{}) {
+		func(recv, send tree.Node, sig int64, data interface{}) {
 			core.OpenURL("https://github.com/emer/leabra/blob/master/examples/eqplot/README.md")
 		})
 
