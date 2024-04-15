@@ -3,11 +3,6 @@
 package leabra
 
 import (
-	"fmt"
-	"log"
-	"strings"
-	"sync/atomic"
-
 	"cogentcore.org/core/enums"
 )
 
@@ -38,36 +33,20 @@ func (i ActNoiseType) Int64() int64 { return int64(i) }
 func (i *ActNoiseType) SetInt64(in int64) { *i = ActNoiseType(in) }
 
 // Desc returns the description of the ActNoiseType value.
-func (i ActNoiseType) Desc() string {
-	if str, ok := _ActNoiseTypeDescMap[i]; ok {
-		return str
-	}
-	return i.String()
-}
+func (i ActNoiseType) Desc() string { return enums.Desc(i, _ActNoiseTypeDescMap) }
 
 // ActNoiseTypeValues returns all possible values for the type ActNoiseType.
 func ActNoiseTypeValues() []ActNoiseType { return _ActNoiseTypeValues }
 
 // Values returns all possible values for the type ActNoiseType.
-func (i ActNoiseType) Values() []enums.Enum {
-	res := make([]enums.Enum, len(_ActNoiseTypeValues))
-	for i, d := range _ActNoiseTypeValues {
-		res[i] = d
-	}
-	return res
-}
+func (i ActNoiseType) Values() []enums.Enum { return enums.Values(_ActNoiseTypeValues) }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i ActNoiseType) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
+func (i ActNoiseType) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 func (i *ActNoiseType) UnmarshalText(text []byte) error {
-	if err := i.SetString(string(text)); err != nil {
-		log.Println("ActNoiseType.UnmarshalText:", err)
-	}
-	return nil
+	return enums.UnmarshalText(i, text, "ActNoiseType")
 }
 
 var _NeurFlagsValues = []NeurFlags{0, 1, 2, 3}
@@ -97,17 +76,7 @@ func (i *NeurFlags) SetString(s string) error { *i = 0; return i.SetStringOr(s) 
 // while preserving any bit flags already set, and returns an
 // error if the string is invalid.
 func (i *NeurFlags) SetStringOr(s string) error {
-	flgs := strings.Split(s, "|")
-	for _, flg := range flgs {
-		if val, ok := _NeurFlagsValueMap[flg]; ok {
-			i.SetFlag(true, &val)
-		} else if flg == "" {
-			continue
-		} else {
-			return fmt.Errorf("%q is not a valid value for type NeurFlags", flg)
-		}
-	}
-	return nil
+	return enums.SetStringOr(i, s, _NeurFlagsValueMap, "NeurFlags")
 }
 
 // Int64 returns the NeurFlags value as an int64.
@@ -117,57 +86,26 @@ func (i NeurFlags) Int64() int64 { return int64(i) }
 func (i *NeurFlags) SetInt64(in int64) { *i = NeurFlags(in) }
 
 // Desc returns the description of the NeurFlags value.
-func (i NeurFlags) Desc() string {
-	if str, ok := _NeurFlagsDescMap[i]; ok {
-		return str
-	}
-	return i.String()
-}
+func (i NeurFlags) Desc() string { return enums.Desc(i, _NeurFlagsDescMap) }
 
 // NeurFlagsValues returns all possible values for the type NeurFlags.
 func NeurFlagsValues() []NeurFlags { return _NeurFlagsValues }
 
 // Values returns all possible values for the type NeurFlags.
-func (i NeurFlags) Values() []enums.Enum {
-	res := make([]enums.Enum, len(_NeurFlagsValues))
-	for i, d := range _NeurFlagsValues {
-		res[i] = d
-	}
-	return res
-}
+func (i NeurFlags) Values() []enums.Enum { return enums.Values(_NeurFlagsValues) }
 
 // HasFlag returns whether these bit flags have the given bit flag set.
-func (i NeurFlags) HasFlag(f enums.BitFlag) bool {
-	return atomic.LoadInt64((*int64)(&i))&(1<<uint32(f.Int64())) != 0
-}
+func (i NeurFlags) HasFlag(f enums.BitFlag) bool { return enums.HasFlag((*int64)(&i), f) }
 
 // SetFlag sets the value of the given flags in these flags to the given value.
-func (i *NeurFlags) SetFlag(on bool, f ...enums.BitFlag) {
-	var mask int64
-	for _, v := range f {
-		mask |= 1 << v.Int64()
-	}
-	in := int64(*i)
-	if on {
-		in |= mask
-		atomic.StoreInt64((*int64)(i), in)
-	} else {
-		in &^= mask
-		atomic.StoreInt64((*int64)(i), in)
-	}
-}
+func (i *NeurFlags) SetFlag(on bool, f ...enums.BitFlag) { enums.SetFlag((*int64)(i), on, f...) }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i NeurFlags) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
+func (i NeurFlags) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 func (i *NeurFlags) UnmarshalText(text []byte) error {
-	if err := i.SetString(string(text)); err != nil {
-		log.Println("NeurFlags.UnmarshalText:", err)
-	}
-	return nil
+	return enums.UnmarshalText(i, text, "NeurFlags")
 }
 
 var _QuartersValues = []Quarters{0, 1, 2, 3}
@@ -197,17 +135,7 @@ func (i *Quarters) SetString(s string) error { *i = 0; return i.SetStringOr(s) }
 // while preserving any bit flags already set, and returns an
 // error if the string is invalid.
 func (i *Quarters) SetStringOr(s string) error {
-	flgs := strings.Split(s, "|")
-	for _, flg := range flgs {
-		if val, ok := _QuartersValueMap[flg]; ok {
-			i.SetFlag(true, &val)
-		} else if flg == "" {
-			continue
-		} else {
-			return fmt.Errorf("%q is not a valid value for type Quarters", flg)
-		}
-	}
-	return nil
+	return enums.SetStringOr(i, s, _QuartersValueMap, "Quarters")
 }
 
 // Int64 returns the Quarters value as an int64.
@@ -217,58 +145,25 @@ func (i Quarters) Int64() int64 { return int64(i) }
 func (i *Quarters) SetInt64(in int64) { *i = Quarters(in) }
 
 // Desc returns the description of the Quarters value.
-func (i Quarters) Desc() string {
-	if str, ok := _QuartersDescMap[i]; ok {
-		return str
-	}
-	return i.String()
-}
+func (i Quarters) Desc() string { return enums.Desc(i, _QuartersDescMap) }
 
 // QuartersValues returns all possible values for the type Quarters.
 func QuartersValues() []Quarters { return _QuartersValues }
 
 // Values returns all possible values for the type Quarters.
-func (i Quarters) Values() []enums.Enum {
-	res := make([]enums.Enum, len(_QuartersValues))
-	for i, d := range _QuartersValues {
-		res[i] = d
-	}
-	return res
-}
+func (i Quarters) Values() []enums.Enum { return enums.Values(_QuartersValues) }
 
 // HasFlag returns whether these bit flags have the given bit flag set.
-func (i Quarters) HasFlag(f enums.BitFlag) bool {
-	return atomic.LoadInt64((*int64)(&i))&(1<<uint32(f.Int64())) != 0
-}
+func (i Quarters) HasFlag(f enums.BitFlag) bool { return enums.HasFlag((*int64)(&i), f) }
 
 // SetFlag sets the value of the given flags in these flags to the given value.
-func (i *Quarters) SetFlag(on bool, f ...enums.BitFlag) {
-	var mask int64
-	for _, v := range f {
-		mask |= 1 << v.Int64()
-	}
-	in := int64(*i)
-	if on {
-		in |= mask
-		atomic.StoreInt64((*int64)(i), in)
-	} else {
-		in &^= mask
-		atomic.StoreInt64((*int64)(i), in)
-	}
-}
+func (i *Quarters) SetFlag(on bool, f ...enums.BitFlag) { enums.SetFlag((*int64)(i), on, f...) }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i Quarters) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
+func (i Quarters) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
-func (i *Quarters) UnmarshalText(text []byte) error {
-	if err := i.SetString(string(text)); err != nil {
-		log.Println("Quarters.UnmarshalText:", err)
-	}
-	return nil
-}
+func (i *Quarters) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "Quarters") }
 
 var _TimeScalesValues = []TimeScales{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
 
@@ -297,34 +192,18 @@ func (i TimeScales) Int64() int64 { return int64(i) }
 func (i *TimeScales) SetInt64(in int64) { *i = TimeScales(in) }
 
 // Desc returns the description of the TimeScales value.
-func (i TimeScales) Desc() string {
-	if str, ok := _TimeScalesDescMap[i]; ok {
-		return str
-	}
-	return i.String()
-}
+func (i TimeScales) Desc() string { return enums.Desc(i, _TimeScalesDescMap) }
 
 // TimeScalesValues returns all possible values for the type TimeScales.
 func TimeScalesValues() []TimeScales { return _TimeScalesValues }
 
 // Values returns all possible values for the type TimeScales.
-func (i TimeScales) Values() []enums.Enum {
-	res := make([]enums.Enum, len(_TimeScalesValues))
-	for i, d := range _TimeScalesValues {
-		res[i] = d
-	}
-	return res
-}
+func (i TimeScales) Values() []enums.Enum { return enums.Values(_TimeScalesValues) }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i TimeScales) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
+func (i TimeScales) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 func (i *TimeScales) UnmarshalText(text []byte) error {
-	if err := i.SetString(string(text)); err != nil {
-		log.Println("TimeScales.UnmarshalText:", err)
-	}
-	return nil
+	return enums.UnmarshalText(i, text, "TimeScales")
 }

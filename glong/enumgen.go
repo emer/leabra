@@ -3,8 +3,6 @@
 package glong
 
 import (
-	"log"
-
 	"cogentcore.org/core/enums"
 	"github.com/emer/emergent/v2/emer"
 )
@@ -39,46 +37,21 @@ func (i *PrjnType) SetInt64(in int64) { *i = PrjnType(in) }
 
 // Desc returns the description of the PrjnType value.
 func (i PrjnType) Desc() string {
-	if str, ok := _PrjnTypeDescMap[i]; ok {
-		return str
-	}
-	return emer.PrjnType(i).Desc()
+	return enums.DescExtended[PrjnType, emer.PrjnType](i, _PrjnTypeDescMap)
 }
 
 // PrjnTypeValues returns all possible values for the type PrjnType.
 func PrjnTypeValues() []PrjnType {
-	es := emer.PrjnTypeValues()
-	res := make([]PrjnType, len(es))
-	for i, e := range es {
-		res[i] = PrjnType(e)
-	}
-	res = append(res, _PrjnTypeValues...)
-	return res
+	return enums.ValuesGlobalExtended(_PrjnTypeValues, emer.PrjnTypeValues())
 }
 
 // Values returns all possible values for the type PrjnType.
 func (i PrjnType) Values() []enums.Enum {
-	es := emer.PrjnTypeValues()
-	les := len(es)
-	res := make([]enums.Enum, les+len(_PrjnTypeValues))
-	for i, d := range es {
-		res[i] = d
-	}
-	for i, d := range _PrjnTypeValues {
-		res[i+les] = d
-	}
-	return res
+	return enums.ValuesExtended(_PrjnTypeValues, emer.PrjnTypeValues())
 }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i PrjnType) MarshalText() ([]byte, error) {
-	return []byte(i.String()), nil
-}
+func (i PrjnType) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
-func (i *PrjnType) UnmarshalText(text []byte) error {
-	if err := i.SetString(string(text)); err != nil {
-		log.Println("PrjnType.UnmarshalText:", err)
-	}
-	return nil
-}
+func (i *PrjnType) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "PrjnType") }
