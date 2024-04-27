@@ -21,7 +21,7 @@ type CtxtSender interface {
 	SendCtxtGe(ltime *leabra.Time)
 }
 
-// CTCtxtPrjn is the "context" temporally-delayed projection into CTLayer,
+// CTCtxtPrjn is the "context" temporally delayed projection into CTLayer,
 // (corticothalamic deep layer 6) where the CtxtGe excitatory input
 // is integrated only at end of Burst Quarter.
 // Set FmSuper for the main projection from corresponding Super layer.

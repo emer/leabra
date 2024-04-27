@@ -14,7 +14,7 @@ import (
 )
 
 // CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
-// and sends the Max absolute value of that activity as the positively-rectified
+// and sends the Max absolute value of that activity as the positively rectified
 // non-prediction-discounted reward signal computed by CINs, and sent as
 // an acetylcholine (ACh) signal.
 // To handle positive-only reward signals, need to include both a reward prediction

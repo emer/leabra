@@ -28,7 +28,7 @@ This package has 3 primary specialized Layer types:
 
 * `SuperLayer`: implements the superficial layer neurons, which function just like standard leabra.Layer neurons, while also directly computing the Burst activation signal that reflects the deep layer 5IB bursting activation, via thresholding of the superficial layer activations (Bursting is thought to have a higher threshold).
 
-* `CTLayer`: implements the layer 6 regular spiking CT corticothalamic neurons that project into the thalamus.  They receive the Burst activation via a `CTCtxtPrjn` projection type, typically once every 100 msec, and integrate that in the CtxtGe value, which is added to other excitatory conductance inputs to drive the overall activation (Act) of these neurons. Due to the bursting nature of the Burst inputs, this causes these CT layer neurons to reflect what the superficial layers encoded on the *previous* timestep -- thus they represent a temporally-delayed context state.
+* `CTLayer`: implements the layer 6 regular spiking CT corticothalamic neurons that project into the thalamus.  They receive the Burst activation via a `CTCtxtPrjn` projection type, typically once every 100 msec, and integrate that in the CtxtGe value, which is added to other excitatory conductance inputs to drive the overall activation (Act) of these neurons. Due to the bursting nature of the Burst inputs, this causes these CT layer neurons to reflect what the superficial layers encoded on the *previous* timestep -- thus they represent a temporally delayed context state.
 
 CTLayer can send Context via self projections to reflect the extensive deep-to-deep lateral connectivity that provides more extensive temporal context information.
 
@@ -39,7 +39,7 @@ Wiring diagram:
 
 The alpha-cycle quarter(s) when Burst is updated and broadcast is set in BurstQtr (defaults to Q4, can also be e.g., Q2 and Q4 for beta frequency updating). During this quarter(s), the Burst value is computed in SuperLayer, and this is continuously accessed by TRCLayer neurons to drive plus-phase outcome states.
 
-At the *end* of the burst quarter(s), in the QuarterFinal method, CTCtxt projections convey the Burst signal from Super to CTLayer neurons, where it is integrated into the Ctxt value representing the temporally-delayed context information. 
+At the *end* of the burst quarter(s), in the QuarterFinal method, CTCtxt projections convey the Burst signal from Super to CTLayer neurons, where it is integrated into the Ctxt value representing the temporally delayed context information. 
 
 # TRN Attention and Learning
 

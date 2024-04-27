@@ -8,6 +8,6 @@ The `rl` package provides core infrastructure for dopamine neuromodulation and r
 
 * The RW and TD DA layers use the `CyclePost` layer-level method to send the DA to other layers, at end of each cycle, after activation is updated.  Thus, DA lags by 1 cycle, which typically should not be a problem. 
 
-* See the separate `pvlv` package for the full biologically-based pvlv model on top of this basic DA infrastructure.
+* See the separate `pvlv` package for the full biologically based pvlv model on top of this basic DA infrastructure.
 
 

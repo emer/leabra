@@ -25,7 +25,7 @@ This package has 3 specialized Layer types:
     inputs to drive the overall activation (Act) of these neurons.
     Due to the bursting nature of the Burst inputs, this causes these CT layer
     neurons to reflect what the superficial layers encoded on the *previous*
-    timestep -- thus they represent a temporally-delayed context state.
+    timestep -- thus they represent a temporally delayed context state.
 
     CTLayer can send Context via self projections to reflect the extensive
     deep-to-deep lateral connectivity that provides more extensive temporal
@@ -56,7 +56,7 @@ continuously accessed by TRCLayer neurons to drive plus-phase outcome states.
 
 At the *end* of the burst quarter(s), in the QuarterFinal method,
 CTCtxt projections convey the Burst signal from Super to CTLayer neurons,
-where it is integrated into the Ctxt value representing the temporally-delayed
+where it is integrated into the Ctxt value representing the temporally delayed
 context information.
 */
 package deep

@@ -120,7 +120,7 @@ type SpikeParams struct {
 	// membrane potential threshold for actually triggering a spike when using the exponential mechanism
 	ExpThr float32 `viewif:"Exp" def:"1.2"`
 
-	// post-spiking membrane potential to reset to, produces refractory effect if lower than VmInit -- 0.30 is apropriate biologically-based value for AdEx (Brette & Gurstner, 2005) parameters
+	// post-spiking membrane potential to reset to, produces refractory effect if lower than VmInit -- 0.30 is appropriate biologically based value for AdEx (Brette & Gurstner, 2005) parameters
 	VmR float32 `def:"0.3,0,0.15"`
 
 	// post-spiking explicit refractory period, in cycles -- prevents Vm updating for this number of cycles post firing

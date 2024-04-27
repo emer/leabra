@@ -5,7 +5,7 @@
 /*
 Package nxx1 provides the Noisy-X-over-X-plus-1 activation function that well-characterizes
 the neural response function empirically, as a saturating sigmoid-like nonlinear response
-with an initial largely-linear regime.
+with an initial largely linear regime.
 
 The basic x/(x+1) sigmoid function is convolved with a gaussian noise kernel to produce
 a better approximation of the effects of noise on neural firing -- the main effect is
@@ -23,7 +23,7 @@ import "cogentcore.org/core/math32"
 
 // Params are the Noisy X/(X+1) rate-coded activation function parameters.
 // This function well-characterizes the neural response function empirically,
-// as a saturating sigmoid-like nonlinear response with an initial largely-linear regime.
+// as a saturating sigmoid-like nonlinear response with an initial largely linear regime.
 // The basic x/(x+1) sigmoid function is convolved with a gaussian noise kernel to produce
 // a better approximation of the effects of noise on neural firing -- the main effect is
 // to create a continuous graded early level of firing even slightly below threshold, softening

@@ -1,6 +1,6 @@
 # PVLV: Primary Value, Learned Value
 
-This simulation explores the PVLV (Primary Value, Learned Value) learning algorithm, which considers the role of different brain areas in controlling dopamine cell firing during learning about reward and punishment in classical conditioning tasks [Mollick et al, 2020](#references).  It represents a more flexible and biologically-detailed approach to the computations explored in the `rl_cond` model.
+This simulation explores the PVLV (Primary Value, Learned Value) learning algorithm, which considers the role of different brain areas in controlling dopamine cell firing during learning about reward and punishment in classical conditioning tasks [Mollick et al, 2020](#references).  It represents a more flexible and biologically detailed approach to the computations explored in the `rl_cond` model.
 
 There are many brain areas involved in the phasic firing of dopamine
 cells in the VTA (ventral tegmental area) and SNc (substantia nigra,

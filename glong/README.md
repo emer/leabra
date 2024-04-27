@@ -14,7 +14,7 @@ NMDA is predominantly important for learning in most parts of the brain, but in 
 
 Sanders et al, 2013 emphasize the "perfect couple" nature of the complementary bistability of GABA-B and NMDA, and show that it produces a more robust active maintenance dynamic in frontal cortical circuits.
 
-We are using both NMDA and GABA-B to support robust active maintenance but also the ability to clear out previously-maintained representations, as a result of the GABA-B sustained inhibition.
+We are using both NMDA and GABA-B to support robust active maintenance but also the ability to clear out previously maintained representations, as a result of the GABA-B sustained inhibition.
 
 # Implementation
 

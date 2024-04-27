@@ -340,7 +340,7 @@ func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
 		del := cos - *avg
 		incr := cd.Dt * del
 		*avg += incr
-		// following is magic exponentially-weighted incremental variance formula
+		// following is magic exponentially weighted incremental variance formula
 		// derived by Finch, 2009: Incremental calculation of weighted mean and variance
 		if *vr == 0 {
 			*vr = 2 * cd.DtC * del * incr

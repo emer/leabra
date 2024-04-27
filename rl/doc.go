@@ -18,7 +18,7 @@ algorithm (RW) and Temporal Differences (TD) learning, and a minimal
     after activation is updated.  Thus, DA lags by 1 cycle,
     which typically should not be a problem.
 
-  - See the separate `pvlv` package for the full biologically-based
+  - See the separate `pvlv` package for the full biologically based
     pvlv model on top of this basic DA infrastructure.
 */
 package rl

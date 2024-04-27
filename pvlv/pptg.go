@@ -12,7 +12,7 @@ import (
 	//"github.com/emer/leabra/v2/pbwm"
 )
 
-// The PPTg passes on a positively-rectified version of its input signal.
+// The PPTg passes on a positively rectified version of its input signal.
 type PPTgLayer struct {
 	leabra.Layer
 	Ge      float32
