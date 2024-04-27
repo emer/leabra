@@ -892,7 +892,7 @@ func (ss *Sim) ConfigGUI() {
 						}
 					})
 				})
-				d.NewDialog(tb).Run()
+				d.RunDialog(tb)
 			},
 		})
 		ss.GUI.AddToolbarItem(tb, egui.ToolbarItem{Label: "Test All",
