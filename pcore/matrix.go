@@ -190,7 +190,7 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		amax := ly.Matrix.LrnFactor(ly.AlphaMaxs[ni])
@@ -307,8 +307,8 @@ func (pj *MatrixPath) ClearTrace() {
 	}
 }
 
-func (pj *MatrixPath) InitWts() {
-	pj.Path.InitWts()
+func (pj *MatrixPath) InitWeights() {
+	pj.Path.InitWeights()
 	pj.ClearTrace()
 }
 

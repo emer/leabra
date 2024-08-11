@@ -414,10 +414,10 @@ func (pj *Path) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shap
 	}
 }
 
-// InitWtsSyn initializes weight values based on WtInit randomness parameters
+// InitWeightsSyn initializes weight values based on WtInit randomness parameters
 // for an individual synapse.
 // It also updates the linear weight value based on the sigmoidal weight value.
-func (pj *Path) InitWtsSyn(syn *Synapse) {
+func (pj *Path) InitWeightsSyn(syn *Synapse) {
 	if syn.Scale == 0 {
 		syn.Scale = 1
 	}
@@ -437,11 +437,11 @@ func (pj *Path) InitWtsSyn(syn *Synapse) {
 	syn.Moment = 0
 }
 
-// InitWts initializes weight values according to Learn.WtInit params
-func (pj *Path) InitWts() {
+// InitWeights initializes weight values according to Learn.WtInit params
+func (pj *Path) InitWeights() {
 	for si := range pj.Syns {
 		sy := &pj.Syns[si]
-		pj.InitWtsSyn(sy)
+		pj.InitWeightsSyn(sy)
 	}
 	for wi := range pj.WbRecv {
 		wb := &pj.WbRecv[wi]
@@ -524,7 +524,7 @@ func (pj *Path) InitWtSym(rpjp LeabraPath) {
 }
 
 // InitGInc initializes the per-pathway GInc threadsafe increment -- not
-// typically needed (called during InitWts only) but can be called when needed
+// typically needed (called during InitWeights only) but can be called when needed
 func (pj *Path) InitGInc() {
 	for ri := range pj.GInc {
 		pj.GInc[ri] = 0

@@ -97,7 +97,7 @@ func (ps *PathBase) Type() emer.PathType           { return ps.Typ }
 func (ps *PathBase) PathTypeName() string          { return ps.Typ.String() }
 
 func (ps *PathBase) IsOff() bool {
-	return ps.Off || ps.Recv.IsOff() || ps.Send.IsOff()
+	return ps.Off || ps.Recv.Off || ps.Send.Off
 }
 func (ps *PathBase) SetOff(off bool) { ps.Off = off }
 

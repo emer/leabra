@@ -59,7 +59,7 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		geRaw := nrn.GeRaw + ly.CtxtGes[ni]
@@ -78,12 +78,12 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			for _, sp := range ly.SendPaths {
-				if sp.IsOff() {
+				if sp.Off {
 					continue
 				}
 				ptyp := sp.Type()
@@ -111,7 +111,7 @@ func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
 		ly.CtxtGes[ni] = 0
 	}
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		ptyp := p.Type()

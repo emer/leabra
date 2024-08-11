@@ -22,7 +22,7 @@ func (pj *AmygModPath) AsAmygModPath() *AmygModPath {
 
 // ISetScalePath initializes weights, including special scale calculations
 type ISetScalePath interface {
-	InitWts()
+	InitWeights()
 }
 
 // AmygModPath holds parameters and state variables for modulatory pathways to amygdala layers
@@ -68,8 +68,8 @@ type AmygModPath struct {
 var _ IAmygPath = (*AmygModPath)(nil)
 var _ ISetScalePath = (*AmygModPath)(nil)
 
-// InitWts sets initial weights, possibly including SetScale calculations
-func (pj *AmygModPath) InitWts() {
+// InitWeights sets initial weights, possibly including SetScale calculations
+func (pj *AmygModPath) InitWeights() {
 	if pj.SetScale {
 		pj.SetScalesFunc(pj.GaussScale)
 		pj.SetWtsFunc(func(_, _ int, _, _ *etensor.Shape) float32 {
@@ -82,7 +82,7 @@ func (pj *AmygModPath) InitWts() {
 			sy.Moment = 0
 		}
 	} else {
-		pj.Path.InitWts()
+		pj.Path.InitWeights()
 	}
 }
 
@@ -130,7 +130,7 @@ func (pj *AmygModPath) DWt() {
 			rn := &rlay.Neurons[ri]
 			mn := &rlay.ModNeurs[ri]
 
-			if rn.IsOff() {
+			if rn.Off {
 				continue
 			}
 			// filter any tiny spurious da signals on t2 & t4 trials - best for ext guys since

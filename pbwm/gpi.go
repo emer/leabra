@@ -223,7 +223,7 @@ func (ly *GPiThalLayer) SendGateShape() error {
 // found or if paths are not of the GPiThalPath type
 func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error) {
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		gp, ok := p.(*GPiThalPath)
@@ -316,7 +316,7 @@ func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		goRaw := goPath.GeRaw[ni]
@@ -339,7 +339,7 @@ func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gs := ly.GateState(int(nrn.SubPool) - 1)
@@ -388,7 +388,7 @@ func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			gnr := &ly.GPiNeurs[ni]

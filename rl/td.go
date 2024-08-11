@@ -31,7 +31,7 @@ func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase
@@ -115,7 +115,7 @@ func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
 	rpAct := rply.Neurons[0].Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase
@@ -190,7 +190,7 @@ func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
 	da := rpActP - rpActM
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase

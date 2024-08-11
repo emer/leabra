@@ -428,7 +428,7 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 		log.Println(err)
 		return
 	}
-	net.InitWts()
+	net.InitWeights()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -624,7 +624,7 @@ func (ss *Sim) NewRun() {
 	ss.TrainEnv.Init(run)
 	ss.TestEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
@@ -666,7 +666,7 @@ func (ss *Sim) TrialStats(accum bool) {
 	gotOne := false
 	for ni := range inp.Neurons {
 		inn := &inp.Neurons[ni]
-		if inn.IsOff() {
+		if inn.Off {
 			continue
 		}
 		tgn := &trg.Neurons[ni]

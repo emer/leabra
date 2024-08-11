@@ -89,7 +89,7 @@ func TestMakeNet(t *testing.T) {
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
 	TestNet.Build()
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.AlphaCycInit(true) // get GScale
 
 	// var buf bytes.Buffer
@@ -122,7 +122,7 @@ func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 }
 
 func TestNetAct(t *testing.T) {
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.InitExt()
 
 	inLay := TestNet.LayerByName("Input").(*leabra.Layer)
@@ -310,7 +310,7 @@ func TestNetLearn(t *testing.T) {
 		TestNet.Defaults()
 		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
 		TestNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
-		TestNet.InitWts()
+		TestNet.InitWeights()
 		TestNet.InitExt()
 
 		ltime := leabra.NewTime()

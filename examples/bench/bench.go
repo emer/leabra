@@ -99,7 +99,7 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	net.Defaults()
 	net.ApplyParams(ParamSets[0].Sheets["Network"], false) // no msg
 	net.Build()
-	net.InitWts()
+	net.InitWeights()
 }
 
 func ConfigPats(dt *etable.Table, pats, units int) {
@@ -139,7 +139,7 @@ func ConfigEpcLog(dt *etable.Table) {
 
 func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 	ltime := leabra.NewTime()
-	net.InitWts()
+	net.InitWeights()
 	np := pats.NumRows()
 	porder := rand.Perm(np) // randomly permuted order of ints
 

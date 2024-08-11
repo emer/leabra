@@ -556,7 +556,7 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 		log.Println(err)
 		return
 	}
-	net.InitWts()
+	net.InitWeights()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -752,7 +752,7 @@ func (ss *Sim) NewRun() {
 	run := ss.TrainEnv.Run.Cur
 	ss.TrainEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)

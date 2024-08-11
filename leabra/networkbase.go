@@ -155,7 +155,7 @@ func (nt *NetworkBase) LayersByClass(classes ...string) []string {
 	hasName := map[string]bool{}
 	if len(classes) == 0 {
 		for _, ly := range nt.Layers {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
 			nm := ly.Name()
@@ -182,7 +182,7 @@ func (nt *NetworkBase) LayersByClass(classes ...string) []string {
 func (nt *NetworkBase) BuildThreads() {
 	nthr := 0
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
@@ -194,7 +194,7 @@ func (nt *NetworkBase) BuildThreads() {
 	nt.ThrTimes = make([]timer.Time, nt.NThreads)
 	nt.FunTimes = make(map[string]*timer.Time)
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
@@ -332,14 +332,14 @@ func (nt *NetworkBase) KeyPathParams() string {
 func (nt *NetworkBase) AllWtScales() string {
 	str := ""
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
 		str += "\nLayer: " + ly.Name() + "\n"
 		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
-			if p.IsOff() {
+			if p.Off {
 				continue
 			}
 			pj := p.(LeabraPath).AsLeabra()
@@ -496,7 +496,7 @@ func (nt *NetworkBase) Build() error {
 	emsg := ""
 	for li, ly := range nt.Layers {
 		ly.SetIndex(li)
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		err := ly.Build()
@@ -582,7 +582,7 @@ func (nt *NetworkBase) WriteWtsJSON(w io.Writer) error {
 	w.Write(indent.TabBytes(depth))
 	onls := make([]emer.Layer, 0, len(nt.Layers))
 	for _, ly := range nt.Layers {
-		if !ly.IsOff() {
+		if !ly.Off {
 			onls = append(onls, ly)
 		}
 	}
@@ -742,7 +742,7 @@ func (nt *NetworkBase) ThrWorker(tt int) {
 		thly := nt.ThrLay[tt]
 		nt.ThrTimes[tt].Start()
 		for _, ly := range thly {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
 			fun(ly.(LeabraLayer))
@@ -761,7 +761,7 @@ func (nt *NetworkBase) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 	nt.FunTimerStart(funame)
 	if nt.NThreads <= 1 {
 		for _, ly := range nt.Layers {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
 			fun(ly.(LeabraLayer))

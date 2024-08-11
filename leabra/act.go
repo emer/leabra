@@ -117,7 +117,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 	nrn.Inet = 0
 }
 
-// InitActs initializes activation state in neuron -- called during InitWts but otherwise not
+// InitActs initializes activation state in neuron -- called during InitWeights but otherwise not
 // automatically called (DecayState is used instead)
 func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Act = ac.Init.Act
@@ -144,7 +144,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 }
 
 // InitActQs initializes quarter-based activation states in neuron (ActQ0-2, ActM, ActP, ActDif)
-// Called from InitActs, which is called from InitWts, but otherwise not automatically called
+// Called from InitActs, which is called from InitWeights, but otherwise not automatically called
 // (DecayState is used instead)
 func (ac *ActParams) InitActQs(nrn *Neuron) {
 	nrn.ActQ0 = 0

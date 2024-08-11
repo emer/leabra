@@ -208,7 +208,7 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 				for xn := 0; xn < xnN; xn++ {
 					ni := ly.Shp.Offset([]int{yp, xp, yn, xn})
 					nrn := &ly.Neurons[ni]
-					if nrn.IsOff() {
+					if nrn.Off {
 						continue
 					}
 					mnr := &ly.MatrixNeurs[ni]
@@ -232,7 +232,7 @@ func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
 func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		mnr := &ly.MatrixNeurs[ni]
@@ -259,7 +259,7 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			mnr := &ly.MatrixNeurs[ni]

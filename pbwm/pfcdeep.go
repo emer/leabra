@@ -182,7 +182,7 @@ func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		pnr := &ly.PFCNeurs[ni]
@@ -276,7 +276,7 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ui := ni % nn
@@ -330,7 +330,7 @@ func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			pnr := &ly.PFCNeurs[ni]

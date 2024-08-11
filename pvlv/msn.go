@@ -252,7 +252,7 @@ func (ly *MSNLayer) PoolDelayedInhib(pl *leabra.Pool) {
 	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		dis := &ly.DIState[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
@@ -265,7 +265,7 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]

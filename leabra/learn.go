@@ -38,7 +38,7 @@ func (ln *LearnNeurParams) Defaults() {
 }
 
 // InitActAvg initializes the running-average activation values that drive learning.
-// Called by InitWts (at start of learning).
+// Called by InitWeights (at start of learning).
 func (ln *LearnNeurParams) InitActAvg(nrn *Neuron) {
 	nrn.AvgSS = ln.ActAvg.Init
 	nrn.AvgS = ln.ActAvg.Init

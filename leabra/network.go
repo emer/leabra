@@ -152,20 +152,20 @@ func (nt *Network) WtFmDWt() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// InitWts initializes synaptic weights and all other associated long-term state variables
+// InitWeights initializes synaptic weights and all other associated long-term state variables
 // including running-average state values (e.g., layer running average activations etc)
-func (nt *Network) InitWts() {
+func (nt *Network) InitWeights() {
 	nt.WtBalCtr = 0
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitWts()
+		ly.(LeabraLayer).InitWeights()
 	}
 	// separate pass to enforce symmetry
 	// st := time.Now()
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitWtSym()
@@ -177,17 +177,17 @@ func (nt *Network) InitWts() {
 // InitTopoScales initializes synapse-specific scale parameters from
 // path types that support them, with flags set to support it,
 // includes: path.PoolTile path.Circle.
-// call before InitWts if using Topo wts
+// call before InitWeights if using Topo wts
 func (nt *Network) InitTopoScales() {
 	scales := &etensor.Float32{}
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
 		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
-			if p.IsOff() {
+			if p.Off {
 				continue
 			}
 			pat := p.Pattern()
@@ -217,7 +217,7 @@ func (nt *Network) InitTopoScales() {
 // here for ad-hoc decay cases.
 func (nt *Network) DecayState(decay float32) {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).DecayState(decay)
@@ -227,7 +227,7 @@ func (nt *Network) DecayState(decay float32) {
 // InitActs fully initializes activation state -- not automatically called
 func (nt *Network) InitActs() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitActs()
@@ -237,7 +237,7 @@ func (nt *Network) InitActs() {
 // InitExt initializes external input state -- call prior to applying external inputs to layers
 func (nt *Network) InitExt() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitExt()
@@ -249,7 +249,7 @@ func (nt *Network) InitExt() {
 // ApplyExt* method call.
 func (nt *Network) UpdateExtFlags() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).UpdateExtFlags()
@@ -263,7 +263,7 @@ func (nt *Network) UpdateExtFlags() {
 // might have changed strength)
 func (nt *Network) InitGInc() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitGInc()
@@ -283,7 +283,7 @@ func (nt *Network) InitGInc() {
 // threshold
 func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).AlphaCycInit(updtActAvg)
@@ -299,7 +299,7 @@ func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
 // changed at any point thereafter during AlphaCyc, this must be called.
 func (nt *Network) GScaleFmAvgAct() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).GScaleFmAvgAct()
@@ -393,7 +393,7 @@ func (nt *Network) WtBalFmWt() {
 // Useful for implementing learning rate schedules.
 func (nt *Network) LrateMult(mult float32) {
 	for _, ly := range nt.Layers {
-		// if ly.IsOff() { // keep all sync'd
+		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
 		ly.(LeabraLayer).LrateMult(mult)
@@ -414,7 +414,7 @@ func (nt *Network) LayersSetOff(off bool) {
 // Provides a clean starting point for subsequent lesion experiments.
 func (nt *Network) UnLesionNeurons() {
 	for _, ly := range nt.Layers {
-		// if ly.IsOff() { // keep all sync'd
+		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
 		ly.(LeabraLayer).AsLeabra().UnLesionNeurons()
@@ -662,7 +662,7 @@ func (nt *Network) ThreadReport() string {
 // 			"icon": "update",
 // 			"desc": "build the network's neurons and synapses according to current params",
 // 		}},
-// 		{"InitWts", tree.Props{
+// 		{"InitWeights", tree.Props{
 // 			"icon": "update",
 // 			"desc": "initialize the network weight values according to path parameters",
 // 		}},

@@ -84,7 +84,7 @@ func TestMakeNet(t *testing.T) {
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
 	TestNet.Build()
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.AlphaCycInit(true) // get GScale
 
 	// var buf bytes.Buffer
@@ -101,7 +101,7 @@ func TestMakeNet(t *testing.T) {
 }
 
 func TestSynValues(t *testing.T) {
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	hidLay := TestNet.LayerByName("Hidden").(*Layer)
 	fmIn := hidLay.SendName("Input").(*Path)
 
@@ -138,7 +138,7 @@ func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 }
 
 func TestNetAct(t *testing.T) {
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.InitExt()
 
 	inLay := TestNet.LayerByName("Input").(*Layer)
@@ -326,7 +326,7 @@ func TestNetLearn(t *testing.T) {
 		TestNet.Defaults()
 		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
 		TestNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
-		TestNet.InitWts()
+		TestNet.InitWeights()
 		TestNet.InitExt()
 
 		ltime := NewTime()
@@ -475,10 +475,10 @@ func TestInhibAct(t *testing.T) {
 	InhibNet.Defaults()
 	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg
 	InhibNet.Build()
-	InhibNet.InitWts()
+	InhibNet.InitWeights()
 	InhibNet.AlphaCycInit(true) // get GScale
 
-	InhibNet.InitWts()
+	InhibNet.InitWeights()
 	InhibNet.InitExt()
 
 	ltime := NewTime()

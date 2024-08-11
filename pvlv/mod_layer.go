@@ -451,7 +451,7 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]
@@ -500,7 +500,7 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		pj := p.(leabra.LeabraPath).AsLeabra()
@@ -522,7 +522,7 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 	}
 
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		pj := p.(leabra.LeabraPath).AsLeabra()
@@ -581,7 +581,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			mnr := &ly.ModNeurs[ni]
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			mpl.ModNetStats.UpdateValue(mnr.ModNet, int32(ni))
@@ -598,7 +598,7 @@ func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.VmFmG(nrn)

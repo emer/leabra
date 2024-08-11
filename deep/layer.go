@@ -46,7 +46,7 @@ var LayerProps = tree.Props{
 	// 		"icon": "reset",
 	// 		"desc": "return all parameters to their intial default values",
 	// 	}},
-	// 	{"InitWts", tree.Props{
+	// 	{"InitWeights", tree.Props{
 	// 		"icon": "update",
 	// 		"desc": "initialize the layer's weight values according to path parameters, for all *sending* pathways out of this layer",
 	// 	}},

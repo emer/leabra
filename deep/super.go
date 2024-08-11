@@ -146,7 +146,7 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -197,7 +197,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 	thr = math32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -222,13 +222,13 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
 		if snr.Burst > ly.Act.OptThresh.Send {
 			for _, sp := range ly.SendPaths {
-				if sp.IsOff() {
+				if sp.Off {
 					continue
 				}
 				ptyp := sp.Type()

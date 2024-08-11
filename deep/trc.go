@@ -164,8 +164,8 @@ func (ly *TRCLayer) IsTarget() bool {
 ///////////////////////////////////////////////////////////////////////////////////////
 // Drivers
 
-func (ly *TRCLayer) InitWts() {
-	ly.TopoInhibLayer.InitWts()
+func (ly *TRCLayer) InitWeights() {
+	ly.TopoInhibLayer.InitWeights()
 	ly.SetDriverOffs()
 }
 
@@ -236,7 +236,7 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	nrn := &ly.Neurons[tni]
-	if nrn.IsOff() {
+	if nrn.Off {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe

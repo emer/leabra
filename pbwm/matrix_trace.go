@@ -132,8 +132,8 @@ func (pj *MatrixTracePath) ClearTrace() {
 	}
 }
 
-func (pj *MatrixTracePath) InitWts() {
-	pj.Path.InitWts()
+func (pj *MatrixTracePath) InitWeights() {
+	pj.Path.InitWeights()
 	pj.ClearTrace()
 }
 

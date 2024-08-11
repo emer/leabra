@@ -413,7 +413,7 @@ func (ss *Sim) InitSim() {
 	if err != nil {
 		fmt.Println("ERROR: InitCondition failed in InitSim")
 	}
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitHasRun = true
 	ss.VerboseInit = false
 }
@@ -798,21 +798,21 @@ func (ss *Sim) ConfigGUI() *core.Window {
 		if !ss.InitHasRun {
 			ss.InitSim()
 		}
-		answeredInitWts := true // hack to workaround lack of a true modal dialog
+		answeredInitWeights := true // hack to workaround lack of a true modal dialog
 		if ss.SimHasRun {
-			answeredInitWts = false
+			answeredInitWeights = false
 			core.ChoiceDialog(ss.Win.Viewport, core.DlgOpts{Title: "Init weights?", Prompt: "Initialize network weights?"},
 				[]string{"Yes", "No"}, ss.Win.This(),
 				func(recv, send tree.Node, sig int64, data interface{}) {
 					if sig == 0 {
 						fmt.Println("initializing weights")
-						ss.Net.InitWts()
+						ss.Net.InitWeights()
 						ss.SimHasRun = false
 					}
-					answeredInitWts = true
+					answeredInitWeights = true
 				})
 		}
-		for answeredInitWts == false {
+		for answeredInitWeights == false {
 			time.Sleep(1 * time.Second)
 		}
 		_ = ss.InitRun()

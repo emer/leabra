@@ -90,8 +90,8 @@ func (pj *MSNPath) ClearTrace() {
 	}
 }
 
-func (pj *MSNPath) InitWts() {
-	pj.Path.InitWts()
+func (pj *MSNPath) InitWeights() {
+	pj.Path.InitWeights()
 	pj.ClearTrace()
 }
 
@@ -103,7 +103,7 @@ func (pj *MSNPath) DWt() {
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(*MSNLayer)
 	var effLRate float32
-	if rlay.IsOff() {
+	if rlay.Off {
 		return
 	}
 	for si := range slay.Neurons {
@@ -122,7 +122,7 @@ func (pj *MSNPath) DWt() {
 			rn := &rlay.Neurons[ri]
 			mn := &rlay.ModNeurs[ri]
 
-			if rn.IsOff() {
+			if rn.Off {
 				continue
 			}
 

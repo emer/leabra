@@ -106,7 +106,7 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 // do something different.
 func (ly *Layer) RecvGInc(ltime *leabra.Time) {
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		if p.Type() == NMDA { // skip NMDA
@@ -119,7 +119,7 @@ func (ly *Layer) RecvGInc(ltime *leabra.Time) {
 // RecvGnmdaPInc increments the recurrent-specific GeInc
 func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		if p.Type() != NMDA { // skip non-NMDA
@@ -139,7 +139,7 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
@@ -157,7 +157,7 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 func (ly *Layer) GABABFmGi(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -183,7 +183,7 @@ func (ly *Layer) ActFmG(ltime *leabra.Time) {
 func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -195,7 +195,7 @@ func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 func (ly *Layer) ActLrnFmAlphaMax() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -208,7 +208,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 	mx := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]

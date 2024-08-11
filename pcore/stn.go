@@ -176,7 +176,7 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.Gk = 0
@@ -189,7 +189,7 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons { // note: copied from leabra ActFmG, not calling it..
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.VmFmG(nrn)

@@ -100,17 +100,17 @@ type LeabraLayer interface {
 	// SetThread sets the thread number for this layer to run on
 	SetThread(thr int)
 
-	// InitWts initializes the weight values in the network, i.e., resetting learning
+	// InitWeights initializes the weight values in the network, i.e., resetting learning
 	// Also calls InitActs
-	InitWts()
+	InitWeights()
 
 	// InitActAvg initializes the running-average activation values that drive learning.
 	InitActAvg()
 
-	// InitActs fully initializes activation state -- only called automatically during InitWts
+	// InitActs fully initializes activation state -- only called automatically during InitWeights
 	InitActs()
 
-	// InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
+	// InitWeightsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 	InitWtSym()
 
 	// InitExt initializes external input state -- called prior to apply ext
@@ -253,15 +253,15 @@ type LeabraPath interface {
 	// interface does not need to include accessors to all the basic stuff.
 	AsLeabra() *Path
 
-	// InitWts initializes weight values according to Learn.WtInit params
-	InitWts()
+	// InitWeights initializes weight values according to Learn.WtInit params
+	InitWeights()
 
 	// InitWtSym initializes weight symmetry -- is given the reciprocal pathway where
 	// the Send and Recv layers are reversed.
 	InitWtSym(rpj LeabraPath)
 
 	// InitGInc initializes the per-pathway synaptic conductance threadsafe increments.
-	// This is not typically needed (called during InitWts only) but can be called when needed
+	// This is not typically needed (called during InitWeights only) but can be called when needed
 	InitGInc()
 
 	// SendGDelta sends the delta-activation from sending neuron index si,

@@ -167,7 +167,7 @@ func (ly *Layer) QuarterFinal(ltime *leabra.Time) {
 // Quarter2DWt is optional Q2 DWt -- define where relevant
 func (ly *Layer) Quarter2DWt() {
 	for _, p := range ly.SendPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		if rly, ok := p.RecvLay().(PBWMLayer); ok {

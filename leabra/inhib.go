@@ -124,7 +124,7 @@ func (aa *ActAvgParams) Defaults() {
 	aa.Update()
 }
 
-// EffInit returns the initial value applied during InitWts for the AvgPAvgEff effective layer activity
+// EffInit returns the initial value applied during InitWeights for the AvgPAvgEff effective layer activity
 func (aa *ActAvgParams) EffInit() float32 {
 	if aa.Fixed {
 		return aa.Init

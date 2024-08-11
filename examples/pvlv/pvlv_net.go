@@ -326,7 +326,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 		return
 	}
 
-	net.InitWts()
+	net.InitWeights()
 
 	//lowerLayers := []emer.Layer{negPV, posPV, pptg, vtaP, lhbRmtG, vtaN, cEmPos, cEmNeg, celAcqPosD1, celExtPosD2,
 	//	celExtNegD1, celExtNegD1, celAcqNegD2, vsPatchPosD1, vsPatchPosD2, vsMatrixPosD1, vsMatrixPosD2,

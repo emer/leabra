@@ -289,7 +289,7 @@ func (ly *Layer) RecvPathValues(vals *[]float32, varNm string, sendLay emer.Laye
 	if pj == nil {
 		return err
 	}
-	if pj.IsOff() {
+	if pj.Off {
 		return fmt.Errorf("pathway is off")
 	}
 	for ri := 0; ri < nn; ri++ {
@@ -335,7 +335,7 @@ func (ly *Layer) SendPathValues(vals *[]float32, varNm string, recvLay emer.Laye
 	if pj == nil {
 		return err
 	}
-	if pj.IsOff() {
+	if pj.Off {
 		return fmt.Errorf("pathway is off")
 	}
 	for si := 0; si < nn; si++ {
@@ -416,7 +416,7 @@ func (ly *Layer) BuildPools(nu int) error {
 func (ly *Layer) BuildPaths() error {
 	emsg := ""
 	for _, pj := range ly.RecvPaths {
-		if pj.IsOff() {
+		if pj.Off {
 			continue
 		}
 		err := pj.Build()
@@ -467,7 +467,7 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write(indent.TabBytes(depth))
 	onps := make(emer.Paths, 0, len(ly.RecvPaths))
 	for _, pj := range ly.RecvPaths {
-		if !pj.IsOff() {
+		if !pj.Off {
 			onps = append(onps, pj)
 		}
 	}
@@ -508,7 +508,7 @@ func (ly *Layer) ReadWtsJSON(r io.Reader) error {
 
 // SetWts sets the weights for this layer from weights.Layer decoded values
 func (ly *Layer) SetWts(lw *weights.Layer) error {
-	if ly.IsOff() {
+	if ly.Off {
 		return nil
 	}
 	if lw.MetaData != nil {
@@ -582,15 +582,15 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// InitWts initializes the weight values in the network, i.e., resetting learning
+// InitWeights initializes the weight values in the network, i.e., resetting learning
 // Also calls InitActs
-func (ly *Layer) InitWts() {
+func (ly *Layer) InitWeights() {
 	ly.LeabraLay.UpdateParams()
 	for _, p := range ly.SendPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
-		p.(LeabraPath).InitWts()
+		p.(LeabraPath).InitWeights()
 	}
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
@@ -611,7 +611,7 @@ func (ly *Layer) InitActAvg() {
 	}
 }
 
-// InitActs fully initializes activation state -- only called automatically during InitWts
+// InitActs fully initializes activation state -- only called automatically during InitWeights
 func (ly *Layer) InitActs() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -625,10 +625,10 @@ func (ly *Layer) InitActs() {
 	}
 }
 
-// InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
+// InitWeightsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 func (ly *Layer) InitWtSym() {
 	for _, p := range ly.SendPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		plp := p.(LeabraPath)
@@ -708,7 +708,7 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 			vl := float32(ext.FloatValue(idx))
 			i := ly.Shp.Offset(idx)
 			nrn := &ly.Neurons[i]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			if toTarg {
@@ -735,7 +735,7 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 			vl := float32(ext.FloatValue(idx))
 			ui := etensor.Path2DIndex(&ly.Shp, false, y, x)
 			nrn := &ly.Neurons[ui]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			if toTarg {
@@ -764,7 +764,7 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 					vl := float32(ext.FloatValue(idx))
 					i := ly.Shp.Offset(idx)
 					nrn := &ly.Neurons[i]
-					if nrn.IsOff() {
+					if nrn.Off {
 						continue
 					}
 					if toTarg {
@@ -788,7 +788,7 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		vl := float32(ext.FloatValue1D(i))
@@ -810,7 +810,7 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		vl := float32(ext[i])
@@ -832,7 +832,7 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		vl := ext[i]
@@ -853,7 +853,7 @@ func (ly *Layer) UpdateExtFlags() {
 	clear, set, _ := ly.ApplyExtFlags()
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.SetFlag(false, clear...)
@@ -879,7 +879,7 @@ func (ly *Layer) ActAvgFmAct() {
 func (ly *Layer) ActQ0FmActP() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.ActQ0 = nrn.ActP
@@ -918,7 +918,7 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 func (ly *Layer) AvgLFmAvgM() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Learn.AvgLFmAvgM(nrn)
@@ -937,7 +937,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		pj := p.(LeabraPath).AsLeabra()
@@ -961,7 +961,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 	}
 
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		pj := p.(LeabraPath).AsLeabra()
@@ -990,7 +990,7 @@ func (ly *Layer) GenNoise() {
 func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.DecayState(nrn, decay)
@@ -1007,7 +1007,7 @@ func (ly *Layer) DecayStatePool(pool int, decay float32) {
 	pl := &ly.Pools[pi]
 	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.DecayState(nrn, decay)
@@ -1019,7 +1019,7 @@ func (ly *Layer) DecayStatePool(pool int, decay float32) {
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.HardClamp(nrn)
@@ -1037,13 +1037,13 @@ func (ly *Layer) HardClamp() {
 func (ly *Layer) InitGInc() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.InitGInc(nrn)
 	}
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		p.(LeabraPath).InitGInc()
@@ -1055,14 +1055,14 @@ func (ly *Layer) InitGInc() {
 func (ly *Layer) SendGDelta(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
 				for _, sp := range ly.SendPaths {
-					if sp.IsOff() {
+					if sp.Off {
 						continue
 					}
 					sp.(LeabraPath).SendGDelta(ni, delta)
@@ -1072,7 +1072,7 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 		} else if nrn.ActSent > ly.Act.OptThresh.Send {
 			delta := -nrn.ActSent // un-send the last above-threshold activation to get back to 0
 			for _, sp := range ly.SendPaths {
-				if sp.IsOff() {
+				if sp.Off {
 					continue
 				}
 				sp.(LeabraPath).SendGDelta(ni, delta)
@@ -1093,7 +1093,7 @@ func (ly *Layer) GFmInc(ltime *Time) {
 // do something different.
 func (ly *Layer) RecvGInc(ltime *Time) {
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		p.(LeabraPath).RecvGInc()
@@ -1105,7 +1105,7 @@ func (ly *Layer) RecvGInc(ltime *Time) {
 func (ly *Layer) GFmIncNeur(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		// note: each step broken out here so other variants can add extra terms to Raw
@@ -1121,7 +1121,7 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 		pl.Inhib.Ge.Init()
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			pl.Inhib.Ge.UpdateValue(nrn.Ge, int32(ni))
@@ -1165,7 +1165,7 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 func (ly *Layer) InhibFmPool(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		pl := &ly.Pools[nrn.SubPool]
@@ -1179,7 +1179,7 @@ func (ly *Layer) InhibFmPool(ltime *Time) {
 func (ly *Layer) ActFmG(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.VmFmG(nrn)
@@ -1195,7 +1195,7 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 		pl.Inhib.Act.Init()
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			pl.Inhib.Act.UpdateValue(nrn.Act, int32(ni))
@@ -1228,7 +1228,7 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		switch ltime.Quarter {
@@ -1264,7 +1264,7 @@ func (ly *Layer) CosDiffFmActs() {
 	ssp := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ap := nrn.ActP - avgP // zero mean
@@ -1309,7 +1309,7 @@ func (ly *Layer) IsTarget() bool {
 // DWt computes the weight change (learning) -- calls DWt method on sending pathways
 func (ly *Layer) DWt() {
 	for _, p := range ly.SendPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		p.(LeabraPath).DWt()
@@ -1319,7 +1319,7 @@ func (ly *Layer) DWt() {
 // WtFmDWt updates the weights from delta-weight changes -- on the sending pathways
 func (ly *Layer) WtFmDWt() {
 	for _, p := range ly.SendPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		p.(LeabraPath).WtFmDWt()
@@ -1329,7 +1329,7 @@ func (ly *Layer) WtFmDWt() {
 // WtBalFmWt computes the Weight Balance factors based on average recv weights
 func (ly *Layer) WtBalFmWt() {
 	for _, p := range ly.RecvPaths {
-		if p.IsOff() {
+		if p.Off {
 			continue
 		}
 		p.(LeabraPath).WtBalFmWt()
@@ -1340,7 +1340,7 @@ func (ly *Layer) WtBalFmWt() {
 // Useful for implementing learning rate schedules.
 func (ly *Layer) LrateMult(mult float32) {
 	for _, p := range ly.RecvPaths {
-		// if p.IsOff() { // keep all sync'd
+		// if p.Off { // keep all sync'd
 		// 	continue
 		// }
 		p.(LeabraPath).LrateMult(mult)
@@ -1386,7 +1386,7 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 	sse = 0.0
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		var d float32
@@ -1455,7 +1455,7 @@ var LayerProps = tree.Props{
 	// 		"icon": "reset",
 	// 		"desc": "return all parameters to their intial default values",
 	// 	}},
-	// 	{"InitWts", tree.Props{
+	// 	{"InitWeights", tree.Props{
 	// 		"icon": "update",
 	// 		"desc": "initialize the layer's weight values according to path parameters, for all *sending* pathways out of this layer",
 	// 	}},

@@ -41,7 +41,7 @@ func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.Act = ly.PredRange.ClipValue(nrn.Ge) // clipped linear
@@ -132,7 +132,7 @@ func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
 	pact := pnrn.Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if hasRew {
