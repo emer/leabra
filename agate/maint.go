@@ -25,7 +25,7 @@ func (pc *PulseClearParams) Defaults() {
 
 // /////////////////////////////////////////////////////////////////////////
 // MaintLayer is a layer with NMDA channels that supports active maintenance
-// in frontal cortex, via NMDA channels (in an NMDAMaintPrjn).
+// in frontal cortex, via NMDA channels (in an NMDAMaintPath).
 type MaintLayer struct {
 	glong.Layer
 

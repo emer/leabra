@@ -13,19 +13,19 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////
-// GPiThalPrjn
+// GPiThalPath
 
-// GPiThalPrjn accumulates per-prjn raw conductance that is needed for separately weighting
+// GPiThalPath accumulates per-path raw conductance that is needed for separately weighting
 // NoGo vs. Go inputs
-type GPiThalPrjn struct {
-	leabra.Prjn // access as .Prjn
+type GPiThalPath struct {
+	leabra.Path // access as .Path
 
-	// per-recv, per-prjn raw excitatory input
+	// per-recv, per-path raw excitatory input
 	GeRaw []float32
 }
 
-func (pj *GPiThalPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *GPiThalPath) Build() error {
+	err := pj.Path.Build()
 	if err != nil {
 		return err
 	}
@@ -35,15 +35,15 @@ func (pj *GPiThalPrjn) Build() error {
 	return nil
 }
 
-func (pj *GPiThalPrjn) InitGInc() {
-	pj.Prjn.InitGInc()
+func (pj *GPiThalPath) InitGInc() {
+	pj.Path.InitGInc()
 	for ri := range pj.GeRaw {
 		pj.GeRaw[ri] = 0
 	}
 }
 
-// RecvGInc increments the receiver's GeInc or GiInc from that of all the projections.
-func (pj *GPiThalPrjn) RecvGInc() {
+// RecvGInc increments the receiver's GeInc or GiInc from that of all the pathways.
+func (pj *GPiThalPath) RecvGInc() {
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
 	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
@@ -219,32 +219,32 @@ func (ly *GPiThalLayer) SendGateShape() error {
 	return lasterr
 }
 
-// MatrixPrjns returns the recv prjns from Go and NoGo MatrixLayer pathways -- error if not
-// found or if prjns are not of the GPiThalPrjn type
-func (ly *GPiThalLayer) MatrixPrjns() (goPrjn, nogoPrjn *GPiThalPrjn, err error) {
-	for _, p := range ly.RcvPrjns {
+// MatrixPaths returns the recv paths from Go and NoGo MatrixLayer pathways -- error if not
+// found or if paths are not of the GPiThalPath type
+func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error) {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		gp, ok := p.(*GPiThalPrjn)
+		gp, ok := p.(*GPiThalPath)
 		if !ok {
-			err = fmt.Errorf("GPiThalLayer must have RecvPrjn's of type GPiThalPrjn")
+			err = fmt.Errorf("GPiThalLayer must have RecvPath's of type GPiThalPath")
 			return
 		}
 		slay := p.SendLay()
 		mlay, ok := slay.(*MatrixLayer)
 		if ok {
 			if mlay.DaR == D1R {
-				goPrjn = gp
+				goPath = gp
 			} else {
-				nogoPrjn = gp
+				nogoPath = gp
 			}
 		} else {
-			nogoPrjn = gp
+			nogoPath = gp
 		}
 	}
-	if goPrjn == nil || nogoPrjn == nil {
-		err = fmt.Errorf("GPiThalLayer must have RecvPrjn's from a MatrixLayer D1R (Go) and another NoGo layer")
+	if goPath == nil || nogoPath == nil {
+		err = fmt.Errorf("GPiThalLayer must have RecvPath's from a MatrixLayer D1R (Go) and another NoGo layer")
 	}
 	return
 }
@@ -273,14 +273,14 @@ func (ly *GPiThalLayer) AddSendTo(laynm string) {
 	ly.SendTo = append(ly.SendTo, laynm)
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *GPiThalLayer) Build() error {
 	err := ly.GateLayer.Build()
 	if err != nil {
 		return err
 	}
 	ly.GPiNeurs = make([]GPiNeuron, len(ly.Neurons))
-	_, _, err = ly.MatrixPrjns()
+	_, _, err = ly.MatrixPaths()
 	if err != nil {
 		log.Println(err)
 	}
@@ -313,14 +313,14 @@ func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
-	goPrjn, nogoPrjn, _ := ly.MatrixPrjns()
+	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		goRaw := goPrjn.GeRaw[ni]
-		nogoRaw := nogoPrjn.GeRaw[ni]
+		goRaw := goPath.GeRaw[ni]
+		nogoRaw := nogoPath.GeRaw[ni]
 		nrn.GeRaw = ly.Gate.GeRaw(goRaw, nogoRaw)
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)

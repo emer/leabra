@@ -24,7 +24,7 @@ import (
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/eplot"
@@ -64,34 +64,34 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "no extra learning factors",
+			{Sel: "Path", Desc: "no extra learning factors",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.02", // slower overall is key
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Lrate":       "0.02", // slower overall is key
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.WtBal.On":    "false",
 				}},
 			{Sel: "Layer", Desc: "no decay",
 				Params: params.Params{
 					"Layer.Act.Init.Decay": "0", // key for all layers not otherwise done automatically
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 			{Sel: ".BgFixed", Desc: "BG Matrix -> GP wiring",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0",
+					"Path.WtInit.Sym":  "false",
 				}},
-			{Sel: "RWPrjn", Desc: "Reward prediction -- into PVi",
+			{Sel: "RWPath", Desc: "Reward prediction -- into PVi",
 				Params: params.Params{
-					"Prjn.Learn.Lrate": "0.02",
-					"Prjn.WtInit.Mean": "0",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
+					"Path.Learn.Lrate": "0.02",
+					"Path.WtInit.Mean": "0",
+					"Path.WtInit.Var":  "0",
+					"Path.WtInit.Sym":  "false",
 				}},
 			{Sel: "#Rew", Desc: "Reward layer -- no clamp limits",
 				Params: params.Params{
@@ -100,38 +100,38 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: ".PFCFmDeep", Desc: "PFC Deep -> PFC fixed",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0",
+					"Path.WtInit.Sym":  "false",
 				}},
 			{Sel: ".PFCMntDToOut", Desc: "PFC MntD -> PFC Out fixed",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0",
+					"Path.WtInit.Sym":  "false",
 				}},
 			{Sel: ".FmPFCOutD", Desc: "PFC OutD needs to be strong b/c avg act says weak",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4",
+					"Path.WtScale.Abs": "4",
 				}},
 			{Sel: ".PFCFixed", Desc: "Input -> PFC",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0",
-					"Prjn.WtInit.Sym":  "false",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0",
+					"Path.WtInit.Sym":  "false",
 				}},
-			{Sel: ".MatrixPrjn", Desc: "Matrix learning",
+			{Sel: ".MatrixPath", Desc: "Matrix learning",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":         "0.04", // .04 > .1 > .02
-					"Prjn.WtInit.Var":          "0.1",
-					"Prjn.Trace.GateNoGoPosLR": "1",    // 0.1 default
-					"Prjn.Trace.NotGatedLR":    "0.7",  // 0.7 default
-					"Prjn.Trace.Decay":         "1.0",  // 1.0 default
-					"Prjn.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..
-					"Prjn.Trace.Deriv":         "true", // true default, better than false
+					"Path.Learn.Lrate":         "0.04", // .04 > .1 > .02
+					"Path.WtInit.Var":          "0.1",
+					"Path.Trace.GateNoGoPosLR": "1",    // 0.1 default
+					"Path.Trace.NotGatedLR":    "0.7",  // 0.7 default
+					"Path.Trace.Decay":         "1.0",  // 1.0 default
+					"Path.Trace.AChDecay":      "0.0",  // not useful even at .1, surprising..
+					"Path.Trace.Deriv":         "true", // true default, better than false
 				}},
 			{Sel: "MatrixLayer", Desc: "exploring these options",
 				Params: params.Params{
@@ -190,7 +190,7 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#InputToOutput", Desc: "weaker",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.5",
+					"Path.WtScale.Rel": "0.5",
 				}},
 			{Sel: "#Hidden", Desc: "Basic params",
 				Params: params.Params{
@@ -224,7 +224,7 @@ type Sim struct {
 	// strength of dopamine dips: 1 default -- reduce to siulate D2 agonists
 	DipDaGain float32
 
-	// the network -- click to view / edit parameters for layers, prjns, etc
+	// the network -- click to view / edit parameters for layers, paths, etc
 	Net *pbwm.Network `view:"no-inline"`
 
 	// training epoch-level log data
@@ -396,7 +396,7 @@ type Sim struct {
 	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// if true, runing in no GUI mode
 	NoGui bool `view:"-"`
@@ -521,20 +521,20 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
 
-	full := prjn.NewFull()
-	fmin := prjn.NewRect()
+	full := path.NewFull()
+	fmin := path.NewRect()
 	fmin.Size.Set(1, 1)
 	fmin.Scale.Set(1, 1)
 	fmin.Wrap = true
 
-	net.ConnectLayersPrjn(ctrl, rp, full, emer.Forward, &rl.RWPrjn{})
-	net.ConnectLayersPrjn(pfcMntD, rp, full, emer.Forward, &rl.RWPrjn{})
-	net.ConnectLayersPrjn(pfcOutD, rp, full, emer.Forward, &rl.RWPrjn{})
+	net.ConnectLayersPath(ctrl, rp, full, emer.Forward, &rl.RWPath{})
+	net.ConnectLayersPath(pfcMntD, rp, full, emer.Forward, &rl.RWPath{})
+	net.ConnectLayersPath(pfcOutD, rp, full, emer.Forward, &rl.RWPath{})
 
-	pj := net.ConnectLayersPrjn(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
-	pj.SetClass("MatrixPrjn")
-	pj = net.ConnectLayersPrjn(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePrjn{})
-	pj.SetClass("MatrixPrjn")
+	pj := net.ConnectLayersPath(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePath{})
+	pj.SetClass("MatrixPath")
+	pj = net.ConnectLayersPath(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePath{})
+	pj.SetClass("MatrixPath")
 	pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
 	pj.SetClass("PFCFixed")
 
@@ -675,7 +675,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "CtrlInput", "Output"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats == nil {
 			continue
 		}
@@ -877,7 +877,7 @@ func (ss *Sim) Stopped() {
 // SaveWeights saves the network weights -- when called with views.CallMethod
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWtsJSON(filename)
+	ss.Net.SaveWeightsJSON(filename)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1629,7 +1629,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
@@ -1667,7 +1667,7 @@ func (ss *Sim) CmdArgs() {
 			defer ss.RunFile.Close()
 		}
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)

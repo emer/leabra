@@ -6,7 +6,7 @@ package pcore
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -38,8 +38,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, sp
 	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat path.Pattern) emer.Path {
 	return ConnectToMatrix(&nt.Network, send, recv, pat)
 }
 
@@ -64,9 +64,9 @@ func AddMatrixLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, n
 	return ly
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixPrjn{})
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+	return nt.ConnectLayersPath(send, recv, pat, emer.Forward, &MatrixPath{})
 }
 
 // AddGPLayer adds a GPLayer of given size, with given name.
@@ -147,8 +147,8 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: space})
 	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: space})
 
-	one2one := prjn.NewPoolOneToOne()
-	full := prjn.NewFull()
+	one2one := path.NewPoolOneToOne()
+	full := path.NewFull()
 
 	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
@@ -161,7 +161,7 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
 
-	// note: this projection exists in bio, but does weird things with Ca dynamics in STNs..
+	// note: this pathway exists in bio, but does weird things with Ca dynamics in STNs..
 	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
 	// pj.SetClass("BgFixed")
 

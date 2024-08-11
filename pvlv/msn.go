@@ -211,16 +211,16 @@ func (ly *MSNLayer) QuarterInitPrvs(ltime *leabra.Time) {
 }
 
 func (ly *MSNLayer) ClearMSNTrace() {
-	for pi := range ly.RcvPrjns {
-		pj := ly.RcvPrjns[pi]
-		mpj, ok := pj.(*MSNPrjn)
+	for pi := range ly.RecvPaths {
+		pj := ly.RecvPaths[pi]
+		mpj, ok := pj.(*MSNPath)
 		if ok {
 			mpj.ClearTrace()
 		}
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections
+// Build constructs the layer state, including calling Build on the pathways
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.
 func (ly *MSNLayer) Build() error {

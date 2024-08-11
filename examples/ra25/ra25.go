@@ -30,7 +30,7 @@ import (
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
@@ -69,12 +69,12 @@ var ParamSets = params.Sets{
 				}},
 		},
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Path", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "true", // no diff really
-					// "Prjn.Learn.WtBal.Targs": "true", // no diff here
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "true", // no diff really
+					// "Path.Learn.WtBal.Targs": "true", // no diff here
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
@@ -82,9 +82,9 @@ var ParamSets = params.Sets{
 					"Layer.Act.Init.Decay": "0.0",
 					"Layer.Act.Gbar.L":     "0.1", // set explictly, new default, a bit better vs 0.2
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
 				Params: params.Params{
@@ -114,18 +114,18 @@ var ParamSets = params.Sets{
 	}},
 	"NoMomentum": {Desc: "no momentum or normalization", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "no norm or momentum",
+			{Sel: "Path", Desc: "no norm or momentum",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
 				}},
 		},
 	}},
 	"WtBalOn": {Desc: "try with weight bal on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "weight bal on",
+			{Sel: "Path", Desc: "weight bal on",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "true",
+					"Path.Learn.WtBal.On": "true",
 				}},
 		},
 	}},
@@ -138,7 +138,7 @@ var ParamSets = params.Sets{
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 
-	// the network -- click to view / edit parameters for layers, prjns, etc
+	// the network -- click to view / edit parameters for layers, paths, etc
 	Net *leabra.Network `view:"no-inline"`
 
 	// all parameter management
@@ -190,7 +190,7 @@ type Sim struct {
 	GUI egui.GUI `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// if true, runing in no GUI mode
 	NoGui bool `view:"-"`
@@ -286,9 +286,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	// default is Above, YAlign = Front, XAlign = Center
 	// hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
-	// note: see emergent/prjn module for all the options on how to connect
-	// NewFull returns a new prjn.Full connectivity pattern
-	full := prjn.NewFull()
+	// note: see emergent/path module for all the options on how to connect
+	// NewFull returns a new path.Full connectivity pattern
+	full := path.NewFull()
 
 	net.ConnectLayers(inp, hid1, full, emer.Forward)
 	net.BidirConnectLayers(hid1, hid2, full)
@@ -397,7 +397,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "Output"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
@@ -449,10 +449,10 @@ func (ss *Sim) TrainTrial() {
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
 	ss.Log(etime.Train, etime.Run)
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(core.Filename(fnm))
+		ss.Net.SaveWeightsJSON(core.Filename(fnm))
 	}
 }
 
@@ -523,7 +523,7 @@ func (ss *Sim) Stopped() {
 // SaveWeights saves the network weights -- when called with views.CallMethod
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWtsJSON(filename)
+	ss.Net.SaveWeightsJSON(filename)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -970,7 +970,7 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.StartRun, "run", 0, "starting run number -- determines the random seed -- runs counts from there -- can do all runs in parallel by launching separate jobs with each run, runs = 1")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&saveNetData, "netdata", false, "if true, save network activation etc data from testing trials, for later viewing in netview")
@@ -997,7 +997,7 @@ func (ss *Sim) CmdArgs() {
 		ss.NetData = &netview.NetData{}
 		ss.NetData.Init(ss.Net, 200, true, 200) // 200 = amount to save
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs starting at %d\n", ss.MaxRuns, ss.StartRun)

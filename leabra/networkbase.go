@@ -23,7 +23,7 @@ import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/emergent/v2/timer"
 	"github.com/emer/emergent/v2/weights"
@@ -131,18 +131,18 @@ func (nt *NetworkBase) MakeLayMap() {
 	}
 }
 
-// PrjnByNameTry returns a Prjn by looking it up by name in the list of projections
+// PathByNameTry returns a Path by looking it up by name in the list of pathways
 // (nil if not found).
-func (nt *NetworkBase) PrjnByNameTry(name string) (emer.Prjn, error) {
+func (nt *NetworkBase) PathByNameTry(name string) (emer.Path, error) {
 	for _, ly := range nt.Layers {
-		for i := range ly.NRecvPrjns() {
-			pj := ly.RecvPrjn(i)
+		for i := range ly.NRecvPaths() {
+			pj := ly.RecvPath(i)
 			if name == pj.Name() {
 				return pj, nil
 			}
 		}
 	}
-	return nil, fmt.Errorf("could not find prjn with name %q", name)
+	return nil, fmt.Errorf("could not find path with name %q", name)
 }
 
 // LayersByClass returns a list of layer names by given class(es).
@@ -272,7 +272,7 @@ func (nt *NetworkBase) BoundsUpdate() {
 	nt.MaxPos = mx
 }
 
-// ApplyParams applies given parameter style Sheet to layers and prjns in this network.
+// ApplyParams applies given parameter style Sheet to layers and paths in this network.
 // Calls UpdateParams to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
@@ -319,14 +319,14 @@ func (nt *NetworkBase) KeyLayerParams() string {
 	return "" // todo: implement!
 }
 
-// KeyPrjnParams returns a listing for all Recv projections in the network,
-// of the most important projection-level params (specific to each algorithm).
-func (nt *NetworkBase) KeyPrjnParams() string {
+// KeyPathParams returns a listing for all Recv pathways in the network,
+// of the most important pathway-level params (specific to each algorithm).
+func (nt *NetworkBase) KeyPathParams() string {
 	return nt.AllWtScales()
 }
 
 // AllWtScales returns a listing of all WtScale parameters in the Network
-// in all Layers, Recv projections.  These are among the most important
+// in all Layers, Recv pathways.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep
 // track of what they all are set to.
 func (nt *NetworkBase) AllWtScales() string {
@@ -337,12 +337,12 @@ func (nt *NetworkBase) AllWtScales() string {
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
 		str += "\nLayer: " + ly.Name() + "\n"
-		rpjn := ly.RcvPrjns
+		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
 			if p.IsOff() {
 				continue
 			}
-			pj := p.(LeabraPrjn).AsLeabra()
+			pj := p.(LeabraPath).AsLeabra()
 			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name(), pj.WtScale.Abs, pj.WtScale.Rel)
 		}
 	}
@@ -390,11 +390,11 @@ func (nt *NetworkBase) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
 }
 
-// ConnectLayerNames establishes a projection between two layers, referenced by name
-// adding to the recv and send projection lists on each side of the connection.
+// ConnectLayerNames establishes a pathway between two layers, referenced by name
+// adding to the recv and send pathway lists on each side of the connection.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat prjn.Pattern, typ emer.PrjnType) (rlay, slay emer.Layer, pj emer.Prjn, err error) {
+func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat path.Pattern, typ emer.PathType) (rlay, slay emer.Layer, pj emer.Path, err error) {
 	rlay, err = nt.LayerByNameTry(recv)
 	if err != nil {
 		return
@@ -407,33 +407,33 @@ func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat prjn.Pattern, ty
 	return
 }
 
-// ConnectLayers establishes a projection between two layers,
-// adding to the recv and send projection lists on each side of the connection.
+// ConnectLayers establishes a pathway between two layers,
+// adding to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType) emer.Prjn {
-	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
-	return nt.ConnectLayersPrjn(send, recv, pat, typ, pj)
+func (nt *NetworkBase) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ emer.PathType) emer.Path {
+	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
+	return nt.ConnectLayersPath(send, recv, pat, typ, pj)
 }
 
-// ConnectLayersPrjn makes connection using given projection between two layers,
-// adding given prjn to the recv and send projection lists on each side of the connection.
+// ConnectLayersPath makes connection using given pathway between two layers,
+// adding given path to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkBase) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPrjn).AsLeabra().Connect(send, recv, pat, typ)
-	recv.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
-	send.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
+	pj.(LeabraPath).AsLeabra().Connect(send, recv, pat, typ)
+	recv.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
+	send.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
 }
 
-// BidirConnectLayerNames establishes bidirectional projections between two layers,
-// referenced by name, with low = the lower layer that sends a Forward projection
-// to the high layer, and receives a Back projection in the opposite direction.
+// BidirConnectLayerNames establishes bidirectional pathways between two layers,
+// referenced by name, with low = the lower layer that sends a Forward pathway
+// to the high layer, and receives a Back pathway in the opposite direction.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat prjn.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Prjn, err error) {
+func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat path.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Path, err error) {
 	lowlay, err = nt.LayerByNameTry(low)
 	if err != nil {
 		return
@@ -447,48 +447,48 @@ func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat prjn.Pattern
 	return
 }
 
-// BidirConnectLayers establishes bidirectional projections between two layers,
-// with low = lower layer that sends a Forward projection to the high layer,
-// and receives a Back projection in the opposite direction.
+// BidirConnectLayers establishes bidirectional pathways between two layers,
+// with low = lower layer that sends a Forward pathway to the high layer,
+// and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern) (fwdpj, backpj emer.Prjn) {
+func (nt *NetworkBase) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
 	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
 	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
 	return
 }
 
-// BidirConnectLayersPy establishes bidirectional projections between two layers,
-// with low = lower layer that sends a Forward projection to the high layer,
-// and receives a Back projection in the opposite direction.
+// BidirConnectLayersPy establishes bidirectional pathways between two layers,
+// with low = lower layer that sends a Forward pathway to the high layer,
+// and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 // Py = python version with no return vals.
-func (nt *NetworkBase) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Pattern) {
+func (nt *NetworkBase) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
 	nt.ConnectLayers(low, high, pat, emer.Forward)
 	nt.ConnectLayers(high, low, pat, emer.Back)
 }
 
-// LateralConnectLayer establishes a self-projection within given layer.
+// LateralConnectLayer establishes a self-pathway within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) emer.Prjn {
-	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
-	return nt.LateralConnectLayerPrjn(lay, pat, pj)
+func (nt *NetworkBase) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Path {
+	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
+	return nt.LateralConnectLayerPath(lay, pat, pj)
 }
 
-// LateralConnectLayerPrjn makes lateral self-projection using given projection.
+// LateralConnectLayerPath makes lateral self-pathway using given pathway.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkBase) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPrjn).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
-	lay.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
-	lay.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
+	pj.(LeabraPath).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
+	lay.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
+	lay.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
 }
 
-// Build constructs the layer and projection state based on the layer shapes
+// Build constructs the layer and pathway state based on the layer shapes
 // and patterns of interconnectivity
 func (nt *NetworkBase) Build() error {
 	nt.StopThreads() // any existing..
@@ -522,9 +522,9 @@ func (nt *NetworkBase) Build() error {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Weights File
 
-// SaveWtsJSON saves network weights (and any other state that adapts with learning)
+// SaveWeightsJSON saves network weights (and any other state that adapts with learning)
 // to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *NetworkBase) SaveWtsJSON(filename core.Filename) error {
+func (nt *NetworkBase) SaveWeightsJSON(filename core.Filename) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -544,9 +544,9 @@ func (nt *NetworkBase) SaveWtsJSON(filename core.Filename) error {
 	return err
 }
 
-// OpenWtsJSON opens network weights (and any other state that adapts with learning)
+// OpenWeightsJSON opens network weights (and any other state that adapts with learning)
 // from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsJSON(filename core.Filename) error {
+func (nt *NetworkBase) OpenWeightsJSON(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -652,9 +652,9 @@ func (nt *NetworkBase) SetWts(nw *weights.Network) error {
 	return err
 }
 
-// OpenWtsCpp opens network weights (and any other state that adapts with learning)
+// OpenWeightsCpp opens network weights (and any other state that adapts with learning)
 // from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWtsCpp(filename core.Filename) error {
+func (nt *NetworkBase) OpenWeightsCpp(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -691,7 +691,7 @@ func (nt *NetworkBase) ReadWtsCpp(r io.Reader) error {
 }
 
 // VarRange returns the min / max values for given variable
-// todo: support r. s. projection values
+// todo: support r. s. pathway values
 func (nt *NetworkBase) VarRange(varNm string) (min, max float32, err error) {
 	first := true
 	for _, ly := range nt.Layers {

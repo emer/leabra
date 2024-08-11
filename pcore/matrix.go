@@ -111,8 +111,8 @@ func (ly *MatrixLayer) Defaults() {
 	// important: user needs to adjust wt scale of some PFC inputs vs others:
 	// drivers vs. modulators
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		if _, ok := pj.Send.(*GPLayer); ok { // From GPe TA or In
 			pj.WtScale.Abs = 3
 			pj.Learn.Learn = false
@@ -125,7 +125,7 @@ func (ly *MatrixLayer) Defaults() {
 			if strings.HasSuffix(pj.Send.Name(), "GPeIn") { // GPeInToMtx
 				pj.WtScale.Abs = 0.3 // counterbalance for GPeTA to reduce oscillations
 			} else if strings.HasSuffix(pj.Send.Name(), "GPeTA") { // GPeTAToMtx
-				if strings.HasSuffix(ly.Nm, "MtxGo") {
+				if strings.HasSuffix(ly.Name, "MtxGo") {
 					pj.WtScale.Abs = 0.8
 				} else {
 					pj.WtScale.Abs = 0.3 // GPeTAToMtxNo must be weaker to prevent oscillations, even with GPeIn offset
@@ -247,9 +247,9 @@ func (ly *MatrixLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
 }
 
 //////////////////////////////////////////////////////////////////////
-//  MatrixPrjn
+//  MatrixPath
 
-// MatrixTraceParams for for trace-based learning in the MatrixPrjn.
+// MatrixTraceParams for for trace-based learning in the MatrixPath.
 // A trace of synaptic co-activity is formed, and then modulated by dopamine
 // whenever it occurs.  This bridges the temporal gap between gating activity
 // and subsequent activity, and is based biologically on synaptic tags.
@@ -269,12 +269,12 @@ func (tp *MatrixTraceParams) Defaults() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  MatrixPrjn
+//  MatrixPath
 
-// MatrixPrjn does dopamine-modulated, gated trace learning, for Matrix learning
+// MatrixPath does dopamine-modulated, gated trace learning, for Matrix learning
 // in PBWM context
-type MatrixPrjn struct {
-	leabra.Prjn
+type MatrixPath struct {
+	leabra.Path
 
 	// special parameters for matrix trace learning
 	Trace MatrixTraceParams `view:"inline"`
@@ -283,8 +283,8 @@ type MatrixPrjn struct {
 	TrSyns []TraceSyn
 }
 
-func (pj *MatrixPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *MatrixPath) Defaults() {
+	pj.Path.Defaults()
 	pj.Trace.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
@@ -293,13 +293,13 @@ func (pj *MatrixPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-func (pj *MatrixPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *MatrixPath) Build() error {
+	err := pj.Path.Build()
 	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
-func (pj *MatrixPrjn) ClearTrace() {
+func (pj *MatrixPath) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.NTr = 0
@@ -307,13 +307,13 @@ func (pj *MatrixPrjn) ClearTrace() {
 	}
 }
 
-func (pj *MatrixPrjn) InitWts() {
-	pj.Prjn.InitWts()
+func (pj *MatrixPath) InitWts() {
+	pj.Path.InitWts()
 	pj.ClearTrace()
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *MatrixPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *MatrixPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -395,34 +395,34 @@ func (pj *MatrixPrjn) DWt() {
 // SynValues
 
 // SynVarIndex returns the index of given variable within the synapse,
-// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// according to *this path's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *MatrixPrjn) SynVarIndex(varNm string) (int, error) {
-	vidx, err := pj.Prjn.SynVarIndex(varNm)
+func (pj *MatrixPath) SynVarIndex(varNm string) (int, error) {
+	vidx, err := pj.Path.SynVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	nn := pj.Prjn.SynVarNum()
+	nn := pj.Path.SynVarNum()
 	switch varNm {
 	case "NTr":
 		return nn, nil
 	case "Tr":
 		return nn + 1, nil
 	}
-	return -1, fmt.Errorf("MatrixPrjn SynVarIndex: variable name: %v not valid", varNm)
+	return -1, fmt.Errorf("MatrixPath SynVarIndex: variable name: %v not valid", varNm)
 }
 
 // SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MatrixPrjn) SynVal1D(varIndex int, synIndex int) float32 {
+func (pj *MatrixPath) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynVarsAll) {
 		return math32.NaN()
 	}
-	nn := pj.Prjn.SynVarNum()
+	nn := pj.Path.SynVarNum()
 	if varIndex < nn {
-		return pj.Prjn.SynVal1D(varIndex, synIndex)
+		return pj.Path.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return math32.NaN()
@@ -433,7 +433,7 @@ func (pj *MatrixPrjn) SynVal1D(varIndex int, synIndex int) float32 {
 }
 
 // SynVarNum returns the number of synapse-level variables
-// for this prjn.  This is needed for extending indexes in derived types.
-func (pj *MatrixPrjn) SynVarNum() int {
-	return pj.Prjn.SynVarNum() + len(TraceSynVars)
+// for this path.  This is needed for extending indexes in derived types.
+func (pj *MatrixPath) SynVarNum() int {
+	return pj.Path.SynVarNum() + len(TraceSynVars)
 }

@@ -38,7 +38,7 @@ type BlAmygLayer struct {
 func (ly *BlAmygLayer) Build() error {
 	nu := ly.Shp.Len()
 	if nu == 0 {
-		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Nm)
+		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}
 	ly.Neurons = make([]leabra.Neuron, nu)
 	err := ly.AsMod().Build()
@@ -49,7 +49,7 @@ func (ly *BlAmygLayer) Build() error {
 	if err != nil {
 		return err
 	}
-	err = ly.BuildPrjns()
+	err = ly.BuildPaths()
 	if err != nil {
 		return err
 	}

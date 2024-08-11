@@ -56,29 +56,29 @@ func (np *NMDAParams) Gnmda(nmda, vm float32) float32 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// NMDAPrjn
+// NMDAPath
 
-// NMDAPrjn is a projection with NMDA maintenance channels.
-// It marks a projection for special treatment in a MaintLayer
+// NMDAPath is a pathway with NMDA maintenance channels.
+// It marks a pathway for special treatment in a MaintLayer
 // which actually does the NMDA computations.  Excitatory conductance is aggregated
-// separately for this projection.
-type NMDAPrjn struct {
-	leabra.Prjn // access as .Prjn
+// separately for this pathway.
+type NMDAPath struct {
+	leabra.Path // access as .Path
 }
 
-func (pj *NMDAPrjn) UpdateParams() {
-	pj.Prjn.UpdateParams()
+func (pj *NMDAPath) UpdateParams() {
+	pj.Path.UpdateParams()
 }
 
-func (pj *NMDAPrjn) Type() emer.PrjnType {
+func (pj *NMDAPath) Type() emer.PathType {
 	return NMDA
 }
 
-func (pj *NMDAPrjn) PrjnTypeName() string {
-	if pj.Typ < emer.PrjnTypeN {
+func (pj *NMDAPath) PathTypeName() string {
+	if pj.Typ < emer.PathTypeN {
 		return pj.Typ.String()
 	}
-	ptyp := PrjnType(pj.Typ)
+	ptyp := PathType(pj.Typ)
 	ts := ptyp.String()
 	sz := len(ts)
 	if sz > 0 {
@@ -88,22 +88,22 @@ func (pj *NMDAPrjn) PrjnTypeName() string {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  PrjnType
+//  PathType
 
-// PrjnType has the GLong extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType //enums:enum
+// PathType has the GLong extensions to the emer.PathType types, for gui
+type PathType emer.PathType //enums:enum
 
-// The GLong prjn types
+// The GLong path types
 const (
-	// NMDAPrjn are projections that have strong NMDA channels supporting maintenance
-	NMDA emer.PrjnType = emer.PrjnType(emer.PrjnTypeN) + iota
+	// NMDAPath are pathways that have strong NMDA channels supporting maintenance
+	NMDA emer.PathType = emer.PathType(emer.PathTypeN) + iota
 )
 
 // gui versions
 const (
-	NMDA_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
+	NMDA_ PathType = PathType(emer.PathTypeN) + iota
 )
 
-// var PrjnProps = tree.Props{
-// 	"EnumType:Typ": KiT_PrjnType,
+// var PathProps = tree.Props{
+// 	"EnumType:Typ": KiT_PathType,
 // }

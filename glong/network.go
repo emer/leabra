@@ -6,7 +6,7 @@ package glong
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -15,13 +15,13 @@ type Network struct {
 	leabra.Network
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -41,8 +41,8 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// ConnectNMDA adds a NMDAPrjn between given layers
-func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectNMDA adds a NMDAPath between given layers
+func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat path.Pattern) emer.Path {
 	return ConnectNMDA(&nt.Network, send, recv, pat)
 }
 
@@ -64,7 +64,7 @@ func AddGlongLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, 
 	return ly
 }
 
-// ConnectNMDA adds a NMDAPrjn between given layers
-func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, NMDA, &NMDAPrjn{})
+// ConnectNMDA adds a NMDAPath between given layers
+func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+	return nt.ConnectLayersPath(send, recv, pat, NMDA, &NMDAPath{})
 }

@@ -15,19 +15,19 @@ import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/weights"
 	"github.com/emer/etable/v2/etensor"
 )
 
-// Prjn is a basic Leabra projection with synaptic learning parameters
-type Prjn struct {
-	PrjnBase
+// Path is a basic Leabra pathway with synaptic learning parameters
+type Path struct {
+	PathBase
 
 	// initial random weight distribution
 	WtInit WtInitParams `view:"inline"`
 
-	// weight scaling parameters: modulates overall strength of projection, using both absolute and relative factors
+	// weight scaling parameters: modulates overall strength of pathway, using both absolute and relative factors
 	WtScale WtScaleParams `view:"inline"`
 
 	// synaptic-level learning parameters
@@ -39,21 +39,21 @@ type Prjn struct {
 	// scaling factor for integrating synaptic input conductances (G's) -- computed in AlphaCycInit, incorporates running-average activity levels
 	GScale float32
 
-	// local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on projection type -- this will be thread-safe
+	// local per-recv unit increment accumulator for synaptic conductance from sending units -- goes to either GeRaw or GiRaw on neuron depending on pathway type -- this will be thread-safe
 	GInc []float32
 
-	// weight balance state variables for this projection, one per recv neuron
-	WbRecv []WtBalRecvPrjn
+	// weight balance state variables for this pathway, one per recv neuron
+	WbRecv []WtBalRecvPath
 }
 
-// AsLeabra returns this prjn as a leabra.Prjn -- all derived prjns must redefine
-// this to return the base Prjn type, so that the LeabraPrjn interface does not
+// AsLeabra returns this path as a leabra.Path -- all derived paths must redefine
+// this to return the base Path type, so that the LeabraPath interface does not
 // need to include accessors to all the basic stuff.
-func (pj *Prjn) AsLeabra() *Prjn {
+func (pj *Path) AsLeabra() *Path {
 	return pj
 }
 
-func (pj *Prjn) Defaults() {
+func (pj *Path) Defaults() {
 	pj.WtInit.Defaults()
 	pj.WtScale.Defaults()
 	pj.Learn.Defaults()
@@ -61,19 +61,19 @@ func (pj *Prjn) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-func (pj *Prjn) UpdateParams() {
+func (pj *Path) UpdateParams() {
 	pj.WtScale.Update()
 	pj.Learn.Update()
 	pj.Learn.LrateInit = pj.Learn.Lrate
 }
 
-func (pj *Prjn) SetClass(cls string) emer.Prjn         { pj.Cls = cls; return pj }
-func (pj *Prjn) SetPattern(pat prjn.Pattern) emer.Prjn { pj.Pat = pat; return pj }
-func (pj *Prjn) SetType(typ emer.PrjnType) emer.Prjn   { pj.Typ = typ; return pj }
+func (pj *Path) SetClass(cls string) emer.Path         { pj.Cls = cls; return pj }
+func (pj *Path) SetPattern(pat path.Pattern) emer.Path { pj.Pat = pat; return pj }
+func (pj *Path) SetType(typ emer.PathType) emer.Path   { pj.Typ = typ; return pj }
 
 // AllParams returns a listing of all parameters in the Layer
-func (pj *Prjn) AllParams() string {
-	str := "///////////////////////////////////////////////////\nPrjn: " + pj.Name() + "\n"
+func (pj *Path) AllParams() string {
+	str := "///////////////////////////////////////////////////\nPath: " + pj.Name() + "\n"
 	b, _ := json.MarshalIndent(&pj.WtInit, "", " ")
 	str += "WtInit: {\n " + JsonToParams(b)
 	b, _ = json.MarshalIndent(&pj.WtScale, "", " ")
@@ -85,23 +85,23 @@ func (pj *Prjn) AllParams() string {
 
 // SetParam sets parameter at given path to given value.
 // returns error if path not found or value cannot be set.
-func (pj *Prjn) SetParam(path, val string) error {
+func (pj *Path) SetParam(path, val string) error {
 	return params.SetParam(pj, path, val)
 }
 
-func (pj *Prjn) SynVarNames() []string {
+func (pj *Path) SynVarNames() []string {
 	return SynapseVars
 }
 
 // SynVarProps returns properties for variables
-func (pj *Prjn) SynVarProps() map[string]string {
+func (pj *Path) SynVarProps() map[string]string {
 	return SynapseVarProps
 }
 
 // SynIndex returns the index of the synapse between given send, recv unit indexes
 // (1D, flat indexes). Returns -1 if synapse not found between these two neurons.
 // Requires searching within connections for receiving unit.
-func (pj *Prjn) SynIndex(sidx, ridx int) int {
+func (pj *Path) SynIndex(sidx, ridx int) int {
 	nc := int(pj.SConN[sidx])
 	st := int(pj.SConIndexSt[sidx])
 	for ci := 0; ci < nc; ci++ {
@@ -115,21 +115,21 @@ func (pj *Prjn) SynIndex(sidx, ridx int) int {
 }
 
 // SynVarIndex returns the index of given variable within the synapse,
-// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// according to *this path's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *Prjn) SynVarIndex(varNm string) (int, error) {
+func (pj *Path) SynVarIndex(varNm string) (int, error) {
 	return SynapseVarByName(varNm)
 }
 
 // SynVarNum returns the number of synapse-level variables
-// for this prjn.  This is needed for extending indexes in derived types.
-func (pj *Prjn) SynVarNum() int {
+// for this path.  This is needed for extending indexes in derived types.
+func (pj *Path) SynVarNum() int {
 	return len(SynapseVars)
 }
 
-// Syn1DNum returns the number of synapses for this prjn as a 1D array.
+// Syn1DNum returns the number of synapses for this path as a 1D array.
 // This is the max idx for SynVal1D and the number of vals set by SynValues.
-func (pj *Prjn) Syn1DNum() int {
+func (pj *Path) Syn1DNum() int {
 	return len(pj.Syns)
 }
 
@@ -137,7 +137,7 @@ func (pj *Prjn) Syn1DNum() int {
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *Prjn) SynVal1D(varIndex int, synIndex int) float32 {
+func (pj *Path) SynVal1D(varIndex int, synIndex int) float32 {
 	if synIndex < 0 || synIndex >= len(pj.Syns) {
 		return math32.NaN()
 	}
@@ -152,7 +152,7 @@ func (pj *Prjn) SynVal1D(varIndex int, synIndex int) float32 {
 // of the synapses (sender based for Leabra),
 // into given float32 slice (only resized if not big enough).
 // Returns error on invalid var name.
-func (pj *Prjn) SynValues(vals *[]float32, varNm string) error {
+func (pj *Path) SynValues(vals *[]float32, varNm string) error {
 	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func (pj *Prjn) SynValues(vals *[]float32, varNm string) error {
 // SynVal returns value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes).
 // Returns math32.NaN() for access errors (see SynValTry for error message)
-func (pj *Prjn) SynValue(varNm string, sidx, ridx int) float32 {
+func (pj *Path) SynValue(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return math32.NaN()
@@ -184,7 +184,7 @@ func (pj *Prjn) SynValue(varNm string, sidx, ridx int) float32 {
 // SetSynVal sets value of given variable name on the synapse
 // between given send, recv unit indexes (1D, flat indexes)
 // returns error for access errors.
-func (pj *Prjn) SetSynValue(varNm string, sidx, ridx int, val float32) error {
+func (pj *Path) SetSynValue(varNm string, sidx, ridx int, val float32) error {
 	vidx, err := pj.LeabraPrj.SynVarIndex(varNm)
 	if err != nil {
 		return err
@@ -204,10 +204,10 @@ func (pj *Prjn) SetSynValue(varNm string, sidx, ridx int, val float32) error {
 ///////////////////////////////////////////////////////////////////////
 //  Weights File
 
-// WriteWtsJSON writes the weights from this projection from the receiver-side perspective
+// WriteWtsJSON writes the weights from this pathway from the receiver-side perspective
 // in a JSON text format.  We build in the indentation logic to make it much faster and
 // more efficient.
-func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
+func (pj *Path) WriteWtsJSON(w io.Writer, depth int) {
 	slay := pj.Send.(LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
 	nr := len(rlay.Neurons)
@@ -278,20 +278,20 @@ func (pj *Prjn) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("}")) // note: leave unterminated as outer loop needs to add , or just \n depending
 }
 
-// ReadWtsJSON reads the weights from this projection from the receiver-side perspective
-// in a JSON text format.  This is for a set of weights that were saved *for one prjn only*
+// ReadWtsJSON reads the weights from this pathway from the receiver-side perspective
+// in a JSON text format.  This is for a set of weights that were saved *for one path only*
 // and is not used for the network-level ReadWtsJSON, which reads into a separate
 // structure -- see SetWts method.
-func (pj *Prjn) ReadWtsJSON(r io.Reader) error {
-	pw, err := weights.PrjnReadJSON(r)
+func (pj *Path) ReadWtsJSON(r io.Reader) error {
+	pw, err := weights.PathReadJSON(r)
 	if err != nil {
 		return err // note: already logged
 	}
 	return pj.SetWts(pw)
 }
 
-// SetWts sets the weights for this projection from weights.Prjn decoded values
-func (pj *Prjn) SetWts(pw *weights.Prjn) error {
+// SetWts sets the weights for this pathway from weights.Path decoded values
+func (pj *Path) SetWts(pw *weights.Path) error {
 	if pw.MetaData != nil {
 		if gs, ok := pw.MetaData["GScale"]; ok {
 			pv, _ := strconv.ParseFloat(gs, 32)
@@ -311,9 +311,9 @@ func (pj *Prjn) SetWts(pw *weights.Prjn) error {
 	return err
 }
 
-// Build constructs the full connectivity among the layers as specified in this projection.
-// Calls PrjnBase.BuildStru and then allocates the synaptic values in Syns accordingly.
-func (pj *Prjn) Build() error {
+// Build constructs the full connectivity among the layers as specified in this pathway.
+// Calls PathBase.BuildStru and then allocates the synaptic values in Syns accordingly.
+func (pj *Path) Build() error {
 	if err := pj.BuildStru(); err != nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func (pj *Prjn) Build() error {
 	//	ssh := pj.Send.Shape()
 	rlen := rsh.Len()
 	pj.GInc = make([]float32, rlen)
-	pj.WbRecv = make([]WtBalRecvPrjn, rlen)
+	pj.WbRecv = make([]WtBalRecvPath, rlen)
 	return nil
 }
 
@@ -331,7 +331,7 @@ func (pj *Prjn) Build() error {
 
 // SetScalesRPool initializes synaptic Scale values using given tensor
 // of values which has unique values for each recv neuron within a given pool.
-func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
+func (pj *Path) SetScalesRPool(scales etensor.Tensor) {
 	rNuY := scales.Dim(0)
 	rNuX := scales.Dim(1)
 	rNu := rNuY * rNuX
@@ -375,7 +375,7 @@ func (pj *Prjn) SetScalesRPool(scales etensor.Tensor) {
 
 // SetWtsFunc initializes synaptic Wt value using given function
 // based on receiving and sending unit indexes.
-func (pj *Prjn) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) float32) {
+func (pj *Path) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) float32) {
 	rsh := pj.Recv.Shape()
 	rn := rsh.Len()
 	ssh := pj.Send.Shape()
@@ -396,7 +396,7 @@ func (pj *Prjn) SetWtsFunc(wtFun func(si, ri int, send, recv *etensor.Shape) flo
 
 // SetScalesFunc initializes synaptic Scale values using given function
 // based on receiving and sending unit indexes.
-func (pj *Prjn) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shape) float32) {
+func (pj *Path) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shape) float32) {
 	rsh := pj.Recv.Shape()
 	rn := rsh.Len()
 	ssh := pj.Send.Shape()
@@ -417,13 +417,13 @@ func (pj *Prjn) SetScalesFunc(scaleFun func(si, ri int, send, recv *etensor.Shap
 // InitWtsSyn initializes weight values based on WtInit randomness parameters
 // for an individual synapse.
 // It also updates the linear weight value based on the sigmoidal weight value.
-func (pj *Prjn) InitWtsSyn(syn *Synapse) {
+func (pj *Path) InitWtsSyn(syn *Synapse) {
 	if syn.Scale == 0 {
 		syn.Scale = 1
 	}
 	syn.Wt = float32(pj.WtInit.Gen(-1))
 	// enforce normalized weight range -- required for most uses and if not
-	// then a new type of prjn should be used:
+	// then a new type of path should be used:
 	if syn.Wt < 0 {
 		syn.Wt = 0
 	}
@@ -438,7 +438,7 @@ func (pj *Prjn) InitWtsSyn(syn *Synapse) {
 }
 
 // InitWts initializes weight values according to Learn.WtInit params
-func (pj *Prjn) InitWts() {
+func (pj *Path) InitWts() {
 	for si := range pj.Syns {
 		sy := &pj.Syns[si]
 		pj.InitWtsSyn(sy)
@@ -450,9 +450,9 @@ func (pj *Prjn) InitWts() {
 	pj.LeabraPrj.InitGInc()
 }
 
-// InitWtSym initializes weight symmetry -- is given the reciprocal projection where
+// InitWtSym initializes weight symmetry -- is given the reciprocal pathway where
 // the Send and Recv layers are reversed.
-func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
+func (pj *Path) InitWtSym(rpjp LeabraPath) {
 	rpj := rpjp.AsLeabra()
 	slay := pj.Send.(LeabraLayer).AsLeabra()
 	ns := int32(len(slay.Neurons))
@@ -473,9 +473,9 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 				continue
 			}
 			rsst := rpj.SConIndexSt[rsi]
-			rist := rpj.SConIndex[rsst]        // starting index in recv prjn
+			rist := rpj.SConIndex[rsst]        // starting index in recv path
 			ried := rpj.SConIndex[rsst+rsnc-1] // ending index
-			if si < rist || si > ried {        // fast reject -- prjns are always in order!
+			if si < rist || si > ried {        // fast reject -- paths are always in order!
 				continue
 			}
 			// start at index proportional to si relative to rist
@@ -523,9 +523,9 @@ func (pj *Prjn) InitWtSym(rpjp LeabraPrjn) {
 	}
 }
 
-// InitGInc initializes the per-projection GInc threadsafe increment -- not
+// InitGInc initializes the per-pathway GInc threadsafe increment -- not
 // typically needed (called during InitWts only) but can be called when needed
-func (pj *Prjn) InitGInc() {
+func (pj *Path) InitGInc() {
 	for ri := range pj.GInc {
 		pj.GInc[ri] = 0
 	}
@@ -536,7 +536,7 @@ func (pj *Prjn) InitGInc() {
 
 // SendGDelta sends the delta-activation from sending neuron index si,
 // to integrate synaptic conductances on receivers
-func (pj *Prjn) SendGDelta(si int, delta float32) {
+func (pj *Path) SendGDelta(si int, delta float32) {
 	scdel := delta * pj.GScale
 	nc := pj.SConN[si]
 	st := pj.SConIndexSt[si]
@@ -548,8 +548,8 @@ func (pj *Prjn) SendGDelta(si int, delta float32) {
 	}
 }
 
-// RecvGInc increments the receiver's GeRaw or GiRaw from that of all the projections.
-func (pj *Prjn) RecvGInc() {
+// RecvGInc increments the receiver's GeRaw or GiRaw from that of all the pathways.
+func (pj *Path) RecvGInc() {
 	rlay := pj.Recv.(LeabraLayer).AsLeabra()
 	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
@@ -569,8 +569,8 @@ func (pj *Prjn) RecvGInc() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) -- on sending projections
-func (pj *Prjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways
+func (pj *Path) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -622,8 +622,8 @@ func (pj *Prjn) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending projections
-func (pj *Prjn) WtFmDWt() {
+// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *Path) WtFmDWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -643,7 +643,7 @@ func (pj *Prjn) WtFmDWt() {
 }
 
 // WtBalFmWt computes the Weight Balance factors based on average recv weights
-func (pj *Prjn) WtBalFmWt() {
+func (pj *Path) WtBalFmWt() {
 	if !pj.Learn.Learn || !pj.Learn.WtBal.On {
 		return
 	}
@@ -680,20 +680,20 @@ func (pj *Prjn) WtBalFmWt() {
 	}
 }
 
-// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
-func (pj *Prjn) LrateMult(mult float32) {
+func (pj *Path) LrateMult(mult float32) {
 	pj.Learn.Lrate = pj.Learn.LrateInit * mult
 }
 
 ///////////////////////////////////////////////////////////////////////
-//  WtBalRecvPrjn
+//  WtBalRecvPath
 
-// WtBalRecvPrjn are state variables used in computing the WtBal weight balance function
-// There is one of these for each Recv Neuron participating in the projection.
-type WtBalRecvPrjn struct {
+// WtBalRecvPath are state variables used in computing the WtBal weight balance function
+// There is one of these for each Recv Neuron participating in the pathway.
+type WtBalRecvPath struct {
 
-	// average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Prjn
+	// average of effective weight values that exceed WtBal.AvgThr across given Recv Neuron's connections for given Path
 	Avg float32
 
 	// overall weight balance factor that drives changes in WbInc vs. WbDec via a sigmoidal function -- this is the net strength of weight balance changes
@@ -706,7 +706,7 @@ type WtBalRecvPrjn struct {
 	Dec float32
 }
 
-func (wb *WtBalRecvPrjn) Init() {
+func (wb *WtBalRecvPath) Init() {
 	wb.Avg = 0
 	wb.Fact = 0
 	wb.Inc = 1

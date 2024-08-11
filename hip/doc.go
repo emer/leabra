@@ -31,12 +31,12 @@ CA3 -> CA1 = 0, ECin -> CA1 = 1
 
 ActQ1 = auto encoder minus phase state (in both CA1 and ECout
 
-	used in EcCa1Prjn as minus phase relative to ActP plus phase in CHL)
+	used in EcCa1Path as minus phase relative to ActP plus phase in CHL)
 
 ActM = recall minus phase (normal minus phase dynamics for CA3 recall learning)
 ActP = plus (serves as plus phase for both auto and recall)
 
-learning just happens at end of trial as usual, but encoder projections use
+learning just happens at end of trial as usual, but encoder pathways use
 the ActQ1, ActM, ActP variables to learn on the right signals
 
 todo: implement a two-trial version of the code to produce a true theta rhythm

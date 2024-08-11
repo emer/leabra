@@ -7,54 +7,54 @@ import (
 	"github.com/emer/emergent/v2/emer"
 )
 
-var _PrjnTypeValues = []PrjnType{4}
+var _PathTypeValues = []PathType{4}
 
-// PrjnTypeN is the highest valid value for type PrjnType, plus one.
-const PrjnTypeN PrjnType = 5
+// PathTypeN is the highest valid value for type PathType, plus one.
+const PathTypeN PathType = 5
 
-var _PrjnTypeValueMap = map[string]PrjnType{`CTCtxt_`: 4}
+var _PathTypeValueMap = map[string]PathType{`CTCtxt_`: 4}
 
-var _PrjnTypeDescMap = map[PrjnType]string{4: ``}
+var _PathTypeDescMap = map[PathType]string{4: ``}
 
-var _PrjnTypeMap = map[PrjnType]string{4: `CTCtxt_`}
+var _PathTypeMap = map[PathType]string{4: `CTCtxt_`}
 
-// String returns the string representation of this PrjnType value.
-func (i PrjnType) String() string {
-	return enums.StringExtended[PrjnType, emer.PrjnType](i, _PrjnTypeMap)
+// String returns the string representation of this PathType value.
+func (i PathType) String() string {
+	return enums.StringExtended[PathType, emer.PathType](i, _PathTypeMap)
 }
 
-// SetString sets the PrjnType value from its string representation,
+// SetString sets the PathType value from its string representation,
 // and returns an error if the string is invalid.
-func (i *PrjnType) SetString(s string) error {
-	return enums.SetStringExtended(i, (*emer.PrjnType)(i), s, _PrjnTypeValueMap)
+func (i *PathType) SetString(s string) error {
+	return enums.SetStringExtended(i, (*emer.PathType)(i), s, _PathTypeValueMap)
 }
 
-// Int64 returns the PrjnType value as an int64.
-func (i PrjnType) Int64() int64 { return int64(i) }
+// Int64 returns the PathType value as an int64.
+func (i PathType) Int64() int64 { return int64(i) }
 
-// SetInt64 sets the PrjnType value from an int64.
-func (i *PrjnType) SetInt64(in int64) { *i = PrjnType(in) }
+// SetInt64 sets the PathType value from an int64.
+func (i *PathType) SetInt64(in int64) { *i = PathType(in) }
 
-// Desc returns the description of the PrjnType value.
-func (i PrjnType) Desc() string {
-	return enums.DescExtended[PrjnType, emer.PrjnType](i, _PrjnTypeDescMap)
+// Desc returns the description of the PathType value.
+func (i PathType) Desc() string {
+	return enums.DescExtended[PathType, emer.PathType](i, _PathTypeDescMap)
 }
 
-// PrjnTypeValues returns all possible values for the type PrjnType.
-func PrjnTypeValues() []PrjnType {
-	return enums.ValuesGlobalExtended(_PrjnTypeValues, emer.PrjnTypeValues())
+// PathTypeValues returns all possible values for the type PathType.
+func PathTypeValues() []PathType {
+	return enums.ValuesGlobalExtended(_PathTypeValues, emer.PathTypeValues())
 }
 
-// Values returns all possible values for the type PrjnType.
-func (i PrjnType) Values() []enums.Enum {
-	return enums.ValuesExtended(_PrjnTypeValues, emer.PrjnTypeValues())
+// Values returns all possible values for the type PathType.
+func (i PathType) Values() []enums.Enum {
+	return enums.ValuesExtended(_PathTypeValues, emer.PathTypeValues())
 }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
-func (i PrjnType) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
+func (i PathType) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
-func (i *PrjnType) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "PrjnType") }
+func (i *PathType) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "PathType") }
 
 var _LayerTypeValues = []LayerType{4, 5}
 

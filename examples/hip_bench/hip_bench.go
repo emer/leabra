@@ -24,7 +24,7 @@ import (
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/eplot"
@@ -382,7 +382,7 @@ type Sim struct {
 	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// pretrained weights file
 	PreTrainWts []byte `view:"-"`
@@ -561,46 +561,46 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ca3.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: "DG", YAlign: relpos.Front, XAlign: relpos.Left, Space: 0})
 	ca1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "CA3", YAlign: relpos.Front, Space: 2})
 
-	onetoone := prjn.NewOneToOne()
-	pool1to1 := prjn.NewPoolOneToOne()
-	full := prjn.NewFull()
+	onetoone := path.NewOneToOne()
+	pool1to1 := path.NewPoolOneToOne()
+	full := path.NewFull()
 
 	net.ConnectLayers(in, ecin, onetoone, emer.Forward)
 	net.ConnectLayers(ecout, ecin, onetoone, emer.Back)
 
 	// EC <-> CA1 encoder pathways
-	pj := net.ConnectLayersPrjn(ecin, ca1, pool1to1, emer.Forward, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
-	pj = net.ConnectLayersPrjn(ca1, ecout, pool1to1, emer.Forward, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
-	pj = net.ConnectLayersPrjn(ecout, ca1, pool1to1, emer.Back, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
+	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
+	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
+	pj = net.ConnectLayersPath(ecout, ca1, pool1to1, emer.Back, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
 
 	// Perforant pathway
-	ppathDG := prjn.NewUnifRnd()
+	ppathDG := path.NewUnifRnd()
 	ppathDG.PCon = hp.DGPCon
-	ppathCA3 := prjn.NewUnifRnd()
+	ppathCA3 := path.NewUnifRnd()
 	ppathCA3.PCon = hp.CA3PCon
 
-	pj = net.ConnectLayersPrjn(ecin, dg, ppathDG, emer.Forward, &hip.CHLPrjn{})
+	pj = net.ConnectLayersPath(ecin, dg, ppathDG, emer.Forward, &hip.CHLPath{})
 	pj.SetClass("HippoCHL")
 
 	if true { // key for bcm vs. ppath, zycyc: must use false for orig_param, true for def_param
-		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Prjn{})
+		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, emer.Forward, &hip.EcCa1Path{})
 		pj.SetClass("PPath")
-		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
+		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.EcCa1Path{})
 		pj.SetClass("PPath")
 	} else {
 		// so far, this is sig worse, even with error-driven MinusQ1 case (which is better than off)
-		pj = net.ConnectLayersPrjn(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPrjn{})
+		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, emer.Forward, &hip.CHLPath{})
 		pj.SetClass("HippoCHL")
-		pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.CHLPrjn{})
+		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.CHLPath{})
 		pj.SetClass("HippoCHL")
 	}
 
 	// always use this for now:
 	if true {
-		pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
+		pj = net.ConnectLayersPath(ca3, ca1, full, emer.Forward, &hip.CHLPath{})
 		pj.SetClass("HippoCHL")
 	} else {
 		// note: this requires lrate = 1.0 or maybe 1.2, doesn't work *nearly* as well
@@ -609,9 +609,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	}
 
 	// Mossy fibers
-	mossy := prjn.NewUnifRnd()
+	mossy := path.NewUnifRnd()
 	mossy.PCon = hp.MossyPCon
-	pj = net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
+	pj = net.ConnectLayersPath(dg, ca3, mossy, emer.Forward, &hip.CHLPath{}) // no learning
 	pj.SetClass("HippoCHL")
 
 	// using 4 threads total (rest on 0)
@@ -718,9 +718,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 	input := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
 	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
 	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
-	ca1FmECin := ca1.SendName("ECin").(leabra.LeabraPrjn).AsLeabra()
-	ca1FmCa3 := ca1.SendName("CA3").(leabra.LeabraPrjn).AsLeabra()
-	ca3FmDg := ca3.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
+	ca1FmECin := ca1.SendName("ECin").(leabra.LeabraPath).AsLeabra()
+	ca1FmCa3 := ca1.SendName("CA3").(leabra.LeabraPath).AsLeabra()
+	ca3FmDg := ca3.SendName("DG").(leabra.LeabraPath).AsLeabra()
 	_ = ecin
 	_ = input
 
@@ -842,7 +842,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "ECout"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
@@ -945,10 +945,10 @@ func (ss *Sim) PreTrainTrial() {
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %v\n", fnm)
-		ss.Net.SaveWtsJSON(core.Filename(fnm))
+		ss.Net.SaveWeightsJSON(core.Filename(fnm))
 	}
 }
 
@@ -1149,7 +1149,7 @@ func (ss *Sim) Stopped() {
 // SaveWeights saves the network weights -- when called with views.CallMethod
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWtsJSON(filename)
+	ss.Net.SaveWeightsJSON(filename)
 }
 
 // SetDgCa3Off sets the DG and CA3 layers off (or on)
@@ -1650,7 +1650,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Name+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1739,7 +1739,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
+		dt.SetCellFloat(ly.Name+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 
 	for _, lnm := range ss.LayStatNms {
@@ -2084,8 +2084,8 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
+		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
+		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
 	if cyc%10 == 0 { // too slow to do every cyc
@@ -2701,7 +2701,7 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.MaxRuns, "runs", 1, "number of runs to do, i.e., subjects")
 	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveCycPatSimLog, "cycpatsimlog", false, "if true, save train cycle similarity log to file") // zycyc, pat sim key
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save test epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
@@ -2752,7 +2752,7 @@ func (ss *Sim) CmdArgs() {
 			defer ss.RunFile.Close()
 		}
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Batch No. %d\n", ss.BatchRun)

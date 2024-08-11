@@ -58,7 +58,7 @@ type Neuron struct {
 	// NMDA channel activation -- underlying time-integrated value with decay
 	NMDA float32
 
-	// synaptic NMDA activation directly from projection(s)
+	// synaptic NMDA activation directly from pathway(s)
 	NMDASyn float32
 
 	// net GABA-B conductance, after Vm gating and Gbar + Gbase -- set to Gk for GIRK, with .1 reversal potential.

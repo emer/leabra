@@ -29,16 +29,16 @@ type VTADAGains struct {
 	// gain on positive PV component of total phasic DA signal (net after subtracting VSPatchIndir (PVi) shunt signal)
 	PV float32
 
-	// gain on VSPatch projection that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)
+	// gain on VSPatch pathway that shunts bursting in VTA (for VTAp = VSPatchPosD1, for VTAn = VSPatchNegD2)
 	PVIBurstShunt float32
 
-	// gain on VSPatch projection that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)
+	// gain on VSPatch pathway that opposes shunting of bursting in VTA (for VTAp = VSPatchPosD2, for VTAn = VSPatchNegD1)
 	PVIAntiBurstShunt float32
 
-	// gain on VSPatch projection that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial
+	// gain on VSPatch pathway that shunts dipping of VTA (currently only VTAp supported = VSPatchNegD2) -- optional and somewhat controversial
 	PVIDipShunt float32
 
-	// gain on VSPatch projection that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)
+	// gain on VSPatch pathway that opposes the shunting of dipping in VTA (currently only VTAp supported = VSPatchNegD1)
 	PVIAntiDipShunt float32
 }
 
@@ -93,14 +93,14 @@ func (ly *VTALayer) Build() error {
 	}
 	nu := ly.Shp.Len()
 	if nu == 0 {
-		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Nm)
+		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}
 	ly.Neurons = make([]leabra.Neuron, nu)
 	err := ly.BuildPools(nu)
 	if err != nil {
 		return err
 	}
-	err = ly.BuildPrjns()
+	err = ly.BuildPaths()
 	if err != nil {
 		return err
 	}

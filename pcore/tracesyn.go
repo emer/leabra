@@ -6,7 +6,7 @@ package pcore
 
 import "cogentcore.org/core/math32"
 
-// TraceSyn holds extra synaptic state for trace projections
+// TraceSyn holds extra synaptic state for trace pathways
 type TraceSyn struct {
 
 	// new trace = send * recv -- drives updates to trace value: sn.ActLrn * rn.ActLrn (subject to derivative too)

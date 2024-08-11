@@ -21,7 +21,7 @@ import (
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/eplot"
@@ -59,11 +59,11 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on is critical, wt bal not as much but fine",
+			{Sel: "Path", Desc: "norm and momentum on is critical, wt bal not as much but fine",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
 				Params: params.Params{
@@ -77,21 +77,21 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.ActAvg.Fixed": "true",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 			{Sel: "TRCLayer", Desc: "standard weight is .3 here for larger distributed reps. no learn",
 				Params: params.Params{
 					"Layer.TRC.DriveScale": "0.8", // using .8 for localist layer
 				}},
-			{Sel: "CTCtxtPrjn", Desc: "no weight balance on CT context prjns -- makes a diff!",
+			{Sel: "CTCtxtPath", Desc: "no weight balance on CT context paths -- makes a diff!",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
+					"Path.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
 				}},
 			{Sel: ".CTFmSuper", Desc: "initial weight = 0.5 much better than 0.8",
 				Params: params.Params{
-					"Prjn.WtInit.Mean": "0.5",
+					"Path.WtInit.Mean": "0.5",
 				}},
 			{Sel: ".Input", Desc: "input layers need more inhibition",
 				Params: params.Params{
@@ -100,11 +100,11 @@ var ParamSets = params.Sets{
 				}},
 			{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.05",
+					"Path.WtScale.Rel": "0.05",
 				}},
 			{Sel: "#HiddenCTToHiddenCT", Desc: "testing",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "false",
+					"Path.Learn.WtBal.On": "false",
 				}},
 		},
 	}},
@@ -118,18 +118,18 @@ var ParamSets = params.Sets{
 	}},
 	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "no norm or momentum",
+			{Sel: "Path", Desc: "no norm or momentum",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
 				}},
 		},
 	}},
 	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "weight bal on",
+			{Sel: "Path", Desc: "weight bal on",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "true",
+					"Path.Learn.WtBal.On": "true",
 				}},
 		},
 	}},
@@ -148,7 +148,7 @@ var InputNameMap map[string]int
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 
-	// the network -- click to view / edit parameters for layers, prjns, etc
+	// the network -- click to view / edit parameters for layers, paths, etc
 	Net *deep.Network `view:"no-inline"`
 
 	// training epoch-level log data
@@ -299,7 +299,7 @@ type Sim struct {
 	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// if true, runing in no GUI mode
 	NoGui bool `view:"-"`
@@ -408,13 +408,13 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
 	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
-	full := prjn.NewFull()
+	full := path.NewFull()
 	full.SelfCon = true // unclear if this makes a diff for self cons at all
 
 	net.ConnectLayers(in, hid, full, emer.Forward)
 
 	// for this small localist model with longer-term dependencies,
-	// these additional context projections turn out to be essential!
+	// these additional context pathways turn out to be essential!
 	// larger models in general do not require them, though it might be
 	// good to check
 	net.ConnectCtxtToCT(hidct, hidct, full)
@@ -610,10 +610,10 @@ func (ss *Sim) TrainTrial() {
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %v\n", fnm)
-		ss.Net.SaveWtsJSON(core.Filename(fnm))
+		ss.Net.SaveWeightsJSON(core.Filename(fnm))
 	}
 }
 
@@ -756,7 +756,7 @@ func (ss *Sim) Stopped() {
 // SaveWeights saves the network weights -- when called with views.CallMethod
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWtsJSON(filename)
+	ss.Net.SaveWeightsJSON(filename)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -948,7 +948,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Name+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1185,8 +1185,8 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
+		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
+		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
 	if cyc%10 == 0 { // too slow to do every cyc
@@ -1575,7 +1575,7 @@ func (ss *Sim) CmdArgs() {
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
@@ -1613,7 +1613,7 @@ func (ss *Sim) CmdArgs() {
 			defer ss.RunFile.Close()
 		}
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)

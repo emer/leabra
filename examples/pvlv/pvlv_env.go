@@ -195,7 +195,7 @@ func (ev *PVLVEnv) BlockStart(ss *Sim) {
 func (ev *PVLVEnv) BlockEnd(ss *Sim) {
 	//ss.TrialAnalysis(ev)
 	ss.BlockMonitor()
-	if ev.TrialBlockCt.Cur%ev.CurConditionParams.SaveWtsInterval == 0 && ev.TrialBlockCt.Cur > 0 {
+	if ev.TrialBlockCt.Cur%ev.CurConditionParams.SaveWeightsInterval == 0 && ev.TrialBlockCt.Cur > 0 {
 		ev.SaveWeights(ss)
 	}
 }

@@ -159,7 +159,7 @@ func (ly *MatrixLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	return 0
 }
 
-// Build constructs the layer state, including calling Build on the projections
+// Build constructs the layer state, including calling Build on the pathways
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.
 func (ly *MatrixLayer) Build() error {

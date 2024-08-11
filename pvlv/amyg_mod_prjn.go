@@ -10,32 +10,32 @@ import (
 	"github.com/emer/leabra/v2/leabra"
 )
 
-// IAmygPrjn has one method, AsAmygModPrjn, which recasts the projection as a moddulatory projection
-type IAmygPrjn interface {
-	AsAmygModPrjn() *AmygModPrjn // recast the projection as a moddulatory projection
+// IAmygPath has one method, AsAmygModPath, which recasts the pathway as a moddulatory pathway
+type IAmygPath interface {
+	AsAmygModPath() *AmygModPath // recast the pathway as a moddulatory pathway
 }
 
-// AsAmygModPrjn returns a pointer to the modulatory variables for an amygdala projection
-func (pj *AmygModPrjn) AsAmygModPrjn() *AmygModPrjn {
+// AsAmygModPath returns a pointer to the modulatory variables for an amygdala pathway
+func (pj *AmygModPath) AsAmygModPath() *AmygModPath {
 	return pj
 }
 
-// ISetScalePrjn initializes weights, including special scale calculations
-type ISetScalePrjn interface {
+// ISetScalePath initializes weights, including special scale calculations
+type ISetScalePath interface {
 	InitWts()
 }
 
-// AmygModPrjn holds parameters and state variables for modulatory projections to amygdala layers
-type AmygModPrjn struct {
-	leabra.Prjn
+// AmygModPath holds parameters and state variables for modulatory pathways to amygdala layers
+type AmygModPath struct {
+	leabra.Path
 
 	// only for Leabra algorithm: if initializing the weights, set the connection scaling parameter in addition to intializing the weights -- for specifically supported specs, this will for example set a gaussian scaling parameter on top of random initial weights, instead of just setting the initial weights to a gaussian weighted value -- for other specs that do not support a custom init_wts function, this will set the scale values to what the random weights would otherwise be set to, and set the initial weight value to a constant (init_wt_val)
 	SetScale bool
 
-	// minimum scale value for SetScale projections
+	// minimum scale value for SetScale pathways
 	SetScaleMin float32
 
-	// maximum scale value for SetScale projections
+	// maximum scale value for SetScale pathways
 	SetScaleMax float32
 
 	// constant initial weight value for specs that do not support a custom init_wts function and have set_scale set: the scale values are set to what the random weights would otherwise be set to, and the initial weight value is set to this constant: the net actual weight value is scale * init_wt_val..
@@ -63,13 +63,13 @@ type AmygModPrjn struct {
 	DaMod DaModParams
 }
 
-// These null variables serve as a check that AmygModPrjn actually implements the IAmygPrjn and ISetScalePrjn interfaces
+// These null variables serve as a check that AmygModPath actually implements the IAmygPath and ISetScalePath interfaces
 // If any methods are not implemented, these statements will not compile
-var _ IAmygPrjn = (*AmygModPrjn)(nil)
-var _ ISetScalePrjn = (*AmygModPrjn)(nil)
+var _ IAmygPath = (*AmygModPath)(nil)
+var _ ISetScalePath = (*AmygModPath)(nil)
 
 // InitWts sets initial weights, possibly including SetScale calculations
-func (pj *AmygModPrjn) InitWts() {
+func (pj *AmygModPath) InitWts() {
 	if pj.SetScale {
 		pj.SetScalesFunc(pj.GaussScale)
 		pj.SetWtsFunc(func(_, _ int, _, _ *etensor.Shape) float32 {
@@ -82,21 +82,21 @@ func (pj *AmygModPrjn) InitWts() {
 			sy.Moment = 0
 		}
 	} else {
-		pj.Prjn.InitWts()
+		pj.Path.InitWts()
 	}
 }
 
 // GaussScale returns gaussian weight value for given unit indexes in
 // given send and recv layers according to Gaussian Sigma and MaxWt.
-func (pj *AmygModPrjn) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
+func (pj *AmygModPath) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
 	scale := float32(pj.WtInit.Gen(-1))
 	scale = math32.Max(pj.SetScaleMin, scale)
 	scale = math32.Min(pj.SetScaleMax, scale)
 	return scale
 }
 
-func (pj *AmygModPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *AmygModPath) Defaults() {
+	pj.Path.Defaults()
 	pj.SetScale = false
 	pj.InitWtVal = 0.1
 	pj.DALRGain = 1.0
@@ -108,7 +108,7 @@ func (pj *AmygModPrjn) Defaults() {
 }
 
 // DWt computes DA-modulated weight changes for amygdala layers
-func (pj *AmygModPrjn) DWt() {
+func (pj *AmygModPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}

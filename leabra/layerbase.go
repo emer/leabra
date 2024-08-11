@@ -56,11 +56,11 @@ type LayerBase struct {
 	// shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape
 	RepShp etensor.Shape
 
-	// list of receiving projections into this layer from other layers
-	RcvPrjns LeabraPrjns
+	// list of receiving pathways into this layer from other layers
+	RcvPaths LeabraPaths
 
-	// list of sending projections from this layer to other layers
-	SndPrjns LeabraPrjns
+	// list of sending pathways from this layer to other layers
+	SndPaths LeabraPaths
 }
 
 // emer.Layer interface methods
@@ -96,32 +96,32 @@ func (ls *LayerBase) Pos() math32.Vector3        { return ls.Ps }
 func (ls *LayerBase) SetPos(pos math32.Vector3)  { ls.Ps = pos }
 func (ls *LayerBase) Index() int                 { return ls.Index }
 func (ls *LayerBase) SetIndex(idx int)           { ls.Index = idx }
-func (ls *LayerBase) RecvPrjns() *LeabraPrjns    { return &ls.RcvPrjns }
-func (ls *LayerBase) NRecvPrjns() int            { return len(ls.RcvPrjns) }
-func (ls *LayerBase) RecvPrjn(idx int) emer.Prjn { return ls.RcvPrjns[idx] }
-func (ls *LayerBase) SendPrjns() *LeabraPrjns    { return &ls.SndPrjns }
-func (ls *LayerBase) NSendPrjns() int            { return len(ls.SndPrjns) }
-func (ls *LayerBase) SendPrjn(idx int) emer.Prjn { return ls.SndPrjns[idx] }
+func (ls *LayerBase) RecvPaths() *LeabraPaths    { return &ls.RcvPaths }
+func (ls *LayerBase) NRecvPaths() int            { return len(ls.RcvPaths) }
+func (ls *LayerBase) RecvPath(idx int) emer.Path { return ls.RcvPaths[idx] }
+func (ls *LayerBase) SendPaths() *LeabraPaths    { return &ls.SndPaths }
+func (ls *LayerBase) NSendPaths() int            { return len(ls.SndPaths) }
+func (ls *LayerBase) SendPath(idx int) emer.Path { return ls.SndPaths[idx] }
 func (ls *LayerBase) RepIndexes() []int          { return ls.RepIxs }
 
-func (ly *LayerBase) SendNameTry(sender string) (emer.Prjn, error) {
+func (ly *LayerBase) SendNameTry(sender string) (emer.Path, error) {
 	return emer.SendNameTry(ly.LeabraLay, sender)
 }
-func (ly *LayerBase) SendName(sender string) emer.Prjn {
+func (ly *LayerBase) SendName(sender string) emer.Path {
 	pj, _ := emer.SendNameTry(ly.LeabraLay, sender)
 	return pj
 }
-func (ly *LayerBase) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
+func (ly *LayerBase) SendNameTypeTry(sender, typ string) (emer.Path, error) {
 	return emer.SendNameTypeTry(ly.LeabraLay, sender, typ)
 }
-func (ly *LayerBase) RecvNameTry(receiver string) (emer.Prjn, error) {
+func (ly *LayerBase) RecvNameTry(receiver string) (emer.Path, error) {
 	return emer.RecvNameTry(ly.LeabraLay, receiver)
 }
-func (ly *LayerBase) RecvName(receiver string) emer.Prjn {
+func (ly *LayerBase) RecvName(receiver string) emer.Path {
 	pj, _ := emer.RecvNameTry(ly.LeabraLay, receiver)
 	return pj
 }
-func (ly *LayerBase) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
+func (ly *LayerBase) RecvNameTypeTry(receiver, typ string) (emer.Path, error) {
 	return emer.RecvNameTypeTry(ly.LeabraLay, receiver, typ)
 }
 
@@ -209,14 +209,14 @@ func (ls *LayerBase) NPools() int {
 	return ls.Shp.Dim(0) * ls.Shp.Dim(1)
 }
 
-// RecipToSendPrjn finds the reciprocal projection relative to the given sending projection
-// found within the SendPrjns of this layer.  This is then a recv prjn within this layer:
+// RecipToSendPath finds the reciprocal pathway relative to the given sending pathway
+// found within the SendPaths of this layer.  This is then a recv path within this layer:
 //
 //	S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
 //
 // returns false if not found.
-func (ls *LayerBase) RecipToSendPrjn(spj emer.Prjn) (emer.Prjn, bool) {
-	for _, rpj := range ls.RcvPrjns {
+func (ls *LayerBase) RecipToSendPath(spj emer.Path) (emer.Path, bool) {
+	for _, rpj := range ls.RcvPaths {
 		if rpj.SendLay() == spj.RecvLay() {
 			return rpj, true
 		}
@@ -230,7 +230,7 @@ func (ls *LayerBase) Config(shape []int, typ emer.LayerType) {
 	ls.Typ = typ
 }
 
-// ApplyParams applies given parameter style Sheet to this layer and its recv projections.
+// ApplyParams applies given parameter style Sheet to this layer and its recv pathways.
 // Calls UpdateParams on anything set to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
@@ -246,7 +246,7 @@ func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 	if err != nil {
 		rerr = err
 	}
-	for _, pj := range ls.RcvPrjns {
+	for _, pj := range ls.RcvPaths {
 		app, err = pj.ApplyParams(pars, setMsg)
 		if app {
 			applied = true
@@ -262,7 +262,7 @@ func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 // are not at their default values -- useful for setting param styles etc.
 func (ls *LayerBase) NonDefaultParams() string {
 	nds := views.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
-	for _, pj := range ls.RcvPrjns {
+	for _, pj := range ls.RcvPaths {
 		pnd := pj.NonDefaultParams()
 		nds += pnd
 	}

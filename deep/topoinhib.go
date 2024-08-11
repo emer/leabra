@@ -65,7 +65,7 @@ func (ly *TopoInhibLayer) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *TopoInhibLayer) UpdateParams() {
 	ly.Layer.UpdateParams()
 	ly.TopoInhib.Update()

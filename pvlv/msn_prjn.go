@@ -14,7 +14,7 @@ import (
 	"github.com/emer/leabra/v2/leabra"
 )
 
-// TraceSyn holds extra synaptic state for trace projections
+// TraceSyn holds extra synaptic state for trace pathways
 type TraceSyn struct {
 
 	// new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)
@@ -32,11 +32,11 @@ const (
 )
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  MSNPrjn
+//  MSNPath
 
-// MSNPrjn does dopamine-modulated, for striatum-like layers
-type MSNPrjn struct {
-	leabra.Prjn
+// MSNPath does dopamine-modulated, for striatum-like layers
+type MSNPath struct {
+	leabra.Path
 	LearningRule DALrnRule
 
 	// special parameters for striatum trace learning
@@ -58,17 +58,17 @@ type MSNPrjn struct {
 	DaMod DaModParams
 }
 
-type IMSNPrjn interface {
-	AsMSNPrjn() *MSNPrjn
+type IMSNPath interface {
+	AsMSNPath() *MSNPath
 }
 
-func (pj *MSNPrjn) AsMSNPrjn() *MSNPrjn {
+func (pj *MSNPath) AsMSNPath() *MSNPath {
 	return pj
 }
 
-func (pj *MSNPrjn) Defaults() {
+func (pj *MSNPath) Defaults() {
 	pj.Trace.Defaults()
-	pj.Prjn.Defaults()
+	pj.Path.Defaults()
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
 	pj.Learn.Momentum.On = false
@@ -76,13 +76,13 @@ func (pj *MSNPrjn) Defaults() {
 	pj.MaxVSActMod = 0.5
 }
 
-func (pj *MSNPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *MSNPath) Build() error {
+	err := pj.Path.Build()
 	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
-func (pj *MSNPrjn) ClearTrace() {
+func (pj *MSNPath) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.Tr = 0
@@ -90,13 +90,13 @@ func (pj *MSNPrjn) ClearTrace() {
 	}
 }
 
-func (pj *MSNPrjn) InitWts() {
-	pj.Prjn.InitWts()
+func (pj *MSNPath) InitWts() {
+	pj.Path.InitWts()
 	pj.ClearTrace()
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *MSNPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *MSNPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -235,7 +235,7 @@ func (tr *TraceSyn) SetVarByName(varNm string, val float32) error {
 	return nil
 }
 
-func (pj *MSNPrjn) SynValue(varNm string, sidx, ridx int) float32 {
+func (pj *MSNPath) SynValue(varNm string, sidx, ridx int) float32 {
 	vidx, err := pj.SynVarIndex(varNm)
 	if err != nil {
 		return math32.NaN()
@@ -244,12 +244,12 @@ func (pj *MSNPrjn) SynValue(varNm string, sidx, ridx int) float32 {
 	return pj.LeabraPrj.SynVal1D(vidx, synIndex)
 }
 
-func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
+func (pj *MSNPath) SynVarIndex(varNm string) (int, error) {
 	return SynapseVarByName(varNm)
 }
 
-//func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
-//	vidx, err := pj.Prjn.SynVarIndex(varNm)
+//func (pj *MSNPath) SynVarIndex(varNm string) (int, error) {
+//	vidx, err := pj.Path.SynVarIndex(varNm)
 //	if err == nil {
 //		return vidx, err
 //	}
@@ -260,20 +260,20 @@ func (pj *MSNPrjn) SynVarIndex(varNm string) (int, error) {
 //	case "Tr":
 //		return nn + 1, nil
 //	}
-//	return -1, fmt.Errorf("MatrixTracePrjn SynVarIndex: variable name: %v not valid", varNm)
+//	return -1, fmt.Errorf("MatrixTracePath SynVarIndex: variable name: %v not valid", varNm)
 //}
 
 // SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MSNPrjn) SynVal1D(varIndex int, synIndex int) float32 {
+func (pj *MSNPath) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynapseVarsAll) {
 		return math32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIndex < nn {
-		return pj.Prjn.SynVal1D(varIndex, synIndex)
+		return pj.Path.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return math32.NaN()
@@ -283,7 +283,7 @@ func (pj *MSNPrjn) SynVal1D(varIndex int, synIndex int) float32 {
 	return sy.VarByIndex(varIndex)
 }
 
-func (ly *MSNLayer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, prjnType string) error {
+func (ly *MSNLayer) RecvPathValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, pathType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -298,14 +298,14 @@ func (ly *MSNLayer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.L
 	if sendLay == nil {
 		return fmt.Errorf("sending layer is nil")
 	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = sendLay.RecvNameTypeTry(ly.Nm, prjnType)
+	var pj emer.Path
+	if pathType != "" {
+		pj, err = sendLay.RecvNameTypeTry(ly.Name, pathType)
 		if pj == nil {
-			pj, err = sendLay.RecvNameTry(ly.Nm)
+			pj, err = sendLay.RecvNameTry(ly.Name)
 		}
 	} else {
-		pj, err = sendLay.RecvNameTry(ly.Nm)
+		pj, err = sendLay.RecvNameTry(ly.Name)
 	}
 	if pj == nil {
 		return err
@@ -316,7 +316,7 @@ func (ly *MSNLayer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.L
 	return nil
 }
 
-func (ly *MSNLayer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, prjnType string) error {
+func (ly *MSNLayer) SendPathValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, pathType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -331,14 +331,14 @@ func (ly *MSNLayer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.L
 	if recvLay == nil {
 		return fmt.Errorf("receiving layer is nil")
 	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = recvLay.SendNameTypeTry(ly.Nm, prjnType)
+	var pj emer.Path
+	if pathType != "" {
+		pj, err = recvLay.SendNameTypeTry(ly.Name, pathType)
 		if pj == nil {
-			pj, err = recvLay.SendNameTry(ly.Nm)
+			pj, err = recvLay.SendNameTry(ly.Name)
 		}
 	} else {
-		pj, err = recvLay.SendNameTry(ly.Nm)
+		pj, err = recvLay.SendNameTry(ly.Name)
 	}
 	if pj == nil {
 		return err

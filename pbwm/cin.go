@@ -45,7 +45,7 @@ func (ly *CINLayer) Defaults() {
 func (ly *CINLayer) GetACh() float32    { return ly.ACh }
 func (ly *CINLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *CINLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {

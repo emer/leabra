@@ -13,8 +13,8 @@ import (
 
 // CTLayer implements the corticothalamic projecting layer 6 deep neurons
 // that project to the TRC pulvinar neurons, to generate the predictions.
-// They receive phasic input representing 5IB bursting via CTCtxtPrjn inputs
-// from SuperLayer and also from self projections.
+// They receive phasic input representing 5IB bursting via CTCtxtPath inputs
+// from SuperLayer and also from self pathways.
 type CTLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
@@ -37,7 +37,7 @@ func (ly *CTLayer) Class() string {
 	return "CT " + ly.Cls
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *CTLayer) Build() error {
 	err := ly.TopoInhibLayer.Build()
 	if err != nil {
@@ -68,7 +68,7 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 	}
 }
 
-// SendCtxtGe sends activation over CTCtxtPrjn projections to integrate
+// SendCtxtGe sends activation over CTCtxtPath pathways to integrate
 // CtxtGe excitatory conductance on CT layers.
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
@@ -82,7 +82,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 			continue
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
-			for _, sp := range ly.SndPrjns {
+			for _, sp := range ly.SendPaths {
 				if sp.IsOff() {
 					continue
 				}
@@ -90,7 +90,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 				if ptyp != CTCtxt {
 					continue
 				}
-				pj, ok := sp.(*CTCtxtPrjn)
+				pj, ok := sp.(*CTCtxtPath)
 				if !ok {
 					continue
 				}
@@ -100,7 +100,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 }
 
-// CtxtFmGe integrates new CtxtGe excitatory conductance from projections, and computes
+// CtxtFmGe integrates new CtxtGe excitatory conductance from pathways, and computes
 // overall Ctxt value, only on Deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
 func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
@@ -110,7 +110,7 @@ func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
 	for ni := range ly.CtxtGes {
 		ly.CtxtGes[ni] = 0
 	}
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
@@ -118,7 +118,7 @@ func (ly *CTLayer) CtxtFmGe(ltime *leabra.Time) {
 		if ptyp != CTCtxt {
 			continue
 		}
-		pj, ok := p.(*CTCtxtPrjn)
+		pj, ok := p.(*CTCtxtPath)
 		if !ok {
 			continue
 		}

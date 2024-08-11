@@ -69,8 +69,8 @@ func (ly *GPLayer) Defaults() {
 		ly.Act.Init.Vm = 0.50
 	}
 
-	for _, pjii := range ly.RcvPrjns {
-		pji := pjii.(leabra.LeabraPrjn)
+	for _, pjii := range ly.RecvPaths {
+		pji := pjii.(leabra.LeabraPath)
 		pj := pji.AsLeabra()
 		pj.Learn.Learn = false
 		pj.Learn.Norm.On = false

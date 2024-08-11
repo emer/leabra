@@ -197,7 +197,7 @@ func (ly *GateLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	return 0
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *GateLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {

@@ -6,7 +6,7 @@ package pbwm
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -21,18 +21,18 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// NewPrjn returns new prjn of default type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &leabra.Prjn{}
+// NewPath returns new path of default type
+func (nt *Network) NewPath() emer.Path {
+	return &leabra.Path{}
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -185,11 +185,11 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
 	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name(), XAlign: relpos.Left, Space: 2})
 
-	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj := nt.ConnectLayersPath(mtxGo, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(mtxNoGo, gpe, prjn.NewPoolOneToOne(), emer.Forward)
+	pj = nt.ConnectLayers(mtxNoGo, gpe, path.NewPoolOneToOne(), emer.Forward)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj = nt.ConnectLayersPath(gpe, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
 	pj.SetClass("BgFixed")
 
 	return
@@ -238,11 +238,11 @@ func AddPFC(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX 
 		pfcOut, pfcOutD = AddPFCLayer(nt, prefix+"out", nY, nOut, nNeurY, nNeurX, true, dynMaint)
 	}
 
-	// todo: need a Rect projection from MntD -> out if !dynMaint, or something else..
+	// todo: need a Rect pathway from MntD -> out if !dynMaint, or something else..
 
 	if pfcOut != nil && pfcMnt != nil {
 		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
+		pj := nt.ConnectLayers(pfcMntD, pfcOut, path.NewOneToOne(), emer.Forward)
 		pj.SetClass("PFCMntDToOut")
 	}
 	return

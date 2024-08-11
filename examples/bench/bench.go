@@ -20,7 +20,7 @@ import (
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/timer"
 	"github.com/emer/etable/v2/etable"
 	"github.com/emer/etable/v2/etensor"
@@ -36,11 +36,11 @@ var Silent = false // non-verbose mode -- just reports result
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Path", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
@@ -51,9 +51,9 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.4",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
@@ -77,14 +77,14 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	hid3Lay := net.AddLayer("Hidden3", shp, emer.Hidden)
 	outLay := net.AddLayer("Output", shp, emer.Target)
 
-	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, hid3Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid3Lay, outLay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(inLay, hid1Lay, path.NewFull(), emer.Forward)
+	net.ConnectLayers(hid1Lay, hid2Lay, path.NewFull(), emer.Forward)
+	net.ConnectLayers(hid2Lay, hid3Lay, path.NewFull(), emer.Forward)
+	net.ConnectLayers(hid3Lay, outLay, path.NewFull(), emer.Forward)
 
-	net.ConnectLayers(outLay, hid3Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid3Lay, hid2Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(outLay, hid3Lay, path.NewFull(), emer.Back)
+	net.ConnectLayers(hid3Lay, hid2Lay, path.NewFull(), emer.Back)
+	net.ConnectLayers(hid2Lay, hid1Lay, path.NewFull(), emer.Back)
 
 	switch threads {
 	case 2:

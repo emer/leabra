@@ -465,7 +465,7 @@ func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
 type WtInitParams struct {
 	erand.RndParams
 
-	// symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections
+	// symmetrize the weight values with those in reciprocal pathway -- typically true for bidirectional excitatory connections
 	Sym bool
 }
 
@@ -479,14 +479,14 @@ func (wp *WtInitParams) Defaults() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  WtScaleParams
 
-// / WtScaleParams are weight scaling parameters: modulates overall strength of projection,
+// / WtScaleParams are weight scaling parameters: modulates overall strength of pathway,
 // using both absolute and relative factors
 type WtScaleParams struct {
 
 	// absolute scaling, which is not subject to normalization: directly multiplies weight values
 	Abs float32 `def:"1" min:"0"`
 
-	// relative scaling that shifts balance between different projections -- this is subject to normalization across all other projections into unit
+	// relative scaling that shifts balance between different pathways -- this is subject to normalization across all other pathways into unit
 	Rel float32 `min:"0"`
 }
 
@@ -505,7 +505,7 @@ func (ws *WtScaleParams) Update() {
 // for purposes of computing scaling factors with partial connectivity
 // For 25% layer activity, binomial SEM = sqrt(p(1-p)) = .43, so 3x = 1.3 so 2 is a reasonable default.
 func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
-	ncon = math32.Max(ncon, 1) // prjn Avg can be < 1 in some cases
+	ncon = math32.Max(ncon, 1) // path Avg can be < 1 in some cases
 	semExtra := 2
 	slayActN := int(math32.Round(savg * snu)) // sending layer actual # active
 	slayActN = max(slayActN, 1)

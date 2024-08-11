@@ -6,7 +6,7 @@ package agate
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/glong"
@@ -20,13 +20,13 @@ type Network struct {
 	deep.Network
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -57,12 +57,12 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, sp
 	return pcore.AddBG(&nt.Network.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat path.Pattern) emer.Path {
 	return pcore.ConnectToMatrix(&nt.Network.Network, send, recv, pat)
 }
 
-// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPath, MaintLayer,
 // and OutLayer which is gated by BG.
 // Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
 // Optionally creates a TRC Pulvinar for Super.
@@ -80,7 +80,7 @@ func (nt *Network) AddPFC(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pul
 func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
 	ly := &MaintLayer{}
 	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
-	glong.ConnectNMDA(nt, ly, ly, prjn.NewPoolOneToOne())
+	glong.ConnectNMDA(nt, ly, ly, path.NewPoolOneToOne())
 	return ly
 }
 
@@ -92,12 +92,12 @@ func AddOutLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeu
 	return ly
 }
 
-// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// AddPFC adds a PFC system including SuperLayer, CT with CTCtxtPath, MaintLayer,
 // and OutLayer which is gated by BG.
 // Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
 // Optionally creates a TRC Pulvinar for Super.
-// Standard Deep CTCtxtPrjn PoolOneToOne Super -> CT projection, and
-// 1to1 projections Super -> Maint and Maint -> Out class PFCFixed are created by default.
+// Standard Deep CTCtxtPath PoolOneToOne Super -> CT pathway, and
+// 1to1 pathways Super -> Maint and Maint -> Out class PFCFixed are created by default.
 // CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
 func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) (super, ct, maint, out, pulv emer.Layer) {
 	if name == "" {
@@ -114,8 +114,8 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: name, YAlign: relpos.Front, Space: 2})
 	maint.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: out.Name(), XAlign: relpos.Left, Space: 2})
 
-	one2one := prjn.NewOneToOne()
-	deep.ConnectCtxtToCT(nt, super, ct, prjn.NewPoolOneToOne())
+	one2one := path.NewOneToOne()
+	deep.ConnectCtxtToCT(nt, super, ct, path.NewPoolOneToOne())
 
 	pj := nt.ConnectLayers(super, maint, one2one, emer.Forward)
 	pj.SetClass("PFCFixed")
@@ -132,12 +132,12 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	return
 }
 
-// AddPFCPy adds a PFC system including SuperLayer, CT with CTCtxtPrjn, MaintLayer,
+// AddPFCPy adds a PFC system including SuperLayer, CT with CTCtxtPath, MaintLayer,
 // and OutLayer which is gated by BG.
 // Name is set to "PFC" if empty.  Other layers have appropriate suffixes.
 // Optionally creates a TRC Pulvinar for Super.
-// Standard Deep CTCtxtPrjn PoolOneToOne Super -> CT projection, and
-// 1to1 projections Super -> Maint and Maint -> Out class PFCFixed are created by default.
+// Standard Deep CTCtxtPath PoolOneToOne Super -> CT pathway, and
+// 1to1 pathways Super -> Maint and Maint -> Out class PFCFixed are created by default.
 // CT is placed Behind Super, then Out and Maint, and Pulvinar behind CT if created.
 // Py is Python version, returns layers as a slice
 func AddPFCPy(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pulvLay bool) []emer.Layer {

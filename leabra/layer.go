@@ -60,18 +60,18 @@ func (ly *Layer) Defaults() {
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
 	ly.Inhib.Layer.On = true
-	for _, pj := range ly.RcvPrjns {
+	for _, pj := range ly.RecvPaths {
 		pj.Defaults()
 	}
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
-	for _, pj := range ly.RcvPrjns {
+	for _, pj := range ly.RecvPaths {
 		pj.UpdateParams()
 	}
 }
@@ -95,14 +95,14 @@ func JsonToParams(b []byte) string {
 
 // AllParams returns a listing of all parameters in the Layer
 func (ly *Layer) AllParams() string {
-	str := "/////////////////////////////////////////////////\nLayer: " + ly.Nm + "\n"
+	str := "/////////////////////////////////////////////////\nLayer: " + ly.Name + "\n"
 	b, _ := json.MarshalIndent(&ly.Act, "", " ")
 	str += "Act: {\n " + JsonToParams(b)
 	b, _ = json.MarshalIndent(&ly.Inhib, "", " ")
 	str += "Inhib: {\n " + JsonToParams(b)
 	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
 	str += "Learn: {\n " + JsonToParams(b)
-	for _, pj := range ly.RcvPrjns {
+	for _, pj := range ly.RecvPaths {
 		pstr := pj.AllParams()
 		str += pstr
 	}
@@ -252,17 +252,17 @@ func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
 }
 
-// RecvPrjnValues fills in values of given synapse variable name,
-// for projection into given sending layer and neuron 1D index,
+// RecvPathValues fills in values of given synapse variable name,
+// for pathway into given sending layer and neuron 1D index,
 // for all receiving neurons in this layer,
 // into given float32 slice (only resized if not big enough).
-// prjnType is the string representation of the prjn type -- used if non-empty,
-// useful when there are multiple projections between two layers.
+// pathType is the string representation of the path type -- used if non-empty,
+// useful when there are multiple pathways between two layers.
 // Returns error on invalid var name.
 // If the receiving neuron is not connected to the given sending layer or neuron
 // then the value is set to math32.NaN().
-// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, prjnType string) error {
+// Returns error on invalid var name or lack of recv path (vals always set to nan on path err).
+func (ly *Layer) RecvPathValues(vals *[]float32, varNm string, sendLay emer.Layer, sendIndex1D int, pathType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -277,20 +277,20 @@ func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Laye
 	if sendLay == nil {
 		return fmt.Errorf("sending layer is nil")
 	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = sendLay.RecvNameTypeTry(ly.Nm, prjnType)
+	var pj emer.Path
+	if pathType != "" {
+		pj, err = sendLay.RecvNameTypeTry(ly.Name, pathType)
 		if pj == nil {
-			pj, err = sendLay.RecvNameTry(ly.Nm)
+			pj, err = sendLay.RecvNameTry(ly.Name)
 		}
 	} else {
-		pj, err = sendLay.RecvNameTry(ly.Nm)
+		pj, err = sendLay.RecvNameTry(ly.Name)
 	}
 	if pj == nil {
 		return err
 	}
 	if pj.IsOff() {
-		return fmt.Errorf("projection is off")
+		return fmt.Errorf("pathway is off")
 	}
 	for ri := 0; ri < nn; ri++ {
 		(*vals)[ri] = pj.SynValue(varNm, sendIndex1D, ri) // this will work with any variable -- slower, but necessary
@@ -298,17 +298,17 @@ func (ly *Layer) RecvPrjnValues(vals *[]float32, varNm string, sendLay emer.Laye
 	return nil
 }
 
-// SendPrjnValues fills in values of given synapse variable name,
-// for projection into given receiving layer and neuron 1D index,
+// SendPathValues fills in values of given synapse variable name,
+// for pathway into given receiving layer and neuron 1D index,
 // for all sending neurons in this layer,
 // into given float32 slice (only resized if not big enough).
-// prjnType is the string representation of the prjn type -- used if non-empty,
-// useful when there are multiple projections between two layers.
+// pathType is the string representation of the path type -- used if non-empty,
+// useful when there are multiple pathways between two layers.
 // Returns error on invalid var name.
 // If the sending neuron is not connected to the given receiving layer or neuron
 // then the value is set to math32.NaN().
-// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, prjnType string) error {
+// Returns error on invalid var name or lack of recv path (vals always set to nan on path err).
+func (ly *Layer) SendPathValues(vals *[]float32, varNm string, recvLay emer.Layer, recvIndex1D int, pathType string) error {
 	var err error
 	nn := len(ly.Neurons)
 	if *vals == nil || cap(*vals) < nn {
@@ -323,20 +323,20 @@ func (ly *Layer) SendPrjnValues(vals *[]float32, varNm string, recvLay emer.Laye
 	if recvLay == nil {
 		return fmt.Errorf("receiving layer is nil")
 	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = recvLay.SendNameTypeTry(ly.Nm, prjnType)
+	var pj emer.Path
+	if pathType != "" {
+		pj, err = recvLay.SendNameTypeTry(ly.Name, pathType)
 		if pj == nil {
-			pj, err = recvLay.SendNameTry(ly.Nm)
+			pj, err = recvLay.SendNameTry(ly.Name)
 		}
 	} else {
-		pj, err = recvLay.SendNameTry(ly.Nm)
+		pj, err = recvLay.SendNameTry(ly.Name)
 	}
 	if pj == nil {
 		return err
 	}
 	if pj.IsOff() {
-		return fmt.Errorf("projection is off")
+		return fmt.Errorf("pathway is off")
 	}
 	for si := 0; si < nn; si++ {
 		(*vals)[si] = pj.SynValue(varNm, si, recvIndex1D)
@@ -358,16 +358,16 @@ func (ly *Layer) PoolTry(idx int) (*Pool, error) {
 	return &(ly.Pools[idx]), nil
 }
 
-func (ly *Layer) SendNameTry(sender string) (emer.Prjn, error) {
+func (ly *Layer) SendNameTry(sender string) (emer.Path, error) {
 	return emer.SendNameTry(ly, sender)
 }
-func (ly *Layer) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
+func (ly *Layer) SendNameTypeTry(sender, typ string) (emer.Path, error) {
 	return emer.SendNameTypeTry(ly, sender, typ)
 }
-func (ly *Layer) RecvNameTry(receiver string) (emer.Prjn, error) {
+func (ly *Layer) RecvNameTry(receiver string) (emer.Path, error) {
 	return emer.RecvNameTry(ly, receiver)
 }
-func (ly *Layer) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
+func (ly *Layer) RecvNameTypeTry(receiver, typ string) (emer.Path, error) {
 	return emer.RecvNameTypeTry(ly, receiver, typ)
 }
 
@@ -412,10 +412,10 @@ func (ly *Layer) BuildPools(nu int) error {
 	return nil
 }
 
-// BuildPrjns builds the projections, recv-side
-func (ly *Layer) BuildPrjns() error {
+// BuildPaths builds the pathways, recv-side
+func (ly *Layer) BuildPaths() error {
 	emsg := ""
-	for _, pj := range ly.RcvPrjns {
+	for _, pj := range ly.RecvPaths {
 		if pj.IsOff() {
 			continue
 		}
@@ -430,18 +430,18 @@ func (ly *Layer) BuildPrjns() error {
 	return nil
 }
 
-// Build constructs the layer state, including calling Build on the projections
+// Build constructs the layer state, including calling Build on the pathways
 func (ly *Layer) Build() error {
 	nu := ly.Shp.Len()
 	if nu == 0 {
-		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Nm)
+		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Name)
 	}
 	ly.Neurons = make([]Neuron, nu)
 	err := ly.BuildPools(nu)
 	if err != nil {
 		return err
 	}
-	err = ly.BuildPrjns()
+	err = ly.BuildPaths()
 	return err
 }
 
@@ -453,7 +453,7 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"Layer\": %q,\n", ly.Nm)))
+	w.Write([]byte(fmt.Sprintf("\"Layer\": %q,\n", ly.Name)))
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte(fmt.Sprintf("\"MetaData\": {\n")))
 	depth++
@@ -465,20 +465,20 @@ func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("},\n"))
 	w.Write(indent.TabBytes(depth))
-	onps := make(emer.Prjns, 0, len(ly.RcvPrjns))
-	for _, pj := range ly.RcvPrjns {
+	onps := make(emer.Paths, 0, len(ly.RecvPaths))
+	for _, pj := range ly.RecvPaths {
 		if !pj.IsOff() {
 			onps = append(onps, pj)
 		}
 	}
 	np := len(onps)
 	if np == 0 {
-		w.Write([]byte(fmt.Sprintf("\"Prjns\": null\n")))
+		w.Write([]byte(fmt.Sprintf("\"Paths\": null\n")))
 	} else {
-		w.Write([]byte(fmt.Sprintf("\"Prjns\": [\n")))
+		w.Write([]byte(fmt.Sprintf("\"Paths\": [\n")))
 		depth++
 		for pi, pj := range onps {
-			pj.WriteWtsJSON(w, depth) // this leaves prjn unterminated
+			pj.WriteWtsJSON(w, depth) // this leaves path unterminated
 			if pi == np-1 {
 				w.Write([]byte("\n"))
 			} else {
@@ -524,10 +524,10 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 		}
 	}
 	var err error
-	rpjs := ly.RecvPrjns()
-	if len(lw.Prjns) == len(*rpjs) { // this is essential if multiple prjns from same layer
-		for pi := range lw.Prjns {
-			pw := &lw.Prjns[pi]
+	rpjs := ly.RecvPaths()
+	if len(lw.Paths) == len(*rpjs) { // this is essential if multiple paths from same layer
+		for pi := range lw.Paths {
+			pw := &lw.Paths[pi]
 			pj := (*rpjs)[pi]
 			er := pj.SetWts(pw)
 			if er != nil {
@@ -535,8 +535,8 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 			}
 		}
 	} else {
-		for pi := range lw.Prjns {
-			pw := &lw.Prjns[pi]
+		for pi := range lw.Paths {
+			pw := &lw.Paths[pi]
 			pj, err := ly.SendNameTry(pw.From)
 			if err == nil {
 				er := pj.SetWts(pw)
@@ -550,7 +550,7 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 }
 
 // VarRange returns the min / max values for given variable
-// todo: support r. s. projection values
+// todo: support r. s. pathway values
 func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 	sz := len(ly.Neurons)
 	if sz == 0 {
@@ -577,7 +577,7 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 	return
 }
 
-// note: all basic computation can be performed on layer-level and prjn level
+// note: all basic computation can be performed on layer-level and path level
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
@@ -586,11 +586,11 @@ func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
 // Also calls InitActs
 func (ly *Layer) InitWts() {
 	ly.LeabraLay.UpdateParams()
-	for _, p := range ly.SndPrjns {
+	for _, p := range ly.SendPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).InitWts()
+		p.(LeabraPath).InitWts()
 	}
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
@@ -627,11 +627,11 @@ func (ly *Layer) InitActs() {
 
 // InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 func (ly *Layer) InitWtSym() {
-	for _, p := range ly.SndPrjns {
+	for _, p := range ly.SendPaths {
 		if p.IsOff() {
 			continue
 		}
-		plp := p.(LeabraPrjn)
+		plp := p.(LeabraPath)
 		if !(plp.AsLeabra().WtInit.Sym) {
 			continue
 		}
@@ -639,11 +639,11 @@ func (ly *Layer) InitWtSym() {
 		if p.RecvLay().Index() < p.SendLay().Index() {
 			continue
 		}
-		rpj, has := ly.RecipToSendPrjn(p)
+		rpj, has := ly.RecipToSendPath(p)
 		if !has {
 			continue
 		}
-		rlp := rpj.(LeabraPrjn)
+		rlp := rpj.(LeabraPath)
 		if !(rlp.AsLeabra().WtInit.Sym) {
 			continue
 		}
@@ -725,7 +725,7 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 // ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
 func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
-	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
+	lNy, lNx, _, _ := etensor.Path2DShape(&ly.Shp, false)
 
 	ymx := min(ext.Dim(0), lNy)
 	xmx := min(ext.Dim(1), lNx)
@@ -733,7 +733,7 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
 			vl := float32(ext.FloatValue(idx))
-			ui := etensor.Prjn2DIndex(&ly.Shp, false, y, x)
+			ui := etensor.Path2DIndex(&ly.Shp, false, y, x)
 			nrn := &ly.Neurons[ui]
 			if nrn.IsOff() {
 				continue
@@ -865,7 +865,7 @@ func (ly *Layer) UpdateExtFlags() {
 // values from the current pool-level averages.
 // The ActPAvgEff value is used for updating the conductance scaling parameters,
 // if these are not set to Fixed, so calling this will change the scaling of
-// projections in the network!
+// pathways in the network!
 func (ly *Layer) ActAvgFmAct() {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
@@ -936,18 +936,18 @@ func (ly *Layer) AvgLFmAvgM() {
 func (ly *Layer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		pj := p.(LeabraPrjn).AsLeabra()
+		pj := p.(LeabraPath).AsLeabra()
 		slay := p.SendLay().(LeabraLayer).AsLeabra()
 		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
 		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
-		// reverting this change: if you want to eliminate a prjn, set the Off flag
+		// reverting this change: if you want to eliminate a path, set the Off flag
 		// if you want to negate it but keep the relative factor in the denominator
 		// then set the scale to 0.
 		// if pj.GScale == 0 {
@@ -960,11 +960,11 @@ func (ly *Layer) GScaleFmAvgAct() {
 		}
 	}
 
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		pj := p.(LeabraPrjn).AsLeabra()
+		pj := p.(LeabraPath).AsLeabra()
 		if pj.Typ == emer.Inhib {
 			if totGiRel > 0 {
 				pj.GScale /= totGiRel
@@ -1042,11 +1042,11 @@ func (ly *Layer) InitGInc() {
 		}
 		ly.Act.InitGInc(nrn)
 	}
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).InitGInc()
+		p.(LeabraPath).InitGInc()
 	}
 }
 
@@ -1061,21 +1061,21 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
 			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
-				for _, sp := range ly.SndPrjns {
+				for _, sp := range ly.SendPaths {
 					if sp.IsOff() {
 						continue
 					}
-					sp.(LeabraPrjn).SendGDelta(ni, delta)
+					sp.(LeabraPath).SendGDelta(ni, delta)
 				}
 				nrn.ActSent = nrn.Act
 			}
 		} else if nrn.ActSent > ly.Act.OptThresh.Send {
 			delta := -nrn.ActSent // un-send the last above-threshold activation to get back to 0
-			for _, sp := range ly.SndPrjns {
+			for _, sp := range ly.SendPaths {
 				if sp.IsOff() {
 					continue
 				}
-				sp.(LeabraPrjn).SendGDelta(ni, delta)
+				sp.(LeabraPath).SendGDelta(ni, delta)
 			}
 			nrn.ActSent = 0
 		}
@@ -1088,15 +1088,15 @@ func (ly *Layer) GFmInc(ltime *Time) {
 	ly.GFmIncNeur(ltime)
 }
 
-// RecvGInc calls RecvGInc on receiving projections to collect Neuron-level G*Inc values.
+// RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
 // This is called by GFmInc overall method, but separated out for cases that need to
 // do something different.
 func (ly *Layer) RecvGInc(ltime *Time) {
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).RecvGInc()
+		p.(LeabraPath).RecvGInc()
 	}
 }
 
@@ -1306,44 +1306,44 @@ func (ly *Layer) IsTarget() bool {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learning
 
-// DWt computes the weight change (learning) -- calls DWt method on sending projections
+// DWt computes the weight change (learning) -- calls DWt method on sending pathways
 func (ly *Layer) DWt() {
-	for _, p := range ly.SndPrjns {
+	for _, p := range ly.SendPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).DWt()
+		p.(LeabraPath).DWt()
 	}
 }
 
-// WtFmDWt updates the weights from delta-weight changes -- on the sending projections
+// WtFmDWt updates the weights from delta-weight changes -- on the sending pathways
 func (ly *Layer) WtFmDWt() {
-	for _, p := range ly.SndPrjns {
+	for _, p := range ly.SendPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).WtFmDWt()
+		p.(LeabraPath).WtFmDWt()
 	}
 }
 
 // WtBalFmWt computes the Weight Balance factors based on average recv weights
 func (ly *Layer) WtBalFmWt() {
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
-		p.(LeabraPrjn).WtBalFmWt()
+		p.(LeabraPath).WtBalFmWt()
 	}
 }
 
-// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
 func (ly *Layer) LrateMult(mult float32) {
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		// if p.IsOff() { // keep all sync'd
 		// 	continue
 		// }
-		p.(LeabraPrjn).LrateMult(mult)
+		p.(LeabraPath).LrateMult(mult)
 	}
 }
 
@@ -1360,8 +1360,8 @@ func (ly *Layer) CostEst() (neur, syn, tot int) {
 	perNeur := 300 // cost per neuron, relative to synapse which is 1
 	neur = len(ly.Neurons) * perNeur
 	syn = 0
-	for _, pji := range ly.SndPrjns {
-		pj := pji.(LeabraPrjn).AsLeabra()
+	for _, pji := range ly.SendPaths {
+		pj := pji.(LeabraPath).AsLeabra()
 		ns := len(pj.Syns)
 		syn += ns
 	}
@@ -1457,7 +1457,7 @@ var LayerProps = tree.Props{
 	// 	}},
 	// 	{"InitWts", tree.Props{
 	// 		"icon": "update",
-	// 		"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+	// 		"desc": "initialize the layer's weight values according to path parameters, for all *sending* pathways out of this layer",
 	// 	}},
 	// 	{"InitActs", tree.Props{
 	// 		"icon": "update",

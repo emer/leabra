@@ -56,7 +56,7 @@ func (sd *SendACh) AddAllBut(net emer.Network, excl ...string) {
 
 // Layers that use SendACh should include a Validate check in Build as follows:
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 // func (ly *AChSrcLayer) Build() error {
 // 	err := ly.Layer.Build()
 // 	if err != nil {
@@ -85,7 +85,7 @@ type ClampAChLayer struct {
 func (ly *ClampAChLayer) GetACh() float32    { return ly.ACh }
 func (ly *ClampAChLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *ClampAChLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {

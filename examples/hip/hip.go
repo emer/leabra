@@ -21,7 +21,7 @@ import (
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/etable/v2/agg"
 	"github.com/emer/etable/v2/eplot"
@@ -60,84 +60,84 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "keeping default params for generic prjns",
+			{Sel: "Path", Desc: "keeping default params for generic paths",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
-			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
+			{Sel: ".EcCa1Path", Desc: "encoder pathways -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":        "0.04",
-					"Prjn.Learn.Momentum.On":  "false",
-					"Prjn.Learn.Norm.On":      "false",
-					"Prjn.Learn.WtBal.On":     "true",
-					"Prjn.Learn.XCal.SetLLrn": "false", // using bcm now, better
+					"Path.Learn.Lrate":        "0.04",
+					"Path.Learn.Momentum.On":  "false",
+					"Path.Learn.Norm.On":      "false",
+					"Path.Learn.WtBal.On":     "true",
+					"Path.Learn.XCal.SetLLrn": "false", // using bcm now, better
 				}},
-			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
+			{Sel: ".HippoCHL", Desc: "hippo CHL pathways -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.2",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.CHL.Hebb":          "0.05",
+					"Path.Learn.Lrate":       "0.2",
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
-			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Prjn prjns",
+			{Sel: ".PPath", Desc: "perforant path, new Dg error-driven EcCa1Path paths",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
-					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
+					"Path.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
 					// moss=4, delta=4, lr=0.2, test = 3 are best
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0",
+					"Path.WtScale.Abs": "4.0",
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0.0",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0.0",
 				}},
 			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "0.5",
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "4",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "4",
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.1",
-					"Prjn.Learn.Lrate": "0.1",
+					"Path.WtScale.Rel": "0.1",
+					"Path.Learn.Lrate": "0.1",
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on!
-					"Prjn.CHL.Hebb":          ".5",   // .5 > 1 overall
-					"Prjn.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
-					"Prjn.CHL.MinusQ1":       "true", // dg self err?
-					"Prjn.Learn.Lrate":       "0.4",  // .4 > .3 > .2
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.Learn.Learn":       "true", // absolutely essential to have on!
+					"Path.CHL.Hebb":          ".5",   // .5 > 1 overall
+					"Path.CHL.SAvgCor":       "0.1",  // .1 > .2 > .3 > .4 ?
+					"Path.CHL.MinusQ1":       "true", // dg self err?
+					"Path.Learn.Lrate":       "0.4",  // .4 > .3 > .2
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.01",
-					"Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.1",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.CHL.Hebb":          "0.01",
+					"Path.CHL.SAvgCor":       "0.4",
+					"Path.Learn.Lrate":       "0.1",
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{
@@ -380,7 +380,7 @@ type Sim struct {
 	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// if true, runing in no GUI mode
 	NoGui bool `view:"-"`
@@ -506,41 +506,41 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ca3.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: "DG", YAlign: relpos.Front, XAlign: relpos.Left, Space: 0})
 	ca1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "CA3", YAlign: relpos.Front, Space: 2})
 
-	onetoone := prjn.NewOneToOne()
-	pool1to1 := prjn.NewPoolOneToOne()
-	full := prjn.NewFull()
+	onetoone := path.NewOneToOne()
+	pool1to1 := path.NewPoolOneToOne()
+	full := path.NewFull()
 
 	net.ConnectLayers(in, ecin, onetoone, emer.Forward)
 	net.ConnectLayers(ecout, ecin, onetoone, emer.Back)
 
 	// EC <-> CA1 encoder pathways
-	pj := net.ConnectLayersPrjn(ecin, ca1, pool1to1, emer.Forward, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
-	pj = net.ConnectLayersPrjn(ca1, ecout, pool1to1, emer.Forward, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
-	pj = net.ConnectLayersPrjn(ecout, ca1, pool1to1, emer.Back, &hip.EcCa1Prjn{})
-	pj.SetClass("EcCa1Prjn")
+	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
+	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
+	pj = net.ConnectLayersPath(ecout, ca1, pool1to1, emer.Back, &hip.EcCa1Path{})
+	pj.SetClass("EcCa1Path")
 
 	// Perforant pathway
-	ppath := prjn.NewUnifRnd()
+	ppath := path.NewUnifRnd()
 	ppath.PCon = 0.25
 
-	pj = net.ConnectLayersPrjn(ecin, dg, ppath, emer.Forward, &hip.CHLPrjn{})
+	pj = net.ConnectLayersPath(ecin, dg, ppath, emer.Forward, &hip.CHLPath{})
 	pj.SetClass("HippoCHL")
 
-	pj = net.ConnectLayersPrjn(ecin, ca3, ppath, emer.Forward, &hip.EcCa1Prjn{})
+	pj = net.ConnectLayersPath(ecin, ca3, ppath, emer.Forward, &hip.EcCa1Path{})
 	pj.SetClass("PPath")
-	pj = net.ConnectLayersPrjn(ca3, ca3, full, emer.Lateral, &hip.EcCa1Prjn{})
+	pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.EcCa1Path{})
 	pj.SetClass("PPath")
 
 	// Mossy fibers
-	mossy := prjn.NewUnifRnd()
+	mossy := path.NewUnifRnd()
 	mossy.PCon = 0.02
-	pj = net.ConnectLayersPrjn(dg, ca3, mossy, emer.Forward, &hip.CHLPrjn{}) // no learning
+	pj = net.ConnectLayersPath(dg, ca3, mossy, emer.Forward, &hip.CHLPath{}) // no learning
 	pj.SetClass("HippoCHL")
 
 	// Schafer collaterals
-	pj = net.ConnectLayersPrjn(ca3, ca1, full, emer.Forward, &hip.CHLPrjn{})
+	pj = net.ConnectLayersPath(ca3, ca1, full, emer.Forward, &hip.CHLPath{})
 	pj.SetClass("HippoCHL")
 
 	// using 3 threads total
@@ -622,9 +622,9 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca3 := ss.Net.LayerByName("CA3").(leabra.LeabraLayer).AsLeabra()
 	ecin := ss.Net.LayerByName("ECin").(leabra.LeabraLayer).AsLeabra()
 	ecout := ss.Net.LayerByName("ECout").(leabra.LeabraLayer).AsLeabra()
-	ca1FmECin := ca1.SendName("ECin").(*hip.EcCa1Prjn)
-	ca1FmCa3 := ca1.SendName("CA3").(*hip.CHLPrjn)
-	ca3FmDg := ca3.SendName("DG").(leabra.LeabraPrjn).AsLeabra()
+	ca1FmECin := ca1.SendName("ECin").(*hip.EcCa1Path)
+	ca1FmCa3 := ca1.SendName("CA3").(*hip.CHLPath)
+	ca3FmDg := ca3.SendName("DG").(leabra.LeabraPath).AsLeabra()
 
 	// First Quarter: CA1 is driven by ECin, not by CA3 recall
 	// (which is not really active yet anyway)
@@ -729,7 +729,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "ECout"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
@@ -781,10 +781,10 @@ func (ss *Sim) TrainTrial() {
 // RunEnd is called at the end of a run -- save weights, record final log, etc here
 func (ss *Sim) RunEnd() {
 	ss.LogRun(ss.RunLog)
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fnm := ss.WeightsFileName()
 		fmt.Printf("Saving Weights to: %s\n", fnm)
-		ss.Net.SaveWtsJSON(core.Filename(fnm))
+		ss.Net.SaveWeightsJSON(core.Filename(fnm))
 	}
 }
 
@@ -969,7 +969,7 @@ func (ss *Sim) Stopped() {
 // SaveWeights saves the network weights -- when called with views.CallMethod
 // it will auto-prompt for filename
 func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWtsJSON(filename)
+	ss.Net.SaveWeightsJSON(filename)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1319,7 +1319,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Name+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1410,7 +1410,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
+		dt.SetCellFloat(ly.Name+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 
 	for _, lnm := range ss.LayStatNms {
@@ -1643,8 +1643,8 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
+		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
+		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
 	if cyc%10 == 0 { // too slow to do every cyc
@@ -2095,7 +2095,7 @@ func (ss *Sim) CmdArgs() {
 	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
 	flag.IntVar(&ss.MaxEpcs, "epcs", 30, "maximum number of epochs to run (split between AB / AC)")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
 	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
@@ -2133,7 +2133,7 @@ func (ss *Sim) CmdArgs() {
 			defer ss.RunFile.Close()
 		}
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Runs\n", ss.MaxRuns)

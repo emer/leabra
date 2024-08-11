@@ -11,7 +11,7 @@ import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/etable/v2/etensor"
 )
 
@@ -32,40 +32,40 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Act.Gbar.L": "0.2", // was default when test created, now is 0.1
 				}},
-			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
+			{Sel: "Path", Desc: "for reproducibility, identical weights",
 				Params: params.Params{
-					"Prjn.WtInit.Var":        "0",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Path.WtInit.Var":        "0",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 		},
 	}},
 	{Name: "NormOn", Desc: "Learn.Norm on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm on",
+			{Sel: "Path", Desc: "norm on",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On": "true",
+					"Path.Learn.Norm.On": "true",
 				}},
 		},
 	}},
 	{Name: "MomentOn", Desc: "Learn.Momentum on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "moment on",
+			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
+					"Path.Learn.Momentum.On": "true",
 				}},
 		},
 	}},
 	{Name: "NormMomentOn", Desc: "both Learn.Momentum and Norm on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "moment on",
+			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.Norm.On":     "true",
 				}},
 		},
 	}},
@@ -77,9 +77,9 @@ func TestMakeNet(t *testing.T) {
 	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden)
 	outLay := TestNet.AddLayer("Output", []int{4, 1}, emer.Target)
 
-	TestNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(hidLay, outLay, prjn.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
+	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
+	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
+	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
@@ -103,7 +103,7 @@ func TestMakeNet(t *testing.T) {
 func TestSynValues(t *testing.T) {
 	TestNet.InitWts()
 	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	fmIn := hidLay.SendName("Input").(*Prjn)
+	fmIn := hidLay.SendName("Input").(*Path)
 
 	bfWt := fmIn.SynValue("Wt", 1, 1)
 	if math32.IsNaN(bfWt) {
@@ -406,17 +406,17 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx] = hidLay.RcvPrjns[0].SynValue("DWt", pi, pi)
-			outdwt[didx] = outLay.RcvPrjns[0].SynValue("DWt", pi, pi)
-			hidnorm[didx] = hidLay.RcvPrjns[0].SynValue("Norm", pi, pi)
-			outnorm[didx] = outLay.RcvPrjns[0].SynValue("Norm", pi, pi)
-			hidmoment[didx] = hidLay.RcvPrjns[0].SynValue("Moment", pi, pi)
-			outmoment[didx] = outLay.RcvPrjns[0].SynValue("Moment", pi, pi)
+			hiddwt[didx] = hidLay.RcvPaths[0].SynValue("DWt", pi, pi)
+			outdwt[didx] = outLay.RcvPaths[0].SynValue("DWt", pi, pi)
+			hidnorm[didx] = hidLay.RcvPaths[0].SynValue("Norm", pi, pi)
+			outnorm[didx] = outLay.RcvPaths[0].SynValue("Norm", pi, pi)
+			hidmoment[didx] = hidLay.RcvPaths[0].SynValue("Moment", pi, pi)
+			outmoment[didx] = outLay.RcvPaths[0].SynValue("Moment", pi, pi)
 
 			TestNet.WtFmDWt()
 
-			hidwt[didx] = hidLay.RcvPrjns[0].SynValue("Wt", pi, pi)
-			outwt[didx] = outLay.RcvPrjns[0].SynValue("Wt", pi, pi)
+			hidwt[didx] = hidLay.RcvPaths[0].SynValue("Wt", pi, pi)
+			outwt[didx] = outLay.RcvPaths[0].SynValue("Wt", pi, pi)
 
 			switch pi {
 			case 0:
@@ -467,10 +467,10 @@ func TestInhibAct(t *testing.T) {
 	hidLay := InhibNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden).(*Layer)
 	outLay := InhibNet.AddLayer("Output", []int{4, 1}, emer.Target).(*Layer)
 
-	InhibNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Inhib)
-	InhibNet.ConnectLayers(hidLay, outLay, prjn.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
+	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
+	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Inhib)
+	InhibNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
+	InhibNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
 
 	InhibNet.Defaults()
 	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg

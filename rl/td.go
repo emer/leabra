@@ -14,7 +14,7 @@ import (
 // TDRewPredLayer is the temporal differences reward prediction layer.
 // It represents estimated value V(t) in the minus phase, and computes
 // estimated V(t+1) based on its learned weights in plus phase.
-// Use TDRewPredPrjn for DA modulated learning.
+// Use TDRewPredPath for DA modulated learning.
 type TDRewPredLayer struct {
 	leabra.Layer
 
@@ -96,7 +96,7 @@ func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
 	return tly.(*TDRewPredLayer), nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *TDRewIntegLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -166,7 +166,7 @@ func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
 	return tly.(*TDRewIntegLayer), nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *TDDaLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -210,18 +210,18 @@ func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  TDRewPredPrjn
+//  TDRewPredPath
 
-// TDRewPredPrjn does dopamine-modulated learning for reward prediction:
+// TDRewPredPath does dopamine-modulated learning for reward prediction:
 // DWt = Da * Send.ActQ0 (activity on *previous* timestep)
 // Use in TDRewPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
-type TDRewPredPrjn struct {
-	leabra.Prjn
+type TDRewPredPath struct {
+	leabra.Path
 }
 
-func (pj *TDRewPredPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *TDRewPredPath) Defaults() {
+	pj.Path.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
@@ -229,8 +229,8 @@ func (pj *TDRewPredPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *TDRewPredPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *TDRewPredPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -278,8 +278,8 @@ func (pj *TDRewPredPrjn) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending projections
-func (pj *TDRewPredPrjn) WtFmDWt() {
+// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *TDRewPredPath) WtFmDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

@@ -22,10 +22,10 @@ func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GPLay = GPi
 
-	// note: GPLayer took care of STN input prjns
+	// note: GPLayer took care of STN input paths
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		pj.Learn.WtSig.Gain = 1
 		pj.WtInit.Mean = 0.5
 		pj.WtInit.Var = 0

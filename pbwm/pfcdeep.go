@@ -128,7 +128,7 @@ func (ly *PFCDeepLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *PFCDeepLayer) Build() error {
 	err := ly.GateLayer.Build()
 	if err != nil {
@@ -141,8 +141,8 @@ func (ly *PFCDeepLayer) Build() error {
 // MaintPFC returns corresponding PFCDeep maintenance layer with same name but outD -> mntD
 // could be nil
 func (ly *PFCDeepLayer) MaintPFC() *PFCDeepLayer {
-	sz := len(ly.Nm)
-	mnm := ly.Nm[:sz-4] + "mntD"
+	sz := len(ly.Name)
+	mnm := ly.Name[:sz-4] + "mntD"
 	li := ly.Network.LayerByName(mnm)
 	if li == nil {
 		return nil
@@ -153,7 +153,7 @@ func (ly *PFCDeepLayer) MaintPFC() *PFCDeepLayer {
 // SuperPFC returns corresponding PFC super layer with same name without D
 // should not be nil.  Super can be any layer type.
 func (ly *PFCDeepLayer) SuperPFC() leabra.LeabraLayer {
-	dnm := ly.Nm[:len(ly.Nm)-1]
+	dnm := ly.Name[:len(ly.Name)-1]
 	li := ly.Network.LayerByName(dnm)
 	if li == nil {
 		return nil

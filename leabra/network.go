@@ -15,7 +15,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
-	"github.com/emer/emergent/v2/prjn"
+	"github.com/emer/emergent/v2/path"
 	"github.com/emer/etable/v2/etensor"
 )
 
@@ -39,12 +39,12 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// NewPrjn returns new prjn of proper type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &Prjn{}
+// NewPath returns new path of proper type
+func (nt *Network) NewPath() emer.Path {
+	return &Path{}
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.WtBalInterval = 10
 	nt.WtBalCtr = 0
@@ -55,7 +55,7 @@ func (nt *Network) Defaults() {
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	for _, ly := range nt.Layers {
 		ly.UpdateParams()
@@ -76,7 +76,7 @@ func (nt *Network) UnitVarProps() map[string]string {
 }
 
 // SynVarNames returns the names of all the variables on the synapses in this network.
-// Not all projections need to support all variables, but must safely return 0's for
+// Not all pathways need to support all variables, but must safely return 0's for
 // unsupported ones.  The order of this list determines NetView variable display order.
 // This is typically a global list so do not modify!
 func (nt *Network) SynVarNames() []string {
@@ -175,8 +175,8 @@ func (nt *Network) InitWts() {
 }
 
 // InitTopoScales initializes synapse-specific scale parameters from
-// prjn types that support them, with flags set to support it,
-// includes: prjn.PoolTile prjn.Circle.
+// path types that support them, with flags set to support it,
+// includes: path.PoolTile path.Circle.
 // call before InitWts if using Topo wts
 func (nt *Network) InitTopoScales() {
 	scales := &etensor.Float32{}
@@ -185,26 +185,26 @@ func (nt *Network) InitTopoScales() {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
-		rpjn := ly.RcvPrjns
+		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
 			if p.IsOff() {
 				continue
 			}
 			pat := p.Pattern()
 			switch pt := pat.(type) {
-			case *prjn.PoolTile:
+			case *path.PoolTile:
 				if !pt.HasTopoWts() {
 					continue
 				}
-				pj := p.(LeabraPrjn).AsLeabra()
+				pj := p.(LeabraPath).AsLeabra()
 				slay := p.SendLay()
 				pt.TopoWts(slay.Shape(), ly.Shape(), scales)
 				pj.SetScalesRPool(scales)
-			case *prjn.Circle:
+			case *path.Circle:
 				if !pt.TopoWts {
 					continue
 				}
-				pj := p.(LeabraPrjn).AsLeabra()
+				pj := p.(LeabraPath).AsLeabra()
 				pj.SetScalesFunc(pt.GaussWts)
 			}
 		}
@@ -389,7 +389,7 @@ func (nt *Network) WtBalFmWt() {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
 }
 
-// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
 func (nt *Network) LrateMult(mult float32) {
 	for _, ly := range nt.Layers {
@@ -439,8 +439,8 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 	}
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			nsz := idx + ns
 			if len(*dwts) < nsz {
@@ -461,8 +461,8 @@ func (nt *Network) SetDWts(dwts []float32) {
 	idx := 0
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			for j := range pj.Syns {
 				sy := &(pj.Syns[j])
@@ -476,7 +476,7 @@ func (nt *Network) SetDWts(dwts []float32) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Misc Reports / Threading Allocation
 
-// SizeReport returns a string reporting the size of each layer and projection
+// SizeReport returns a string reporting the size of each layer and pathway
 // in the network, and total memory footprint.
 func (nt *Network) SizeReport() string {
 	var b strings.Builder
@@ -490,12 +490,12 @@ func (nt *Network) SizeReport() string {
 		nmem := nn * int(unsafe.Sizeof(Neuron{}))
 		neur += nn
 		neurMem += nmem
-		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Nm, nn, (datasize.ByteSize)(nmem).HumanReadable())
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.ByteSize)(nmem).HumanReadable())
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			syn += ns
-			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPrjn{}))
+			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))
 			synMem += pmem
 			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pj.Recv.Name(), ns, (datasize.ByteSize)(pmem).HumanReadable())
 		}
@@ -621,7 +621,7 @@ func (nt *Network) ThreadReport() string {
 			tneur += neur
 			tsyn += syn
 			ttot += tot
-			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Nm, tot/1000, neur/1000, syn/1000)
+			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Name, tot/1000, neur/1000, syn/1000)
 		}
 		fmt.Fprintf(&b, "Thread: %d \t cost: %d K \t neur: %d K \t syn: %d K\n", th, ttot/1000, tneur/1000, tsyn/1000)
 	}
@@ -635,7 +635,7 @@ func (nt *Network) ThreadReport() string {
 
 // var NetworkProps = tree.Props{
 // 	"ToolBar": tree.PropSlice{
-// 		{"SaveWtsJSON", tree.Props{
+// 		{"SaveWeightsJSON", tree.Props{
 // 			"label": "Save Wts...",
 // 			"icon":  "file-save",
 // 			"desc":  "Save json-formatted weights",
@@ -646,7 +646,7 @@ func (nt *Network) ThreadReport() string {
 // 				}},
 // 			},
 // 		}},
-// 		{"OpenWtsJSON", tree.Props{
+// 		{"OpenWeightsJSON", tree.Props{
 // 			"label": "Open Wts...",
 // 			"icon":  "file-open",
 // 			"desc":  "Open json-formatted weights",
@@ -664,7 +664,7 @@ func (nt *Network) ThreadReport() string {
 // 		}},
 // 		{"InitWts", tree.Props{
 // 			"icon": "update",
-// 			"desc": "initialize the network weight values according to prjn parameters",
+// 			"desc": "initialize the network weight values according to path parameters",
 // 		}},
 // 		{"InitActs", tree.Props{
 // 			"icon": "update",
@@ -695,14 +695,14 @@ func (nt *Network) ThreadReport() string {
 // 				{"Pattern", tree.Props{
 // 					"desc": "pattern to connect with",
 // 				}},
-// 				{"Prjn Type", tree.Props{
-// 					"desc": "type of projection -- direction, or other more specialized factors",
+// 				{"Path Type", tree.Props{
+// 					"desc": "type of pathway -- direction, or other more specialized factors",
 // 				}},
 // 			},
 // 		}},
 // 		{"AllWtScales", tree.Props{
 // 			"icon":        "file-sheet",
-// 			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
+// 			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv pathways.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
 // 			"show-return": true,
 // 		}},
 // 	},

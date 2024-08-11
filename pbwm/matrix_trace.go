@@ -11,7 +11,7 @@ import (
 	"github.com/emer/leabra/v2/leabra"
 )
 
-// TraceSyn holds extra synaptic state for trace projections
+// TraceSyn holds extra synaptic state for trace pathways
 type TraceSyn struct {
 
 	// new trace -- drives updates to trace value -- su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases)
@@ -45,7 +45,7 @@ func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
 
 var TraceSynVars = []string{"NTr", "Tr"}
 
-// Params for for trace-based learning in the MatrixTracePrjn
+// Params for for trace-based learning in the MatrixTracePath
 type TraceParams struct {
 
 	// learning rate for all not-gated stripes, which learn in the opposite direction to the gated stripes, and typically with a slightly lower learning rate -- although there are different learning logics associated with each of these different not-gated cases, in practice the same learning rate for all works best, and is simplest
@@ -94,12 +94,12 @@ func (tp *TraceParams) LrateMod(gated, d2r, posDa bool) float32 {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  MatrixTracePrjn
+//  MatrixTracePath
 
-// MatrixTracePrjn does dopamine-modulated, gated trace learning, for Matrix learning
+// MatrixTracePath does dopamine-modulated, gated trace learning, for Matrix learning
 // in PBWM context
-type MatrixTracePrjn struct {
-	leabra.Prjn
+type MatrixTracePath struct {
+	leabra.Path
 
 	// special parameters for matrix trace learning
 	Trace TraceParams `view:"inline"`
@@ -108,8 +108,8 @@ type MatrixTracePrjn struct {
 	TrSyns []TraceSyn
 }
 
-func (pj *MatrixTracePrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *MatrixTracePath) Defaults() {
+	pj.Path.Defaults()
 	pj.Trace.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
@@ -118,13 +118,13 @@ func (pj *MatrixTracePrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-func (pj *MatrixTracePrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *MatrixTracePath) Build() error {
+	err := pj.Path.Build()
 	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
-func (pj *MatrixTracePrjn) ClearTrace() {
+func (pj *MatrixTracePath) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.NTr = 0
@@ -132,13 +132,13 @@ func (pj *MatrixTracePrjn) ClearTrace() {
 	}
 }
 
-func (pj *MatrixTracePrjn) InitWts() {
-	pj.Prjn.InitWts()
+func (pj *MatrixTracePath) InitWts() {
+	pj.Path.InitWts()
 	pj.ClearTrace()
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *MatrixTracePrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *MatrixTracePath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -228,10 +228,10 @@ func (pj *MatrixTracePrjn) DWt() {
 // SynValues
 
 // SynVarIndex returns the index of given variable within the synapse,
-// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// according to *this path's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *MatrixTracePrjn) SynVarIndex(varNm string) (int, error) {
-	vidx, err := pj.Prjn.SynVarIndex(varNm)
+func (pj *MatrixTracePath) SynVarIndex(varNm string) (int, error) {
+	vidx, err := pj.Path.SynVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -242,20 +242,20 @@ func (pj *MatrixTracePrjn) SynVarIndex(varNm string) (int, error) {
 	case "Tr":
 		return nn + 1, nil
 	}
-	return -1, fmt.Errorf("MatrixTracePrjn SynVarIndex: variable name: %v not valid", varNm)
+	return -1, fmt.Errorf("MatrixTracePath SynVarIndex: variable name: %v not valid", varNm)
 }
 
 // SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MatrixTracePrjn) SynVal1D(varIndex int, synIndex int) float32 {
+func (pj *MatrixTracePath) SynVal1D(varIndex int, synIndex int) float32 {
 	if varIndex < 0 || varIndex >= len(SynVarsAll) {
 		return math32.NaN()
 	}
 	nn := len(leabra.SynapseVars)
 	if varIndex < nn {
-		return pj.Prjn.SynVal1D(varIndex, synIndex)
+		return pj.Path.SynVal1D(varIndex, synIndex)
 	}
 	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
 		return math32.NaN()

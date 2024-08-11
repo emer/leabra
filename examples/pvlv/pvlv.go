@@ -133,7 +133,7 @@ type Sim struct {
 	// turn off to preserve existing cmp graphs - else saves cur as cmp for new run
 	TrialAnalUpdateCmpGraphs bool
 
-	// the network -- click to view / edit parameters for layers, prjns, etc
+	// the network -- click to view / edit parameters for layers, paths, etc
 	Net *pvlv.Network `view:"no-inline"`
 
 	// maximum number of rows for CycleOutputData
@@ -218,7 +218,7 @@ type Sim struct {
 	RealTimeData *eplot.Plot2D `view:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWts bool `view:"-"`
+	SaveWeights bool `view:"-"`
 
 	// if true, runing in no GUI mode
 	NoGui bool `view:"-"`
@@ -286,7 +286,7 @@ type Sim struct {
 }
 
 func (ss *Sim) OpenCemerWeights(fName string) {
-	err := ss.Net.OpenWtsCpp(core.Filename(fName))
+	err := ss.Net.OpenWeightsCpp(core.Filename(fName))
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
@@ -702,7 +702,7 @@ func FileViewLoadCemerWts(vp *core.Viewport2D) {
 			if sig == int64(core.DialogAccepted) {
 				dlg, _ := send.(*core.Dialog)
 				CemerWtsFname = views.FileViewDialogValue(dlg)
-				err := TheSim.Net.OpenWtsCpp(core.Filename(CemerWtsFname))
+				err := TheSim.Net.OpenWeightsCpp(core.Filename(CemerWtsFname))
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -1622,7 +1622,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
 	flag.IntVar(&ss.MaxConditions, "runs", 10, "maximum number of conditions to run")
 	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWts, "wts", false, "if true, save final weights after each run")
+	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
 	flag.BoolVar(&saveEpcLog, "blklog", true, "if true, save train block log to file")
 	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run log to file")
 	flag.BoolVar(&nogui, "nogui", false, "if not passing any other args and want to run nogui, use nogui")
@@ -1665,7 +1665,7 @@ func (ss *Sim) CmdArgs() (verbose, threads bool) {
 			defer ss.RunFile.Close()
 		}
 	}
-	if ss.SaveWts {
+	if ss.SaveWeights {
 		fmt.Printf("Saving final weights per run\n")
 	}
 	fmt.Printf("Running %d Conditions\n", ss.MaxConditions)

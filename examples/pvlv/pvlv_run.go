@@ -153,7 +153,7 @@ func (ss *Sim) ApplyInputs() {
 	lays := []string{"StimIn", "ContextIn", "USTimeIn"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := ev.State(ly.Nm)
+		pats := ev.State(ly.Name)
 		if pats == nil {
 			continue
 		}
@@ -166,7 +166,7 @@ func (ss *Sim) ApplyPVInputs() {
 	lays := []string{"PosPV", "NegPV"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := ev.State(ly.Nm)
+		pats := ev.State(ly.Name)
 		if pats == nil {
 			continue
 		}

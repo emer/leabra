@@ -76,60 +76,60 @@ func (ch *CHLParams) DWt(hebb, err float32) float32 {
 }
 
 ////////////////////////////////////////////////////////////////////
-//  CHLPrjn
+//  CHLPath
 
-// hip.CHLPrjn is a Contrastive Hebbian Learning (CHL) projection,
-// based on basic rate-coded leabra.Prjn, that implements a
+// hip.CHLPath is a Contrastive Hebbian Learning (CHL) pathway,
+// based on basic rate-coded leabra.Path, that implements a
 // pure CHL learning rule, which works better in the hippocampus.
-type CHLPrjn struct {
-	leabra.Prjn // access as .Prjn
+type CHLPath struct {
+	leabra.Path // access as .Path
 
 	// parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible
 	CHL CHLParams `view:"inline"`
 }
 
-func (pj *CHLPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *CHLPath) Defaults() {
+	pj.Path.Defaults()
 	pj.CHL.Defaults()
-	pj.Prjn.Learn.Norm.On = false     // off by default
-	pj.Prjn.Learn.Momentum.On = false // off by default
-	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
+	pj.Path.Learn.Norm.On = false     // off by default
+	pj.Path.Learn.Momentum.On = false // off by default
+	pj.Path.Learn.WtBal.On = false    // todo: experiment
 }
 
-func (pj *CHLPrjn) UpdateParams() {
+func (pj *CHLPath) UpdateParams() {
 	pj.CHL.Update()
 	if pj.CHL.On {
-		pj.Prjn.Learn.WtSig.SoftBound = false
+		pj.Path.Learn.WtSig.SoftBound = false
 	}
-	pj.Prjn.UpdateParams()
+	pj.Path.UpdateParams()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) -- on sending projections
+// DWt computes the weight change (learning) -- on sending pathways
 // CHL version supported if On
-func (pj *CHLPrjn) DWt() {
+func (pj *CHLPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
 	if pj.CHL.On {
 		pj.DWtCHL()
 	} else {
-		pj.Prjn.DWt()
+		pj.Path.DWt()
 	}
 }
 
 // SAvgCor computes the sending average activation, corrected according to the SAvgCor
 // correction factor (typically makes layer appear more sparse than it is)
-func (pj *CHLPrjn) SAvgCor(slay *leabra.Layer) float32 {
+func (pj *CHLPath) SAvgCor(slay *leabra.Layer) float32 {
 	savg := .5 + pj.CHL.SAvgCor*(slay.Pools[0].ActAvg.ActPAvgEff-0.5)
 	savg = math32.Max(pj.CHL.SAvgThr, savg) // keep this computed value within bounds
 	return 0.5 / savg
 }
 
 // DWtCHL computes the weight change (learning) for CHL
-func (pj *CHLPrjn) DWtCHL() {
+func (pj *CHLPath) DWtCHL() {
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
 	if slay.Pools[0].ActP.Avg < pj.CHL.SAvgThr { // inactive, no learn

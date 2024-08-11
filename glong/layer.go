@@ -16,7 +16,7 @@ import (
 
 // Layer has GABA-B and NMDA channels, with longer time-constants,
 // to supports bistable activation dynamics including active maintenance
-// in frontal cortex.  NMDA requires NMDAPrjn on relevant projections.
+// in frontal cortex.  NMDA requires NMDAPath on relevant pathways.
 // It also records AlphaMax = maximum activation within an AlphaCycle,
 // which is important given the transient dynamics.
 type Layer struct {
@@ -101,31 +101,31 @@ func (ly *Layer) GFmInc(ltime *leabra.Time) {
 	ly.GFmIncNeur(ltime)
 }
 
-// RecvGInc calls RecvGInc on receiving projections to collect Neuron-level G*Inc values.
+// RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
 // This is called by GFmInc overall method, but separated out for cases that need to
 // do something different.
 func (ly *Layer) RecvGInc(ltime *leabra.Time) {
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
 		if p.Type() == NMDA { // skip NMDA
 			continue
 		}
-		p.(leabra.LeabraPrjn).RecvGInc()
+		p.(leabra.LeabraPath).RecvGInc()
 	}
 }
 
 // RecvGnmdaPInc increments the recurrent-specific GeInc
 func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
-	for _, p := range ly.RcvPrjns {
+	for _, p := range ly.RecvPaths {
 		if p.IsOff() {
 			continue
 		}
 		if p.Type() != NMDA { // skip non-NMDA
 			continue
 		}
-		pj := p.(leabra.LeabraPrjn).AsLeabra()
+		pj := p.(leabra.LeabraPath).AsLeabra()
 		for ri := range ly.GlNeurs {
 			rn := &ly.GlNeurs[ri]
 			rn.NMDASyn += pj.GInc[ri]
@@ -220,7 +220,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 ///////////////////////////////////////////////////////////////////////////
 // Neurons
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *Layer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
