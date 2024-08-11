@@ -27,7 +27,7 @@ func (np *OutParams) Defaults() {
 }
 
 // OutLayer is a frontal cortex output layer (L5 PM), which typically is interconnected
-// with Ventral Thalamus (VM / VA etc) for output gating, and also NMDAPrjn maintenance.
+// with Ventral Thalamus (VM / VA etc) for output gating, and also NMDAPath maintenance.
 type OutLayer struct {
 	MaintLayer
 
@@ -50,7 +50,7 @@ func (ly *OutLayer) ClearLays() ([]PulseClearer, error) {
 		var tly emer.Layer
 		tly, err = ly.Network.LayerByNameTry(nm)
 		if err != nil {
-			log.Printf("OutLayer %s, ClearLay: %v\n", ly.Name(), err)
+			log.Printf("OutLayer %s, ClearLay: %v\n", ly.Name, err)
 		}
 		lays = append(lays, tly.(PulseClearer))
 	}

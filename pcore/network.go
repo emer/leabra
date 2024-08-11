@@ -6,7 +6,7 @@ package pcore
 
 import (
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -43,8 +43,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, sp
 	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat path.Pattern) emer.Path {
 	return ConnectToMatrix(&nt.Network, send, recv, pat)
 }
 
@@ -69,9 +69,9 @@ func AddMatrixLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, n
 	return ly
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixPrjn{})
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+	return nt.ConnectLayersPath(send, recv, pat, emer.Forward, &MatrixPath{})
 }
 
 // AddGPLayer adds a GPLayer of given size, with given name.
@@ -138,22 +138,22 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	cini := AddCINLayer(nt, prefix+"CIN")
 	cin = cini
 
-	cini.SendACh.Add(mtxGo.Name(), mtxNo.Name())
+	cini.SendACh.Add(mtxGo.Name, mtxNo.Name)
 
-	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name(), YAlign: relpos.Front, Space: space})
+	vthal.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpi.Name, YAlign: relpos.Front, Space: space})
 
-	gpeOut.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpi.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
-	gpeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeOut.Name(), YAlign: relpos.Front, Space: space})
-	gpeTA.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeIn.Name(), YAlign: relpos.Front, Space: space})
-	stnp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name(), YAlign: relpos.Front, Space: space})
-	stns.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: stnp.Name(), YAlign: relpos.Front, Space: space})
+	gpeOut.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpi.Name, YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
+	gpeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeOut.Name, YAlign: relpos.Front, Space: space})
+	gpeTA.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeIn.Name, YAlign: relpos.Front, Space: space})
+	stnp.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: gpeTA.Name, YAlign: relpos.Front, Space: space})
+	stns.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: stnp.Name, YAlign: relpos.Front, Space: space})
 
-	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name(), YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
-	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: space})
-	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: space})
+	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: gpeOut.Name, YAlign: relpos.Front, XAlign: relpos.Left, YOffset: 1})
+	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name, YAlign: relpos.Front, Space: space})
+	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name, YAlign: relpos.Front, Space: space})
 
-	one2one := prjn.NewPoolOneToOne()
-	full := prjn.NewFull()
+	one2one := path.NewPoolOneToOne()
+	full := path.NewFull()
 
 	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
@@ -166,7 +166,7 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
 	pj.SetClass("BgFixed")
 
-	// note: this projection exists in bio, but does weird things with Ca dynamics in STNs..
+	// note: this pathway exists in bio, but does weird things with Ca dynamics in STNs..
 	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
 	// pj.SetClass("BgFixed")
 

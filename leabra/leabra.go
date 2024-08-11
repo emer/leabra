@@ -21,7 +21,7 @@ import (
 // which the user-facing method calls.
 //
 // Typically most changes in algorithm can be accomplished directly in the Layer
-// or Prjn level, but sometimes (e.g., in deep) additional full-network passes
+// or Path level, but sometimes (e.g., in deep) additional full-network passes
 // are required.
 //
 // All of the structural API is in emer.Network, which this interface also inherits for
@@ -37,8 +37,8 @@ type LeabraNetwork interface {
 	// NewLayer creates a new concrete layer of appropriate type for this network
 	NewLayer() emer.Layer
 
-	// NewPrjn creates a new concrete projection of appropriate type for this network
-	NewPrjn() emer.Prjn
+	// NewPath creates a new concrete pathway of appropriate type for this network
+	NewPath() emer.Path
 
 	// AlphaCycInit handles all initialization at start of new input pattern.
 	// Should already have presented the external input to the network at this point.
@@ -98,17 +98,17 @@ type LeabraLayer interface {
 	// SetThread sets the thread number for this layer to run on
 	SetThread(thr int)
 
-	// InitWts initializes the weight values in the network, i.e., resetting learning
+	// InitWeights initializes the weight values in the network, i.e., resetting learning
 	// Also calls InitActs
-	InitWts()
+	InitWeights()
 
 	// InitActAvg initializes the running-average activation values that drive learning.
 	InitActAvg()
 
-	// InitActs fully initializes activation state -- only called automatically during InitWts
+	// InitActs fully initializes activation state -- only called automatically during InitWeights
 	InitActs()
 
-	// InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
+	// InitWeightsSym initializes the weight symmetry -- higher layers copy weights from lower layers
 	InitWtSym()
 
 	// InitExt initializes external input state -- called prior to apply ext
@@ -129,11 +129,11 @@ type LeabraLayer interface {
 	// ApplyExt* method call.
 	UpdateExtFlags()
 
-	// RecvPrjns returns the slice of receiving projections for this layer
-	RecvPrjns() *LeabraPrjns
+	// RecvPaths returns the slice of receiving pathways for this layer
+	RecvPaths() *LeabraPaths
 
-	// SendPrjns returns the slice of sending projections for this layer
-	SendPrjns() *LeabraPrjns
+	// SendPaths returns the slice of sending pathways for this layer
+	SendPaths() *LeabraPaths
 
 	// IsTarget returns true if this layer is a Target layer.
 	// By default, returns true for layers of Type == emer.Target
@@ -223,68 +223,68 @@ type LeabraLayer interface {
 	// This is also used for modulating the amount of BCM hebbian learning
 	CosDiffFmActs()
 
-	// DWt computes the weight change (learning) -- calls DWt method on sending projections
+	// DWt computes the weight change (learning) -- calls DWt method on sending pathways
 	DWt()
 
-	// WtFmDWt updates the weights from delta-weight changes -- on the sending projections
+	// WtFmDWt updates the weights from delta-weight changes -- on the sending pathways
 	WtFmDWt()
 
 	// WtBalFmWt computes the Weight Balance factors based on average recv weights
 	WtBalFmWt()
 
-	// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+	// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 	// Useful for implementing learning rate schedules.
 	LrateMult(mult float32)
 }
 
-// LeabraPrjn defines the essential algorithmic API for Leabra, at the projection level.
-// These are the methods that the leabra.Layer calls on its prjns at each step
-// of processing.  Other Prjn types can selectively re-implement (override) these methods
+// LeabraPath defines the essential algorithmic API for Leabra, at the pathway level.
+// These are the methods that the leabra.Layer calls on its paths at each step
+// of processing.  Other Path types can selectively re-implement (override) these methods
 // to modify the computation, while inheriting the basic behavior for non-overridden methods.
 //
-// All of the structural API is in emer.Prjn, which this interface also inherits for
+// All of the structural API is in emer.Path, which this interface also inherits for
 // convenience.
-type LeabraPrjn interface {
-	emer.Prjn
+type LeabraPath interface {
+	emer.Path
 
-	// AsLeabra returns this prjn as a leabra.Prjn -- so that the LeabraPrjn
+	// AsLeabra returns this path as a leabra.Path -- so that the LeabraPath
 	// interface does not need to include accessors to all the basic stuff.
-	AsLeabra() *Prjn
+	AsLeabra() *Path
 
-	// InitWts initializes weight values according to Learn.WtInit params
-	InitWts()
+	// InitWeights initializes weight values according to Learn.WtInit params
+	InitWeights()
 
-	// InitWtSym initializes weight symmetry -- is given the reciprocal projection where
+	// InitWtSym initializes weight symmetry -- is given the reciprocal pathway where
 	// the Send and Recv layers are reversed.
-	InitWtSym(rpj LeabraPrjn)
+	InitWtSym(rpj LeabraPath)
 
-	// InitGInc initializes the per-projection synaptic conductance threadsafe increments.
-	// This is not typically needed (called during InitWts only) but can be called when needed
+	// InitGInc initializes the per-pathway synaptic conductance threadsafe increments.
+	// This is not typically needed (called during InitWeights only) but can be called when needed
 	InitGInc()
 
 	// SendGDelta sends the delta-activation from sending neuron index si,
 	// to integrate synaptic conductances on receivers
 	SendGDelta(si int, delta float32)
 
-	// RecvGInc increments the receiver's synaptic conductances from those of all the projections.
+	// RecvGInc increments the receiver's synaptic conductances from those of all the pathways.
 	RecvGInc()
 
-	// DWt computes the weight change (learning) -- on sending projections
+	// DWt computes the weight change (learning) -- on sending pathways
 	DWt()
 
-	// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending projections
+	// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
 	WtFmDWt()
 
 	// WtBalFmWt computes the Weight Balance factors based on average recv weights
 	WtBalFmWt()
 
-	// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+	// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 	// Useful for implementing learning rate schedules.
 	LrateMult(mult float32)
 }
 
-type LeabraPrjns []LeabraPrjn
+type LeabraPaths []LeabraPath
 
-func (pl *LeabraPrjns) Add(p LeabraPrjn) {
+func (pl *LeabraPaths) Add(p LeabraPath) {
 	(*pl) = append(*pl, p)
 }

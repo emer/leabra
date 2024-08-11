@@ -26,11 +26,11 @@ var KiT_LayerType = kit.Enums.AddEnumExt(emer.KiT_LayerType, LayerTypeN, kit.Not
 
 const (
 	// CT are layer 6 corticothalamic projecting neurons, which drive predictions
-	// in TRC (Pulvinar) via standard projections.
+	// in TRC (Pulvinar) via standard pathways.
 	CT emer.LayerType = emer.LayerTypeN + iota
 
 	// TRC are thalamic relay cell neurons in the Pulvinar / MD thalamus,
-	// which alternately reflect predictions driven by Deep layer projections,
+	// which alternately reflect predictions driven by Deep layer pathways,
 	// and actual outcomes driven by Burst activity from corresponding
 	// Super layer neurons that provide strong driving inputs to TRC neurons.
 	TRC
@@ -51,9 +51,9 @@ var LayerProps = ki.Props{
 			"icon": "reset",
 			"desc": "return all parameters to their intial default values",
 		}},
-		{"InitWts", ki.Props{
+		{"InitWeights", ki.Props{
 			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
+			"desc": "initialize the layer's weight values according to path parameters, for all *sending* pathways out of this layer",
 		}},
 		{"InitActs", ki.Props{
 			"icon": "update",

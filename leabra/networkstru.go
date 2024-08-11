@@ -20,7 +20,7 @@ import (
 
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/emergent/timer"
 	"github.com/emer/emergent/weights"
@@ -90,12 +90,12 @@ type NetworkStru struct {
 // which enables the proper interface methods to be called.  Also sets the name.
 func (nt *NetworkStru) InitName(net emer.Network, name string) {
 	nt.EmerNet = net
-	nt.Nm = name
+	nt.Name = name
 }
 
 // emer.Network interface methods:
-func (nt *NetworkStru) Name() string                  { return nt.Nm }
-func (nt *NetworkStru) Label() string                 { return nt.Nm }
+func (nt *NetworkStru) Name() string                  { return nt.Name }
+func (nt *NetworkStru) Label() string                 { return nt.Name }
 func (nt *NetworkStru) NLayers() int                  { return len(nt.Layers) }
 func (nt *NetworkStru) Layer(idx int) emer.Layer      { return nt.Layers[idx] }
 func (nt *NetworkStru) Bounds() (min, max mat32.Vec3) { min = nt.MinPos; max = nt.MaxPos; return }
@@ -116,7 +116,7 @@ func (nt *NetworkStru) LayerByName(name string) emer.Layer {
 func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
 	ly := nt.LayerByName(name)
 	if ly == nil {
-		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Nm)
+		err := fmt.Errorf("Layer named: %v not found in Network: %v\n", name, nt.Name)
 		log.Println(err)
 		return ly, err
 	}
@@ -127,7 +127,7 @@ func (nt *NetworkStru) LayerByNameTry(name string) (emer.Layer, error) {
 func (nt *NetworkStru) MakeLayMap() {
 	nt.LayMap = make(map[string]emer.Layer, len(nt.Layers))
 	for _, ly := range nt.Layers {
-		nt.LayMap[ly.Name()] = ly
+		nt.LayMap[ly.Name] = ly
 	}
 }
 
@@ -140,10 +140,10 @@ func (nt *NetworkStru) LayersByClass(classes ...string) []string {
 	var nms []string
 	if len(classes) == 0 {
 		for _, ly := range nt.Layers {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
-			nms = append(nms, ly.Name())
+			nms = append(nms, ly.Name)
 		}
 		return nms
 	}
@@ -157,7 +157,7 @@ func (nt *NetworkStru) LayersByClass(classes ...string) []string {
 func (nt *NetworkStru) BuildThreads() {
 	nthr := 0
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
@@ -169,7 +169,7 @@ func (nt *NetworkStru) BuildThreads() {
 	nt.ThrTimes = make([]timer.Time, nt.NThreads)
 	nt.FunTimes = make(map[string]*timer.Time)
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
@@ -178,7 +178,7 @@ func (nt *NetworkStru) BuildThreads() {
 	}
 	for th := 0; th < nt.NThreads; th++ {
 		if len(nt.ThrLay[th]) == 0 {
-			log.Printf("Network BuildThreads: Network %v has no layers for thread: %v\n", nt.Nm, th)
+			log.Printf("Network BuildThreads: Network %v has no layers for thread: %v\n", nt.Name, th)
 		}
 		nt.ThrChans[th] = make(LayFunChan)
 	}
@@ -191,7 +191,7 @@ func (nt *NetworkStru) StdVertLayout() {
 	for li, ly := range nt.Layers {
 		if li == 0 {
 			ly.SetRelPos(relpos.Rel{Rel: relpos.NoRel})
-			lstnm = ly.Name()
+			lstnm = ly.Name
 		} else {
 			ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstnm, XAlign: relpos.Middle, YAlign: relpos.Front})
 		}
@@ -207,7 +207,7 @@ func (nt *NetworkStru) Layout() {
 			var oly emer.Layer
 			if lstly != nil && rp.Rel == relpos.NoRel {
 				oly = lstly
-				ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
+				ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name, XAlign: relpos.Middle, YAlign: relpos.Front})
 			} else {
 				if rp.Other != "" {
 					var err error
@@ -218,7 +218,7 @@ func (nt *NetworkStru) Layout() {
 					}
 				} else if lstly != nil {
 					oly = lstly
-					ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
+					ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name, XAlign: relpos.Middle, YAlign: relpos.Front})
 				}
 			}
 			if oly != nil {
@@ -247,7 +247,7 @@ func (nt *NetworkStru) BoundsUpdt() {
 	nt.MaxPos = mx
 }
 
-// ApplyParams applies given parameter style Sheet to layers and prjns in this network.
+// ApplyParams applies given parameter style Sheet to layers and paths in this network.
 // Calls UpdateParams to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
@@ -294,31 +294,31 @@ func (nt *NetworkStru) KeyLayerParams() string {
 	return "" // todo: implement!
 }
 
-// KeyPrjnParams returns a listing for all Recv projections in the network,
-// of the most important projection-level params (specific to each algorithm).
-func (nt *NetworkStru) KeyPrjnParams() string {
+// KeyPathParams returns a listing for all Recv pathways in the network,
+// of the most important pathway-level params (specific to each algorithm).
+func (nt *NetworkStru) KeyPathParams() string {
 	return nt.AllWtScales()
 }
 
 // AllWtScales returns a listing of all WtScale parameters in the Network
-// in all Layers, Recv projections.  These are among the most important
+// in all Layers, Recv pathways.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep
 // track of what they all are set to.
 func (nt *NetworkStru) AllWtScales() string {
 	str := ""
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
-		str += "\nLayer: " + ly.Name() + "\n"
-		rpjn := ly.RcvPrjns
+		str += "\nLayer: " + ly.Name + "\n"
+		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
-			if p.IsOff() {
+			if p.Off {
 				continue
 			}
-			pj := p.(LeabraPrjn).AsLeabra()
-			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name(), pj.WtScale.Abs, pj.WtScale.Rel)
+			pj := p.(LeabraPath).AsLeabra()
+			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name, pj.WtScale.Abs, pj.WtScale.Rel)
 		}
 	}
 	return str
@@ -365,11 +365,11 @@ func (nt *NetworkStru) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
 }
 
-// ConnectLayerNames establishes a projection between two layers, referenced by name
-// adding to the recv and send projection lists on each side of the connection.
+// ConnectLayerNames establishes a pathway between two layers, referenced by name
+// adding to the recv and send pathway lists on each side of the connection.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, typ emer.PrjnType) (rlay, slay emer.Layer, pj emer.Prjn, err error) {
+func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat path.Pattern, typ emer.PathType) (rlay, slay emer.Layer, pj emer.Path, err error) {
 	rlay, err = nt.LayerByNameTry(recv)
 	if err != nil {
 		return
@@ -382,33 +382,33 @@ func (nt *NetworkStru) ConnectLayerNames(send, recv string, pat prjn.Pattern, ty
 	return
 }
 
-// ConnectLayers establishes a projection between two layers,
-// adding to the recv and send projection lists on each side of the connection.
+// ConnectLayers establishes a pathway between two layers,
+// adding to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType) emer.Prjn {
-	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
-	return nt.ConnectLayersPrjn(send, recv, pat, typ, pj)
+func (nt *NetworkStru) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ emer.PathType) emer.Path {
+	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
+	return nt.ConnectLayersPath(send, recv, pat, typ, pj)
 }
 
-// ConnectLayersPrjn makes connection using given projection between two layers,
-// adding given prjn to the recv and send projection lists on each side of the connection.
+// ConnectLayersPath makes connection using given pathway between two layers,
+// adding given path to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) ConnectLayersPrjn(send, recv emer.Layer, pat prjn.Pattern, typ emer.PrjnType, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkStru) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPrjn).AsLeabra().Connect(send, recv, pat, typ)
-	recv.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
-	send.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
+	pj.(LeabraPath).AsLeabra().Connect(send, recv, pat, typ)
+	recv.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
+	send.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
 }
 
-// BidirConnectLayerNames establishes bidirectional projections between two layers,
-// referenced by name, with low = the lower layer that sends a Forward projection
-// to the high layer, and receives a Back projection in the opposite direction.
+// BidirConnectLayerNames establishes bidirectional pathways between two layers,
+// referenced by name, with low = the lower layer that sends a Forward pathway
+// to the high layer, and receives a Back pathway in the opposite direction.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat prjn.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Prjn, err error) {
+func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat path.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Path, err error) {
 	lowlay, err = nt.LayerByNameTry(low)
 	if err != nil {
 		return
@@ -422,48 +422,48 @@ func (nt *NetworkStru) BidirConnectLayerNames(low, high string, pat prjn.Pattern
 	return
 }
 
-// BidirConnectLayers establishes bidirectional projections between two layers,
-// with low = lower layer that sends a Forward projection to the high layer,
-// and receives a Back projection in the opposite direction.
+// BidirConnectLayers establishes bidirectional pathways between two layers,
+// with low = lower layer that sends a Forward pathway to the high layer,
+// and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat prjn.Pattern) (fwdpj, backpj emer.Prjn) {
+func (nt *NetworkStru) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
 	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
 	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
 	return
 }
 
-// BidirConnectLayersPy establishes bidirectional projections between two layers,
-// with low = lower layer that sends a Forward projection to the high layer,
-// and receives a Back projection in the opposite direction.
+// BidirConnectLayersPy establishes bidirectional pathways between two layers,
+// with low = lower layer that sends a Forward pathway to the high layer,
+// and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 // Py = python version with no return vals.
-func (nt *NetworkStru) BidirConnectLayersPy(low, high emer.Layer, pat prjn.Pattern) {
+func (nt *NetworkStru) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
 	nt.ConnectLayers(low, high, pat, emer.Forward)
 	nt.ConnectLayers(high, low, pat, emer.Back)
 }
 
-// LateralConnectLayer establishes a self-projection within given layer.
+// LateralConnectLayer establishes a self-pathway within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat prjn.Pattern) emer.Prjn {
-	pj := nt.EmerNet.(LeabraNetwork).NewPrjn() // essential to use EmerNet interface here!
-	return nt.LateralConnectLayerPrjn(lay, pat, pj)
+func (nt *NetworkStru) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Path {
+	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
+	return nt.LateralConnectLayerPath(lay, pat, pj)
 }
 
-// LateralConnectLayerPrjn makes lateral self-projection using given projection.
+// LateralConnectLayerPath makes lateral self-pathway using given pathway.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkStru) LateralConnectLayerPrjn(lay emer.Layer, pat prjn.Pattern, pj emer.Prjn) emer.Prjn {
+func (nt *NetworkStru) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPrjn).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
-	lay.(LeabraLayer).RecvPrjns().Add(pj.(LeabraPrjn))
-	lay.(LeabraLayer).SendPrjns().Add(pj.(LeabraPrjn))
+	pj.(LeabraPath).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
+	lay.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
+	lay.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
 }
 
-// Build constructs the layer and projection state based on the layer shapes
+// Build constructs the layer and pathway state based on the layer shapes
 // and patterns of interconnectivity
 func (nt *NetworkStru) Build() error {
 	nt.StopThreads() // any existing..
@@ -471,7 +471,7 @@ func (nt *NetworkStru) Build() error {
 	emsg := ""
 	for li, ly := range nt.Layers {
 		ly.SetIndex(li)
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		err := ly.Build()
@@ -481,7 +481,7 @@ func (nt *NetworkStru) Build() error {
 		cls := strings.Split(ly.Class(), " ")
 		for _, cl := range cls {
 			ll := nt.LayClassMap[cl]
-			ll = append(ll, ly.Name())
+			ll = append(ll, ly.Name)
 			nt.LayClassMap[cl] = ll
 		}
 	}
@@ -553,11 +553,11 @@ func (nt *NetworkStru) WriteWtsJSON(w io.Writer) error {
 	w.Write([]byte("{\n"))
 	depth++
 	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"Network\": %q,\n", nt.Nm))) // note: can't use \n in `` so need "
+	w.Write([]byte(fmt.Sprintf("\"Network\": %q,\n", nt.Name))) // note: can't use \n in `` so need "
 	w.Write(indent.TabBytes(depth))
 	onls := make([]emer.Layer, 0, len(nt.Layers))
 	for _, ly := range nt.Layers {
-		if !ly.IsOff() {
+		if !ly.Off {
 			onls = append(onls, ly)
 		}
 	}
@@ -604,7 +604,7 @@ func (nt *NetworkStru) ReadWtsJSON(r io.Reader) error {
 func (nt *NetworkStru) SetWts(nw *weights.Network) error {
 	var err error
 	if nw.Network != "" {
-		nt.Nm = nw.Network
+		nt.Name = nw.Network
 	}
 	if nw.MetaData != nil {
 		if nt.MetaData == nil {
@@ -666,7 +666,7 @@ func (nt *NetworkStru) ReadWtsCpp(r io.Reader) error {
 }
 
 // VarRange returns the min / max values for given variable
-// todo: support r. s. projection values
+// todo: support r. s. pathway values
 func (nt *NetworkStru) VarRange(varNm string) (min, max float32, err error) {
 	first := true
 	for _, ly := range nt.Layers {
@@ -717,7 +717,7 @@ func (nt *NetworkStru) ThrWorker(tt int) {
 		thly := nt.ThrLay[tt]
 		nt.ThrTimes[tt].Start()
 		for _, ly := range thly {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
 			fun(ly.(LeabraLayer))
@@ -736,7 +736,7 @@ func (nt *NetworkStru) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 	nt.FunTimerStart(funame)
 	if nt.NThreads <= 1 {
 		for _, ly := range nt.Layers {
-			if ly.IsOff() {
+			if ly.Off {
 				continue
 			}
 			fun(ly.(LeabraLayer))
@@ -753,7 +753,7 @@ func (nt *NetworkStru) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 
 // TimerReport reports the amount of time spent in each function, and in each thread
 func (nt *NetworkStru) TimerReport() {
-	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Nm, nt.NThreads)
+	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Name, nt.NThreads)
 	fmt.Printf("\t%13s \t%7s\t%7s\n", "Function Name", "Secs", "Pct")
 	nfn := len(nt.FunTimes)
 	fnms := make([]string, nfn)

@@ -10,16 +10,16 @@ import (
 	"github.com/goki/mat32"
 )
 
-// DaHebbPrjn does dopamine-modulated Hebbian learning -- i.e., the 3-factor
+// DaHebbPath does dopamine-modulated Hebbian learning -- i.e., the 3-factor
 // learning rule: Da * Recv.Act * Send.Act
-type DaHebbPrjn struct {
-	leabra.Prjn
+type DaHebbPath struct {
+	leabra.Path
 }
 
-var KiT_DaHebbPrjn = kit.Types.AddType(&DaHebbPrjn{}, leabra.PrjnProps)
+var KiT_DaHebbPath = kit.Types.AddType(&DaHebbPath{}, leabra.PathProps)
 
-func (pj *DaHebbPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *DaHebbPath) Defaults() {
+	pj.Path.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
@@ -27,8 +27,8 @@ func (pj *DaHebbPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *DaHebbPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *DaHebbPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}

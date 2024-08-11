@@ -14,7 +14,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/etable/etensor"
 	"github.com/goki/ki/ki"
 	"github.com/goki/ki/kit"
@@ -43,12 +43,12 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// NewPrjn returns new prjn of proper type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &Prjn{}
+// NewPath returns new path of proper type
+func (nt *Network) NewPath() emer.Path {
+	return &Path{}
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.WtBalInterval = 10
 	nt.WtBalCtr = 0
@@ -59,7 +59,7 @@ func (nt *Network) Defaults() {
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	for _, ly := range nt.Layers {
 		ly.UpdateParams()
@@ -80,7 +80,7 @@ func (nt *Network) UnitVarProps() map[string]string {
 }
 
 // SynVarNames returns the names of all the variables on the synapses in this network.
-// Not all projections need to support all variables, but must safely return 0's for
+// Not all pathways need to support all variables, but must safely return 0's for
 // unsupported ones.  The order of this list determines NetView variable display order.
 // This is typically a global list so do not modify!
 func (nt *Network) SynVarNames() []string {
@@ -156,20 +156,20 @@ func (nt *Network) WtFmDWt() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// InitWts initializes synaptic weights and all other associated long-term state variables
+// InitWeights initializes synaptic weights and all other associated long-term state variables
 // including running-average state values (e.g., layer running average activations etc)
-func (nt *Network) InitWts() {
+func (nt *Network) InitWeights() {
 	nt.WtBalCtr = 0
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitWts()
+		ly.(LeabraLayer).InitWeights()
 	}
 	// separate pass to enforce symmetry
 	// st := time.Now()
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitWtSym()
@@ -179,36 +179,36 @@ func (nt *Network) InitWts() {
 }
 
 // InitTopoScales initializes synapse-specific scale parameters from
-// prjn types that support them, with flags set to support it,
-// includes: prjn.PoolTile prjn.Circle.
-// call before InitWts if using Topo wts
+// path types that support them, with flags set to support it,
+// includes: path.PoolTile path.Circle.
+// call before InitWeights if using Topo wts
 func (nt *Network) InitTopoScales() {
 	scales := &etensor.Float32{}
 	for _, lyi := range nt.Layers {
-		if lyi.IsOff() {
+		if lyi.Off {
 			continue
 		}
 		ly := lyi.(LeabraLayer).AsLeabra()
-		rpjn := ly.RcvPrjns
+		rpjn := ly.RecvPaths
 		for _, p := range rpjn {
-			if p.IsOff() {
+			if p.Off {
 				continue
 			}
 			pat := p.Pattern()
 			switch pt := pat.(type) {
-			case *prjn.PoolTile:
-				if !pt.HasTopoWts() {
+			case *path.PoolTile:
+				if !pt.HasTopoWeights() {
 					continue
 				}
-				pj := p.(LeabraPrjn).AsLeabra()
-				slay := p.SendLay()
-				pt.TopoWts(slay.Shape(), ly.Shape(), scales)
+				pj := p.(LeabraPath).AsLeabra()
+				slay := p.SendLayer()
+				pt.TopoWeights(slay.Shape, ly.Shape, scales)
 				pj.SetScalesRPool(scales)
-			case *prjn.Circle:
-				if !pt.TopoWts {
+			case *path.Circle:
+				if !pt.TopoWeights {
 					continue
 				}
-				pj := p.(LeabraPrjn).AsLeabra()
+				pj := p.(LeabraPath).AsLeabra()
 				pj.SetScalesFunc(pt.GaussWts)
 			}
 		}
@@ -221,7 +221,7 @@ func (nt *Network) InitTopoScales() {
 // here for ad-hoc decay cases.
 func (nt *Network) DecayState(decay float32) {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).DecayState(decay)
@@ -231,7 +231,7 @@ func (nt *Network) DecayState(decay float32) {
 // InitActs fully initializes activation state -- not automatically called
 func (nt *Network) InitActs() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitActs()
@@ -241,7 +241,7 @@ func (nt *Network) InitActs() {
 // InitExt initializes external input state -- call prior to applying external inputs to layers
 func (nt *Network) InitExt() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitExt()
@@ -253,7 +253,7 @@ func (nt *Network) InitExt() {
 // ApplyExt* method call.
 func (nt *Network) UpdateExtFlags() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).UpdateExtFlags()
@@ -267,7 +267,7 @@ func (nt *Network) UpdateExtFlags() {
 // might have changed strength)
 func (nt *Network) InitGInc() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).InitGInc()
@@ -287,7 +287,7 @@ func (nt *Network) InitGInc() {
 // threshold
 func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).AlphaCycInit(updtActAvg)
@@ -303,7 +303,7 @@ func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
 // changed at any point thereafter during AlphaCyc, this must be called.
 func (nt *Network) GScaleFmAvgAct() {
 	for _, ly := range nt.Layers {
-		if ly.IsOff() {
+		if ly.Off {
 			continue
 		}
 		ly.(LeabraLayer).GScaleFmAvgAct()
@@ -393,11 +393,11 @@ func (nt *Network) WtBalFmWt() {
 	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
 }
 
-// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
 func (nt *Network) LrateMult(mult float32) {
 	for _, ly := range nt.Layers {
-		// if ly.IsOff() { // keep all sync'd
+		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
 		ly.(LeabraLayer).LrateMult(mult)
@@ -418,7 +418,7 @@ func (nt *Network) LayersSetOff(off bool) {
 // Provides a clean starting point for subsequent lesion experiments.
 func (nt *Network) UnLesionNeurons() {
 	for _, ly := range nt.Layers {
-		// if ly.IsOff() { // keep all sync'd
+		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
 		ly.(LeabraLayer).AsLeabra().UnLesionNeurons()
@@ -443,8 +443,8 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 	}
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			nsz := idx + ns
 			if len(*dwts) < nsz {
@@ -465,8 +465,8 @@ func (nt *Network) SetDWts(dwts []float32) {
 	idx := 0
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			for j := range pj.Syns {
 				sy := &(pj.Syns[j])
@@ -480,7 +480,7 @@ func (nt *Network) SetDWts(dwts []float32) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Misc Reports / Threading Allocation
 
-// SizeReport returns a string reporting the size of each layer and projection
+// SizeReport returns a string reporting the size of each layer and pathway
 // in the network, and total memory footprint.
 func (nt *Network) SizeReport() string {
 	var b strings.Builder
@@ -494,17 +494,17 @@ func (nt *Network) SizeReport() string {
 		nmem := nn * int(unsafe.Sizeof(Neuron{}))
 		neur += nn
 		neurMem += nmem
-		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Nm, nn, (datasize.ByteSize)(nmem).HumanReadable())
-		for _, pji := range ly.SndPrjns {
-			pj := pji.(LeabraPrjn).AsLeabra()
+		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.ByteSize)(nmem).HumanReadable())
+		for _, pji := range ly.SendPaths {
+			pj := pji.(LeabraPath).AsLeabra()
 			ns := len(pj.Syns)
 			syn += ns
-			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPrjn{}))
+			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))
 			synMem += pmem
-			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pj.Recv.Name(), ns, (datasize.ByteSize)(pmem).HumanReadable())
+			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pj.Recv.Name, ns, (datasize.ByteSize)(pmem).HumanReadable())
 		}
 	}
-	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Nm, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
+	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Name, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
 	return b.String()
 }
 
@@ -614,7 +614,7 @@ func (nt *Network) ThreadAlloc(nThread int) string {
 func (nt *Network) ThreadReport() string {
 	var b strings.Builder
 	// p := message.NewPrinter(language.English)
-	fmt.Fprintf(&b, "Network: %s Auto Thread Allocation for %d threads:\n", nt.Nm, nt.NThreads)
+	fmt.Fprintf(&b, "Network: %s Auto Thread Allocation for %d threads:\n", nt.Name, nt.NThreads)
 	for th := 0; th < nt.NThreads; th++ {
 		tneur := 0
 		tsyn := 0
@@ -625,7 +625,7 @@ func (nt *Network) ThreadReport() string {
 			tneur += neur
 			tsyn += syn
 			ttot += tot
-			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Nm, tot/1000, neur/1000, syn/1000)
+			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Name, tot/1000, neur/1000, syn/1000)
 		}
 		fmt.Fprintf(&b, "Thread: %d \t cost: %d K \t neur: %d K \t syn: %d K\n", th, ttot/1000, tneur/1000, tsyn/1000)
 	}
@@ -664,9 +664,9 @@ var NetworkProps = ki.Props{
 			"icon": "update",
 			"desc": "build the network's neurons and synapses according to current params",
 		}},
-		{"InitWts", ki.Props{
+		{"InitWeights", ki.Props{
 			"icon": "update",
-			"desc": "initialize the network weight values according to prjn parameters",
+			"desc": "initialize the network weight values according to path parameters",
 		}},
 		{"InitActs", ki.Props{
 			"icon": "update",
@@ -697,14 +697,14 @@ var NetworkProps = ki.Props{
 				{"Pattern", ki.Props{
 					"desc": "pattern to connect with",
 				}},
-				{"Prjn Type", ki.Props{
-					"desc": "type of projection -- direction, or other more specialized factors",
+				{"Path Type", ki.Props{
+					"desc": "type of pathway -- direction, or other more specialized factors",
 				}},
 			},
 		}},
 		{"AllWtScales", ki.Props{
 			"icon":        "file-sheet",
-			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv projections.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
+			"desc":        "AllWtScales returns a listing of all WtScale parameters in the Network in all Layers, Recv pathways.  These are among the most important and numerous of parameters (in larger networks) -- this helps keep track of what they all are set to.",
 			"show-return": true,
 		}},
 	},

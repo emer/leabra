@@ -18,7 +18,7 @@ import (
 	"github.com/emer/emergent/env"
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/etable/agg"
 	"github.com/emer/etable/eplot"
@@ -61,20 +61,20 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Path", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
 					"Layer.Act.Gbar.L":     "0.1", // set explictly, new default, a bit better vs 0.2
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 			{Sel: ".Output", Desc: "output has higher inhib because localist",
 				Params: params.Params{
@@ -94,8 +94,8 @@ type Sim struct {
 	// size of each dim in 2D input
 	Size int `desc:"size of each dim in 2D input"`
 
-	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
-	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	// [view: no-inline] the network -- click to view / edit parameters for layers, paths, etc
+	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, paths, etc"`
 
 	// [view: no-inline] training epoch-level log data
 	TrnEpcLog *etable.Table `view:"no-inline" desc:"training epoch-level log data"`
@@ -354,9 +354,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	// default is Above, YAlign = Front, XAlign = Center
 	y.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "X", XAlign: relpos.Left, Space: 4})
 
-	// note: see emergent/prjn module for all the options on how to connect
-	// NewFull returns a new prjn.Full connectivity pattern
-	full := prjn.NewFull()
+	// note: see emergent/path module for all the options on how to connect
+	// NewFull returns a new path.Full connectivity pattern
+	full := path.NewFull()
 
 	net.ConnectLayers(inp, hid, full, emer.Forward)
 	net.BidirConnectLayers(hid, x, full)
@@ -374,7 +374,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 		log.Println(err)
 		return
 	}
-	net.InitWts()
+	net.InitWeights()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -498,7 +498,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "X", "Y"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
@@ -559,7 +559,7 @@ func (ss *Sim) NewRun() {
 	ss.TrainEnv.Init(run)
 	ss.TestEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
@@ -805,12 +805,12 @@ func (ss *Sim) RunEpochName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
 }
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + lognm + ".csv"
 }
 
 //////////////////////////////////////////////
@@ -862,7 +862,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Name+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -945,7 +945,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
 		vt := ss.ValsTsr("Input")
 		ly.UnitValsTensor(vt, "Act")
-		dt.SetCellTensor(ly.Nm+" Act", row, vt)
+		dt.SetCellTensor(ly.Name+" Act", row, vt)
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1079,8 +1079,8 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
+		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
+		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
 	if cyc%10 == 0 { // too slow to do every cyc

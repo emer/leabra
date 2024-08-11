@@ -57,13 +57,13 @@ func (sd *SendDA) AddAllBut(net emer.Network, excl ...string) {
 
 // Layers that use SendDA should include a Validate check in Build as follows:
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 // func (ly *DaSrcLayer) Build() error {
 // 	err := ly.Layer.Build()
 // 	if err != nil {
 // 		return err
 // 	}
-// 	err = ly.SendDA.Validate(ly.Network, ly.Name()+" SendTo list")
+// 	err = ly.SendDA.Validate(ly.Network, ly.Name+" SendTo list")
 // 	return err
 // }
 
@@ -93,13 +93,13 @@ func (ly *ClampDaLayer) Defaults() {
 func (ly *ClampDaLayer) GetDA() float32   { return ly.DA }
 func (ly *ClampDaLayer) SetDA(da float32) { ly.DA = da }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *ClampDaLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
-	err = ly.SendDA.Validate(ly.Network, ly.Name()+" SendTo list")
+	err = ly.SendDA.Validate(ly.Network, ly.Name+" SendTo list")
 	return err
 }
 

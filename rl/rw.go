@@ -18,7 +18,7 @@ import (
 // learning dynamic (i.e., PV learning in the PVLV framework).
 // Activity is computed as linear function of excitatory conductance
 // (which can be negative -- there are no constraints).
-// Use with RWPrjn which does simple delta-rule learning on minus-plus.
+// Use with RWPath which does simple delta-rule learning on minus-plus.
 type RWPredLayer struct {
 	leabra.Layer
 
@@ -45,7 +45,7 @@ func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.Act = ly.PredRange.ClipVal(nrn.Ge) // clipped linear
@@ -98,24 +98,24 @@ func (ly *RWDaLayer) SetDA(da float32) { ly.DA = da }
 func (ly *RWDaLayer) RWLayers() (*leabra.Layer, *RWPredLayer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
 	if err != nil {
-		log.Printf("RWDaLayer %s, RewLay: %v\n", ly.Name(), err)
+		log.Printf("RWDaLayer %s, RewLay: %v\n", ly.Name, err)
 		return nil, nil, err
 	}
 	ply, err := ly.Network.LayerByNameTry(ly.RWPredLay)
 	if err != nil {
-		log.Printf("RWDaLayer %s, RWPredLay: %v\n", ly.Name(), err)
+		log.Printf("RWDaLayer %s, RWPredLay: %v\n", ly.Name, err)
 		return nil, nil, err
 	}
 	return tly.(leabra.LeabraLayer).AsLeabra(), ply.(*RWPredLayer), nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *RWDaLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
-	err = ly.SendDA.Validate(ly.Network, ly.Name()+" SendTo list")
+	err = ly.SendDA.Validate(ly.Network, ly.Name+" SendTo list")
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
 	pact := pnrn.Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		if hasRew {
@@ -158,22 +158,22 @@ func (ly *RWDaLayer) CyclePost(ltime *leabra.Time) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  RWPrjn
+//  RWPath
 
-// RWPrjn does dopamine-modulated learning for reward prediction: Da * Send.Act
+// RWPath does dopamine-modulated learning for reward prediction: Da * Send.Act
 // Use in RWPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
-type RWPrjn struct {
-	leabra.Prjn
+type RWPath struct {
+	leabra.Path
 
 	// tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal
 	DaTol float32 `desc:"tolerance on DA -- if below this abs value, then DA goes to zero and there is no learning -- prevents prediction from exactly learning to cancel out reward value, retaining a residual valence of signal"`
 }
 
-var KiT_RWPrjn = kit.Types.AddType(&RWPrjn{}, deep.PrjnProps)
+var KiT_RWPath = kit.Types.AddType(&RWPath{}, deep.PathProps)
 
-func (pj *RWPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *RWPath) Defaults() {
+	pj.Path.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
@@ -181,8 +181,8 @@ func (pj *RWPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *RWPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *RWPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -244,8 +244,8 @@ func (pj *RWPrjn) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending projections
-func (pj *RWPrjn) WtFmDWt() {
+// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *RWPath) WtFmDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

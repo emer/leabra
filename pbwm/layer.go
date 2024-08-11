@@ -72,7 +72,7 @@ func (ly *Layer) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *Layer) UpdateParams() {
 	ly.Layer.UpdateParams()
 }
@@ -169,13 +169,13 @@ func (ly *Layer) QuarterFinal(ltime *leabra.Time) {
 
 // Quarter2DWt is optional Q2 DWt -- define where relevant
 func (ly *Layer) Quarter2DWt() {
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+	for _, p := range ly.SendPaths {
+		if p.Off {
 			continue
 		}
-		if rly, ok := p.RecvLay().(PBWMLayer); ok {
+		if rly, ok := p.RecvLayer().(PBWMLayer); ok {
 			if rly.DoQuarter2DWt() {
-				p.(leabra.LeabraPrjn).DWt()
+				p.(leabra.LeabraPath).DWt()
 			}
 		}
 	}

@@ -139,8 +139,8 @@ type Sim struct {
 	// turn off to preserve existing cmp graphs - else saves cur as cmp for new run
 	TrialAnalUpdateCmpGraphs bool `desc:"turn off to preserve existing cmp graphs - else saves cur as cmp for new run"`
 
-	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
-	Net *pvlv.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	// [view: no-inline] the network -- click to view / edit parameters for layers, paths, etc
+	Net *pvlv.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, paths, etc"`
 
 	// maximum number of rows for CycleOutputData
 	CycleOutputDataRows int `desc:"maximum number of rows for CycleOutputData"`
@@ -426,7 +426,7 @@ func (ss *Sim) InitSim() {
 	if err != nil {
 		fmt.Println("ERROR: InitCondition failed in InitSim")
 	}
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitHasRun = true
 	ss.VerboseInit = false
 }
@@ -770,7 +770,7 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		if err != nil {
 			fmt.Printf("error setting run sequence: %v\n", err)
 		}
-		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name(), sig, data)
+		fmt.Printf("ComboBox %v selected index: %v data: %v\n", send.Name, sig, data)
 	})
 	cb.SetCurVal(ss.RunParamsNm)
 
@@ -811,21 +811,21 @@ func (ss *Sim) ConfigGui() *gi.Window {
 		if !ss.InitHasRun {
 			ss.InitSim()
 		}
-		answeredInitWts := true // hack to workaround lack of a true modal dialog
+		answeredInitWeights := true // hack to workaround lack of a true modal dialog
 		if ss.SimHasRun {
-			answeredInitWts = false
+			answeredInitWeights = false
 			gi.ChoiceDialog(ss.Win.Viewport, gi.DlgOpts{Title: "Init weights?", Prompt: "Initialize network weights?"},
 				[]string{"Yes", "No"}, ss.Win.This(),
 				func(recv, send ki.Ki, sig int64, data interface{}) {
 					if sig == 0 {
 						fmt.Println("initializing weights")
-						ss.Net.InitWts()
+						ss.Net.InitWeights()
 						ss.SimHasRun = false
 					}
-					answeredInitWts = true
+					answeredInitWeights = true
 				})
 		}
-		for answeredInitWts == false {
+		for answeredInitWeights == false {
 			time.Sleep(1 * time.Second)
 		}
 		_ = ss.InitRun()
@@ -1169,12 +1169,12 @@ func (ss *Sim) RunBlockName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunBlockName(ss.Env.ConditionCt.Cur, ss.Env.TrialBlockCt.Cur) + ".wts.gz"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + ss.RunBlockName(ss.Env.ConditionCt.Cur, ss.Env.TrialBlockCt.Cur) + ".wts.gz"
 }
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".csv"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + lognm + ".csv"
 }
 
 //////////////////////////////////////////////
@@ -1565,12 +1565,12 @@ func GetLeabraMonitorVal(ly *leabra.Layer, data []string) float64 {
 	if err != nil {
 		varIdx, err = leabra.NeuronVarIdxByName(valType)
 		if err != nil {
-			fmt.Printf("index lookup failed for %v_%v_%v_%v: \n", ly.Name(), data[1], valType, err)
+			fmt.Printf("index lookup failed for %v_%v_%v_%v: \n", ly.Name, data[1], valType, err)
 		}
 	}
 	unitIdx, err := strconv.Atoi(data[1])
 	if err != nil {
-		fmt.Printf("string to int conversion failed for %v_%v_%v%v: \n", ly.Name(), data[1], valType, err)
+		fmt.Printf("string to int conversion failed for %v_%v_%v%v: \n", ly.Name, data[1], valType, err)
 	}
 	val = ly.UnitVal1D(varIdx, unitIdx)
 	return float64(val)

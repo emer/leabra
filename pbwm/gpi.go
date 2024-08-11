@@ -14,39 +14,39 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////
-// GPiThalPrjn
+// GPiThalPath
 
-// GPiThalPrjn accumulates per-prjn raw conductance that is needed for separately weighting
+// GPiThalPath accumulates per-path raw conductance that is needed for separately weighting
 // NoGo vs. Go inputs
-type GPiThalPrjn struct {
-	leabra.Prjn // access as .Prjn
+type GPiThalPath struct {
+	leabra.Path // access as .Path
 
-	// per-recv, per-prjn raw excitatory input
-	GeRaw []float32 `desc:"per-recv, per-prjn raw excitatory input"`
+	// per-recv, per-path raw excitatory input
+	GeRaw []float32 `desc:"per-recv, per-path raw excitatory input"`
 }
 
-var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, leabra.PrjnProps)
+var KiT_GPiThalPath = kit.Types.AddType(&GPiThalPath{}, leabra.PathProps)
 
-func (pj *GPiThalPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *GPiThalPath) Build() error {
+	err := pj.Path.Build()
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.Shape()
+	rsh := pj.Recv.Shape
 	rlen := rsh.Len()
 	pj.GeRaw = make([]float32, rlen)
 	return nil
 }
 
-func (pj *GPiThalPrjn) InitGInc() {
-	pj.Prjn.InitGInc()
+func (pj *GPiThalPath) InitGInc() {
+	pj.Path.InitGInc()
 	for ri := range pj.GeRaw {
 		pj.GeRaw[ri] = 0
 	}
 }
 
-// RecvGInc increments the receiver's GeInc or GiInc from that of all the projections.
-func (pj *GPiThalPrjn) RecvGInc() {
+// RecvGInc increments the receiver's GeInc or GiInc from that of all the pathways.
+func (pj *GPiThalPath) RecvGInc() {
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
 	if pj.Typ == emer.Inhib {
 		for ri := range rlay.Neurons {
@@ -208,12 +208,12 @@ func (ly *GPiThalLayer) SendGateShape() error {
 	for _, lnm := range ly.SendTo {
 		tly, err := ly.Network.LayerByNameTry(lnm)
 		if err != nil {
-			log.Printf("GPiThalLayer %s SendGateShape: %v\n", ly.Name(), err)
+			log.Printf("GPiThalLayer %s SendGateShape: %v\n", ly.Name, err)
 			lasterr = err
 		}
 		gl, ok := tly.(GateLayerer)
 		if !ok {
-			err = fmt.Errorf("GPiThalLayer %s SendGateShape: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name())
+			err = fmt.Errorf("GPiThalLayer %s SendGateShape: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name)
 			log.Println(err)
 			lasterr = err
 			continue
@@ -224,32 +224,32 @@ func (ly *GPiThalLayer) SendGateShape() error {
 	return lasterr
 }
 
-// MatrixPrjns returns the recv prjns from Go and NoGo MatrixLayer pathways -- error if not
-// found or if prjns are not of the GPiThalPrjn type
-func (ly *GPiThalLayer) MatrixPrjns() (goPrjn, nogoPrjn *GPiThalPrjn, err error) {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+// MatrixPaths returns the recv paths from Go and NoGo MatrixLayer pathways -- error if not
+// found or if paths are not of the GPiThalPath type
+func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error) {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
-		gp, ok := p.(*GPiThalPrjn)
+		gp, ok := p.(*GPiThalPath)
 		if !ok {
-			err = fmt.Errorf("GPiThalLayer must have RecvPrjn's of type GPiThalPrjn")
+			err = fmt.Errorf("GPiThalLayer must have RecvPath's of type GPiThalPath")
 			return
 		}
-		slay := p.SendLay()
+		slay := p.SendLayer()
 		mlay, ok := slay.(*MatrixLayer)
 		if ok {
 			if mlay.DaR == D1R {
-				goPrjn = gp
+				goPath = gp
 			} else {
-				nogoPrjn = gp
+				nogoPath = gp
 			}
 		} else {
-			nogoPrjn = gp
+			nogoPath = gp
 		}
 	}
-	if goPrjn == nil || nogoPrjn == nil {
-		err = fmt.Errorf("GPiThalLayer must have RecvPrjn's from a MatrixLayer D1R (Go) and another NoGo layer")
+	if goPath == nil || nogoPath == nil {
+		err = fmt.Errorf("GPiThalLayer must have RecvPath's from a MatrixLayer D1R (Go) and another NoGo layer")
 	}
 	return
 }
@@ -260,12 +260,12 @@ func (ly *GPiThalLayer) SendToCheck() error {
 	for _, lnm := range ly.SendTo {
 		tly, err := ly.Network.LayerByNameTry(lnm)
 		if err != nil {
-			log.Printf("GPiThalLayer %s SendToCheck: %v\n", ly.Name(), err)
+			log.Printf("GPiThalLayer %s SendToCheck: %v\n", ly.Name, err)
 			lasterr = err
 		}
 		_, ok := tly.(GateLayerer)
 		if !ok {
-			err = fmt.Errorf("GPiThalLayer %s SendToCheck: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name())
+			err = fmt.Errorf("GPiThalLayer %s SendToCheck: can only send to layers that implement the GateLayerer interface (i.e., are based on GateLayer)", ly.Name)
 			log.Println(err)
 			lasterr = err
 		}
@@ -278,14 +278,14 @@ func (ly *GPiThalLayer) AddSendTo(laynm string) {
 	ly.SendTo = append(ly.SendTo, laynm)
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *GPiThalLayer) Build() error {
 	err := ly.GateLayer.Build()
 	if err != nil {
 		return err
 	}
 	ly.GPiNeurs = make([]GPiNeuron, len(ly.Neurons))
-	_, _, err = ly.MatrixPrjns()
+	_, _, err = ly.MatrixPaths()
 	if err != nil {
 		log.Println(err)
 	}
@@ -318,14 +318,14 @@ func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
 // GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
-	goPrjn, nogoPrjn, _ := ly.MatrixPrjns()
+	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
-		goRaw := goPrjn.GeRaw[ni]
-		nogoRaw := nogoPrjn.GeRaw[ni]
+		goRaw := goPath.GeRaw[ni]
+		nogoRaw := nogoPath.GeRaw[ni]
 		nrn.GeRaw = ly.Gate.GeRaw(goRaw, nogoRaw)
 		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
@@ -344,7 +344,7 @@ func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		gs := ly.GateState(int(nrn.SubPool) - 1)
@@ -393,7 +393,7 @@ func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			gnr := &ly.GPiNeurs[ni]

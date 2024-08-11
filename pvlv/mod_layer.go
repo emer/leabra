@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// layers that receive modulatory projections--(original code from SendDeepMod in cemer)
+// layers that receive modulatory pathways--(original code from SendDeepMod in cemer)
 
 package pvlv
 
@@ -341,7 +341,7 @@ func (ly *ModLayer) Build() error {
 	}
 	ly.ModPools = make([]ModPool, len(ly.Layer.Pools)) // uses regular Pools for indexes
 	ly.ModNeurs = make([]ModNeuron, len(ly.Layer.Neurons))
-	err = ly.BuildPrjns()
+	err = ly.BuildPaths()
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func (ly *ModLayer) AddModReceiver(rcvr ModReceiver, scale float32) {
 	ly.IsModSender = true
 	rly := rcvr.(IModLayer).AsMod()
 	rly.IsModReceiver = true
-	ly.ModReceivers = append(ly.ModReceivers, ModRcvrParams{rly.Name(), scale})
+	ly.ModReceivers = append(ly.ModReceivers, ModRcvrParams{rly.Name, scale})
 }
 
 // ModSendValue returns the value of ModSent for one modulatory pool, specified by ni.
@@ -444,8 +444,8 @@ func (ly *ModLayer) ReceiveMods(sender ModSender, scale float32) {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
 		modVal := sender.ModSendValue(nrn.SubPool)
-		//if ly.Debug > 0 && ni == 1 && modVal != 0 && ly.Nm == "VSMatrixNegD2" {
-		//	fmt.Printf("%s: modVal:%f, Modnet:%f, scale:%f\n", ly.Nm, modVal, mnr.ModNet, scale)
+		//if ly.Debug > 0 && ni == 1 && modVal != 0 && ly.Name == "VSMatrixNegD2" {
+		//	fmt.Printf("%s: modVal:%f, Modnet:%f, scale:%f\n", ly.Name, modVal, mnr.ModNet, scale)
 		//}
 		mnr.ModNet = modVal * scale
 	}
@@ -462,7 +462,7 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]
@@ -506,16 +506,16 @@ func (ly *ModLayer) ClearModActs() {
 	}
 }
 
-// GScaleFmAvgAct sets the value of GScale on incoming projections, based on sending layer subpool activations.
+// GScaleFmAvgAct sets the value of GScale on incoming pathways, based on sending layer subpool activations.
 func (ly *ModLayer) GScaleFmAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
-		pj := p.(leabra.LeabraPrjn).AsLeabra()
-		slay := p.SendLay().(leabra.LeabraLayer).AsLeabra()
+		pj := p.(leabra.LeabraPath).AsLeabra()
+		slay := p.SendLayer().(leabra.LeabraLayer).AsLeabra()
 		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
@@ -532,11 +532,11 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 		}
 	}
 
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
-		pj := p.(leabra.LeabraPrjn).AsLeabra()
+		pj := p.(leabra.LeabraPath).AsLeabra()
 		switch pj.Typ {
 		case emer.Inhib:
 			if totGiRel > 0 {
@@ -592,7 +592,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 			mnr := &ly.ModNeurs[ni]
 			nrn := &ly.Neurons[ni]
-			if nrn.IsOff() {
+			if nrn.Off {
 				continue
 			}
 			mpl.ModNetStats.UpdateVal(mnr.ModNet, int32(ni))
@@ -609,7 +609,7 @@ func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.VmFmG(nrn)

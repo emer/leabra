@@ -48,14 +48,14 @@ func (ly *CINLayer) Defaults() {
 func (ly *CINLayer) GetACh() float32    { return ly.ACh }
 func (ly *CINLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *CINLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
 		return err
 	}
-	err = ly.SendACh.Validate(ly.Network, ly.Name()+" SendTo list")
-	err = ly.RewLays.Validate(ly.Network, ly.Name()+" RewLays list")
+	err = ly.SendACh.Validate(ly.Network, ly.Name+" SendTo list")
+	err = ly.RewLays.Validate(ly.Network, ly.Name+" RewLays list")
 	return err
 }
 
@@ -83,7 +83,7 @@ func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.Act = ract

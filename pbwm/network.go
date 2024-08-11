@@ -6,7 +6,7 @@ package pbwm
 
 import (
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/ki/kit"
@@ -26,18 +26,18 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// NewPrjn returns new prjn of default type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &leabra.Prjn{}
+// NewPath returns new path of default type
+func (nt *Network) NewPath() emer.Path {
+	return &leabra.Path{}
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -183,18 +183,18 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 	gpi = AddGPiThalLayer(nt, prefix+"GPiThal", nY, nMaint, nOut)
 	cini := AddCINLayer(nt, prefix+"CIN")
 	cin = cini
-	cini.SendACh.Add(mtxGo.Name(), mtxNoGo.Name())
+	cini.SendACh.Add(mtxGo.Name, mtxNoGo.Name)
 
-	mtxNoGo.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: mtxGo.Name(), XAlign: relpos.Left, Space: 2})
-	gpe.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNoGo.Name(), YAlign: relpos.Front, Space: 2})
-	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
-	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name(), XAlign: relpos.Left, Space: 2})
+	mtxNoGo.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: mtxGo.Name, XAlign: relpos.Left, Space: 2})
+	gpe.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNoGo.Name, YAlign: relpos.Front, Space: 2})
+	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name, YAlign: relpos.Front, Space: 2})
+	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name, XAlign: relpos.Left, Space: 2})
 
-	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj := nt.ConnectLayersPath(mtxGo, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(mtxNoGo, gpe, prjn.NewPoolOneToOne(), emer.Forward)
+	pj = nt.ConnectLayers(mtxNoGo, gpe, path.NewPoolOneToOne(), emer.Forward)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj = nt.ConnectLayersPath(gpe, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
 	pj.SetClass("BgFixed")
 
 	return
@@ -243,11 +243,11 @@ func AddPFC(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX 
 		pfcOut, pfcOutD = AddPFCLayer(nt, prefix+"out", nY, nOut, nNeurY, nNeurX, true, dynMaint)
 	}
 
-	// todo: need a Rect projection from MntD -> out if !dynMaint, or something else..
+	// todo: need a Rect pathway from MntD -> out if !dynMaint, or something else..
 
 	if pfcOut != nil && pfcMnt != nil {
-		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
+		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name, YAlign: relpos.Front, Space: 2})
+		pj := nt.ConnectLayers(pfcMntD, pfcOut, path.NewOneToOne(), emer.Forward)
 		pj.SetClass("PFCMntDToOut")
 	}
 	return
@@ -259,7 +259,7 @@ func AddPBWM(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nNeu
 	mtxGo, mtxNoGo, gpe, gpi, cin = AddDorsalBG(nt, prefix, nY, nMaint, nOut, nNeurBgY, nNeurBgX)
 	pfcMnt, pfcMntD, pfcOut, pfcOutD = AddPFC(nt, prefix, nY, nMaint, nOut, nNeurPfcY, nNeurPfcX, true) // default dynmaint
 	if pfcMnt != nil {
-		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
+		pfcMnt.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: mtxGo.Name, YAlign: relpos.Front, XAlign: relpos.Left})
 	}
 	gpl := gpi.(*GPiThalLayer)
 	gpl.SendToMatrixPFC(prefix) // sends gating to all these layers

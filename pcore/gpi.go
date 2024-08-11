@@ -25,10 +25,10 @@ func (ly *GPiLayer) Defaults() {
 	ly.GPLayer.Defaults()
 	ly.GPLay = GPi
 
-	// note: GPLayer took care of STN input prjns
+	// note: GPLayer took care of STN input paths
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		pj.Learn.WtSig.Gain = 1
 		pj.WtInit.Mean = 0.5
 		pj.WtInit.Var = 0
@@ -40,9 +40,9 @@ func (ly *GPiLayer) Defaults() {
 			pj.WtScale.Abs = 0.8 // slightly weaker than GPeIn
 		} else if _, ok := pj.Send.(*GPLayer); ok { // GPeInToGPi
 			pj.WtScale.Abs = 1 // stronger because integrated signal, also act can be weaker
-		} else if strings.HasSuffix(pj.Send.Name(), "STNp") { // STNpToGPi
+		} else if strings.HasSuffix(pj.Send.Name, "STNp") { // STNpToGPi
 			pj.WtScale.Abs = 1
-		} else if strings.HasSuffix(pj.Send.Name(), "STNs") { // STNsToGPi
+		} else if strings.HasSuffix(pj.Send.Name, "STNs") { // STNsToGPi
 			pj.WtScale.Abs = 0.2
 		}
 	}

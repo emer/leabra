@@ -69,7 +69,7 @@ func (ly *AlphaMaxLayer) ActFmG(ltime *leabra.Time) {
 func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		max := &ly.AlphaMaxs[ni]
@@ -81,7 +81,7 @@ func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 func (ly *AlphaMaxLayer) ActLrnFmAlphaMax() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.ActLrn = ly.AlphaMaxs[ni]
@@ -93,7 +93,7 @@ func (ly *AlphaMaxLayer) MaxAlphaMax() float32 {
 	mx := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		amx := ly.AlphaMaxs[ni]

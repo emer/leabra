@@ -119,7 +119,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 	nrn.Inet = 0
 }
 
-// InitActs initializes activation state in neuron -- called during InitWts but otherwise not
+// InitActs initializes activation state in neuron -- called during InitWeights but otherwise not
 // automatically called (DecayState is used instead)
 func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Act = ac.Init.Act
@@ -146,7 +146,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 }
 
 // InitActQs initializes quarter-based activation states in neuron (ActQ0-2, ActM, ActP, ActDif)
-// Called from InitActs, which is called from InitWts, but otherwise not automatically called
+// Called from InitActs, which is called from InitWeights, but otherwise not automatically called
 // (DecayState is used instead)
 func (ac *ActParams) InitActQs(nrn *Neuron) {
 	nrn.ActQ0 = 0
@@ -476,8 +476,8 @@ func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
 type WtInitParams struct {
 	erand.RndParams
 
-	// symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections
-	Sym bool `desc:"symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections"`
+	// symmetrize the weight values with those in reciprocal pathway -- typically true for bidirectional excitatory connections
+	Sym bool `desc:"symmetrize the weight values with those in reciprocal pathway -- typically true for bidirectional excitatory connections"`
 }
 
 func (wp *WtInitParams) Defaults() {
@@ -490,15 +490,15 @@ func (wp *WtInitParams) Defaults() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  WtScaleParams
 
-// / WtScaleParams are weight scaling parameters: modulates overall strength of projection,
+// / WtScaleParams are weight scaling parameters: modulates overall strength of pathway,
 // using both absolute and relative factors
 type WtScaleParams struct {
 
 	// [def: 1] [min: 0] absolute scaling, which is not subject to normalization: directly multiplies weight values
 	Abs float32 `def:"1" min:"0" desc:"absolute scaling, which is not subject to normalization: directly multiplies weight values"`
 
-	// [min: 0] [Default: 1] relative scaling that shifts balance between different projections -- this is subject to normalization across all other projections into unit
-	Rel float32 `min:"0" desc:"[Default: 1] relative scaling that shifts balance between different projections -- this is subject to normalization across all other projections into unit"`
+	// [min: 0] [Default: 1] relative scaling that shifts balance between different pathways -- this is subject to normalization across all other pathways into unit
+	Rel float32 `min:"0" desc:"[Default: 1] relative scaling that shifts balance between different pathways -- this is subject to normalization across all other pathways into unit"`
 }
 
 func (ws *WtScaleParams) Defaults() {
@@ -516,7 +516,7 @@ func (ws *WtScaleParams) Update() {
 // for purposes of computing scaling factors with partial connectivity
 // For 25% layer activity, binomial SEM = sqrt(p(1-p)) = .43, so 3x = 1.3 so 2 is a reasonable default.
 func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
-	ncon = mat32.Max(ncon, 1) // prjn Avg can be < 1 in some cases
+	ncon = mat32.Max(ncon, 1) // path Avg can be < 1 in some cases
 	semExtra := 2
 	slayActN := int(mat32.Round(savg * snu)) // sending layer actual # active
 	slayActN = ints.MaxInt(slayActN, 1)

@@ -217,16 +217,16 @@ func (ly *MSNLayer) QuarterInitPrvs(ltime *leabra.Time) {
 }
 
 func (ly *MSNLayer) ClearMSNTrace() {
-	for pi := range ly.RcvPrjns {
-		pj := ly.RcvPrjns[pi]
-		mpj, ok := pj.(*MSNPrjn)
+	for pi := range ly.RecvPaths {
+		pj := ly.RecvPaths[pi]
+		mpj, ok := pj.(*MSNPath)
 		if ok {
 			mpj.ClearTrace()
 		}
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections
+// Build constructs the layer state, including calling Build on the pathways
 // you MUST have properly configured the Inhib.Pool.On setting by this point
 // to properly allocate Pools for the unit groups if necessary.
 func (ly *MSNLayer) Build() error {
@@ -258,7 +258,7 @@ func (ly *MSNLayer) PoolDelayedInhib(pl *leabra.Pool) {
 	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
 		nrn := &ly.Neurons[ni]
 		dis := &ly.DIState[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
@@ -271,7 +271,7 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]

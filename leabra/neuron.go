@@ -102,8 +102,8 @@ type Neuron struct {
 	// noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)
 	Noise float32 `desc:"noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)"`
 
-	// aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi
-	GiSyn float32 `desc:"aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`
+	// aggregated synaptic inhibition (from Inhib pathways) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi
+	GiSyn float32 `desc:"aggregated synaptic inhibition (from Inhib pathways) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`
 
 	// total amount of self-inhibition -- time-integrated to avoid oscillations
 	GiSelf float32 `desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`

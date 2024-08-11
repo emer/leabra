@@ -22,7 +22,7 @@ import (
 	"github.com/emer/emergent/netview"
 	"github.com/emer/emergent/params"
 	"github.com/emer/emergent/patgen"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/empi/empi"
 	"github.com/emer/empi/mpi"
@@ -67,20 +67,20 @@ const LogPrec = 4
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Path", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.8",
 					"Layer.Act.Gbar.L":     "0.1", // set explictly, new default, a bit better vs 0.2
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 			{Sel: "#Output", Desc: "output definitely needs lower inhib -- true for smaller layers in general",
 				Params: params.Params{
@@ -110,18 +110,18 @@ var ParamSets = params.Sets{
 	}},
 	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "no norm or momentum",
+			{Sel: "Path", Desc: "no norm or momentum",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
 				}},
 		},
 	}},
 	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "weight bal on",
+			{Sel: "Path", Desc: "weight bal on",
 				Params: params.Params{
-					"Prjn.Learn.WtBal.On": "true",
+					"Path.Learn.WtBal.On": "true",
 				}},
 		},
 	}},
@@ -134,8 +134,8 @@ var ParamSets = params.Sets{
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 
-	// [view: no-inline] the network -- click to view / edit parameters for layers, prjns, etc
-	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, prjns, etc"`
+	// [view: no-inline] the network -- click to view / edit parameters for layers, paths, etc
+	Net *leabra.Network `view:"no-inline" desc:"the network -- click to view / edit parameters for layers, paths, etc"`
 
 	// [view: no-inline] the training patterns to use
 	Pats *etable.Table `view:"no-inline" desc:"the training patterns to use"`
@@ -414,9 +414,9 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	// default is Above, YAlign = Front, XAlign = Center
 	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
-	// note: see emergent/prjn module for all the options on how to connect
-	// NewFull returns a new prjn.Full connectivity pattern
-	full := prjn.NewFull()
+	// note: see emergent/path module for all the options on how to connect
+	// NewFull returns a new path.Full connectivity pattern
+	full := path.NewFull()
 
 	net.ConnectLayers(inp, hid1, full, emer.Forward)
 	net.BidirConnectLayers(hid1, hid2, full)
@@ -441,7 +441,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 		log.Println(err)
 		return
 	}
-	net.InitWts()
+	net.InitWeights()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -565,7 +565,7 @@ func (ss *Sim) ApplyInputs(en env.Env) {
 	lays := []string{"Input", "Output"}
 	for _, lnm := range lays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		pats := en.State(ly.Nm)
+		pats := en.State(ly.Name)
 		if pats != nil {
 			ly.ApplyExt(pats)
 		}
@@ -627,7 +627,7 @@ func (ss *Sim) NewRun() {
 	ss.TrainEnv.Init(run)
 	ss.TestEnv.Init(run)
 	ss.Time.Reset()
-	ss.Net.InitWts()
+	ss.Net.InitWeights()
 	ss.InitStats()
 	ss.TrnEpcLog.SetNumRows(0)
 	ss.TstEpcLog.SetNumRows(0)
@@ -891,12 +891,12 @@ func (ss *Sim) RunEpochName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
 }
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	nm := ss.Net.Nm + "_" + ss.RunName() + "_" + lognm
+	nm := ss.Net.Name + "_" + ss.RunName() + "_" + lognm
 	if mpi.WorldRank() > 0 {
 		nm += fmt.Sprintf("_%d", mpi.WorldRank())
 	}
@@ -954,7 +954,7 @@ func (ss *Sim) LogTrnEpc(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
+		dt.SetCellFloat(ly.Name+"_ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
 	}
 
 	// note: essential to use Go version of update when called from another goroutine
@@ -1110,7 +1110,7 @@ func (ss *Sim) LogTstTrl(dt *etable.Table) {
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
+		dt.SetCellFloat(ly.Name+" ActM.Avg", row, float64(ly.Pools[0].ActM.Avg))
 	}
 	ivt := ss.ValsTsr("Input")
 	ovt := ss.ValsTsr("Output")
@@ -1271,8 +1271,8 @@ func (ss *Sim) LogTstCyc(dt *etable.Table, cyc int) {
 	dt.SetCellFloat("Cycle", cyc, float64(cyc))
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Nm+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Nm+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
+		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
+		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
 	}
 
 	if cyc%10 == 0 { // too slow to do every cyc

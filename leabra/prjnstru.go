@@ -10,41 +10,63 @@ import (
 
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/etable/minmax"
 	"github.com/goki/gi/giv"
 )
 
-// PrjnStru contains the basic structural information for specifying a projection of synaptic
+//////////////////////////////////////////////////////////////////////////////////////
+//  PathType
+
+// PathType is the type of the pathway (extensible for more specialized algorithms).
+// Class parameter styles automatically key off of these types.
+type PathType int32 //enums:enum
+
+// The pathway types
+const (
+	// Forward is a feedforward, bottom-up pathway from sensory inputs to higher layers
+	Forward PathType = iota
+
+	// Back is a feedback, top-down pathway from higher layers back to lower layers
+	Back
+
+	// Lateral is a lateral pathway within the same layer / area
+	Lateral
+
+	// Inhib is an inhibitory pathway that drives inhibitory synaptic inputs instead of excitatory
+	Inhib
+)
+
+// PathStru contains the basic structural information for specifying a pathway of synaptic
 // connections between two layers, and maintaining all the synaptic connection-level data.
 // The exact same struct object is added to the Recv and Send layers, and it manages everything
-// about the connectivity, and methods on the Prjn handle all the relevant computation.
-type PrjnStru struct {
+// about the connectivity, and methods on the Path handle all the relevant computation.
+type PathStru struct {
 
-	// [view: -] we need a pointer to ourselves as an LeabraPrjn, which can always be used to extract the true underlying type of object when prjn is embedded in other structs -- function receivers do not have this ability so this is necessary.
-	LeabraPrj LeabraPrjn `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraPrjn, which can always be used to extract the true underlying type of object when prjn is embedded in other structs -- function receivers do not have this ability so this is necessary."`
+	// [view: -] we need a pointer to ourselves as an LeabraPath, which can always be used to extract the true underlying type of object when path is embedded in other structs -- function receivers do not have this ability so this is necessary.
+	LeabraPrj LeabraPath `copy:"-" json:"-" xml:"-" view:"-" desc:"we need a pointer to ourselves as an LeabraPath, which can always be used to extract the true underlying type of object when path is embedded in other structs -- function receivers do not have this ability so this is necessary."`
 
-	// inactivate this projection -- allows for easy experimentation
-	Off bool `desc:"inactivate this projection -- allows for easy experimentation"`
+	// inactivate this pathway -- allows for easy experimentation
+	Off bool `desc:"inactivate this pathway -- allows for easy experimentation"`
 
 	// Class is for applying parameter styles, can be space separated multple tags
 	Cls string `desc:"Class is for applying parameter styles, can be space separated multple tags"`
 
-	// can record notes about this projection here
-	Notes string `desc:"can record notes about this projection here"`
+	// can record notes about this pathway here
+	Notes string `desc:"can record notes about this pathway here"`
 
-	// sending layer for this projection
-	Send emer.Layer `desc:"sending layer for this projection"`
+	// sending layer for this pathway
+	Send emer.Layer `desc:"sending layer for this pathway"`
 
-	// receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)
-	Recv emer.Layer `desc:"receiving layer for this projection -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := prjn.Recv.(*leabra.Layer)"`
+	// receiving layer for this pathway -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := path.Recv.(*leabra.Layer)
+	Recv emer.Layer `desc:"receiving layer for this pathway -- the emer.Layer interface can be converted to the specific Layer type you are using, e.g., rlay := path.Recv.(*leabra.Layer)"`
 
 	// pattern of connectivity
-	Pat prjn.Pattern `desc:"pattern of connectivity"`
+	Pat path.Pattern `desc:"pattern of connectivity"`
 
-	// type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)
-	Typ emer.PrjnType `desc:"type of projection -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
+	// type of pathway -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)
+	Typ emer.PathType `desc:"type of pathway -- Forward, Back, Lateral, or extended type in specialized algorithms -- matches against .Cls parameter styles (e.g., .Back etc)"`
 
 	// [view: -] number of recv connections for each neuron in the receiving layer, as a flat list
 	RConN []int32 `view:"-" desc:"number of recv connections for each neuron in the receiving layer, as a flat list"`
@@ -55,11 +77,11 @@ type PrjnStru struct {
 	// [view: -] starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN
 	RConIdxSt []int32 `view:"-" desc:"starting index into ConIdx list for each neuron in receiving layer -- just a list incremented by ConN"`
 
-	// [view: -] index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
-	RConIdx []int32 `view:"-" desc:"index of other neuron on sending side of projection, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
+	// [view: -] index of other neuron on sending side of pathway, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
+	RConIdx []int32 `view:"-" desc:"index of other neuron on sending side of pathway, ordered by the receiving layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
 
-	// [view: -] index of synaptic state values for each recv unit x connection, for the receiver projection which does not own the synapses, and instead indexes into sender-ordered list
-	RSynIdx []int32 `view:"-" desc:"index of synaptic state values for each recv unit x connection, for the receiver projection which does not own the synapses, and instead indexes into sender-ordered list"`
+	// [view: -] index of synaptic state values for each recv unit x connection, for the receiver pathway which does not own the synapses, and instead indexes into sender-ordered list
+	RSynIdx []int32 `view:"-" desc:"index of synaptic state values for each recv unit x connection, for the receiver pathway which does not own the synapses, and instead indexes into sender-ordered list"`
 
 	// [view: -] number of sending connections for each neuron in the sending layer, as a flat list
 	SConN []int32 `view:"-" desc:"number of sending connections for each neuron in the sending layer, as a flat list"`
@@ -70,46 +92,46 @@ type PrjnStru struct {
 	// [view: -] starting index into ConIdx list for each neuron in sending layer -- just a list incremented by ConN
 	SConIdxSt []int32 `view:"-" desc:"starting index into ConIdx list for each neuron in sending layer -- just a list incremented by ConN"`
 
-	// [view: -] index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
-	SConIdx []int32 `view:"-" desc:"index of other neuron on receiving side of projection, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
+	// [view: -] index of other neuron on receiving side of pathway, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that
+	SConIdx []int32 `view:"-" desc:"index of other neuron on receiving side of pathway, ordered by the sending layer's order of units as the outer loop (each start is in ConIdxSt), and then by the sending layer's units within that"`
 }
 
-// emer.Prjn interface
+// emer.Path interface
 
-// Init MUST be called to initialize the prjn's pointer to itself as an emer.Prjn
+// Init MUST be called to initialize the path's pointer to itself as an emer.Path
 // which enables the proper interface methods to be called.
-func (ps *PrjnStru) Init(prjn emer.Prjn) {
-	ps.LeabraPrj = prjn.(LeabraPrjn)
+func (ps *PathStru) Init(path emer.Path) {
+	ps.LeabraPrj = path.(LeabraPath)
 }
 
-func (ps *PrjnStru) TypeName() string { return "Prjn" } // always, for params..
-func (ps *PrjnStru) Class() string    { return ps.LeabraPrj.PrjnTypeName() + " " + ps.Cls }
-func (ps *PrjnStru) Name() string {
-	return ps.Send.Name() + "To" + ps.Recv.Name()
+func (ps *PathStru) TypeName() string { return "Path" } // always, for params..
+func (ps *PathStru) Class() string    { return ps.LeabraPrj.PathTypeName() + " " + ps.Cls }
+func (ps *PathStru) Name() string {
+	return ps.Send.Name + "To" + ps.Recv.Name
 }
-func (ps *PrjnStru) Label() string         { return ps.Name() }
-func (ps *PrjnStru) RecvLay() emer.Layer   { return ps.Recv }
-func (ps *PrjnStru) SendLay() emer.Layer   { return ps.Send }
-func (ps *PrjnStru) Pattern() prjn.Pattern { return ps.Pat }
-func (ps *PrjnStru) Type() emer.PrjnType   { return ps.Typ }
-func (ps *PrjnStru) PrjnTypeName() string  { return ps.Typ.String() }
+func (ps *PathStru) Label() string         { return ps.Name }
+func (ps *PathStru) RecvLayer() emer.Layer { return ps.Recv }
+func (ps *PathStru) SendLayer() emer.Layer { return ps.Send }
+func (ps *PathStru) Pattern() path.Pattern { return ps.Pat }
+func (ps *PathStru) Type() emer.PathType   { return ps.Typ }
+func (ps *PathStru) PathTypeName() string  { return ps.Typ.String() }
 
-func (ps *PrjnStru) IsOff() bool {
-	return ps.Off || ps.Recv.IsOff() || ps.Send.IsOff()
+func (ps *PathStru) IsOff() bool {
+	return ps.Off || ps.Recv.Off || ps.Send.Off
 }
-func (ps *PrjnStru) SetOff(off bool) { ps.Off = off }
+func (ps *PathStru) SetOff(off bool) { ps.Off = off }
 
 // Connect sets the connectivity between two layers and the pattern to use in interconnecting them
-func (ps *PrjnStru) Connect(slay, rlay emer.Layer, pat prjn.Pattern, typ emer.PrjnType) {
+func (ps *PathStru) Connect(slay, rlay emer.Layer, pat path.Pattern, typ emer.PathType) {
 	ps.Send = slay
 	ps.Recv = rlay
 	ps.Pat = pat
 	ps.Typ = typ
 }
 
-// Validate tests for non-nil settings for the projection -- returns error
+// Validate tests for non-nil settings for the pathway -- returns error
 // message or nil if no problems (and logs them if logmsg = true)
-func (ps *PrjnStru) Validate(logmsg bool) error {
+func (ps *PathStru) Validate(logmsg bool) error {
 	emsg := ""
 	if ps.Pat == nil {
 		emsg += "Pat is nil; "
@@ -130,11 +152,11 @@ func (ps *PrjnStru) Validate(logmsg bool) error {
 	return nil
 }
 
-// BuildStru constructs the full connectivity among the layers as specified in this projection.
+// BuildStru constructs the full connectivity among the layers as specified in this pathway.
 // Calls Validate and returns false if invalid.
 // Pat.Connect is called to get the pattern of the connection.
 // Then the connection indexes are configured according to that pattern.
-func (ps *PrjnStru) BuildStru() error {
+func (ps *PathStru) BuildStru() error {
 	if ps.Off {
 		return nil
 	}
@@ -142,8 +164,8 @@ func (ps *PrjnStru) BuildStru() error {
 	if err != nil {
 		return err
 	}
-	ssh := ps.Send.Shape()
-	rsh := ps.Recv.Shape()
+	ssh := ps.Send.Shape
+	rsh := ps.Recv.Shape
 	sendn, recvn, cons := ps.Pat.Connect(ssh, rsh, ps.Recv == ps.Send)
 	slen := ssh.Len()
 	rlen := rsh.Len()
@@ -192,7 +214,7 @@ func (ps *PrjnStru) BuildStru() error {
 
 // SetNIdxSt sets the *ConN and *ConIdxSt values given n tensor from Pat.
 // Returns total number of connections for this direction.
-func (ps *PrjnStru) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int32, tn *etensor.Int32) int32 {
+func (ps *PathStru) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int32, tn *etensor.Int32) int32 {
 	ln := tn.Len()
 	tnv := tn.Values
 	*n = make([]int32, ln)
@@ -210,33 +232,33 @@ func (ps *PrjnStru) SetNIdxSt(n *[]int32, avgmax *minmax.AvgMax32, idxst *[]int3
 	return idx
 }
 
-// String satisfies fmt.Stringer for prjn
-func (ps *PrjnStru) String() string {
+// String satisfies fmt.Stringer for path
+func (ps *PathStru) String() string {
 	str := ""
 	if ps.Recv == nil {
 		str += "recv=nil; "
 	} else {
-		str += ps.Recv.Name() + " <- "
+		str += ps.Recv.Name + " <- "
 	}
 	if ps.Send == nil {
 		str += "send=nil"
 	} else {
-		str += ps.Send.Name()
+		str += ps.Send.Name
 	}
 	if ps.Pat == nil {
 		str += " Pat=nil"
 	} else {
-		str += " Pat=" + ps.Pat.Name()
+		str += " Pat=" + ps.Pat.Name
 	}
 	return str
 }
 
-// ApplyParams applies given parameter style Sheet to this projection.
+// ApplyParams applies given parameter style Sheet to this pathway.
 // Calls UpdateParams if anything set to ensure derived parameters are all updated.
 // If setMsg is true, then a message is printed to confirm each parameter that is set.
 // it always prints a message if a parameter fails to be set.
 // returns true if any params were set, and error if there were any errors.
-func (ps *PrjnStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
+func (ps *PathStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
 	app, err := pars.Apply(ps.LeabraPrj, setMsg) // essential to go through LeabraPrj
 	if app {
 		ps.LeabraPrj.UpdateParams()
@@ -246,8 +268,8 @@ func (ps *PrjnStru) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
 
 // NonDefaultParams returns a listing of all parameters in the Layer that
 // are not at their default values -- useful for setting param styles etc.
-func (ps *PrjnStru) NonDefaultParams() string {
-	pth := ps.Recv.Name() + "." + ps.Name() // redundant but clearer..
+func (ps *PathStru) NonDefaultParams() string {
+	pth := ps.Recv.Name + "." + ps.Name // redundant but clearer..
 	nds := giv.StructNonDefFieldsStr(ps.LeabraPrj, pth)
 	return nds
 }

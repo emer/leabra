@@ -8,14 +8,14 @@ import (
 	"log"
 
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/leabra"
 	"github.com/emer/leabra/pvlv"
 )
 
 func (ss *Sim) ConfigNet(net *pvlv.Network) {
-	var vtaPSendsTo, vtaNSendsTo []string
+	var vtaPSendsTo, vtaNumSendsTo []string
 
 	net.InitName(net, "PVLV")
 
@@ -82,7 +82,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 		vsPatchPosD1, vsPatchPosD2, vsPatchNegD1, vsPatchNegD2,
 		vsMatrixPosD1, vsMatrixPosD2, vsMatrixNegD1, vsMatrixNegD2} {
 		layer.SetClass("VS")
-		vtaPSendsTo = append(vtaPSendsTo, layer.Name())
+		vtaPSendsTo = append(vtaPSendsTo, layer.Name)
 	}
 
 	// Learned Value
@@ -94,7 +94,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	blAmygNegD2 := net.AddBlAmygLayer("BLAmygNegD2", 1, 4, 7, 9, pvlv.NEG, pvlv.D2R, emer.Hidden)
 	for _, layer := range []emer.Layer{blAmygPosD1, blAmygPosD2, blAmygNegD1, blAmygNegD2} {
 		layer.SetClass("BLAmygLayer")
-		vtaPSendsTo = append(vtaPSendsTo, layer.Name())
+		vtaPSendsTo = append(vtaPSendsTo, layer.Name)
 	}
 
 	// Centrolateral amygdala
@@ -104,7 +104,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	celAcqNegD2 := net.AddCElAmygLayer("CElAcqNegD2", 1, 4, 1, 1, pvlv.Acq, pvlv.NEG, pvlv.D2R)
 	for _, layer := range []emer.Layer{celAcqPosD1, celExtPosD2, celExtNegD1, celAcqNegD2} {
 		layer.SetClass("CElAmyg")
-		vtaPSendsTo = append(vtaPSendsTo, layer.Name())
+		vtaPSendsTo = append(vtaPSendsTo, layer.Name)
 	}
 
 	vtaP := net.AddVTALayer("VTAp", pvlv.POS)
@@ -117,7 +117,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 		vtaP.SendDA.Add(rcvr)
 	}
 	// leaving this in because it's there in the CEmer model. Flagged by GoLand because it does nothing
-	for _, rcvr := range vtaNSendsTo {
+	for _, rcvr := range vtaNumSendsTo {
 		vtaN.SendDA.Add(rcvr)
 	}
 
@@ -129,69 +129,69 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	}
 
 	// Connect everything
-	pjFull := prjn.NewFull()
-	pjPools := prjn.NewPoolOneToOne()
+	pjFull := path.NewFull()
+	pjPools := path.NewPoolOneToOne()
 
 	// to BLAmygPosD1
-	pj := net.ConnectLayersPrjn(posPV, blAmygPosD1, pjPools, emer.Forward, &pvlv.AmygModPrjn{}) // LR == 0, could probably just be a normal fixed projection
+	pj := net.ConnectLayersPath(posPV, blAmygPosD1, pjPools, emer.Forward, &pvlv.AmygModPath{}) // LR == 0, could probably just be a normal fixed pathway
 	pj.SetClass("PVLVLrnCons BLAmygConsUS")
-	pj = net.ConnectLayersPrjn(stimIn, blAmygPosD1, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(stimIn, blAmygPosD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsStim")
 	pj = net.ConnectLayers(blAmygPosD2, blAmygPosD1, pjFull, emer.Inhib)
 	pj.SetClass("PVLVLrnCons BLAmygConsInhib")
-	blAmygPosD1.ILI.Lays.Add(blAmygNegD2.Name())
+	blAmygPosD1.ILI.Lays.Add(blAmygNegD2.Name)
 
 	// to BLAmygNegD2
-	pj = net.ConnectLayersPrjn(negPV, blAmygNegD2, pjPools, emer.Forward, &pvlv.AmygModPrjn{}) // LR == 0
+	pj = net.ConnectLayersPath(negPV, blAmygNegD2, pjPools, emer.Forward, &pvlv.AmygModPath{}) // LR == 0
 	pj.SetClass("PVLVLrnCons BLAmygConsUS")
-	pj = net.ConnectLayersPrjn(stimIn, blAmygNegD2, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(stimIn, blAmygNegD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsStim")
 	pj = net.ConnectLayers(blAmygNegD1, blAmygNegD2, pjFull, emer.Inhib)
 	pj.SetClass("PVLVLrnCons BLAmygConsInhib")
-	blAmygNegD2.ILI.Lays.Add(blAmygPosD1.Name())
+	blAmygNegD2.ILI.Lays.Add(blAmygPosD1.Name)
 
 	// to BLAmygPosD2
-	pj = net.ConnectLayersPrjn(ctxIn, blAmygPosD2, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(ctxIn, blAmygPosD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsCntxtExt")
 	net.ConnectLayersActMod(blAmygPosD1, blAmygPosD2, 0.2)
 
 	// to BLAmygNegD1
-	pj = net.ConnectLayersPrjn(ctxIn, blAmygNegD1, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(ctxIn, blAmygNegD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsCntxtExt")
 	net.ConnectLayersActMod(blAmygNegD2, blAmygNegD1, 0.2)
 
 	// to CElAcqPosD1
 	pj = net.ConnectLayers(celExtPosD2, celAcqPosD1, pjPools, emer.Inhib) //
 	pj.SetClass("CElExtToAcqInhib")
-	posPV.AddPVReceiver(celAcqPosD1.Nm)
-	pj = net.ConnectLayersPrjn(stimIn, celAcqPosD1, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	posPV.AddPVReceiver(celAcqPosD1.Name)
+	pj = net.ConnectLayersPath(stimIn, celAcqPosD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygCons")
 	//pj = net.ConnectLayers(stimIn, celAcqPosD1, pjFull, emer.Forward) // in CEmer, but off
-	pj = net.ConnectLayersPrjn(blAmygPosD1, celAcqPosD1, pjPools, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(blAmygPosD1, celAcqPosD1, pjPools, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygConsFmBLA")
 
 	// to CElAcqNegD2
 	pj = net.ConnectLayers(celExtNegD1, celAcqNegD2, pjPools, emer.Inhib)
 	pj.SetClass("CElExtToAcqInhib")
-	negPV.AddPVReceiver(celAcqNegD2.Nm)
-	pj = net.ConnectLayersPrjn(stimIn, celAcqNegD2, pjFull, emer.Forward, &pvlv.AmygModPrjn{})
+	negPV.AddPVReceiver(celAcqNegD2.Name)
+	pj = net.ConnectLayersPath(stimIn, celAcqNegD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygCons")
 	//pj = net.ConnectLayers(stimIn, celAcqNegD2, pjFull, emer.Forward) // in CEmer, but off
-	pj = net.ConnectLayersPrjn(blAmygNegD2, celAcqNegD2, pjPools, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(blAmygNegD2, celAcqNegD2, pjPools, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygConsFmBLA")
 
 	// to CElExtPosD2
 	pj = net.ConnectLayers(celAcqPosD1, celExtPosD2, pjPools, emer.Inhib)
 	pj.SetClass("CElAcqToExtInhib")
 	net.ConnectLayersActMod(celAcqPosD1, celExtPosD2, 1)
-	pj = net.ConnectLayersPrjn(blAmygPosD2, celExtPosD2, pjPools, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(blAmygPosD2, celExtPosD2, pjPools, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygConsExtFmBLA")
 
 	// to CElExtNegD1
 	pj = net.ConnectLayers(celAcqNegD2, celExtNegD1, pjPools, emer.Inhib)
 	pj.SetClass("CElAcqToExtInhib")
 	net.ConnectLayersActMod(celAcqNegD2, celExtNegD1, 1)
-	pj = net.ConnectLayersPrjn(blAmygNegD1, celExtNegD1, pjPools, emer.Forward, &pvlv.AmygModPrjn{})
+	pj = net.ConnectLayersPath(blAmygNegD1, celExtNegD1, pjPools, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygConsExtFmBLA")
 
 	// to CEmPos
@@ -208,50 +208,50 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 
 	// to VSPatchPosD1
 	net.ConnectLayersActMod(blAmygPosD1, vsPatchPosD1, 0.2)
-	pj = net.ConnectLayersPrjn(ustimeIn, vsPatchPosD1, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.DAHebbVS})
+	pj = net.ConnectLayersPath(ustimeIn, vsPatchPosD1, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.DAHebbVS})
 	pj.SetClass("PVLVLrnCons VSPatchConsToPosD1")
 
 	// to VSPatchPosD2
 	net.ConnectLayersActMod(blAmygPosD1, vsPatchPosD2, 0.2)
-	pj = net.ConnectLayersPrjn(ustimeIn, vsPatchPosD2, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.DAHebbVS})
+	pj = net.ConnectLayersPath(ustimeIn, vsPatchPosD2, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.DAHebbVS})
 	pj.SetClass("PVLVLrnCons VSPatchConsToPosD2")
 
 	// to VSPatchNegD2
 	net.ConnectLayersActMod(blAmygNegD2, vsPatchNegD2, 0.2)
-	pj = net.ConnectLayersPrjn(ustimeIn, vsPatchNegD2, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.DAHebbVS})
+	pj = net.ConnectLayersPath(ustimeIn, vsPatchNegD2, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.DAHebbVS})
 	pj.SetClass("PVLVLrnCons VSPatchConsToNegD2")
 
 	// to VSPatchNegD1
 	net.ConnectLayersActMod(blAmygNegD2, vsPatchNegD1, 0.2)
-	pj = net.ConnectLayersPrjn(ustimeIn, vsPatchNegD1, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.DAHebbVS})
+	pj = net.ConnectLayersPath(ustimeIn, vsPatchNegD1, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.DAHebbVS})
 	pj.SetClass("PVLVLrnCons VSPatchConsToNegD1")
 
 	// to VSMatrixPosD1
 	net.ConnectLayersActMod(blAmygPosD1, vsMatrixPosD1, 0.015)
-	pj = net.ConnectLayersPrjn(stimIn, vsMatrixPosD1, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
+	pj = net.ConnectLayersPath(stimIn, vsMatrixPosD1, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToPosD1")
 
 	// to VSMatrixPosD2
 	net.ConnectLayersActMod(vsMatrixPosD1, vsMatrixPosD2, 1)
-	pj = net.ConnectLayersPrjn(stimIn, vsMatrixPosD2, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
+	pj = net.ConnectLayersPath(stimIn, vsMatrixPosD2, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToPosD2")
 
 	// to VSMatrixNegD2
 	net.ConnectLayersActMod(blAmygNegD2, vsMatrixNegD2, 0.015)
-	pj = net.ConnectLayersPrjn(stimIn, vsMatrixNegD2, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
+	pj = net.ConnectLayersPath(stimIn, vsMatrixNegD2, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToNegD2")
 
 	// to VSMatrixNegD1
 	net.ConnectLayersActMod(vsMatrixNegD2, vsMatrixNegD1, 1)
-	pj = net.ConnectLayersPrjn(stimIn, vsMatrixNegD1, pjFull, emer.Forward,
-		&pvlv.MSNPrjn{LearningRule: pvlv.TraceNoThalVS})
+	pj = net.ConnectLayersPath(stimIn, vsMatrixNegD1, pjFull, emer.Forward,
+		&pvlv.MSNPath{LearningRule: pvlv.TraceNoThalVS})
 	pj.SetClass("PVLVLrnCons VSMatrixConsToNegD1")
 
 	// to PPTg
@@ -263,7 +263,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 		posPV, negPV, vtaP, vtaN,
 		vsPatchPosD1, vsPatchPosD2, vsPatchNegD1, vsPatchNegD2,
 		vsMatrixPosD1, vsMatrixPosD2, vsMatrixNegD1, vsMatrixNegD2} {
-		lhbRmtG.RcvFrom.Add(ly.Name())
+		lhbRmtG.RcvFrom.Add(ly.Name)
 	}
 
 	// "Marker" connections (in the cemer world)
@@ -282,37 +282,37 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	ctxIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "StimIn", Space: 8, Scale: 3})
 	ustimeIn.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "ContextIn", Space: 6, Scale: 3})
 
-	negPV.SetRelPos(relpos.Rel{Rel: relpos.Below, Other: stimIn.Name(), Scale: 3})
-	posPV.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: negPV.Name(), Space: 4, XAlign: relpos.Left, Scale: 3})
-	pptg.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: negPV.Name(), Space: 3, Scale: 3})
-	vtaP.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pptg.Name(), Space: 4, Scale: 3})
-	lhbRmtG.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: vtaP.Name(), Space: 4, Scale: 3})
-	vtaN.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: lhbRmtG.Name(), Space: 10, Scale: 3})
+	negPV.SetRelPos(relpos.Rel{Rel: relpos.Below, Other: stimIn.Name, Scale: 3})
+	posPV.SetRelPos(relpos.Rel{Rel: relpos.LeftOf, Other: negPV.Name, Space: 4, XAlign: relpos.Left, Scale: 3})
+	pptg.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: negPV.Name, Space: 3, Scale: 3})
+	vtaP.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pptg.Name, Space: 4, Scale: 3})
+	lhbRmtG.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: vtaP.Name, Space: 4, Scale: 3})
+	vtaN.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: lhbRmtG.Name, Space: 10, Scale: 3})
 
-	cEmPos.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: posPV.Name(), Space: 8, Scale: 3})
-	cEmNeg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: negPV.Name(), Space: 8, Scale: 3})
+	cEmPos.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: posPV.Name, Space: 8, Scale: 3})
+	cEmNeg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: negPV.Name, Space: 8, Scale: 3})
 
-	celAcqPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: cEmPos.Name(), Space: 3, Scale: 3})
-	celExtPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celAcqPosD1.Name(), Space: 3, Scale: 3})
+	celAcqPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: cEmPos.Name, Space: 3, Scale: 3})
+	celExtPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celAcqPosD1.Name, Space: 3, Scale: 3})
 
-	celExtNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: cEmNeg.Name(), Space: 3, Scale: 3})
-	celAcqNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celExtNegD1.Name(), Space: 3, Scale: 3})
+	celExtNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: cEmNeg.Name, Space: 3, Scale: 3})
+	celAcqNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celExtNegD1.Name, Space: 3, Scale: 3})
 
-	vsPatchPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: lhbRmtG.Name(), Space: 6, Scale: 3})
-	vsPatchPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchPosD1.Name(), Space: 2, Scale: 3})
-	vsMatrixPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchPosD2.Name(), Space: 4, Scale: 3})
-	vsMatrixPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsMatrixPosD1.Name(), Space: 2, Scale: 3})
+	vsPatchPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: lhbRmtG.Name, Space: 6, Scale: 3})
+	vsPatchPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchPosD1.Name, Space: 2, Scale: 3})
+	vsMatrixPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchPosD2.Name, Space: 4, Scale: 3})
+	vsMatrixPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsMatrixPosD1.Name, Space: 2, Scale: 3})
 
-	vsPatchNegD1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: vsPatchPosD1.Name(), Space: 2, Scale: 3})
-	vsPatchNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchNegD1.Name(), Space: 2, Scale: 3})
-	vsMatrixNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchNegD2.Name(), Space: 4, Scale: 3})
-	vsMatrixNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsMatrixNegD1.Name(), Space: 2, Scale: 3})
+	vsPatchNegD1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: vsPatchPosD1.Name, Space: 2, Scale: 3})
+	vsPatchNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchNegD1.Name, Space: 2, Scale: 3})
+	vsMatrixNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsPatchNegD2.Name, Space: 4, Scale: 3})
+	vsMatrixNegD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: vsMatrixNegD1.Name, Space: 2, Scale: 3})
 
-	blAmygPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celExtPosD2.Name(), Space: 10})
-	blAmygPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: blAmygPosD1.Name(), Space: 3})
+	blAmygPosD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: celExtPosD2.Name, Space: 10})
+	blAmygPosD2.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: blAmygPosD1.Name, Space: 3})
 
-	blAmygNegD2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: blAmygPosD1.Name(), Space: 6})
-	blAmygNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: blAmygNegD2.Name(), Space: 3})
+	blAmygNegD2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: blAmygPosD1.Name, Space: 6})
+	blAmygNegD1.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: blAmygNegD2.Name, Space: 3})
 	//net.Layout()
 
 	err := ss.SetParams("Network", false) // only set Network params
@@ -326,7 +326,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 		return
 	}
 
-	net.InitWts()
+	net.InitWeights()
 
 	//lowerLayers := []emer.Layer{negPV, posPV, pptg, vtaP, lhbRmtG, vtaN, cEmPos, cEmNeg, celAcqPosD1, celExtPosD2,
 	//	celExtNegD1, celExtNegD1, celAcqNegD2, vsPatchPosD1, vsPatchPosD2, vsMatrixPosD1, vsMatrixPosD2,

@@ -10,7 +10,7 @@ import (
 
 	"github.com/emer/emergent/emer"
 	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/etable/etensor"
 	"github.com/emer/leabra/leabra"
 	"github.com/goki/mat32"
@@ -37,40 +37,40 @@ var ParamSets = params.Sets{
 					"Layer.Act.Init.Decay": "1",
 					"Layer.Act.Gbar.L":     "0.2", // was default when test created, now is 0.1
 				}},
-			{Sel: "Prjn", Desc: "for reproducibility, identical weights",
+			{Sel: "Path", Desc: "for reproducibility, identical weights",
 				Params: params.Params{
-					"Prjn.WtInit.Var":        "0",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.Momentum.On": "false",
+					"Path.WtInit.Var":        "0",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.Momentum.On": "false",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 		},
 	}},
 	{Name: "NormOn", Desc: "Learn.Norm on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm on",
+			{Sel: "Path", Desc: "norm on",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On": "true",
+					"Path.Learn.Norm.On": "true",
 				}},
 		},
 	}},
 	{Name: "MomentOn", Desc: "Learn.Momentum on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "moment on",
+			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
+					"Path.Learn.Momentum.On": "true",
 				}},
 		},
 	}},
 	{Name: "NormMomentOn", Desc: "both Learn.Momentum and Norm on", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "moment on",
+			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.Norm.On":     "true",
 				}},
 		},
 	}},
@@ -82,14 +82,14 @@ func TestMakeNet(t *testing.T) {
 	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden)
 	outLay := TestNet.AddLayer("Output", []int{4, 1}, emer.Target)
 
-	TestNet.ConnectLayers(inLay, hidLay, prjn.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(hidLay, outLay, prjn.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, prjn.NewOneToOne(), emer.Back)
+	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
+	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
+	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
 	TestNet.Build()
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.AlphaCycInit(true) // get GScale
 
 	// var buf bytes.Buffer
@@ -122,7 +122,7 @@ func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 }
 
 func TestNetAct(t *testing.T) {
-	TestNet.InitWts()
+	TestNet.InitWeights()
 	TestNet.InitExt()
 
 	inLay := TestNet.LayerByName("Input").(*leabra.Layer)
@@ -310,7 +310,7 @@ func TestNetLearn(t *testing.T) {
 		TestNet.Defaults()
 		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
 		TestNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
-		TestNet.InitWts()
+		TestNet.InitWeights()
 		TestNet.InitExt()
 
 		ltime := leabra.NewTime()
@@ -390,17 +390,17 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx] = hidLay.RcvPrjns[0].SynVal("DWt", pi, pi)
-			outdwt[didx] = outLay.RcvPrjns[0].SynVal("DWt", pi, pi)
-			hidnorm[didx] = hidLay.RcvPrjns[0].SynVal("Norm", pi, pi)
-			outnorm[didx] = outLay.RcvPrjns[0].SynVal("Norm", pi, pi)
-			hidmoment[didx] = hidLay.RcvPrjns[0].SynVal("Moment", pi, pi)
-			outmoment[didx] = outLay.RcvPrjns[0].SynVal("Moment", pi, pi)
+			hiddwt[didx] = hidLay.RecvPaths[0].SynVal("DWt", pi, pi)
+			outdwt[didx] = outLay.RecvPaths[0].SynVal("DWt", pi, pi)
+			hidnorm[didx] = hidLay.RecvPaths[0].SynVal("Norm", pi, pi)
+			outnorm[didx] = outLay.RecvPaths[0].SynVal("Norm", pi, pi)
+			hidmoment[didx] = hidLay.RecvPaths[0].SynVal("Moment", pi, pi)
+			outmoment[didx] = outLay.RecvPaths[0].SynVal("Moment", pi, pi)
 
 			TestNet.WtFmDWt()
 
-			hidwt[didx] = hidLay.RcvPrjns[0].SynVal("Wt", pi, pi)
-			outwt[didx] = outLay.RcvPrjns[0].SynVal("Wt", pi, pi)
+			hidwt[didx] = hidLay.RecvPaths[0].SynVal("Wt", pi, pi)
+			outwt[didx] = outLay.RecvPaths[0].SynVal("Wt", pi, pi)
 
 			switch pi {
 			case 0:

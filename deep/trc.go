@@ -149,7 +149,7 @@ func (ly *TRCLayer) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *TRCLayer) UpdateParams() {
 	ly.TopoInhibLayer.UpdateParams()
 	ly.TRC.Update()
@@ -167,8 +167,8 @@ func (ly *TRCLayer) IsTarget() bool {
 ///////////////////////////////////////////////////////////////////////////////////////
 // Drivers
 
-func (ly *TRCLayer) InitWts() {
-	ly.TopoInhibLayer.InitWts()
+func (ly *TRCLayer) InitWeights() {
+	ly.TopoInhibLayer.InitWeights()
 	ly.SetDriverOffs()
 }
 
@@ -188,7 +188,7 @@ func UnitsSize(ly *leabra.Layer) (x, y int) {
 func (ly *TRCLayer) DriverLayer(drv *Driver) (*leabra.Layer, error) {
 	tly, err := ly.Network.LayerByNameTry(drv.Driver)
 	if err != nil {
-		err = fmt.Errorf("TRCLayer %s: Driver Layer: %v", ly.Name(), err)
+		err = fmt.Errorf("TRCLayer %s: Driver Layer: %v", ly.Name, err)
 		log.Println(err)
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (ly *TRCLayer) SetDriverOffs() error {
 		off += y * x
 	}
 	if off > mn {
-		err = fmt.Errorf("TRCLayer %s: size of drivers: %d is greater than units: %d", ly.Name(), off, mn)
+		err = fmt.Errorf("TRCLayer %s: size of drivers: %d is greater than units: %d", ly.Name, off, mn)
 		log.Println(err)
 	}
 	return err
@@ -239,7 +239,7 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	nrn := &ly.Neurons[tni]
-	if nrn.IsOff() {
+	if nrn.Off {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe

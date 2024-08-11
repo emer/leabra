@@ -6,7 +6,7 @@ package rl
 
 import (
 	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
+	"github.com/emer/emergent/path"
 	"github.com/emer/emergent/relpos"
 	"github.com/emer/leabra/leabra"
 )
@@ -32,13 +32,13 @@ func AddTDLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 	nt.AddLayerInit(ri, prefix+"RewInteg", []int{1, 1}, emer.Hidden)
 	td = &TDDaLayer{}
 	nt.AddLayerInit(td, prefix+"TD", []int{1, 1}, emer.Hidden)
-	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name()
-	td.(*TDDaLayer).RewInteg = ri.Name()
-	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
-	ri.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
-	td.SetRelPos(relpos.Rel{Rel: rel, Other: ri.Name(), YAlign: relpos.Front, Space: space})
+	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name
+	td.(*TDDaLayer).RewInteg = ri.Name
+	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name, YAlign: relpos.Front, Space: space})
+	ri.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name, YAlign: relpos.Front, Space: space})
+	td.SetRelPos(relpos.Rel{Rel: rel, Other: ri.Name, YAlign: relpos.Front, Space: space})
 
-	pj := nt.ConnectLayers(rew, ri, prjn.NewFull(), emer.Forward).(leabra.LeabraPrjn).AsLeabra()
+	pj := nt.ConnectLayers(rew, ri, path.NewFull(), emer.Forward).(leabra.LeabraPath).AsLeabra()
 	pj.SetClass("TDRewToInteg")
 	pj.Learn.Learn = false
 	pj.WtInit.Mean = 1
@@ -46,10 +46,10 @@ func AddTDLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 	pj.WtInit.Sym = false
 	// {Sel: ".TDRewToInteg", Desc: "rew to integ",
 	// 	Params: params.Params{
-	// 		"Prjn.Learn.Learn": "false",
-	// 		"Prjn.WtInit.Mean": "1",
-	// 		"Prjn.WtInit.Var":  "0",
-	// 		"Prjn.WtInit.Sym":  "false",
+	// 		"Path.Learn.Learn": "false",
+	// 		"Path.WtInit.Mean": "1",
+	// 		"Path.WtInit.Var":  "0",
+	// 		"Path.WtInit.Sym":  "false",
 	// 	}},
 	return
 }
@@ -63,10 +63,10 @@ func AddRWLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 	nt.AddLayerInit(rp, prefix+"RWPred", []int{1, 1}, emer.Hidden)
 	da = &RWDaLayer{}
 	nt.AddLayerInit(da, prefix+"DA", []int{1, 1}, emer.Hidden)
-	da.(*RWDaLayer).RewLay = rew.Name()
-	da.(*RWDaLayer).RewLay = rew.Name()
-	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
-	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
+	da.(*RWDaLayer).RewLay = rew.Name
+	da.(*RWDaLayer).RewLay = rew.Name
+	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name, YAlign: relpos.Front, Space: space})
+	da.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name, YAlign: relpos.Front, Space: space})
 
 	return
 }

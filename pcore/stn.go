@@ -129,12 +129,12 @@ func (ly *STNLayer) Defaults() {
 	ly.Act.Dt.GTau = 3 // fastest
 	ly.Act.Init.Decay = 0
 
-	if strings.HasSuffix(ly.Nm, "STNp") {
+	if strings.HasSuffix(ly.Name, "STNp") {
 		ly.Act.Init.Act = 0.48
 	}
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		pj.Learn.Learn = false
 		pj.Learn.Norm.On = false
 		pj.Learn.Momentum.On = false
@@ -142,7 +142,7 @@ func (ly *STNLayer) Defaults() {
 		pj.WtInit.Mean = 0.9
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
-		if strings.HasSuffix(ly.Nm, "STNp") {
+		if strings.HasSuffix(ly.Name, "STNp") {
 			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToSTNp
 				pj.WtScale.Abs = 0.1
 			}
@@ -179,7 +179,7 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		nrn.Gk = 0
@@ -192,7 +192,7 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons { // note: copied from leabra ActFmG, not calling it..
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		ly.Act.VmFmG(nrn)
@@ -214,7 +214,7 @@ func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *STNLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {

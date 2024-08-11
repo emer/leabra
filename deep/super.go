@@ -78,12 +78,12 @@ func (ly *SuperLayer) Defaults() {
 	ly.Burst.Defaults()
 	ly.Attn.Defaults()
 	if ly.Attn.TRCLay == "" {
-		ly.Attn.TRCLay = ly.Nm + "P"
+		ly.Attn.TRCLay = ly.Name + "P"
 	}
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *SuperLayer) UpdateParams() {
 	ly.TopoInhibLayer.UpdateParams()
 }
@@ -115,7 +115,7 @@ func (ly *SuperLayer) DecayState(decay float32) {
 func (ly *SuperLayer) TRCLayer() (*leabra.Layer, error) {
 	tly, err := ly.Network.LayerByNameTry(ly.Attn.TRCLay)
 	if err != nil {
-		err = fmt.Errorf("SuperLayer %s: TRC Layer: %v", ly.Name(), err)
+		err = fmt.Errorf("SuperLayer %s: TRC Layer: %v", ly.Name, err)
 		log.Println(err)
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -200,7 +200,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 	thr = mat32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -215,7 +215,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  DeepCtxt -- once after Burst quarter
 
-// SendCtxtGe sends Burst activation over CTCtxtPrjn projections to integrate
+// SendCtxtGe sends Burst activation over CTCtxtPath pathways to integrate
 // CtxtGe excitatory conductance on CT layers.
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
@@ -225,20 +225,20 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
+		if nrn.Off {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
 		if snr.Burst > ly.Act.OptThresh.Send {
-			for _, sp := range ly.SndPrjns {
-				if sp.IsOff() {
+			for _, sp := range ly.SendPaths {
+				if sp.Off {
 					continue
 				}
 				ptyp := sp.Type()
 				if ptyp != CTCtxt {
 					continue
 				}
-				pj, ok := sp.(*CTCtxtPrjn)
+				pj, ok := sp.(*CTCtxtPath)
 				if !ok {
 					continue
 				}
@@ -266,7 +266,7 @@ func (ly *SuperLayer) ValidateTRCLayer() error {
 	return nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *SuperLayer) Build() error {
 	err := ly.TopoInhibLayer.Build()
 	if err != nil {

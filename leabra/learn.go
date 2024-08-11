@@ -38,7 +38,7 @@ func (ln *LearnNeurParams) Defaults() {
 }
 
 // InitActAvg initializes the running-average activation values that drive learning.
-// Called by InitWts (at start of learning).
+// Called by InitWeights (at start of learning).
 func (ln *LearnNeurParams) InitActAvg(nrn *Neuron) {
 	nrn.AvgSS = ln.ActAvg.Init
 	nrn.AvgS = ln.ActAvg.Init
@@ -66,8 +66,8 @@ func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
 // leabra.LearnSynParams manages learning-related parameters at the synapse-level.
 type LearnSynParams struct {
 
-	// enable learning for this projection
-	Learn bool `desc:"enable learning for this projection"`
+	// enable learning for this pathway
+	Learn bool `desc:"enable learning for this pathway"`
 
 	// [viewif: Learn] current effective learning rate (multiplies DWt values, determining rate of change of weights)
 	Lrate float32 `viewif:"Learn" desc:"current effective learning rate (multiplies DWt values, determining rate of change of weights)"`
@@ -558,13 +558,13 @@ func (ws *WtSigParams) LinFmSigWt(sw float32) float32 {
 //  DWtNormParams
 
 // DWtNormParams are weight change (dwt) normalization parameters, using MAX(ABS(dwt)) aggregated over
-// Sending connections in a given projection for a given unit.
+// Sending connections in a given pathway for a given unit.
 // Slowly decays and instantly resets to any current max(abs)
 // Serves as an estimate of the variance in the weight changes, assuming zero net mean overall.
 type DWtNormParams struct {
 
-	// [def: true] whether to use dwt normalization, only on error-driven dwt component, based on projection-level max_avg value -- slowly decays and instantly resets to any current max
-	On bool `def:"true" desc:"whether to use dwt normalization, only on error-driven dwt component, based on projection-level max_avg value -- slowly decays and instantly resets to any current max"`
+	// [def: true] whether to use dwt normalization, only on error-driven dwt component, based on pathway-level max_avg value -- slowly decays and instantly resets to any current max
+	On bool `def:"true" desc:"whether to use dwt normalization, only on error-driven dwt component, based on pathway-level max_avg value -- slowly decays and instantly resets to any current max"`
 
 	// [def: 1000,10000] [viewif: On] [min: 1] time constant for decay of dwnorm factor -- generally should be long-ish, between 1000-10000 -- integration rate factor is 1/tau
 	DecayTau float32 `viewif:"On" min:"1" def:"1000,10000" desc:"time constant for decay of dwnorm factor -- generally should be long-ish, between 1000-10000 -- integration rate factor is 1/tau"`
@@ -575,8 +575,8 @@ type DWtNormParams struct {
 	// [def: 0.15] [viewif: On] [min: 0] overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels
 	LrComp float32 `viewif:"On" min:"0" def:"0.15" desc:"overall learning rate multiplier to compensate for changes due to use of normalization -- allows for a common master learning rate to be used between different conditions -- 0.1 for synapse-level, maybe higher for other levels"`
 
-	// [def: false] [viewif: On] record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection
-	Stats bool `viewif:"On" def:"false" desc:"record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per projection"`
+	// [def: false] [viewif: On] record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per pathway
+	Stats bool `viewif:"On" def:"false" desc:"record the avg, max values of err, bcm hebbian, and overall dwt change per con group and per pathway"`
 
 	// [view: -] rate constant of decay = 1 / decay_tau
 	DecayDt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate constant of decay = 1 / decay_tau"`

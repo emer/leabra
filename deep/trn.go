@@ -25,7 +25,7 @@ func (ly *TRNLayer) Defaults() {
 	ly.Layer.Defaults()
 }
 
-// InitActs fully initializes activation state -- only called automatically during InitWts
+// InitActs fully initializes activation state -- only called automatically during InitWeights
 func (ly *TRNLayer) InitActs() {
 	ly.Layer.InitActs()
 }
