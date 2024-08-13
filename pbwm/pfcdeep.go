@@ -76,10 +76,10 @@ type PFCDeepLayer struct {
 	GateLayer
 
 	// PFC Gating parameters
-	Gate PFCGateParams `view:"inline"`
+	Gate PFCGateParams `display:"inline"`
 
 	// PFC Maintenance parameters
-	Maint PFCMaintParams `view:"inline"`
+	Maint PFCMaintParams `display:"inline"`
 
 	// PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)
 	Dyns PFCDyns
@@ -262,13 +262,13 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 		return
 	}
 	sly := slyi.AsLeabra()
-	yN := ly.Shp.Dim(2)
-	xN := ly.Shp.Dim(3)
+	yN := ly.Shape.Dim(2)
+	xN := ly.Shape.Dim(3)
 
 	nn := yN * xN
 
-	syN := sly.Shp.Dim(2)
-	sxN := sly.Shp.Dim(3)
+	syN := sly.Shape.Dim(2)
+	sxN := sly.Shape.Dim(3)
 	snn := syN * sxN
 
 	dper := yN / syN  // dyn per sender -- should be len(Dyns)

@@ -36,7 +36,7 @@ type BlAmygLayer struct {
 }
 
 func (ly *BlAmygLayer) Build() error {
-	nu := ly.Shp.Len()
+	nu := ly.Shape.Len()
 	if nu == 0 {
 		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}

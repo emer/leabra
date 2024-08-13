@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/emer/etable/v2/etensor"
+	"cogentcore.org/core/tensor"
 )
 
 // var StimRe, _ = regexp.Compile("([ABCDEFUVWXYZ])([ABCDEFUVWXYZ]?)_(Rf|NR)")
@@ -64,14 +64,14 @@ func (stm Stim) FromString(s string) Inputs {
 func (stm Stim) OneHot() int {
 	return 1 << int(stm)
 }
-func (stm Stim) Tensor() etensor.Tensor {
-	tsr := etensor.NewInt([]int{12}, nil, []string{"Stim"})
+func (stm Stim) Tensor() tensor.Tensor {
+	tsr := tensor.NewInt([]int{12}, nil, []string{"Stim"})
 	tsr.SetZeros()
 	tsr.Set1D(int(stm), 1)
 	return tsr
 }
-func (stm Stim) TensorScaled(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{12}, nil, []string{"Stim"})
+func (stm Stim) TensorScaled(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{12}, nil, []string{"Stim"})
 	tsr.SetZeros()
 	tsr.Set1D(int(stm), 1.0/scale)
 	return tsr
@@ -226,14 +226,14 @@ func (ctx Context) Parts() []int {
 	iCtx := ctx.Int()
 	return []int{iCtx / 3, iCtx % 3}
 }
-func (ctx Context) Tensor() etensor.Tensor {
-	tsr := etensor.NewInt([]int{20, 3}, nil, []string{"Ctx", "CS"})
+func (ctx Context) Tensor() tensor.Tensor {
+	tsr := tensor.NewInt([]int{20, 3}, nil, []string{"Ctx", "CS"})
 	tsr.SetZeros()
 	tsr.Set(ctx.Parts(), 1)
 	return tsr
 }
-func (ctx Context) TensorScaled(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{20, 3}, nil, []string{"Ctx", "CS"})
+func (ctx Context) TensorScaled(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{20, 3}, nil, []string{"Ctx", "CS"})
 	tsr.SetZeros()
 	tsr.SetFloat(ctx.Parts(), 1.0/float64(scale))
 	return tsr
@@ -264,13 +264,13 @@ func (val Valence) FromString(s string) Inputs {
 func (val Valence) OneHot() int {
 	return 1 << int(val)
 }
-func (val Valence) Tensor() etensor.Tensor {
-	tsr := etensor.NewInt([]int{2}, nil, []string{"Valence"})
+func (val Valence) Tensor() tensor.Tensor {
+	tsr := tensor.NewInt([]int{2}, nil, []string{"Valence"})
 	tsr.Set1D(int(val), 1)
 	return tsr
 }
-func (val Valence) TensorScaled(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{2}, nil, []string{"Valence"})
+func (val Valence) TensorScaled(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{2}, nil, []string{"Valence"})
 	tsr.Set1D(int(val), 1.0/scale)
 	return tsr
 }
@@ -310,16 +310,16 @@ func OneHotUS(us US) int {
 	return 1 << us.Int()
 }
 
-func Tensor(us US) etensor.Tensor {
-	tsr := etensor.NewInt([]int{4}, nil, []string{"US"})
+func Tensor(us US) tensor.Tensor {
+	tsr := tensor.NewInt([]int{4}, nil, []string{"US"})
 	if !us.Empty() {
 		tsr.Set1D(us.Int(), 1)
 	}
 	return tsr
 }
 
-func TensorScaled(us US, scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{4}, nil, []string{"US"})
+func TensorScaled(us US, scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{4}, nil, []string{"US"})
 	if !us.Empty() {
 		tsr.Set1D(us.Int(), 1.0/scale)
 	}
@@ -420,24 +420,24 @@ func (neg NegUS) Int() int {
 	return int(neg)
 }
 
-func (pos PosUS) Tensor() etensor.Tensor {
+func (pos PosUS) Tensor() tensor.Tensor {
 	return US(pos).Tensor()
 }
-func (neg NegUS) Tensor() etensor.Tensor {
+func (neg NegUS) Tensor() tensor.Tensor {
 	return US(neg).Tensor()
 }
-func (us US) Tensor() etensor.Tensor {
+func (us US) Tensor() tensor.Tensor {
 	return Tensor(us)
 }
 
-//	func (pos PosUS) TensorScaled(scale float32) etensor.Tensor {
+//	func (pos PosUS) TensorScaled(scale float32) tensor.Tensor {
 //		return TensorScaled(pos, 1.0 / scale)
 //	}
 //
-//	func (neg NegUS) TensorScaled(scale float32) etensor.Tensor {
+//	func (neg NegUS) TensorScaled(scale float32) tensor.Tensor {
 //		return TensorScaled(neg, 1.0 / scale)
 //	}
-func (us US) TensorScaled(scale float32) etensor.Tensor {
+func (us US) TensorScaled(scale float32) tensor.Tensor {
 	return TensorScaled(us, 1.0/scale)
 }
 
@@ -495,15 +495,15 @@ func (t Tick) Int() int {
 func (t Tick) OneHot() int {
 	return 1 << int(t)
 }
-func (t Tick) Tensor() etensor.Tensor {
-	tsr := etensor.NewInt([]int{5}, nil, []string{"US"})
+func (t Tick) Tensor() tensor.Tensor {
+	tsr := tensor.NewInt([]int{5}, nil, []string{"US"})
 	if t.Empty() {
 		tsr.Set1D(t.Int(), 1)
 	}
 	return tsr
 }
-func (t Tick) TensorScaled(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{5}, nil, []string{"US"})
+func (t Tick) TensorScaled(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{5}, nil, []string{"US"})
 	if t.Empty() {
 		tsr.Set1D(t.Int(), 1.0/scale)
 	}
@@ -611,10 +611,10 @@ func (ps PackedUSTimeState) String() string {
 	}
 }
 
-func (ps PackedUSTimeState) Tensor() etensor.Tensor {
+func (ps PackedUSTimeState) Tensor() tensor.Tensor {
 	return ps.Unpack().Tensor()
 }
-func (ps PackedUSTimeState) TensorScaled(scale float32) etensor.Tensor {
+func (ps PackedUSTimeState) TensorScaled(scale float32) tensor.Tensor {
 	return ps.Unpack().TensorScaled(scale)
 }
 
@@ -701,18 +701,18 @@ func (usts USTimeState) CoordsString() string {
 	return str
 }
 
-func (usts USTimeState) Tensor() etensor.Tensor {
-	tsr := etensor.NewFloat32(USTimeInShape, nil, nil)
+func (usts USTimeState) Tensor() tensor.Tensor {
+	tsr := tensor.NewFloat32(USTimeInShape, nil, nil)
 	tsr.SetFloat(usts.TsrOffset(), 1.0)
 	return tsr
 }
-func (usts USTimeState) TensorScaled(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32(USTimeInShape, nil, nil)
+func (usts USTimeState) TensorScaled(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32(USTimeInShape, nil, nil)
 	tsr.SetFloat(usts.TsrOffset(), 1.0/float64(scale))
 	return tsr
 }
 
-func (usts USTimeState) TensorScaleAndAdd(scale float32, other USTimeState) etensor.Tensor {
+func (usts USTimeState) TensorScaleAndAdd(scale float32, other USTimeState) tensor.Tensor {
 	res := usts.TensorScaled(scale)
 	res.SetFloat(other.TsrOffset(), 1.0/float64(scale))
 	return res
@@ -785,8 +785,8 @@ func (ps PackedUSTimeState) USTimeIn() Tick {
 	return ps.Unpack().Tck
 }
 
-func (usts USTimeState) OneHot(scale float32) etensor.Tensor {
-	tsr := etensor.NewFloat32([]int{16, 2, 4, 5}, nil, []string{"CS", "Valence", "US", "Time"})
+func (usts USTimeState) OneHot(scale float32) tensor.Tensor {
+	tsr := tensor.NewFloat32([]int{16, 2, 4, 5}, nil, []string{"CS", "Valence", "US", "Time"})
 	tsr.Set([]int{int(usts.Stm), int(usts.Tck), int(usts.Val) - 1, usts.US.Int()}, 1.0/scale)
 	return tsr
 }

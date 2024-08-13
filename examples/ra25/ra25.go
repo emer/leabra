@@ -20,6 +20,10 @@ import (
 	"cogentcore.org/core/events"
 	"cogentcore.org/core/icons"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/agg"
+	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/views"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
@@ -31,10 +35,6 @@ import (
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
 	"github.com/emer/emergent/v2/path"
-	"github.com/emer/etable/v2/agg"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
-	"github.com/emer/etable/v2/split"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -139,16 +139,16 @@ var ParamSets = params.Sets{
 type Sim struct {
 
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *leabra.Network `view:"no-inline"`
+	Net *leabra.Network `display:"no-inline"`
 
 	// all parameter management
-	Params emer.Params `view:"inline"`
+	Params emer.Params `display:"inline"`
 
 	// extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)
 	Tag string
 
 	// the training patterns to use
-	Pats *etable.Table `view:"no-inline"`
+	Pats *table.Table `display:"no-inline"`
 
 	// contains computed statistic values
 	Stats estats.Stats
@@ -178,7 +178,7 @@ type Sim struct {
 	Time leabra.Time
 
 	// netview update parameters
-	ViewUpdate netview.ViewUpdate `view:"inline"`
+	ViewUpdate netview.ViewUpdate `display:"inline"`
 
 	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
 	TestInterval int
@@ -214,7 +214,7 @@ var TheSim Sim
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
 	ss.Net = &leabra.Network{}
-	ss.Pats = &etable.Table{}
+	ss.Pats = &table.Table{}
 	ss.Params.Params = ParamSets
 	ss.Params.AddNetwork(ss.Net)
 	ss.Params.AddSim(ss)
@@ -251,17 +251,17 @@ func (ss *Sim) ConfigEnv() {
 	}
 
 	ss.TrainEnv.Name = "TrainEnv"
-	ss.TrainEnv.Table = etable.NewIndexView(ss.Pats)
+	ss.TrainEnv.Table = table.NewIndexView(ss.Pats)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Name = "TestEnv"
-	ss.TestEnv.Table = etable.NewIndexView(ss.Pats)
+	ss.TestEnv.Table = table.NewIndexView(ss.Pats)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
 
 	// note: to create a train / test split of pats, do this:
-	// all := etable.NewIndexView(ss.Pats)
+	// all := table.NewIndexView(ss.Pats)
 	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
 	// ss.TrainEnv.Table = splits.Splits[0]
 	// ss.TestEnv.Table = splits.Splits[1]
@@ -584,23 +584,23 @@ func (ss *Sim) ConfigPats() {
 	dt := ss.Pats
 	dt.SetMetaData("name", "TrainPats")
 	dt.SetMetaData("desc", "Training patterns")
-	sch := etable.Schema{
-		{"Name", etensor.STRING, nil, nil},
-		{"Input", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
-		{"Output", etensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
+	sch := table.Schema{
+		{"Name", tensor.STRING, nil, nil},
+		{"Input", tensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
+		{"Output", tensor.FLOAT32, []int{5, 5}, []string{"Y", "X"}},
 	}
 	dt.SetFromSchema(sch, 25)
 
 	patgen.PermutedBinaryRows(dt.Cols[1], 6, 1, 0)
 	patgen.PermutedBinaryRows(dt.Cols[2], 6, 1, 0)
-	dt.SaveCSV("random_5x5_25_gen.tsv", etable.Tab, etable.Headers)
+	dt.SaveCSV("random_5x5_25_gen.tsv", table.Tab, table.Headers)
 }
 
 func (ss *Sim) OpenPats() {
 	dt := ss.Pats
 	dt.SetMetaData("name", "TrainPats")
 	dt.SetMetaData("desc", "Training patterns")
-	err := dt.OpenCSV("random_5x5_25.tsv", etable.Tab)
+	err := dt.OpenCSV("random_5x5_25.tsv", table.Tab)
 	if err != nil {
 		log.Println(err)
 	}
@@ -728,7 +728,7 @@ func (ss *Sim) LogTestErrors() {
 	sk := etime.Scope(etime.Test, etime.Trial)
 	lt := ss.Logs.TableDetailsScope(sk)
 	ix, _ := lt.NamedIndexView("TestErrors")
-	ix.Filter(func(et *etable.Table, row int) bool {
+	ix.Filter(func(et *table.Table, row int) bool {
 		return et.CellFloat("Err", row) > 0 // include error trials
 	})
 	ss.Logs.MiscTables["TestErrors"] = ix.NewTable()
@@ -736,7 +736,7 @@ func (ss *Sim) LogTestErrors() {
 	allsp := split.All(ix)
 	split.Agg(allsp, "SSE", agg.AggSum)
 	// note: can add other stats to compute
-	ss.Logs.MiscTables["TestErrorStats"] = allsp.AggsToTable(etable.AddAggName)
+	ss.Logs.MiscTables["TestErrorStats"] = allsp.AggsToTable(table.AddAggName)
 }
 
 // LogRunStats records stats across all runs, at Train Run scope
@@ -748,7 +748,7 @@ func (ss *Sim) LogRunStats() {
 	spl := split.GroupBy(ix, []string{"Params"})
 	split.Desc(spl, "FirstZero")
 	split.Desc(spl, "PctCor")
-	ss.Logs.MiscTables["RunStats"] = spl.AggsToTable(etable.AddAggName)
+	ss.Logs.MiscTables["RunStats"] = spl.AggsToTable(table.AddAggName)
 }
 
 // PCAStats computes PCA statistics on recorded hidden activation patterns
@@ -875,7 +875,7 @@ func (ss *Sim) ConfigGUI() {
 				d.AddBottomBar(func(pw core.Widget) {
 					d.AddCancel(pw)
 					d.AddOK(pw).OnClick(func(e events.Event) {
-						idxs := ss.TestEnv.Table.RowsByString("Name", name, etable.Contains, etable.IgnoreCase)
+						idxs := ss.TestEnv.Table.RowsByString("Name", name, table.Contains, table.IgnoreCase)
 						if len(idxs) == 0 {
 							core.MessageSnackbar(tb, fmt.Sprintf("Name %q not found", name))
 						} else {

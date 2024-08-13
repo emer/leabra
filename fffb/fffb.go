@@ -38,7 +38,7 @@ type Params struct {
 	FF0 float32 `viewif:"On" def:"0.1"`
 
 	// rate = 1 / tau
-	FBDt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
+	FBDt float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (fb *Params) Update() {

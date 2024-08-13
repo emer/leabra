@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/emer/emergent v1.3.50
-	github.com/emer/etable v1.1.21
 	github.com/emer/leabra v1.2.8
 	github.com/go-python/gopy v0.4.6
 	cogentcore.org/core/gi v1.3.18

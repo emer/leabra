@@ -102,7 +102,7 @@ type MatrixTracePath struct {
 	leabra.Path
 
 	// special parameters for matrix trace learning
-	Trace TraceParams `view:"inline"`
+	Trace TraceParams `display:"inline"`
 
 	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn

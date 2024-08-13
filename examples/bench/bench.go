@@ -16,20 +16,20 @@ import (
 	"math/rand"
 	"os"
 
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
 	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/timer"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
 
 var Net *leabra.Network
-var Pats *etable.Table
-var EpcLog *etable.Table
+var Pats *table.Table
+var EpcLog *table.Table
 var Thread = false // much slower for small net
 var Silent = false // non-verbose mode -- just reports result
 
@@ -82,9 +82,9 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	net.ConnectLayers(hid2Lay, hid3Lay, path.NewFull(), emer.Forward)
 	net.ConnectLayers(hid3Lay, outLay, path.NewFull(), emer.Forward)
 
-	net.ConnectLayers(outLay, hid3Lay, path.NewFull(), emer.Back)
-	net.ConnectLayers(hid3Lay, hid2Lay, path.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, path.NewFull(), emer.Back)
+	net.ConnectLayers(outLay, hid3Lay, path.NewFull(), BackPath)
+	net.ConnectLayers(hid3Lay, hid2Lay, path.NewFull(), BackPath)
+	net.ConnectLayers(hid2Lay, hid1Lay, path.NewFull(), BackPath)
 
 	switch threads {
 	case 2:
@@ -102,15 +102,15 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	net.InitWeights()
 }
 
-func ConfigPats(dt *etable.Table, pats, units int) {
+func ConfigPats(dt *table.Table, pats, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
 	// fmt.Printf("shape: %v\n", shp)
 
-	dt.SetFromSchema(etable.Schema{
-		{"Name", etensor.STRING, nil, nil},
-		{"Input", etensor.FLOAT32, shp, []string{"Y", "X"}},
-		{"Output", etensor.FLOAT32, shp, []string{"Y", "X"}},
+	dt.SetFromSchema(table.Schema{
+		{"Name", tensor.STRING, nil, nil},
+		{"Input", tensor.FLOAT32, shp, []string{"Y", "X"}},
+		{"Output", tensor.FLOAT32, shp, []string{"Y", "X"}},
 	}, pats)
 
 	// note: actually can learn if activity is .15 instead of .25
@@ -121,23 +121,23 @@ func ConfigPats(dt *etable.Table, pats, units int) {
 	patgen.PermutedBinaryRows(dt.Cols[2], nOn, 1, 0)
 }
 
-func ConfigEpcLog(dt *etable.Table) {
-	dt.SetFromSchema(etable.Schema{
-		{"Epoch", etensor.INT64, nil, nil},
-		{"CosDiff", etensor.FLOAT32, nil, nil},
-		{"AvgCosDiff", etensor.FLOAT32, nil, nil},
-		{"SSE", etensor.FLOAT32, nil, nil},
-		{"Avg SSE", etensor.FLOAT32, nil, nil},
-		{"Count Err", etensor.FLOAT32, nil, nil},
-		{"Pct Err", etensor.FLOAT32, nil, nil},
-		{"Pct Cor", etensor.FLOAT32, nil, nil},
-		{"Hid1 ActAvg", etensor.FLOAT32, nil, nil},
-		{"Hid2 ActAvg", etensor.FLOAT32, nil, nil},
-		{"Out ActAvg", etensor.FLOAT32, nil, nil},
+func ConfigEpcLog(dt *table.Table) {
+	dt.SetFromSchema(table.Schema{
+		{"Epoch", tensor.INT64, nil, nil},
+		{"CosDiff", tensor.FLOAT32, nil, nil},
+		{"AvgCosDiff", tensor.FLOAT32, nil, nil},
+		{"SSE", tensor.FLOAT32, nil, nil},
+		{"Avg SSE", tensor.FLOAT32, nil, nil},
+		{"Count Err", tensor.FLOAT32, nil, nil},
+		{"Pct Err", tensor.FLOAT32, nil, nil},
+		{"Pct Cor", tensor.FLOAT32, nil, nil},
+		{"Hid1 ActAvg", tensor.FLOAT32, nil, nil},
+		{"Hid2 ActAvg", tensor.FLOAT32, nil, nil},
+		{"Out ActAvg", tensor.FLOAT32, nil, nil},
 	}, 0)
 }
 
-func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
+func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
 	ltime := leabra.NewTime()
 	net.InitWeights()
 	np := pats.NumRows()
@@ -153,8 +153,8 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 	_ = hid1Lay
 	_ = hid2Lay
 
-	inPats := pats.ColByName("Input").(*etensor.Float32)
-	outPats := pats.ColByName("Output").(*etensor.Float32)
+	inPats := pats.ColByName("Input").(*tensor.Float32)
+	outPats := pats.ColByName("Output").(*tensor.Float32)
 
 	tmr := timer.Time{}
 	tmr.Start()
@@ -245,13 +245,13 @@ func main() {
 	Net = &leabra.Network{}
 	ConfigNet(Net, threads, units)
 
-	Pats = &etable.Table{}
+	Pats = &table.Table{}
 	ConfigPats(Pats, pats, units)
 
-	EpcLog = &etable.Table{}
+	EpcLog = &table.Table{}
 	ConfigEpcLog(EpcLog)
 
 	TrainNet(Net, Pats, EpcLog, epochs)
 
-	EpcLog.SaveCSV("bench_epc.dat", ',', etable.Headers)
+	EpcLog.SaveCSV("bench_epc.dat", ',', table.Headers)
 }

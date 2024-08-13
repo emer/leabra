@@ -7,9 +7,9 @@ package main
 import (
 	"fmt"
 
+	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/erand"
-	"github.com/emer/etable/v2/etensor"
 )
 
 // FSAEnv generates states in a finite state automaton (FSA) which is a
@@ -24,37 +24,37 @@ type FSAEnv struct {
 	Dsc string
 
 	// transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
-	TMat etensor.Float64 `view:"no-inline"`
+	TMat tensor.Float64 `display:"no-inline"`
 
 	// transition labels, one for each transition cell in TMat matrix
-	Labels etensor.String
+	Labels tensor.String
 
 	// automaton state within FSA that we're in
 	AState env.CurPrvInt
 
 	// number of next states in current state output (scalar)
-	NNext etensor.Int
+	NNext tensor.Int
 
 	// next states that have non-zero probability, with actual randomly chosen next state at start
-	NextStates etensor.Int
+	NextStates tensor.Int
 
 	// transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start
-	NextLabels etensor.String
+	NextLabels tensor.String
 
 	// current run of model as provided during Init
-	Run env.Counter `view:"inline"`
+	Run env.Counter `display:"inline"`
 
 	// number of times through Seq.Max number of sequences
-	Epoch env.Counter `view:"inline"`
+	Epoch env.Counter `display:"inline"`
 
 	// sequence counter within epoch
-	Seq env.Counter `view:"inline"`
+	Seq env.Counter `display:"inline"`
 
 	// tick counter within sequence
-	Tick env.Counter `view:"inline"`
+	Tick env.Counter `display:"inline"`
 
 	// trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
-	Trial env.Counter `view:"inline"`
+	Trial env.Counter `display:"inline"`
 }
 
 // InitTMat initializes matrix and labels to given size
@@ -116,7 +116,7 @@ func (ev *FSAEnv) States() env.Elements {
 	return els
 }
 
-func (ev *FSAEnv) State(element string) etensor.Tensor {
+func (ev *FSAEnv) State(element string) tensor.Tensor {
 	switch element {
 	case "NNext":
 		return &ev.NNext
@@ -193,7 +193,7 @@ func (ev *FSAEnv) Step() bool {
 	return true
 }
 
-func (ev *FSAEnv) Action(element string, input etensor.Tensor) {
+func (ev *FSAEnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

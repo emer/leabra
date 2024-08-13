@@ -40,7 +40,7 @@ type MSNPath struct {
 	LearningRule DALrnRule
 
 	// special parameters for striatum trace learning
-	Trace MSNTraceParams `view:"inline"`
+	Trace MSNTraceParams `display:"inline"`
 
 	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn

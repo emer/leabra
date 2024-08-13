@@ -30,7 +30,7 @@ func (ly *CTLayer) Defaults() {
 	ly.Act.Init.Decay = 0            // deep doesn't decay!
 	ly.Inhib.ActAvg.UseFirst = false // first activations can be very far off
 	ly.BurstQtr.SetFlag(true, leabra.Q4)
-	ly.Typ = CT
+	ly.Type = CT
 }
 
 func (ly *CTLayer) Class() string {

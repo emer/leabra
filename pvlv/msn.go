@@ -17,12 +17,12 @@ type MSNLayer struct {
 	ModLayer
 
 	// patch or matrix
-	Compartment StriatalCompartment `inactive:"+"`
+	Compartment StriatalCompartment `edit:"-"`
 
 	// slice of delayed inhibition state for this layer.
 	DIState []DelInhState
 
-	DIParams DelayedInhibParams `view:"no-inline add-fields"`
+	DIParams DelayedInhibParams `display:"no-inline add-fields"`
 }
 
 type IMSNLayer interface {
@@ -41,7 +41,7 @@ func (ly *MSNLayer) AsMod() *ModLayer {
 type MSNParams struct {
 
 	// patch or matrix
-	Compartment StriatalCompartment `inactive:"+"`
+	Compartment StriatalCompartment `edit:"-"`
 }
 
 type StriatalCompartment int //enums:enum

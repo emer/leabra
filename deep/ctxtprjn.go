@@ -53,7 +53,7 @@ func (pj *CTCtxtPath) Type() emer.PathType {
 }
 
 func (pj *CTCtxtPath) PathTypeName() string {
-	if pj.Typ < emer.PathTypeN {
+	if pj.Type < emer.PathTypeN {
 		return pj.Typ.String()
 	}
 	ptyp := PathType(pj.Typ)
@@ -70,7 +70,7 @@ func (pj *CTCtxtPath) Build() error {
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.Shape()
+	rsh := pj.Recv.Shape
 	rlen := rsh.Len()
 	pj.CtxtGeInc = make([]float32, rlen)
 	return nil

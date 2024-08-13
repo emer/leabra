@@ -51,7 +51,7 @@ type LHbRMTgLayer struct {
 	leabra.Layer
 	RcvFrom emer.LayNames
 
-	Gains LHbRMTgGains `view:"inline"`
+	Gains LHbRMTgGains `display:"inline"`
 
 	// reduction in effective PVNeg net value (when positive) so that negative outcomes can never be completely predicted away -- still allows for positive da for less-bad outcomes
 	PVNegDiscount float32
@@ -103,7 +103,7 @@ func (ly *LHbRMTgLayer) Defaults() {
 }
 
 func (ly *LHbRMTgLayer) Build() error {
-	nu := ly.Shp.Len()
+	nu := ly.Shape.Len()
 	if nu == 0 {
 		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}

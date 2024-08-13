@@ -131,7 +131,7 @@ type TRCLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
 	// parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron
-	TRC TRCParams `view:"inline"`
+	TRC TRCParams `display:"inline"`
 
 	// name of SuperLayer that sends 5IB Burst driver inputs to this layer
 	Drivers Drivers
@@ -142,7 +142,7 @@ func (ly *TRCLayer) Defaults() {
 	ly.Act.Init.Decay = 0 // deep doesn't decay!
 	ly.TRC.Defaults()
 	ly.TopoInhib.Defaults()
-	ly.Typ = TRC
+	ly.Type = TRC
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
@@ -172,11 +172,11 @@ func (ly *TRCLayer) InitWeights() {
 // UnitsSize returns the dimension of the units, either within a pool for 4D, or layer for 2D
 func UnitsSize(ly *leabra.Layer) (x, y int) {
 	if ly.Is4D() {
-		y = ly.Shp.Dim(2)
-		x = ly.Shp.Dim(3)
+		y = ly.Shape.Dim(2)
+		x = ly.Shape.Dim(3)
 	} else {
-		y = ly.Shp.Dim(0)
-		x = ly.Shp.Dim(1)
+		y = ly.Shape.Dim(0)
+		x = ly.Shape.Dim(1)
 	}
 	return
 }
@@ -248,8 +248,8 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 func (ly *TRCLayer) SetDriverActs() {
 	nux, nuy := UnitsSize(&ly.Layer)
 	nun := nux * nuy
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+	pyn := ly.Shape.Dim(0)
+	pxn := ly.Shape.Dim(1)
 	for _, drv := range ly.Drivers {
 		dly, err := ly.DriverLayer(drv)
 		if err != nil {
@@ -279,8 +279,8 @@ func (ly *TRCLayer) SetDriverActs() {
 				}
 			}
 		} else { // dly is 4D
-			dpyn := dly.Shp.Dim(0)
-			dpxn := dly.Shp.Dim(1)
+			dpyn := dly.Shape.Dim(0)
+			dpxn := dly.Shape.Dim(1)
 			duxn, duyn := UnitsSize(dly)
 			dnun := duxn * duyn
 			if ly.Is2D() {

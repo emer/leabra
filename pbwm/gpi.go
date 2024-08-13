@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -29,7 +28,7 @@ func (pj *GPiThalPath) Build() error {
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.Shape()
+	rsh := pj.Recv.Shape
 	rlen := rsh.Len()
 	pj.GeRaw = make([]float32, rlen)
 	return nil
@@ -45,7 +44,7 @@ func (pj *GPiThalPath) InitGInc() {
 // RecvGInc increments the receiver's GeInc or GiInc from that of all the pathways.
 func (pj *GPiThalPath) RecvGInc() {
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
-	if pj.Typ == emer.Inhib {
+	if pj.Type == InhibPath {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
 			rn.GiRaw += pj.GInc[ri]
@@ -124,10 +123,10 @@ type GPiThalLayer struct {
 	GateLayer
 
 	// timing parameters determining when gating happens
-	Timing GPiTimingParams `view:"inline"`
+	Timing GPiTimingParams `display:"inline"`
 
 	// gating parameters determining threshold for gating etc
-	Gate GPiGateParams `view:"inline"`
+	Gate GPiGateParams `display:"inline"`
 
 	// list of layers to send GateState to
 	SendTo []string
@@ -231,7 +230,7 @@ func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error)
 			err = fmt.Errorf("GPiThalLayer must have RecvPath's of type GPiThalPath")
 			return
 		}
-		slay := p.SendLay()
+		slay := p.Send
 		mlay, ok := slay.(*MatrixLayer)
 		if ok {
 			if mlay.DaR == D1R {

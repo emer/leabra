@@ -12,14 +12,14 @@ import (
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/path"
-	"github.com/emer/etable/v2/etensor"
+	"cogentcore.org/core/tensor"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of
 // C++ emergent/demo/leabra/basic_leabra_test.proj  in version 8.5.6 svn 11492
 
 var TestNet Network
-var InPats *etensor.Float32
+var InPats *tensor.Float32
 
 // number of distinct sets of learning parameters to test
 const NLrnPars = 4
@@ -71,7 +71,7 @@ func TestMakeNet(t *testing.T) {
 
 	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
 	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
+	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
@@ -114,7 +114,7 @@ func TestSynValues(t *testing.T) {
 }
 
 func TestInPats(t *testing.T) {
-	InPats = etensor.NewFloat32([]int{4, 4, 1}, nil, []string{"pat", "Y", "X"})
+	InPats = tensor.NewFloat32([]int{4, 4, 1}, nil, []string{"pat", "Y", "X"})
 	for pi := 0; pi < 4; pi++ {
 		InPats.Set([]int{pi, pi, 0}, 1)
 	}
@@ -460,9 +460,9 @@ func TestInhibAct(t *testing.T) {
 	outLay := InhibNet.AddLayer("Output", []int{4, 1}, emer.Target).(*Layer)
 
 	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Inhib)
+	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), InhibPath)
 	InhibNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
+	InhibNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
 
 	InhibNet.Defaults()
 	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg

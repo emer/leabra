@@ -86,13 +86,13 @@ type Params struct {
 	Rate float32 `viewif:"On" def:"0.8"`
 
 	// fast time-scale adaptation
-	Fast Chan `view:"inline"`
+	Fast Chan `display:"inline"`
 
 	// medium time-scale adaptation
-	Med Chan `view:"inline"`
+	Med Chan `display:"inline"`
 
 	// slow time-scale adaptation
-	Slow Chan `view:"inline"`
+	Slow Chan `display:"inline"`
 }
 
 func (ka *Params) Defaults() {

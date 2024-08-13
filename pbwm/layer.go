@@ -18,13 +18,13 @@ type Layer struct {
 	leabra.Layer
 
 	// current dopamine level for this layer
-	DA float32 `inactive:"+"`
+	DA float32 `edit:"-"`
 
 	// current acetylcholine level for this layer
-	ACh float32 `inactive:"+"`
+	ACh float32 `edit:"-"`
 
 	// current serotonin level for this layer
-	SE float32 `inactive:"+"`
+	SE float32 `edit:"-"`
 }
 
 // DALayer interface:
@@ -170,7 +170,7 @@ func (ly *Layer) Quarter2DWt() {
 		if p.Off {
 			continue
 		}
-		if rly, ok := p.RecvLay().(PBWMLayer); ok {
+		if rly, ok := p.Recv.(PBWMLayer); ok {
 			if rly.DoQuarter2DWt() {
 				p.(leabra.LeabraPath).DWt()
 			}

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"math/rand"
 
+	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/env"
-	"github.com/emer/etable/v2/etensor"
 )
 
 // Actions are SIR actions
@@ -54,25 +54,25 @@ type SIREnv struct {
 	Maint2 int
 
 	// stimulus input pattern
-	Input etensor.Float64
+	Input tensor.Float64
 
 	// input pattern with action
-	CtrlInput etensor.Float64
+	CtrlInput tensor.Float64
 
 	// output pattern of what to respond
-	Output etensor.Float64
+	Output tensor.Float64
 
 	// reward value
-	Reward etensor.Float64
+	Reward tensor.Float64
 
 	// current run of model as provided during Init
-	Run env.Ctr `view:"inline"`
+	Run env.Ctr `display:"inline"`
 
 	// number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline"`
+	Epoch env.Ctr `display:"inline"`
 
 	// trial is the step counter within epoch
-	Trial env.Ctr `view:"inline"`
+	Trial env.Ctr `display:"inline"`
 }
 
 // SetNStim initializes env for given number of stimuli, init states
@@ -94,7 +94,7 @@ func (ev *SIREnv) Validate() error {
 	return nil
 }
 
-func (ev *SIREnv) State(element string) etensor.Tensor {
+func (ev *SIREnv) State(element string) tensor.Tensor {
 	switch element {
 	case "Input":
 		return &ev.Input
@@ -205,7 +205,7 @@ func (ev *SIREnv) Step() bool {
 	return true
 }
 
-func (ev *SIREnv) Action(element string, input etensor.Tensor) {
+func (ev *SIREnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

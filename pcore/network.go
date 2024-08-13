@@ -150,23 +150,23 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	one2one := path.NewPoolOneToOne()
 	full := path.NewFull()
 
-	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, emer.Inhib)
+	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
-	nt.ConnectLayers(mtxNo, gpeIn, one2one, emer.Inhib)
-	nt.ConnectLayers(gpeOut, gpeIn, one2one, emer.Inhib)
+	nt.ConnectLayers(mtxNo, gpeIn, one2one, InhibPath)
+	nt.ConnectLayers(gpeOut, gpeIn, one2one, InhibPath)
 
-	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, InhibPath)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, stnp, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
 	// note: this pathway exists in bio, but does weird things with Ca dynamics in STNs..
-	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
+	// pj = nt.ConnectLayers(gpeIn, stns, one2one, InhibPath)
 	// pj.SetClass("BgFixed")
 
-	nt.ConnectLayers(gpeIn, gpi, one2one, emer.Inhib)
-	nt.ConnectLayers(mtxGo, gpi, one2one, emer.Inhib)
+	nt.ConnectLayers(gpeIn, gpi, one2one, InhibPath)
+	nt.ConnectLayers(mtxGo, gpi, one2one, InhibPath)
 
 	pj = nt.ConnectLayers(stnp, gpeOut, one2one, emer.Forward)
 	pj.SetClass("FmSTNp")
@@ -180,17 +180,17 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	pj = nt.ConnectLayers(stns, gpi, one2one, emer.Forward)
 	pj.SetClass("FmSTNs")
 
-	pj = nt.ConnectLayers(gpeTA, mtxGo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxGo, full, InhibPath)
 	pj.SetClass("GPeTAToMtx")
-	pj = nt.ConnectLayers(gpeTA, mtxNo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxNo, full, InhibPath)
 	pj.SetClass("GPeTAToMtx")
 
-	pj = nt.ConnectLayers(gpeIn, mtxGo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxGo, full, InhibPath)
 	pj.SetClass("GPeInToMtx")
-	pj = nt.ConnectLayers(gpeIn, mtxNo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxNo, full, InhibPath)
 	pj.SetClass("GPeInToMtx")
 
-	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpi, vthal, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
 	return

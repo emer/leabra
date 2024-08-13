@@ -7,7 +7,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/emer/emergent/v2 v2.0.0-dev0.0.11.0.20240224003427-ad13f00b17d7
 	github.com/emer/empi/v2 v2.0.0-dev0.0.4
-	github.com/emer/etable/v2 v2.0.0-dev0.0.16
+	github.com/emer/table/v2 v2.0.0-dev0.0.16
 )
 
 require (

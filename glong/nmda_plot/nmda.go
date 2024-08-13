@@ -1,7 +1,7 @@
 // Copyright (c) 2020, The Emergent Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// eqplot plots an equation updating over time in a etable.Table and Plot2D.
+// eqplot plots an equation updating over time in a table.Table and Plot2D.
 // This is a good starting point for any plotting to explore specific equations.
 // This example plots a double exponential (biexponential) model of synaptic currents.
 package main
@@ -12,10 +12,10 @@ import (
 
 	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/plot"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tree"
-	"github.com/emer/etable/v2/eplot"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
 )
 
 func main() {
@@ -64,16 +64,16 @@ type Sim struct {
 	Gin float64
 
 	// table for plot
-	Table *etable.Table `view:"no-inline"`
+	Table *table.Table `display:"no-inline"`
 
 	// the plot
-	Plot *eplot.Plot2D `display:"-"`
+	Plot *plot.Plot2D `display:"-"`
 
 	// table for plot
-	TimeTable *etable.Table `view:"no-inline"`
+	TimeTable *table.Table `display:"no-inline"`
 
 	// the plot
-	TimePlot *eplot.Plot2D `display:"-"`
+	TimePlot *plot.Plot2D `display:"-"`
 
 	// main GUI window
 	Win *core.Window `display:"-"`
@@ -97,9 +97,9 @@ func (ss *Sim) Config() {
 	ss.TimeSteps = 1000
 	ss.Gin = .5
 	ss.Update()
-	ss.Table = &etable.Table{}
+	ss.Table = &table.Table{}
 	ss.ConfigTable(ss.Table)
-	ss.TimeTable = &etable.Table{}
+	ss.TimeTable = &table.Table{}
 	ss.ConfigTimeTable(ss.TimeTable)
 }
 
@@ -129,25 +129,25 @@ func (ss *Sim) Run() {
 	ss.Plot.Update()
 }
 
-func (ss *Sim) ConfigTable(dt *etable.Table) {
+func (ss *Sim) ConfigTable(dt *table.Table) {
 	dt.SetMetaData("name", "EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"V", etensor.FLOAT64, nil, nil},
-		{"g_NMDA", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"V", tensor.FLOAT64, nil, nil},
+		{"g_NMDA", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "NMDA V-G Function Plot"
 	plt.Params.XAxisCol = "V"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("V", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("g_NMDA", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("V", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("g_NMDA", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -174,25 +174,25 @@ func (ss *Sim) TimeRun() {
 	ss.TimePlot.Update()
 }
 
-func (ss *Sim) ConfigTimeTable(dt *etable.Table) {
+func (ss *Sim) ConfigTimeTable(dt *table.Table) {
 	dt.SetMetaData("name", "EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"Time", etensor.FLOAT64, nil, nil},
-		{"g_NMDA", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"Time", tensor.FLOAT64, nil, nil},
+		{"g_NMDA", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigTimePlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigTimePlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "Time Function Plot"
 	plt.Params.XAxisCol = "Time"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Time", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("g_NMDA", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Time", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("g_NMDA", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -227,10 +227,10 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	tv := core.AddNewTabView(split, "tv")
 
-	plt := tv.AddNewTab(eplot.KiT_Plot2D, "Plot").(*eplot.Plot2D)
+	plt := tv.AddNewTab(plot.KiT_Plot2D, "Plot").(*plot.Plot2D)
 	ss.Plot = ss.ConfigPlot(plt, ss.Table)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TimePlot").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "TimePlot").(*plot.Plot2D)
 	ss.TimePlot = ss.ConfigTimePlot(plt, ss.TimeTable)
 
 	split.SetSplits(.3, .7)

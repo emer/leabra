@@ -5,24 +5,15 @@
 package leabra
 
 import (
-	"bufio"
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
-	"cogentcore.org/core/core"
-	"cogentcore.org/core/gox/indent"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/timer"
-	"github.com/emer/emergent/v2/weights"
 )
 
 // leabra.Network implements the Leabra algorithm, managing the Layers.
@@ -33,9 +24,16 @@ type Network struct {
 	Layers []*Layer
 
 	// number of parallel threads (go routines) to use.
-	NThreads int `inactive:"+"`
+	NThreads int `edit:"-"`
 
-	// timers for each major function (step of processing)
+	// how frequently to update the weight balance average
+	// weight factor -- relatively expensive.
+	WtBalInterval int `def:"10"`
+
+	// counter for how long it has been since last WtBal.
+	WtBalCtr int `edit:"-"`
+
+	// timers for each major function (step of processing).
 	FunTimes map[string]*timer.Time `display:"-"`
 }
 
@@ -87,11 +85,55 @@ func (nt *Network) AllWtScales() string {
 			if p.Off {
 				continue
 			}
-			pj := p.(LeabraPath).AsLeabra()
+			pj := p.AsLeabra()
 			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name(), pj.WtScale.Abs, pj.WtScale.Rel)
 		}
 	}
 	return str
+}
+
+// Defaults sets all the default parameters for all layers and pathways
+func (nt *Network) Defaults() {
+	nt.WtBalInterval = 10
+	nt.WtBalCtr = 0
+	for li, ly := range nt.Layers {
+		ly.Defaults()
+		ly.SetIndex(li)
+	}
+}
+
+// UpdateParams updates all the derived parameters if any have changed, for all layers
+// and pathways
+func (nt *Network) UpdateParams() {
+	for _, ly := range nt.Layers {
+		ly.UpdateParams()
+	}
+}
+
+// UnitVarNames returns a list of variable names available on the units in this network.
+// Not all layers need to support all variables, but must safely return 0's for
+// unsupported ones.  The order of this list determines NetView variable display order.
+// This is typically a global list so do not modify!
+func (nt *Network) UnitVarNames() []string {
+	return NeuronVars
+}
+
+// UnitVarProps returns properties for variables
+func (nt *Network) UnitVarProps() map[string]string {
+	return NeuronVarProps
+}
+
+// SynVarNames returns the names of all the variables on the synapses in this network.
+// Not all pathways need to support all variables, but must safely return 0's for
+// unsupported ones.  The order of this list determines NetView variable display order.
+// This is typically a global list so do not modify!
+func (nt *Network) SynVarNames() []string {
+	return SynapseVars
+}
+
+// SynVarProps returns properties for variables
+func (nt *Network) SynVarProps() map[string]string {
+	return SynapseVarProps
 }
 
 // AddLayerInit is implementation routine that takes a given layer and
@@ -169,7 +211,7 @@ func (nt *Network) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ em
 // requires Build.
 func (nt *Network) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPath).AsLeabra().Connect(send, recv, pat, typ)
+	pj.AsLeabra().Connect(send, recv, pat, typ)
 	recv.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
 	send.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
@@ -190,7 +232,7 @@ func (nt *Network) BidirConnectLayerNames(low, high string, pat path.Pattern) (l
 		return
 	}
 	fwdpj = nt.ConnectLayers(lowlay, highlay, pat, emer.Forward)
-	backpj = nt.ConnectLayers(highlay, lowlay, pat, emer.Back)
+	backpj = nt.ConnectLayers(highlay, lowlay, pat, BackPath)
 	return
 }
 
@@ -201,7 +243,7 @@ func (nt *Network) BidirConnectLayerNames(low, high string, pat path.Pattern) (l
 // requires Build.
 func (nt *Network) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
 	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
-	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
+	backpj = nt.ConnectLayers(high, low, pat, BackPath)
 	return
 }
 
@@ -213,7 +255,7 @@ func (nt *Network) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (f
 // Py = python version with no return vals.
 func (nt *Network) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
 	nt.ConnectLayers(low, high, pat, emer.Forward)
-	nt.ConnectLayers(high, low, pat, emer.Back)
+	nt.ConnectLayers(high, low, pat, BackPath)
 }
 
 // LateralConnectLayer establishes a self-pathway within given layer.
@@ -229,7 +271,7 @@ func (nt *Network) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Pa
 // requires Build.
 func (nt *Network) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
 	pj.Init(pj)
-	pj.(LeabraPath).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
+	pj.AsLeabra().Connect(lay, lay, pat, emer.Lateral)
 	lay.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
 	lay.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
 	return pj
@@ -266,177 +308,6 @@ func (nt *Network) Build() error {
 	return nil
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-//  Weights File
-
-// SaveWeightsJSON saves network weights (and any other state that adapts with learning)
-// to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *Network) SaveWeightsJSON(filename core.Filename) error {
-	fp, err := os.Create(string(filename))
-	defer fp.Close()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	ext := filepath.Ext(string(filename))
-	if ext == ".gz" {
-		gzr := gzip.NewWriter(fp)
-		err = nt.WriteWtsJSON(gzr)
-		gzr.Close()
-	} else {
-		bw := bufio.NewWriter(fp)
-		err = nt.WriteWtsJSON(bw)
-		bw.Flush()
-	}
-	return err
-}
-
-// OpenWeightsJSON opens network weights (and any other state that adapts with learning)
-// from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *Network) OpenWeightsJSON(filename core.Filename) error {
-	fp, err := os.Open(string(filename))
-	defer fp.Close()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	ext := filepath.Ext(string(filename))
-	if ext == ".gz" {
-		gzr, err := gzip.NewReader(fp)
-		defer gzr.Close()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		return nt.ReadWtsJSON(gzr)
-	} else {
-		return nt.ReadWtsJSON(bufio.NewReader(fp))
-	}
-}
-
-// todo: proper error handling here!
-
-// WriteWtsJSON writes the weights from this layer from the receiver-side perspective
-// in a JSON text format.  We build in the indentation logic to make it much faster and
-// more efficient.
-func (nt *Network) WriteWtsJSON(w io.Writer) error {
-	depth := 0
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("{\n"))
-	depth++
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"Network\": %q,\n", nt.Nm))) // note: can't use \n in `` so need "
-	w.Write(indent.TabBytes(depth))
-	onls := make([]emer.Layer, 0, len(nt.Layers))
-	for _, ly := range nt.Layers {
-		if !ly.Off {
-			onls = append(onls, ly)
-		}
-	}
-	nl := len(onls)
-	if nl == 0 {
-		w.Write([]byte("\"Layers\": null\n"))
-	} else {
-		w.Write([]byte("\"Layers\": [\n"))
-		depth++
-		for li, ly := range onls {
-			ly.WriteWtsJSON(w, depth)
-			if li == nl-1 {
-				w.Write([]byte("\n"))
-			} else {
-				w.Write([]byte(",\n"))
-			}
-		}
-		depth--
-		w.Write(indent.TabBytes(depth))
-		w.Write([]byte("]\n"))
-	}
-	depth--
-	w.Write(indent.TabBytes(depth))
-	_, err := w.Write([]byte("}\n"))
-	return err
-}
-
-// ReadWtsJSON reads network weights from the receiver-side perspective
-// in a JSON text format.  Reads entire file into a temporary weights.Weights
-// structure that is then passed to Layers etc using SetWts method.
-func (nt *Network) ReadWtsJSON(r io.Reader) error {
-	nw, err := weights.NetReadJSON(r)
-	if err != nil {
-		return err // note: already logged
-	}
-	err = nt.SetWts(nw)
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
-// SetWts sets the weights for this network from weights.Network decoded values
-func (nt *Network) SetWts(nw *weights.Network) error {
-	var err error
-	if nw.Network != "" {
-		nt.Nm = nw.Network
-	}
-	if nw.MetaData != nil {
-		if nt.MetaData == nil {
-			nt.MetaData = nw.MetaData
-		} else {
-			for mk, mv := range nw.MetaData {
-				nt.MetaData[mk] = mv
-			}
-		}
-	}
-	for li := range nw.Layers {
-		lw := &nw.Layers[li]
-		ly, er := nt.LayerByNameTry(lw.Layer)
-		if er != nil {
-			err = er
-			continue
-		}
-		ly.SetWts(lw)
-	}
-	return err
-}
-
-// OpenWeightsCpp opens network weights (and any other state that adapts with learning)
-// from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *Network) OpenWeightsCpp(filename core.Filename) error {
-	fp, err := os.Open(string(filename))
-	defer fp.Close()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	ext := filepath.Ext(string(filename))
-	if ext == ".gz" {
-		gzr, err := gzip.NewReader(fp)
-		defer gzr.Close()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		return nt.ReadWtsCpp(gzr)
-	} else {
-		return nt.ReadWtsCpp(fp)
-	}
-}
-
-// ReadWtsCpp reads the weights from old C++ emergent format.
-// Reads entire file into a temporary weights.Weights
-// structure that is then passed to Layers etc using SetWts method.
-func (nt *Network) ReadWtsCpp(r io.Reader) error {
-	nw, err := weights.NetReadCpp(r)
-	if err != nil {
-		return err // note: already logged
-	}
-	err = nt.SetWts(nw)
-	if err != nil {
-		log.Println(err)
-	}
-	return err
-}
-
 // VarRange returns the min / max values for given variable
 // todo: support r. s. pathway values
 func (nt *Network) VarRange(varNm string) (min, max float32, err error) {
@@ -460,67 +331,6 @@ func (nt *Network) VarRange(varNm string) (min, max float32, err error) {
 		}
 	}
 	return
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Threading infrastructure
-
-// StartThreads starts up the computation threads, which monitor the channels for work
-func (nt *Network) StartThreads() {
-	fmt.Printf("NThreads: %d\tgo max procs: %d\tnum cpu:%d\n", nt.NThreads, runtime.GOMAXPROCS(0), runtime.NumCPU())
-	for th := 0; th < nt.NThreads; th++ {
-		go nt.ThrWorker(th) // start the worker thread for this channel
-	}
-}
-
-// StopThreads stops the computation threads
-func (nt *Network) StopThreads() {
-	for th := 0; th < nt.NThreads; th++ {
-		close(nt.ThrChans[th])
-	}
-}
-
-// ThrWorker is the worker function run by the worker threads
-func (nt *Network) ThrWorker(tt int) {
-	if nt.LockThreads {
-		runtime.LockOSThread()
-	}
-	for fun := range nt.ThrChans[tt] {
-		thly := nt.ThrLay[tt]
-		nt.ThrTimes[tt].Start()
-		for _, ly := range thly {
-			if ly.Off {
-				continue
-			}
-			fun(ly.(LeabraLayer))
-		}
-		nt.ThrTimes[tt].Stop()
-		nt.WaitGp.Done()
-	}
-	if nt.LockThreads {
-		runtime.UnlockOSThread()
-	}
-}
-
-// ThrLayFun calls function on layer, using threaded (go routine worker) computation if NThreads > 1
-// and otherwise just iterates over layers in the current thread.
-func (nt *Network) ThrLayFun(fun func(ly LeabraLayer), funame string) {
-	nt.FunTimerStart(funame)
-	if nt.NThreads <= 1 {
-		for _, ly := range nt.Layers {
-			if ly.Off {
-				continue
-			}
-			fun(ly.(LeabraLayer))
-		}
-	} else {
-		for th := 0; th < nt.NThreads; th++ {
-			nt.WaitGp.Add(1)
-			nt.ThrChans[th] <- fun
-		}
-		nt.WaitGp.Wait()
-	}
-	nt.FunTimerStop(funame)
 }
 
 // TimerReport reports the amount of time spent in each function, and in each thread
@@ -558,13 +368,6 @@ func (nt *Network) TimerReport() {
 	}
 	for th := 0; th < nt.NThreads; th++ {
 		fmt.Printf("\t%v \t%7.3f\t%7.1f\n", th, pcts[th], 100*(pcts[th]/tot))
-	}
-}
-
-// ThrTimerReset resets the per-thread timers
-func (nt *Network) ThrTimerReset() {
-	for th := 0; th < nt.NThreads; th++ {
-		nt.ThrTimes[th].Reset()
 	}
 }
 

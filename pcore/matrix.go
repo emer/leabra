@@ -62,13 +62,13 @@ type MatrixLayer struct {
 	DaR DaReceptors
 
 	// matrix parameters
-	Matrix MatrixParams `view:"inline"`
+	Matrix MatrixParams `display:"inline"`
 
 	// effective learning dopamine value for this layer: reflects DaR and Gains
-	DALrn float32 `inactive:"+"`
+	DALrn float32 `edit:"-"`
 
 	// acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning
-	ACh float32 `inactive:"+"`
+	ACh float32 `edit:"-"`
 }
 
 // Defaults in param.Sheet format
@@ -277,7 +277,7 @@ type MatrixPath struct {
 	leabra.Path
 
 	// special parameters for matrix trace learning
-	Trace MatrixTraceParams `view:"inline"`
+	Trace MatrixTraceParams `display:"inline"`
 
 	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
 	TrSyns []TraceSyn

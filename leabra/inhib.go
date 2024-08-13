@@ -13,16 +13,16 @@ import "github.com/emer/leabra/v2/fffb"
 type InhibParams struct {
 
 	// inhibition across the entire layer
-	Layer fffb.Params `view:"inline"`
+	Layer fffb.Params `display:"inline"`
 
 	// inhibition across sub-pools of units, for layers with 4D shape
-	Pool fffb.Params `view:"inline"`
+	Pool fffb.Params `display:"inline"`
 
 	// neuron self-inhibition parameters -- can be beneficial for producing more graded, linear response -- not typically used in cortical networks
-	Self SelfInhibParams `view:"inline"`
+	Self SelfInhibParams `display:"inline"`
 
 	// running-average activation computation values -- for overall estimates of layer activation levels, used in netinput scaling
-	ActAvg ActAvgParams `view:"inline"`
+	ActAvg ActAvgParams `display:"inline"`
 }
 
 func (ip *InhibParams) Update() {
@@ -56,7 +56,7 @@ type SelfInhibParams struct {
 	Tau float32 `viewif:"On" def:"1.4"`
 
 	// rate = 1 / tau
-	Dt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
+	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (si *SelfInhibParams) Update() {
@@ -107,7 +107,7 @@ type ActAvgParams struct {
 	Adjust float32 `viewif:"Fixed=false" def:"1"`
 
 	// rate = 1 / tau
-	Dt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
+	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (aa *ActAvgParams) Update() {

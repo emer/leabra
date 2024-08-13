@@ -9,8 +9,8 @@ import (
 	"image"
 	"math/rand"
 
+	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/env"
-	"github.com/emer/etable/v2/etensor"
 )
 
 // ExEnv is an example environment, that sets a single input point in a 2D
@@ -29,22 +29,22 @@ type ExEnv struct {
 	Point image.Point
 
 	// input state, 2D Size x Size
-	Input etensor.Float32
+	Input tensor.Float32
 
 	// X as a one-hot state 1D Size
-	X etensor.Float32
+	X tensor.Float32
 
 	// Y  as a one-hot state 1D Size
-	Y etensor.Float32
+	Y tensor.Float32
 
 	// current run of model as provided during Init
-	Run env.Counter `view:"inline"`
+	Run env.Counter `display:"inline"`
 
 	// number of times through Seq.Max number of sequences
-	Epoch env.Counter `view:"inline"`
+	Epoch env.Counter `display:"inline"`
 
 	// trial increments over input states -- could add Event as a lower level
-	Trial env.Counter `view:"inline"`
+	Trial env.Counter `display:"inline"`
 }
 
 func (ev *ExEnv) Label() string { return ev.Name }
@@ -58,7 +58,7 @@ func (ev *ExEnv) Config(sz int, ntrls int) {
 	ev.Y.SetShape([]int{sz}, nil, []string{"Y"})
 }
 
-func (ev *ExEnv) State(element string) etensor.Tensor {
+func (ev *ExEnv) State(element string) tensor.Tensor {
 	switch element {
 	case "Input":
 		return &ev.Input
@@ -109,7 +109,7 @@ func (ev *ExEnv) Step() bool {
 	return true
 }
 
-func (ev *ExEnv) Action(element string, input etensor.Tensor) {
+func (ev *ExEnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

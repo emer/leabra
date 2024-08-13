@@ -77,7 +77,7 @@ type STNLayer struct {
 	Layer
 
 	// parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)
-	Ca CaParams `view:"inline"`
+	Ca CaParams `display:"inline"`
 
 	// slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
 	STNNeurs []STNNeuron

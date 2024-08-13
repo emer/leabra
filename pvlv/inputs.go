@@ -4,12 +4,12 @@
 
 package pvlv
 
-import "github.com/emer/etable/v2/etensor"
+import "github.com/emer/table/v2/tensor"
 
 type Inputs interface {
 	Empty() bool
 	FromString(s string) Inputs
 	OneHot() int
-	Tensor() etensor.Tensor
-	TensorScaled(scale float32) etensor.Tensor
+	Tensor() tensor.Tensor
+	TensorScaled(scale float32) tensor.Tensor
 }

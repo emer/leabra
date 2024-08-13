@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// eqplot plots an equation updating over time in a etable.Table and Plot2D.
+// eqplot plots an equation updating over time in a table.Table and Plot2D.
 // This is a good starting point for any plotting to explore specific equations.
 // This example plots a double exponential (biexponential) model of synaptic currents.
 package main
@@ -13,10 +13,10 @@ import (
 
 	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/plot"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tree"
-	"github.com/emer/etable/v2/eplot"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
 )
 
 func main() {
@@ -47,10 +47,10 @@ type Sim struct {
 	GsXInit float64
 
 	// time when peak conductance occurs, in TimeInc units
-	MaxTime float64 `inactive:"+"`
+	MaxTime float64 `edit:"-"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float64 `inactive:"+"`
+	TauFact float64 `edit:"-"`
 
 	// total number of time steps to take
 	TimeSteps int
@@ -59,10 +59,10 @@ type Sim struct {
 	TimeInc float64
 
 	// table for plot
-	Table *etable.Table `view:"no-inline"`
+	Table *table.Table `display:"no-inline"`
 
 	// the plot
-	Plot *eplot.Plot2D `display:"-"`
+	Plot *plot.Plot2D `display:"-"`
 
 	// main GUI window
 	Win *core.Window `display:"-"`
@@ -82,7 +82,7 @@ func (ss *Sim) Config() {
 	ss.TimeSteps = 1000
 	ss.TimeInc = .001
 	ss.Update()
-	ss.Table = &etable.Table{}
+	ss.Table = &table.Table{}
 	ss.ConfigTable(ss.Table)
 }
 
@@ -118,27 +118,27 @@ func (ss *Sim) Run() {
 	ss.Plot.Update()
 }
 
-func (ss *Sim) ConfigTable(dt *etable.Table) {
+func (ss *Sim) ConfigTable(dt *table.Table) {
 	dt.SetMetaData("name", "EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"Time", etensor.FLOAT64, nil, nil},
-		{"Gs", etensor.FLOAT64, nil, nil},
-		{"GsX", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"Time", tensor.FLOAT64, nil, nil},
+		{"Gs", tensor.FLOAT64, nil, nil},
+		{"GsX", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "Function Plot"
 	plt.Params.XAxisCol = "Time"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Time", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Gs", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("GsX", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Time", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("Gs", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("GsX", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -173,7 +173,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	tv := core.AddNewTabView(split, "tv")
 
-	plt := tv.AddNewTab(eplot.KiT_Plot2D, "Plot").(*eplot.Plot2D)
+	plt := tv.AddNewTab(plot.KiT_Plot2D, "Plot").(*plot.Plot2D)
 	ss.Plot = ss.ConfigPlot(plt, ss.Table)
 
 	split.SetSplits(.3, .7)

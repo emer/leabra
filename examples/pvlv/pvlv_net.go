@@ -137,7 +137,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("PVLVLrnCons BLAmygConsUS")
 	pj = net.ConnectLayersPath(stimIn, blAmygPosD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsStim")
-	pj = net.ConnectLayers(blAmygPosD2, blAmygPosD1, pjFull, emer.Inhib)
+	pj = net.ConnectLayers(blAmygPosD2, blAmygPosD1, pjFull, InhibPath)
 	pj.SetClass("PVLVLrnCons BLAmygConsInhib")
 	blAmygPosD1.ILI.Lays.Add(blAmygNegD2.Name())
 
@@ -146,7 +146,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("PVLVLrnCons BLAmygConsUS")
 	pj = net.ConnectLayersPath(stimIn, blAmygNegD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("PVLVLrnCons BLAmygConsStim")
-	pj = net.ConnectLayers(blAmygNegD1, blAmygNegD2, pjFull, emer.Inhib)
+	pj = net.ConnectLayers(blAmygNegD1, blAmygNegD2, pjFull, InhibPath)
 	pj.SetClass("PVLVLrnCons BLAmygConsInhib")
 	blAmygNegD2.ILI.Lays.Add(blAmygPosD1.Name())
 
@@ -161,7 +161,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	net.ConnectLayersActMod(blAmygNegD2, blAmygNegD1, 0.2)
 
 	// to CElAcqPosD1
-	pj = net.ConnectLayers(celExtPosD2, celAcqPosD1, pjPools, emer.Inhib) //
+	pj = net.ConnectLayers(celExtPosD2, celAcqPosD1, pjPools, InhibPath) //
 	pj.SetClass("CElExtToAcqInhib")
 	posPV.AddPVReceiver(celAcqPosD1.Name)
 	pj = net.ConnectLayersPath(stimIn, celAcqPosD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
@@ -171,7 +171,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("CElAmygConsFmBLA")
 
 	// to CElAcqNegD2
-	pj = net.ConnectLayers(celExtNegD1, celAcqNegD2, pjPools, emer.Inhib)
+	pj = net.ConnectLayers(celExtNegD1, celAcqNegD2, pjPools, InhibPath)
 	pj.SetClass("CElExtToAcqInhib")
 	negPV.AddPVReceiver(celAcqNegD2.Name)
 	pj = net.ConnectLayersPath(stimIn, celAcqNegD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
@@ -181,14 +181,14 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	pj.SetClass("CElAmygConsFmBLA")
 
 	// to CElExtPosD2
-	pj = net.ConnectLayers(celAcqPosD1, celExtPosD2, pjPools, emer.Inhib)
+	pj = net.ConnectLayers(celAcqPosD1, celExtPosD2, pjPools, InhibPath)
 	pj.SetClass("CElAcqToExtInhib")
 	net.ConnectLayersActMod(celAcqPosD1, celExtPosD2, 1)
 	pj = net.ConnectLayersPath(blAmygPosD2, celExtPosD2, pjPools, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygConsExtFmBLA")
 
 	// to CElExtNegD1
-	pj = net.ConnectLayers(celAcqNegD2, celExtNegD1, pjPools, emer.Inhib)
+	pj = net.ConnectLayers(celAcqNegD2, celExtNegD1, pjPools, InhibPath)
 	pj.SetClass("CElAcqToExtInhib")
 	net.ConnectLayersActMod(celAcqNegD2, celExtNegD1, 1)
 	pj = net.ConnectLayersPath(blAmygNegD1, celExtNegD1, pjPools, emer.Forward, &pvlv.AmygModPath{})
@@ -197,13 +197,13 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	// to CEmPos
 	pj = net.ConnectLayers(celAcqPosD1, cEmPos, pjPools, emer.Forward)
 	pj.SetClass("CEltoCeMFixed")
-	pj = net.ConnectLayers(celExtPosD2, cEmPos, pjPools, emer.Inhib)
+	pj = net.ConnectLayers(celExtPosD2, cEmPos, pjPools, InhibPath)
 	pj.SetClass("CEltoCeMFixed")
 
 	// to CEmNeg
 	pj = net.ConnectLayers(celAcqNegD2, cEmNeg, pjPools, emer.Forward)
 	pj.SetClass("CEltoCeMFixed")
-	pj = net.ConnectLayers(celExtNegD1, cEmNeg, pjPools, emer.Inhib)
+	pj = net.ConnectLayers(celExtNegD1, cEmNeg, pjPools, InhibPath)
 	pj.SetClass("CEltoCeMFixed")
 
 	// to VSPatchPosD1

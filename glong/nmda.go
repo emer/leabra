@@ -75,7 +75,7 @@ func (pj *NMDAPath) Type() emer.PathType {
 }
 
 func (pj *NMDAPath) PathTypeName() string {
-	if pj.Typ < emer.PathTypeN {
+	if pj.Type < emer.PathTypeN {
 		return pj.Typ.String()
 	}
 	ptyp := PathType(pj.Typ)

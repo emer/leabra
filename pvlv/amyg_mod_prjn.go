@@ -6,7 +6,7 @@ package pvlv
 
 import (
 	"cogentcore.org/core/math32"
-	"github.com/emer/etable/v2/etensor"
+	"cogentcore.org/core/tensor"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -72,7 +72,7 @@ var _ ISetScalePath = (*AmygModPath)(nil)
 func (pj *AmygModPath) InitWeights() {
 	if pj.SetScale {
 		pj.SetScalesFunc(pj.GaussScale)
-		pj.SetWtsFunc(func(_, _ int, _, _ *etensor.Shape) float32 {
+		pj.SetWtsFunc(func(_, _ int, _, _ *tensor.Shape) float32 {
 			return pj.InitWtVal
 		})
 		for si := range pj.Syns {
@@ -88,7 +88,7 @@ func (pj *AmygModPath) InitWeights() {
 
 // GaussScale returns gaussian weight value for given unit indexes in
 // given send and recv layers according to Gaussian Sigma and MaxWt.
-func (pj *AmygModPath) GaussScale(_, _ int, _, _ *etensor.Shape) float32 {
+func (pj *AmygModPath) GaussScale(_, _ int, _, _ *tensor.Shape) float32 {
 	scale := float32(pj.WtInit.Gen(-1))
 	scale = math32.Max(pj.SetScaleMin, scale)
 	scale = math32.Min(pj.SetScaleMax, scale)

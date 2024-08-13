@@ -10,8 +10,8 @@ import (
 	"unsafe"
 
 	"cogentcore.org/core/math32"
-	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/table/v2/tensor"
 )
 
 // UnitVarNames returns a list of variable names available on the units in this layer
@@ -111,7 +111,7 @@ func (ly *ModLayer) UnitValues(vals *[]float32, varNm string, di int) error {
 
 // // UnitValuesTensor returns values of given variable name on unit
 // // for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *ModLayer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) error {
+func (ly *ModLayer) UnitValuesTensor(tsr tensor.Tensor, varNm string, di int) error {
 	if tsr == nil {
 		err := fmt.Errorf("leabra.UnitValuesTensor: Tensor is nil")
 		log.Println(err)
@@ -121,7 +121,7 @@ func (ly *ModLayer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) e
 	if !ok {
 		return ly.Layer.UnitValuesTensor(tsr, varNm, di)
 	}
-	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
+	tsr.SetShape(ly.Shape.Shp, ly.Shape.Strd, ly.Shape.Nms)
 	for i := range ly.ModNeurs {
 		vl := ly.LeabraLay.(*ModLayer).UnitValueByIndex(ModNeuronVar(vidx), i)
 		tsr.SetFloat1D(i, float64(vl))

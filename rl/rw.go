@@ -8,7 +8,7 @@ import (
 	"log"
 
 	"cogentcore.org/core/math32"
-	"github.com/emer/etable/v2/minmax"
+	"cogentcore.org/core/tensor/minmax"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -24,7 +24,7 @@ type RWPredLayer struct {
 	PredRange minmax.F32
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+"`
+	DA float32 `edit:"-"`
 }
 
 func (ly *RWPredLayer) Defaults() {
@@ -70,7 +70,7 @@ type RWDaLayer struct {
 	RWPredLay string
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+"`
+	DA float32 `edit:"-"`
 }
 
 func (ly *RWDaLayer) Defaults() {

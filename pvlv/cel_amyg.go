@@ -7,7 +7,7 @@ package pvlv
 import (
 	"fmt"
 
-	_ "github.com/emer/etable/v2/etensor"
+	_ "cogentcore.org/core/tensor"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -47,7 +47,7 @@ type CElAmygLayerType struct {
 }
 
 func (ly *CElAmygLayer) Build() error {
-	nu := ly.Shp.Len()
+	nu := ly.Shape.Len()
 	if nu == 0 {
 		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}

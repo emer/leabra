@@ -6,8 +6,8 @@ package leabra
 
 import (
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tensor/minmax"
 	"github.com/emer/emergent/v2/erand"
-	"github.com/emer/etable/v2/minmax"
 	"github.com/emer/leabra/v2/chans"
 	"github.com/emer/leabra/v2/knadapt"
 	"github.com/emer/leabra/v2/nxx1"
@@ -22,40 +22,40 @@ import (
 type ActParams struct {
 
 	// Noisy X/X+1 rate code activation function parameters
-	XX1 nxx1.Params `view:"inline"`
+	XX1 nxx1.Params `display:"inline"`
 
 	// optimization thresholds for faster processing
-	OptThresh OptThreshParams `view:"inline"`
+	OptThresh OptThreshParams `display:"inline"`
 
 	// initial values for key network state variables -- initialized at start of trial with InitActs or DecayActs
-	Init ActInitParams `view:"inline"`
+	Init ActInitParams `display:"inline"`
 
 	// time and rate constants for temporal derivatives / updating of activation state
-	Dt DtParams `view:"inline"`
+	Dt DtParams `display:"inline"`
 
 	// maximal conductances levels for channels
-	Gbar chans.Chans `view:"inline"`
+	Gbar chans.Chans `display:"inline"`
 
 	// reversal potentials for each channel
-	Erev chans.Chans `view:"inline"`
+	Erev chans.Chans `display:"inline"`
 
 	// how external inputs drive neural activations
-	Clamp ClampParams `view:"inline"`
+	Clamp ClampParams `display:"inline"`
 
 	// how, where, when, and how much noise to add to activations
-	Noise ActNoiseParams `view:"inline"`
+	Noise ActNoiseParams `display:"inline"`
 
 	// range for Vm membrane potential -- by default
-	VmRange minmax.F32 `view:"inline"`
+	VmRange minmax.F32 `display:"inline"`
 
 	// sodium-gated potassium channel adaptation parameters -- activates an inhibitory leak-like current as a function of neural activity (firing = Na influx) at three different time-scales (M-type = fast, Slick = medium, Slack = slow)
-	KNa knadapt.Params `view:"no-inline"`
+	KNa knadapt.Params `display:"no-inline"`
 
 	// Erev - Act.Thr for each channel -- used in computing GeThrFmG among others
-	ErevSubThr chans.Chans `inactive:"+" display:"-" json:"-" xml:"-"`
+	ErevSubThr chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 
 	// Act.Thr - Erev for each channel -- used in computing GeThrFmG among others
-	ThrSubErev chans.Chans `inactive:"+" display:"-" json:"-" xml:"-"`
+	ThrSubErev chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (ac *ActParams) Defaults() {

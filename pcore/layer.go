@@ -17,7 +17,7 @@ type Layer struct {
 	glong.AlphaMaxLayer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+"`
+	DA float32 `edit:"-"`
 }
 
 // DALayer interface:

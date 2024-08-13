@@ -13,10 +13,10 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/examples/pvlv/data"
 	"github.com/emer/leabra/v2/pvlv"
 )
@@ -24,10 +24,10 @@ import (
 type PVLVEnv struct {
 
 	// name of this environment
-	Nm string `inactive:"+"`
+	Nm string `edit:"-"`
 
 	// description of this environment
-	Dsc string `inactive:"+"`
+	Dsc string `edit:"-"`
 
 	// PVLV-specific params
 	PVLVParams *params.Params
@@ -36,53 +36,53 @@ type PVLVEnv struct {
 	GlobalStep int
 
 	// top-level counter for multi-run sequence
-	MultiRunCt env.Counter `inactive:"+" view:"inline"`
+	MultiRunCt env.Counter `edit:"-" display:"inline"`
 
 	// top-level counter for multi-trial group run
-	ConditionCt env.Counter `inactive:"+" view:"inline"`
+	ConditionCt env.Counter `edit:"-" display:"inline"`
 
 	// trial group within a block
-	TrialBlockCt env.Counter `inactive:"+" view:"inline"`
+	TrialBlockCt env.Counter `edit:"-" display:"inline"`
 
 	// trial group within a set of trial groups
-	TrialCt env.Counter `inactive:"+" view:"inline"`
+	TrialCt env.Counter `edit:"-" display:"inline"`
 
 	// step within a trial
-	AlphaCycle env.Counter `inactive:"+" view:"inline"`
+	AlphaCycle env.Counter `edit:"-" display:"inline"`
 
 	// name of current alpha trial step
-	AlphaTrialName string `inactive:"+"`
+	AlphaTrialName string `edit:"-"`
 
 	// decoded value of USTimeIn
-	USTimeInStr string `inactive:"+"`
+	USTimeInStr string `edit:"-"`
 
 	// AKA trial group list. A set of trial groups to be run together
 	TrialBlockParams *data.TrialBlockRecs
-	TrialInstances   *data.TrialInstanceRecs //*TrialInstanceList `view:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
+	TrialInstances   *data.TrialInstanceRecs //*TrialInstanceList `display:"no-inline" desc:"instantiated trial groups, further unpacked into StdInputData from this"`
 
 	// Completely instantiated input data for a single block
-	StdInputData *etable.Table
+	StdInputData *table.Table
 
 	// One at a time, conjunctive, or a mix
-	ContextModel ContextModel `inactive:"+"`
+	ContextModel ContextModel `edit:"-"`
 
 	// running from a top-level sequence?
 	SeqRun bool `display:"-"`
 
 	// params for currently executing block, whether from selection or sequence
 	CurConditionParams *data.ConditionParams `display:"-"`
-	TrialsPerBlock     int                   `inactive:"+"`
-	DataLoopOrder      data.DataLoopOrder    `inactive:"+"`
+	TrialsPerBlock     int                   `edit:"-"`
+	DataLoopOrder      data.DataLoopOrder    `edit:"-"`
 
 	//
 	BlockEnded bool `display:"-"`
 
 	// Input data tensors
-	TsrStimIn    etensor.Float64
-	TsrPosPV     etensor.Float64
-	TsrNegPV     etensor.Float64
-	TsrContextIn etensor.Float64
-	TsrUSTimeIn  etensor.Float64
+	TsrStimIn    tensor.Float64
+	TsrPosPV     tensor.Float64
+	TsrNegPV     tensor.Float64
+	TsrContextIn tensor.Float64
+	TsrUSTimeIn  tensor.Float64
 
 	//
 	NormContextTotalAct bool `display:"-"`
@@ -113,7 +113,7 @@ func (ev *PVLVEnv) New(ss *Sim) {
 	ev.InputShapes = &ss.InputShapes
 	ev.ContextModel = ss.ContextModel // lives in MiscParams in cemer
 	ev.AlphaCycle.Init()
-	ev.StdInputData = &etable.Table{}
+	ev.StdInputData = &table.Table{}
 	ev.ConfigStdInputData(ev.StdInputData)
 	ev.AlphaTrialName = "trialname"
 	ev.TsrStimIn.SetShape(ss.InputShapes["StimIn"], nil, nil)
@@ -149,22 +149,22 @@ func (ev *PVLVEnv) Init(ss *Sim, firstCondition bool) (ok bool) {
 	return ok
 }
 
-func (ev *PVLVEnv) ConfigStdInputData(dt *etable.Table) {
+func (ev *PVLVEnv) ConfigStdInputData(dt *table.Table) {
 	dt.SetMetaData("name", "StdInputData")
 	dt.SetMetaData("desc", "input data")
 	dt.SetMetaData("precision", "6")
 	shapes := *ev.InputShapes
-	sch := etable.Schema{
-		{"AlphTrialName", etensor.STRING, nil, nil},
-		{"Stimulus", etensor.STRING, nil, nil},
-		{"Time", etensor.STRING, nil, nil},
-		{"Context", etensor.STRING, nil, nil},
-		{"USTimeInStr", etensor.STRING, nil, nil},
-		{"PosPV", etensor.FLOAT64, shapes["PosPV"], nil},
-		{"NegPV", etensor.FLOAT64, shapes["NegPV"], nil},
-		{"StimIn", etensor.FLOAT64, shapes["StimIn"], nil},
-		{"ContextIn", etensor.FLOAT64, shapes["ContextIn"], nil},
-		{"USTimeIn", etensor.FLOAT64, shapes["USTimeIn"], nil},
+	sch := table.Schema{
+		{"AlphTrialName", tensor.STRING, nil, nil},
+		{"Stimulus", tensor.STRING, nil, nil},
+		{"Time", tensor.STRING, nil, nil},
+		{"Context", tensor.STRING, nil, nil},
+		{"USTimeInStr", tensor.STRING, nil, nil},
+		{"PosPV", tensor.FLOAT64, shapes["PosPV"], nil},
+		{"NegPV", tensor.FLOAT64, shapes["NegPV"], nil},
+		{"StimIn", tensor.FLOAT64, shapes["StimIn"], nil},
+		{"ContextIn", tensor.FLOAT64, shapes["ContextIn"], nil},
+		{"USTimeIn", tensor.FLOAT64, shapes["USTimeIn"], nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
@@ -254,7 +254,7 @@ func (ev *PVLVEnv) SetState() {
 	ev.USTimeInStr = ev.StdInputData.CellString("USTimeInStr", ev.AlphaCycle.Cur)
 }
 
-func (ev *PVLVEnv) State(Nm string) etensor.Tensor {
+func (ev *PVLVEnv) State(Nm string) tensor.Tensor {
 	switch Nm {
 	case "StimIn":
 		return &ev.TsrStimIn
@@ -279,7 +279,7 @@ func (ev *PVLVEnv) State(Nm string) etensor.Tensor {
 //	return true
 //}
 
-func (ev *PVLVEnv) Action(_ string, _ etensor.Tensor) {
+func (ev *PVLVEnv) Action(_ string, _ tensor.Tensor) {
 	// nop
 }
 
@@ -669,8 +669,8 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *data.TrialInstance, stimNum int)
 		ev.StdInputData.SetCellString("Stimulus", curTimeStepInt, stimulus)
 		ev.StdInputData.SetCellString("Context", curTimeStepInt, curTrial.Context)
 
-		tsrStim := etensor.NewFloat64(pvlv.StimInShape, nil, nil)
-		tsrCtx := etensor.NewFloat64(pvlv.ContextInShape, nil, nil)
+		tsrStim := tensor.NewFloat64(pvlv.StimInShape, nil, nil)
+		tsrCtx := tensor.NewFloat64(pvlv.ContextInShape, nil, nil)
 		if curTimeStepInt >= curTrial.CSTimeStart && curTimeStepInt <= curTrial.CSTimeEnd {
 			stimDenom = 1.0 + ev.PctNormTotalActStim*float64(nStims-1)
 			if stimIn != pvlv.StmNone {
@@ -727,7 +727,7 @@ func (ev *PVLVEnv) SetupOneAlphaTrial(curTrial *data.TrialInstance, stimNum int)
 		}
 
 		usTimeDenom = 1.0 + ev.PctNormTotalActUSTime*float64(nUSTimes-1)
-		tsrUSTime := etensor.NewFloat64(pvlv.USTimeInShape, nil, nil)
+		tsrUSTime := tensor.NewFloat64(pvlv.USTimeInShape, nil, nil)
 		if usTimeIn != pvlv.USTimeNone {
 			setVal := usTimeIn.Unpack().Coords()
 			tsrUSTime.SetFloat(setVal, 1.0/usTimeDenom)

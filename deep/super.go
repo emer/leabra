@@ -60,10 +60,10 @@ type SuperLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
 	// parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)
-	Burst BurstParams `view:"inline"`
+	Burst BurstParams `display:"inline"`
 
 	// determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer.
-	Attn TRCAttnParams `view:"inline"`
+	Attn TRCAttnParams `display:"inline"`
 
 	// slice of super neuron values -- same size as Neurons
 	SuperNeurs []SuperNeuron
@@ -254,7 +254,7 @@ func (ly *SuperLayer) ValidateTRCLayer() error {
 		ly.Attn.On = false
 		return err
 	}
-	if !(trc.Shp.Dim(0) == ly.Shp.Dim(0) && trc.Shp.Dim(1) == ly.Shp.Dim(1)) {
+	if !(trc.Shp.Dim(0) == ly.Shape.Dim(0) && trc.Shp.Dim(1) == ly.Shape.Dim(1)) {
 		ly.Attn.On = false
 		err = fmt.Errorf("TRC Layer must have the same group-level shape as this layer")
 		log.Println(err)

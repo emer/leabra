@@ -12,87 +12,17 @@ import (
 	"unsafe"
 
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tensor"
 	"github.com/c2h5oh/datasize"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/path"
-	"github.com/emer/etable/v2/etensor"
 )
 
-// Network has parameters for running a basic rate-coded Leabra network
-type Network struct {
-	NetworkBase
-
-	// how frequently to update the weight balance average weight factor -- relatively expensive
-	WtBalInterval int `def:"10"`
-
-	// counter for how long it has been since last WtBal
-	WtBalCtr int `inactive:"+"`
-}
-
-func (nt *Network) AsLeabra() *Network {
-	return nt
-}
-
-// NewLayer returns new layer of proper type
-func (nt *Network) NewLayer() emer.Layer {
-	return &Layer{}
-}
-
-// NewPath returns new path of proper type
-func (nt *Network) NewPath() emer.Path {
-	return &Path{}
-}
-
-// Defaults sets all the default parameters for all layers and pathways
-func (nt *Network) Defaults() {
-	nt.WtBalInterval = 10
-	nt.WtBalCtr = 0
-	for li, ly := range nt.Layers {
-		ly.Defaults()
-		ly.SetIndex(li)
-	}
-}
-
-// UpdateParams updates all the derived parameters if any have changed, for all layers
-// and pathways
-func (nt *Network) UpdateParams() {
-	for _, ly := range nt.Layers {
-		ly.UpdateParams()
-	}
-}
-
-// UnitVarNames returns a list of variable names available on the units in this network.
-// Not all layers need to support all variables, but must safely return 0's for
-// unsupported ones.  The order of this list determines NetView variable display order.
-// This is typically a global list so do not modify!
-func (nt *Network) UnitVarNames() []string {
-	return NeuronVars
-}
-
-// UnitVarProps returns properties for variables
-func (nt *Network) UnitVarProps() map[string]string {
-	return NeuronVarProps
-}
-
-// SynVarNames returns the names of all the variables on the synapses in this network.
-// Not all pathways need to support all variables, but must safely return 0's for
-// unsupported ones.  The order of this list determines NetView variable display order.
-// This is typically a global list so do not modify!
-func (nt *Network) SynVarNames() []string {
-	return SynapseVars
-}
-
-// SynVarProps returns properties for variables
-func (nt *Network) SynVarProps() map[string]string {
-	return SynapseVarProps
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 //  Primary Algorithmic interface.
 //
-//  The following methods constitute the primary user-called API during AlphaCyc method
-//  to compute one complete algorithmic alpha cycle update.
+//  The following methods constitute the primary user-called API during
+//  AlphaCyc method to compute one complete algorithmic alpha cycle update.
 //
 //  They just call the corresponding Impl method using the LeabraNetwork interface
 //  so that other network types can specialize any of these entry points.
@@ -109,7 +39,12 @@ func (nt *Network) SynVarProps() map[string]string {
 // only update during training).  This flag also affects the AvgL learning
 // threshold
 func (nt *Network) AlphaCycInit(updtActAvg bool) {
-	nt.EmerNet.(LeabraNetwork).AlphaCycInitImpl(updtActAvg)
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.AlphaCycInit(updtActAvg)
+	}
 }
 
 // Cycle runs one cycle of activation updating:
@@ -121,32 +56,78 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 // This basic version doesn't use the time info, but more specialized types do, and we
 // want to keep a consistent API for end-user code.
 func (nt *Network) Cycle(ltime *Time) {
-	nt.EmerNet.(LeabraNetwork).CycleImpl(ltime)
-	nt.EmerNet.(LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
+	nt.SendGDelta(ltime) // also does integ
+	nt.AvgMaxGe(ltime)
+	nt.InhibFmGeAct(ltime)
+	nt.ActFmG(ltime)
+	nt.AvgMaxAct(ltime)
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.CyclePost(ltime) }, "CyclePost")
 }
 
-// CyclePost is called after the standard Cycle update, and calls CyclePost
-// on Layers -- this is reserved for any kind of special ad-hoc types that
-// need to do something special after Act is finally computed.
-// For example, sending a neuromodulatory signal such as dopamine.
-func (nt *Network) CyclePost(ltime *Time) {
-	nt.EmerNet.(LeabraNetwork).CyclePostImpl(ltime)
+//////////////////////////////////////////////////////////////////////////////////////
+//  Act methods
+
+// SendGeDelta sends change in activation since last sent, if above thresholds
+// and integrates sent deltas into GeRaw and time-integrated Ge values
+func (nt *Network) SendGDelta(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.SendGDelta(ltime) }, "SendGDelta")
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.GFmInc(ltime) }, "GFmInc")
+}
+
+// AvgMaxGe computes the average and max Ge stats, used in inhibition
+func (nt *Network) AvgMaxGe(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxGe(ltime) }, "AvgMaxGe")
+}
+
+// InhibiFmGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
+func (nt *Network) InhibFmGeAct(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.InhibFmGeAct(ltime) }, "InhibFmGeAct")
+}
+
+// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+func (nt *Network) ActFmG(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.ActFmG(ltime) }, "ActFmG")
+}
+
+// AvgMaxGe computes the average and max Ge stats, used in inhibition
+func (nt *Network) AvgMaxAct(ltime *Time) {
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxAct(ltime) }, "AvgMaxAct")
 }
 
 // QuarterFinal does updating after end of a quarter
 func (nt *Network) QuarterFinal(ltime *Time) {
-	nt.EmerNet.(LeabraNetwork).QuarterFinalImpl(ltime)
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.QuarterFinal(ltime) }, "QuarterFinal")
 }
 
-// DWt computes the weight change (learning) based on current running-average activation values
+//////////////////////////////////////////////////////////////////////////////////////
+//  Learn methods
+
+// DWt computes the weight change (learning) based on current
+// running-average activation values
 func (nt *Network) DWt() {
-	nt.EmerNet.(LeabraNetwork).DWtImpl()
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt")
 }
 
 // WtFmDWt updates the weights from delta-weight changes.
 // Also calls WtBalFmWt every WtBalInterval times
 func (nt *Network) WtFmDWt() {
-	nt.EmerNet.(LeabraNetwork).WtFmDWtImpl()
+	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtFmDWt() }, "WtFmDWt")
+	nt.WtBalCtr++
+	if nt.WtBalCtr >= nt.WtBalInterval {
+		nt.WtBalCtr = 0
+		nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
+	}
+}
+
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
+// Useful for implementing learning rate schedules.
+func (nt *Network) LrateMult(mult float32) {
+	for _, ly := range nt.Layers {
+		// if ly.Off { // keep all sync'd
+		// 	continue
+		// }
+		ly.(LeabraLayer).LrateMult(mult)
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +160,7 @@ func (nt *Network) InitWeights() {
 // includes: path.PoolTile path.Circle.
 // call before InitWeights if using Topo wts
 func (nt *Network) InitTopoScales() {
-	scales := &etensor.Float32{}
+	scales := &tensor.Float32{}
 	for _, lyi := range nt.Layers {
 		if lyi.Off {
 			continue
@@ -196,15 +177,15 @@ func (nt *Network) InitTopoScales() {
 				if !pt.HasTopoWts() {
 					continue
 				}
-				pj := p.(LeabraPath).AsLeabra()
-				slay := p.SendLay()
-				pt.TopoWts(slay.Shape(), ly.Shape(), scales)
+				pj := p.AsLeabra()
+				slay := p.Send
+				pt.TopoWts(slay.Shape, ly.Shape, scales)
 				pj.SetScalesRPool(scales)
 			case *path.Circle:
 				if !pt.TopoWts {
 					continue
 				}
-				pj := p.(LeabraPath).AsLeabra()
+				pj := p.AsLeabra()
 				pj.SetScalesFunc(pt.GaussWts)
 			}
 		}
@@ -270,26 +251,6 @@ func (nt *Network) InitGInc() {
 	}
 }
 
-// AlphaCycInit handles all initialization at start of new input pattern.
-// Should already have presented the external input to the network at this point.
-// If updtActAvg is true, this includes updating the running-average
-// activations for each layer / pool, and the AvgL running average used
-// in BCM Hebbian learning.
-// The input scaling is updated  based on the layer-level running average acts,
-// and this can then change the behavior of the network,
-// so if you want 100% repeatable testing results, set this to false to
-// keep the existing scaling factors (e.g., can pass a train bool to
-// only update during training).  This flag also affects the AvgL learning
-// threshold
-func (nt *Network) AlphaCycInitImpl(updtActAvg bool) {
-	for _, ly := range nt.Layers {
-		if ly.Off {
-			continue
-		}
-		ly.(LeabraLayer).AlphaCycInit(updtActAvg)
-	}
-}
-
 // GScaleFmAvgAct computes the scaling factor for synaptic input conductances G,
 // based on sending layer average activation.
 // This attempts to automatically adjust for overall differences in raw activity
@@ -303,100 +264,6 @@ func (nt *Network) GScaleFmAvgAct() {
 			continue
 		}
 		ly.(LeabraLayer).GScaleFmAvgAct()
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Act methods
-
-// CycleImpl runs one cycle of activation updating:
-// * Sends Ge increments from sending to receiving layers
-// * Average and Max Ge stats
-// * Inhibition based on Ge stats and Act Stats (computed at end of Cycle)
-// * Activation from Ge, Gi, and Gl
-// * Average and Max Act stats
-// This basic version doesn't use the time info, but more specialized types do, and we
-// want to keep a consistent API for end-user code.
-func (nt *Network) CycleImpl(ltime *Time) {
-	nt.SendGDelta(ltime) // also does integ
-	nt.AvgMaxGe(ltime)
-	nt.InhibFmGeAct(ltime)
-	nt.ActFmG(ltime)
-	nt.AvgMaxAct(ltime)
-}
-
-// SendGeDelta sends change in activation since last sent, if above thresholds
-// and integrates sent deltas into GeRaw and time-integrated Ge values
-func (nt *Network) SendGDelta(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.SendGDelta(ltime) }, "SendGDelta")
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.GFmInc(ltime) }, "GFmInc")
-}
-
-// AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxGe(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxGe(ltime) }, "AvgMaxGe")
-}
-
-// InhibiFmGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
-func (nt *Network) InhibFmGeAct(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.InhibFmGeAct(ltime) }, "InhibFmGeAct")
-}
-
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
-func (nt *Network) ActFmG(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.ActFmG(ltime) }, "ActFmG")
-}
-
-// AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxAct(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxAct(ltime) }, "AvgMaxAct")
-}
-
-// CyclePostImpl is called after the standard Cycle update, and calls CyclePost
-// on Layers -- this is reserved for any kind of special ad-hoc types that
-// need to do something special after Act is finally computed.
-// For example, sending a neuromodulatory signal such as dopamine.
-func (nt *Network) CyclePostImpl(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.CyclePost(ltime) }, "CyclePost")
-}
-
-// QuarterFinalImpl does updating after end of a quarter
-func (nt *Network) QuarterFinalImpl(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.QuarterFinal(ltime) }, "QuarterFinal")
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Learn methods
-
-// DWtImpl computes the weight change (learning) based on current running-average activation values
-func (nt *Network) DWtImpl() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt")
-}
-
-// WtFmDWtImpl updates the weights from delta-weight changes.
-// Also calls WtBalFmWt every WtBalInterval times
-func (nt *Network) WtFmDWtImpl() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtFmDWt() }, "WtFmDWt")
-	nt.WtBalCtr++
-	if nt.WtBalCtr >= nt.WtBalInterval {
-		nt.WtBalCtr = 0
-		nt.WtBalFmWt()
-	}
-}
-
-// WtBalFmWt updates the weight balance factors based on average recv weights
-func (nt *Network) WtBalFmWt() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
-}
-
-// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
-// Useful for implementing learning rate schedules.
-func (nt *Network) LrateMult(mult float32) {
-	for _, ly := range nt.Layers {
-		// if ly.Off { // keep all sync'd
-		// 	continue
-		// }
-		ly.(LeabraLayer).LrateMult(mult)
 	}
 }
 
@@ -440,7 +307,7 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
 		for _, pji := range ly.SendPaths {
-			pj := pji.(LeabraPath).AsLeabra()
+			pj := pji.AsLeabra()
 			ns := len(pj.Syns)
 			nsz := idx + ns
 			if len(*dwts) < nsz {
@@ -462,7 +329,7 @@ func (nt *Network) SetDWts(dwts []float32) {
 	for _, lyi := range nt.Layers {
 		ly := lyi.(LeabraLayer).AsLeabra()
 		for _, pji := range ly.SendPaths {
-			pj := pji.(LeabraPath).AsLeabra()
+			pj := pji.AsLeabra()
 			ns := len(pj.Syns)
 			for j := range pj.Syns {
 				sy := &(pj.Syns[j])
@@ -492,7 +359,7 @@ func (nt *Network) SizeReport() string {
 		neurMem += nmem
 		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.ByteSize)(nmem).HumanReadable())
 		for _, pji := range ly.SendPaths {
-			pj := pji.(LeabraPath).AsLeabra()
+			pj := pji.AsLeabra()
 			ns := len(pj.Syns)
 			syn += ns
 			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))

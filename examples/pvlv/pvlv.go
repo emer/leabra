@@ -19,14 +19,14 @@ import (
 	"time"
 
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/plot"
+	"cogentcore.org/core/tensor"
+	_ "cogentcore.org/core/tensor/agg"
+	"cogentcore.org/core/tensor/etview"
+	_ "cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/stepper"
-	_ "github.com/emer/etable/v2/agg"
-	"github.com/emer/etable/v2/eplot"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
-	"github.com/emer/etable/v2/etview"
-	_ "github.com/emer/etable/v2/split"
 
 	"cogentcore.org/core/gimain"
 	"github.com/emer/emergent/v2/netview"
@@ -70,13 +70,13 @@ const LogPrec = 4
 type Sim struct {
 
 	// Name of the current run. Use menu above to set
-	RunParamsNm string `inactive:"+"`
+	RunParamsNm string `edit:"-"`
 
 	// For sequences of conditions
 	RunParams *data.RunParams
 
 	// name of current ConditionParams
-	ConditionParamsNm string `inactive:"+"`
+	ConditionParamsNm string `edit:"-"`
 
 	// pointer to current ConditionParams
 	ConditionParams *data.ConditionParams
@@ -85,10 +85,10 @@ type Sim struct {
 	Tag string
 
 	// pvlv-specific network parameters
-	Params   params.Sets `view:"no-inline"`
+	Params   params.Sets `display:"no-inline"`
 	ParamSet string
-	//StableParams                 params.Set        `view:"no-inline" desc:"shouldn't need to change these'"`
-	//MiscParams                   params.Set        `view:"no-inline" desc:"misc params -- network specs"`
+	//StableParams                 params.Set        `display:"no-inline" desc:"shouldn't need to change these'"`
+	//MiscParams                   params.Set        `display:"no-inline" desc:"misc params -- network specs"`
 
 	// environment -- PVLV environment
 	Env PVLVEnv
@@ -115,13 +115,13 @@ type Sim struct {
 	StopConditionTrialNameString string
 
 	// number of times we've hit whatever StopStepGrain is set to'
-	StopStepCounter env.Counter `inactive:"+" display:"-"`
+	StopStepCounter env.Counter `edit:"-" display:"-"`
 
 	// running from Step command?
 	StepMode bool `display:"-"`
 
 	// testing mode, no training
-	TestMode bool `inactive:"+"`
+	TestMode bool `edit:"-"`
 
 	// time scale for updating CycleOutputData. NOTE: Only Cycle and Quarter are currently implemented
 	CycleLogUpdate leabra.TimeScales
@@ -134,16 +134,16 @@ type Sim struct {
 	TrialAnalUpdateCmpGraphs bool
 
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *pvlv.Network `view:"no-inline"`
+	Net *pvlv.Network `display:"no-inline"`
 
 	// maximum number of rows for CycleOutputData
 	CycleOutputDataRows int
 
 	// Cycle-level output data
-	CycleOutputData *etable.Table `view:"no-inline"`
+	CycleOutputData *table.Table `display:"no-inline"`
 
 	// Fine-grained trace data
-	CycleDataPlot *eplot.Plot2D `view:"no-inline"`
+	CycleDataPlot *plot.Plot2D `display:"no-inline"`
 
 	//
 	CycleOutputMetadata map[string][]string `display:"-"`
@@ -185,16 +185,16 @@ type Sim struct {
 	WtsGrid *etview.TensorGrid `display:"-"`
 
 	// data for the TrialTypeData plot
-	TrialTypeData *etable.Table `view:"no-inline"`
+	TrialTypeData *table.Table `display:"no-inline"`
 
 	// data for the TrialTypeData plot
-	TrialTypeBlockFirstLog *etable.Table `view:"no-inline"`
+	TrialTypeBlockFirstLog *table.Table `display:"no-inline"`
 
 	// data for the TrialTypeData plot
-	TrialTypeBlockFirstLogCmp *etable.Table `view:"no-inline"`
+	TrialTypeBlockFirstLogCmp *table.Table `display:"no-inline"`
 
 	// multiple views for different type of trials
-	TrialTypeDataPlot *eplot.Plot2D `view:"no-inline"`
+	TrialTypeDataPlot *plot.Plot2D `display:"no-inline"`
 
 	// clear the TrialTypeData plot between parts of a run
 	TrialTypeDataPerBlock bool
@@ -206,16 +206,16 @@ type Sim struct {
 	GlobalTrialTypeSet map[string]int `display:"-"`
 
 	// block plot
-	TrialTypeBlockFirst *eplot.Plot2D `display:"-"`
+	TrialTypeBlockFirst *plot.Plot2D `display:"-"`
 
 	// block plot
-	TrialTypeBlockFirstCmp *eplot.Plot2D `display:"-"`
+	TrialTypeBlockFirstCmp *plot.Plot2D `display:"-"`
 
 	// trial history
-	HistoryGraph *eplot.Plot2D `display:"-"`
+	HistoryGraph *plot.Plot2D `display:"-"`
 
 	// ??
-	RealTimeData *eplot.Plot2D `display:"-"`
+	RealTimeData *plot.Plot2D `display:"-"`
 
 	// for command-line run only, auto-save final weights after each run
 	SaveWeights bool `display:"-"`
@@ -248,7 +248,7 @@ type Sim struct {
 	TrialTypeBlockFirstLogged map[string]bool `display:"-"`
 
 	// the run plot
-	RunPlot *eplot.Plot2D `display:"-"`
+	RunPlot *plot.Plot2D `display:"-"`
 
 	// log file
 	TrnEpcFile *os.File `display:"-"`
@@ -257,7 +257,7 @@ type Sim struct {
 	RunFile *os.File `display:"-"`
 
 	// for holding layer values
-	ValuesTsrs map[string]*etensor.Float32 `display:"-"`
+	ValuesTsrs map[string]*tensor.Float32 `display:"-"`
 
 	// if true, print message for all params that are set
 	LogSetParams bool `display:"-"`
@@ -272,10 +272,10 @@ type Sim struct {
 	InputShapes map[string][]int `display:"-"`
 
 	// master list of RunParams records
-	MasterRunParams data.RunParamsMap `view:"no-inline"`
+	MasterRunParams data.RunParamsMap `display:"no-inline"`
 
 	// master list of ConditionParams records
-	MasterConditionParams data.ConditionParamsMap `view:"no-inline"`
+	MasterConditionParams data.ConditionParamsMap `display:"no-inline"`
 
 	// master list of BlockParams (sets of trial groups) records
 	MasterTrialBlockParams data.TrialBlockMap
@@ -301,10 +301,10 @@ func (ss *Sim) New() {
 		"NegPV":     pvlv.USInShape,
 	}
 	ss.Net = &pvlv.Network{}
-	ss.CycleOutputData = &etable.Table{}
-	ss.TrialTypeData = &etable.Table{}
-	ss.TrialTypeBlockFirstLog = &etable.Table{}
-	ss.TrialTypeBlockFirstLogCmp = &etable.Table{}
+	ss.CycleOutputData = &table.Table{}
+	ss.TrialTypeData = &table.Table{}
+	ss.TrialTypeBlockFirstLog = &table.Table{}
+	ss.TrialTypeBlockFirstLogCmp = &table.Table{}
 	ss.TrialTypeSet = map[string]int{}
 	ss.GlobalTrialTypeSet = map[string]int{}
 	ss.simOneTimeInit.Do(func() {
@@ -457,7 +457,7 @@ func (ss *Sim) NotifyStopped() {
 }
 
 // configure output data tables
-func (ss *Sim) ConfigCycleOutputData(dt *etable.Table) {
+func (ss *Sim) ConfigCycleOutputData(dt *table.Table) {
 	dt.SetMetaData("name", "CycleOutputData")
 	dt.SetMetaData("desc", "Cycle-level output data")
 	dt.SetMetaData("read-only", "true")
@@ -502,15 +502,15 @@ func (ss *Sim) ConfigCycleOutputData(dt *etable.Table) {
 	}
 	ss.CycleOutputMetadata = make(map[string][]string, len(floatCols))
 
-	sch := etable.Schema{}
-	sch = append(sch, etable.Column{Name: "Cycle", Type: etensor.INT32})
-	sch = append(sch, etable.Column{Name: "GlobalStep", Type: etensor.INT32})
+	sch := table.Schema{}
+	sch = append(sch, table.Column{Name: "Cycle", Type: tensor.INT32})
+	sch = append(sch, table.Column{Name: "GlobalStep", Type: tensor.INT32})
 	for _, colName := range floatCols {
 		parts := strings.Split(colName, "_")
 		idx := parts[1]
 		val := parts[2]
 		var md []string
-		sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64})
+		sch = append(sch, table.Column{Name: colName, Type: tensor.FLOAT64})
 		md = append(md, val)
 		md = append(md, idx)
 		ss.CycleOutputMetadata[colName] = md
@@ -518,11 +518,11 @@ func (ss *Sim) ConfigCycleOutputData(dt *etable.Table) {
 	dt.SetFromSchema(sch, ss.CycleOutputDataRows)
 }
 
-func (ss *Sim) ConfigCycleOutputDataPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigCycleOutputDataPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "CycleOutputData"
 	plt.Params.XAxisCol = "GlobalStep"
 	plt.Params.XAxisLabel = "Cycle"
-	plt.Params.Type = eplot.XY
+	plt.Params.Type = plot.XY
 	plt.SetTable(dt)
 
 	for iCol := range dt.ColNames {
@@ -531,28 +531,28 @@ func (ss *Sim) ConfigCycleOutputDataPlot(plt *eplot.Plot2D, dt *etable.Table) *e
 		var colMin, colMax float64
 		switch colName {
 		case "Cycle":
-			colOnOff = eplot.Off
-			colFixMin = eplot.FixMin
+			colOnOff = plot.Off
+			colFixMin = plot.FixMin
 			colMin = 0
-			colFixMax = eplot.FixMax
+			colFixMax = plot.FixMax
 			colMax = 99
 		case "GlobalStep":
-			colOnOff = eplot.Off
-			colFixMin = eplot.FixMin
+			colOnOff = plot.Off
+			colFixMin = plot.FixMin
 			colMin = 0
-			colFixMax = eplot.FixMax
+			colFixMax = plot.FixMax
 			colMax = float64(dt.Rows - 1)
 		case "StimIn_0_Act", "ContextIn_0_Act", "PosPV_0_Act":
-			colOnOff = eplot.Off
-			colFixMin = eplot.FixMin
+			colOnOff = plot.Off
+			colFixMin = plot.FixMin
 			colMin = -1.25
-			colFixMax = eplot.FixMax
+			colFixMax = plot.FixMax
 			colMax = 1.25
 		default:
-			colOnOff = eplot.Off
-			colFixMin = eplot.FixMin
+			colOnOff = plot.Off
+			colFixMin = plot.FixMin
 			colMin = -1.25
-			colFixMax = eplot.FixMax
+			colFixMax = plot.FixMax
 			colMax = 1.25
 		}
 		plt.SetColParams(colName, colOnOff, colFixMin, colMin, colFixMax, colMax)
@@ -574,12 +574,12 @@ func (ss *Sim) ConfigTrialTypeTables(nRows int) {
 // end output data config
 
 // configure plots
-func (ss *Sim) ConfigTrialTypeBlockFirstLog(dt *etable.Table, name string, nRows int) {
+func (ss *Sim) ConfigTrialTypeBlockFirstLog(dt *table.Table, name string, nRows int) {
 	dt.SetMetaData("name", name)
 	dt.SetMetaData("desc", "Multi-block monitor")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-	sch := etable.Schema{}
+	sch := table.Schema{}
 
 	colNames := []string{
 		"GlobalTrialBlock", "VTAp_act", "BLAmygD1_US0_act", "BLAmygD2_US0_act",
@@ -589,16 +589,16 @@ func (ss *Sim) ConfigTrialTypeBlockFirstLog(dt *etable.Table, name string, nRows
 
 	for _, colName := range colNames {
 		if colName == "GlobalTrialBlock" {
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.INT64})
+			sch = append(sch, table.Column{Name: colName, Type: tensor.INT64})
 		} else {
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64, CellShape: []int{nRows, 1}, DimNames: []string{"Tick", "Value"}})
+			sch = append(sch, table.Column{Name: colName, Type: tensor.FLOAT64, CellShape: []int{nRows, 1}, DimNames: []string{"Tick", "Value"}})
 		}
 	}
 	dt.SetFromSchema(sch, nRows)
 	dt.SetNumRows(nRows)
 }
 
-func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
+func (ss *Sim) ConfigTrialTypeData(dt *table.Table) {
 	dt.SetMetaData("name", "TrialTypeData")
 	dt.SetMetaData("desc", "Plot of activations for different trial types")
 	dt.SetMetaData("read-only", "true")
@@ -616,60 +616,60 @@ func (ss *Sim) ConfigTrialTypeData(dt *etable.Table) {
 		"CElAcqNegD2_US0_act", "CElExtNegD1_US0_act",
 		"CEmPos_US0_act", "VTAn_act",
 	}
-	sch := etable.Schema{}
+	sch := table.Schema{}
 
 	for _, colName := range colNames {
 		if colName == "TrialType" {
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.STRING})
+			sch = append(sch, table.Column{Name: colName, Type: tensor.STRING})
 		} else {
-			sch = append(sch, etable.Column{Name: colName, Type: etensor.FLOAT64})
+			sch = append(sch, table.Column{Name: colName, Type: tensor.FLOAT64})
 		}
 	}
 	dt.SetFromSchema(sch, len(ss.TrialTypeSet))
 }
 
-func (ss *Sim) ConfigTrialTypeDataPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigTrialTypeDataPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "TrialTypeData"
 	plt.Params.XAxisCol = "TrialType"
 	plt.Params.XAxisLabel = " "
 	plt.Params.XAxisRot = 45.0
-	plt.Params.Type = eplot.XY
+	plt.Params.Type = plot.XY
 	plt.Params.LineWidth = 1.25
 	plt.SetTable(dt)
 
 	for _, colName := range dt.ColNames {
 		var colOnOff, colFixMin, colFixMax bool
 		var colMin, colMax float64
-		colFixMin = eplot.FixMin
+		colFixMin = plot.FixMin
 		colMin = -2
-		colFixMax = eplot.FixMax
+		colFixMax = plot.FixMax
 		colMax = 2
 		switch colName {
 		case "VTAp_act", "CElAcqPosD1_US0_act", "VSPatchPosD1_US0_act", "VSPatchPosD2_US0_act", "LHbRMTg_act":
-			colOnOff = eplot.On
+			colOnOff = plot.On
 		default:
-			colOnOff = eplot.Off
+			colOnOff = plot.Off
 		}
 		plt.SetColParams(colName, colOnOff, colFixMin, colMin, colFixMax, colMax)
 	}
 	return plt
 }
 
-func (ss *Sim) ConfigTrialTypeBlockFirstPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigTrialTypeBlockFirstPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "All Trial Blocks"
 	plt.Params.XAxisCol = "GlobalTrialBlock"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("GlobalTrialBlock", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 1)
+	plt.SetColParams("GlobalTrialBlock", plot.Off, plot.FixMin, 0, plot.FloatMax, 1)
 	for _, colNm := range []string{"VTAp_act",
 		"BLAmygD2_US0_act", "BLAmygD1_US0_act",
 		"CElAcqPosD1_US0_act", "CElExtPosD2_US0_act",
 		"VSMatrixPosD1_US0_act", "VSMatrixPosD2_US0_act", "CElAcqNegD2_US0_act"} {
-		plt.SetColParams(colNm, eplot.Off, eplot.FixMin, -1, eplot.FixMax, 1)
+		plt.SetColParams(colNm, plot.Off, plot.FixMin, -1, plot.FixMax, 1)
 		cp := plt.ColParams(colNm)
 		cp.TensorIndex = -1
 		if colNm == "VTAp_act" {
-			cp.On = eplot.On
+			cp.On = plot.On
 		}
 	}
 
@@ -761,32 +761,32 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	})
 	cb.SetCurValue(ss.RunParamsNm)
 
-	eplot.PlotColorNames = []string{ // these are set to give a good set of colors in the TrialTypeData plot
+	plot.PlotColorNames = []string{ // these are set to give a good set of colors in the TrialTypeData plot
 		"yellow", "black", "blue", "red", "ForestGreen", "lightgreen", "purple", "orange", "brown", "navy",
 		"cyan", "magenta", "tan", "salmon", "blue", "SkyBlue", "pink", "chartreuse"}
 
-	plt := tv.AddNewTab(eplot.KiT_Plot2D, "TrialTypeData").(*eplot.Plot2D)
+	plt := tv.AddNewTab(plot.KiT_Plot2D, "TrialTypeData").(*plot.Plot2D)
 	ss.TrialTypeDataPlot = ss.ConfigTrialTypeDataPlot(plt, ss.TrialTypeData)
 
 	frm := tv.AddNewTab(core.KiT_Frame, "TrialTypeBlockFirst").(*core.Frame)
 	frm.Lay = core.LayoutVert
 	frm.SetStretchMax()
-	pltCmp := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst_cmp").(*eplot.Plot2D)
-	pltLower := frm.AddNewChild(eplot.KiT_Plot2D, "TrialTypeBlockFirst").(*eplot.Plot2D)
+	pltCmp := frm.AddNewChild(plot.KiT_Plot2D, "TrialTypeBlockFirst_cmp").(*plot.Plot2D)
+	pltLower := frm.AddNewChild(plot.KiT_Plot2D, "TrialTypeBlockFirst").(*plot.Plot2D)
 	ss.TrialTypeBlockFirst = ss.ConfigTrialTypeBlockFirstPlot(pltLower, ss.TrialTypeBlockFirstLog)
 	ss.TrialTypeBlockFirstCmp = ss.ConfigTrialTypeBlockFirstPlot(pltCmp, ss.TrialTypeBlockFirstLogCmp)
 
-	//plt = tv.AddNewTab(eplot.KiT_Plot2D, "HistoryGraph").(*eplot.Plot2D)
+	//plt = tv.AddNewTab(plot.KiT_Plot2D, "HistoryGraph").(*plot.Plot2D)
 	//ss.HistoryGraph = ss.ConfigHistoryGraph(plt, ss.HistoryGraphData)
 	//
-	//plt = tv.AddNewTab(eplot.KiT_Plot2D, "RealTimeData").(*eplot.Plot2D)
+	//plt = tv.AddNewTab(plot.KiT_Plot2D, "RealTimeData").(*plot.Plot2D)
 	//ss.RealTimeData = ss.ConfigRealTimeData(plt, ss.RealTimeDataLog)
 
 	input := tv.AddNewTab(etview.KiT_TableView, "StdInputData").(*etview.TableView)
 	input.SetName("StdInputData")
 	input.SetTable(ss.Env.StdInputData, nil)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "CycleOutputData").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "CycleOutputData").(*plot.Plot2D)
 	ss.CycleDataPlot = ss.ConfigCycleOutputDataPlot(plt, ss.CycleOutputData)
 
 	split.SetSplits(.3, .7)
@@ -1126,13 +1126,13 @@ func (ss *Sim) ParamsName() string {
 // 		Logging
 
 // ValuesTsr gets value tensor of given name, creating if not yet made
-func (ss *Sim) ValuesTsr(name string) *etensor.Float32 {
+func (ss *Sim) ValuesTsr(name string) *tensor.Float32 {
 	if ss.ValuesTsrs == nil {
-		ss.ValuesTsrs = make(map[string]*etensor.Float32)
+		ss.ValuesTsrs = make(map[string]*tensor.Float32)
 	}
 	tsr, ok := ss.ValuesTsrs[name]
 	if !ok {
-		tsr = &etensor.Float32{}
+		tsr = &tensor.Float32{}
 		ss.ValuesTsrs[name] = tsr
 	}
 	return tsr

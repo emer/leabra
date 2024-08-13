@@ -30,7 +30,7 @@ type TopoInhib struct {
 	LayGi float32
 
 	// gaussian weights as function of distance, precomputed.  index 0 = dist 1
-	Wts []float32 `inactive:"+"`
+	Wts []float32 `edit:"-"`
 }
 
 func (ti *TopoInhib) Defaults() {
@@ -73,8 +73,8 @@ func (ly *TopoInhibLayer) UpdateParams() {
 
 // TopoGiPos returns position-specific Gi contribution
 func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+	pyn := ly.Shape.Dim(0)
+	pxn := ly.Shape.Dim(1)
 	if py < 0 || py >= pyn {
 		return 0
 	}
@@ -89,8 +89,8 @@ func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
 
 // TopoGi computes topographic Gi between pools
 func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+	pyn := ly.Shape.Dim(0)
+	pxn := ly.Shape.Dim(1)
 	wd := ly.TopoInhib.Width
 
 	laymax := float32(0)

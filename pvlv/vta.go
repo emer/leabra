@@ -54,7 +54,7 @@ type VTALayer struct {
 	TonicDA float32
 
 	// gains for various VTA inputs
-	DAGains  VTADAGains `view:"inline"`
+	DAGains  VTADAGains `display:"inline"`
 	RecvFrom map[string]emer.Layer
 
 	// input values--for debugging only
@@ -91,7 +91,7 @@ func (ly *VTALayer) Build() error {
 		"VSPatchNegD1", "VSPatchNegD2"} {
 		ly.RecvFrom[lyNm] = net.LayerByName(lyNm).(leabra.LeabraLayer).AsLeabra()
 	}
-	nu := ly.Shp.Len()
+	nu := ly.Shape.Len()
 	if nu == 0 {
 		return fmt.Errorf("build Layer %v: no units specified in Shape", ly.Name)
 	}

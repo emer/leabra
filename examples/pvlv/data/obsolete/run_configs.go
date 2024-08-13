@@ -4,39 +4,39 @@
 
 package obsolete
 
-//func (ss *Sim) RunConfigs() *etable.Table {
+//func (ss *Sim) RunConfigs() *table.Table {
 //	allConfigs := AllRunConfigs()
-//	sch := etable.Schema{
-//		{"ConfigId", etensor.STRING, nil, nil}, // identifier for this type of configuration
-//		{"Desc", etensor.STRING, nil, nil}, // description of this configuration
-//		{"Users", etensor.STRING, nil, nil}, // users of this particular config_id can add name if they wish to be informed/involved in changes etc. so others know who to coordinate changes with, ask questions of, etc.; main user(s)/quasi-owner(s) should be listed first KEY: TH = Thomas Hazy;
-//		{"ConfigSeqList", etensor.STRING, nil, nil}, // to run multiple other configurations in order, list them here by name, with space between, and leave env_params_table empty
-//		{"EnvParamsNm", etensor.STRING, nil, nil}, // Which table of parameters from the EnvParams group to use in generating environmental events to be presented to the network.  Environental events can be statically or dynamically generated and, if the latter, can involve environmental "reactions" to the network's last output.
-//		{"FixedProb", etensor.BOOl, nil, nil}, // general purpose bool-like param to use when one wants to use exact probabilities; comes in handy for de-bugging, etc.
-//		{"StartupProg", etensor.STRING, nil}, nil}, // program for handling startup args specific to this environment
-//		{"InitProg", etensor.STRING, nil, nil}, // program to run to initialize at start of training
-//		{"RunProg", etensor.STRING, nil, nil}, // program controlling each step of running
-//		{"EnvProg", etensor.STRING, nil, nil}, // program to set up environment for this configuration
-//		{"TrainEpochs", etensor.INT, nil, nil}, // number of total epochs to train for
-//		{"UseTrialGp", etensor.BOOl, nil, nil}, // If true uses eco_trials_per_epoch as master; ELSE uses trials_per_epoch - avoids confusion since these two are logically interdependent. network.group member can be used to index and count the number of eco trials.
-//		{"TrialGpsPerEpoch", etensor.INT, nil, nil}, // If used (use_eco == true), assigns the number of ecologically defined trials per epoch.  Thus, the eco_trial becomes the dominant "trial" of reference. An eco trial is defined as two or more conventional Leabra-like trials in sequence. This concept is meant to capture the temporally extended nature of most learning episodes under ecological conditions. Eco trials can be tracked by the network variable network.group.
-//		{"PermuteTrialGps", etensor.BOOl, nil, nil}, // permute list of TrialInstance-level trials after generation
-//		{"TrialsPerEpoch", etensor.INT, nil, nil}, // number of trials per epoch
-//		{"SaveFinalWts", etensor.BOOl, nil, nil}, // save final weights after training
-//		{"SaveWeightsInterval", etensor.INT, nil, nil}, // how frequently to save weights during training (in epochs)
-//		{"TestInterval", etensor.INT, nil, nil}, // how frequently to test performance without training -- only applicable to training cases
-//		{"LogTrials", etensor.BOOl, nil, nil}, // whether to log trial-level data or not
-//		{"LoadWeights", etensor.BOOl, nil, nil}, // whether to load weights at start -- for sequences of configs, this loads weights from previous step in sequence instead of using named file
-//		{"WeightsFile", etensor.STRING, nil, nil}, // full relative path (from project) to a weights file to load at start of training
-//		{"LoadStEpc", etensor.INT, nil, nil}, // if loading weights, what epoch does it start at?
-//		{"LrsStepEpochs", etensor.INT, nil, nil}, // how many epochs per given step in the lrate schedule: each step drops the lrate roughly in half (log scale)
+//	sch := table.Schema{
+//		{"ConfigId", tensor.STRING, nil, nil}, // identifier for this type of configuration
+//		{"Desc", tensor.STRING, nil, nil}, // description of this configuration
+//		{"Users", tensor.STRING, nil, nil}, // users of this particular config_id can add name if they wish to be informed/involved in changes etc. so others know who to coordinate changes with, ask questions of, etc.; main user(s)/quasi-owner(s) should be listed first KEY: TH = Thomas Hazy;
+//		{"ConfigSeqList", tensor.STRING, nil, nil}, // to run multiple other configurations in order, list them here by name, with space between, and leave env_params_table empty
+//		{"EnvParamsNm", tensor.STRING, nil, nil}, // Which table of parameters from the EnvParams group to use in generating environmental events to be presented to the network.  Environental events can be statically or dynamically generated and, if the latter, can involve environmental "reactions" to the network's last output.
+//		{"FixedProb", tensor.BOOl, nil, nil}, // general purpose bool-like param to use when one wants to use exact probabilities; comes in handy for de-bugging, etc.
+//		{"StartupProg", tensor.STRING, nil}, nil}, // program for handling startup args specific to this environment
+//		{"InitProg", tensor.STRING, nil, nil}, // program to run to initialize at start of training
+//		{"RunProg", tensor.STRING, nil, nil}, // program controlling each step of running
+//		{"EnvProg", tensor.STRING, nil, nil}, // program to set up environment for this configuration
+//		{"TrainEpochs", tensor.INT, nil, nil}, // number of total epochs to train for
+//		{"UseTrialGp", tensor.BOOl, nil, nil}, // If true uses eco_trials_per_epoch as master; ELSE uses trials_per_epoch - avoids confusion since these two are logically interdependent. network.group member can be used to index and count the number of eco trials.
+//		{"TrialGpsPerEpoch", tensor.INT, nil, nil}, // If used (use_eco == true), assigns the number of ecologically defined trials per epoch.  Thus, the eco_trial becomes the dominant "trial" of reference. An eco trial is defined as two or more conventional Leabra-like trials in sequence. This concept is meant to capture the temporally extended nature of most learning episodes under ecological conditions. Eco trials can be tracked by the network variable network.group.
+//		{"PermuteTrialGps", tensor.BOOl, nil, nil}, // permute list of TrialInstance-level trials after generation
+//		{"TrialsPerEpoch", tensor.INT, nil, nil}, // number of trials per epoch
+//		{"SaveFinalWts", tensor.BOOl, nil, nil}, // save final weights after training
+//		{"SaveWeightsInterval", tensor.INT, nil, nil}, // how frequently to save weights during training (in epochs)
+//		{"TestInterval", tensor.INT, nil, nil}, // how frequently to test performance without training -- only applicable to training cases
+//		{"LogTrials", tensor.BOOl, nil, nil}, // whether to log trial-level data or not
+//		{"LoadWeights", tensor.BOOl, nil, nil}, // whether to load weights at start -- for sequences of configs, this loads weights from previous step in sequence instead of using named file
+//		{"WeightsFile", tensor.STRING, nil, nil}, // full relative path (from project) to a weights file to load at start of training
+//		{"LoadStEpc", tensor.INT, nil, nil}, // if loading weights, what epoch does it start at?
+//		{"LrsStepEpochs", tensor.INT, nil, nil}, // how many epochs per given step in the lrate schedule: each step drops the lrate roughly in half (log scale)
 //	}
 //
-//	dt := etable.New(sch, len(*allConfigs))
+//	dt := table.New(sch, len(*allConfigs))
 //
 //	for i, config := range *allConfigs {
 //		for j, key := range dt.ColNames {
-//			//tens := etensor.NewInt(shape: []int{1}, strides: nil, names: []string{key}, &config[key])
+//			//tens := tensor.NewInt(shape: []int{1}, strides: nil, names: []string{key}, &config[key])
 //			dt.SetCellFloat()
 //		}
 //	}

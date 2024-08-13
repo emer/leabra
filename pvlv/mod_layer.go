@@ -13,8 +13,7 @@ import (
 	"strconv"
 
 	"cogentcore.org/core/math32"
-	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/etable/v2/minmax"
+	"cogentcore.org/core/tensor/minmax"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -81,7 +80,7 @@ type DaModParams struct {
 	On bool
 
 	// dopamine receptor type, D1 or D2
-	RecepType DaRType `inactive:"+"`
+	RecepType DaRType `edit:"-"`
 
 	// multiplicative gain factor applied to positive dopamine signals -- this operates on the raw dopamine signal prior to any effect of D2 receptors in reversing its sign!
 	BurstGain float32
@@ -504,14 +503,14 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 			continue
 		}
 		pj := p.(leabra.LeabraPath).AsLeabra()
-		slay := p.SendLay().(leabra.LeabraLayer).AsLeabra()
+		slay := p.Send.(leabra.LeabraLayer).AsLeabra()
 		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
 		ncon := pj.RConNAvgMax.Avg
 		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
-		switch pj.Typ {
-		case emer.Inhib:
+		switch pj.Type {
+		case InhibPath:
 			totGiRel += pj.WtScale.Rel
 		default:
 			totGeRel += pj.WtScale.Rel
@@ -526,8 +525,8 @@ func (ly *ModLayer) GScaleFmAvgAct() {
 			continue
 		}
 		pj := p.(leabra.LeabraPath).AsLeabra()
-		switch pj.Typ {
-		case emer.Inhib:
+		switch pj.Type {
+		case InhibPath:
 			if totGiRel > 0 {
 				pj.GScale /= totGiRel
 			}

@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/path"
-	"github.com/emer/etable/v2/etensor"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -23,7 +23,7 @@ import (
 const difTol = float32(1.0e-5)
 
 var TestNet Network
-var InPats *etensor.Float32
+var InPats *tensor.Float32
 
 // number of distinct sets of learning parameters to test
 const NLrnPars = 4
@@ -84,7 +84,7 @@ func TestMakeNet(t *testing.T) {
 
 	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
 	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), emer.Back)
+	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
@@ -106,7 +106,7 @@ func TestMakeNet(t *testing.T) {
 }
 
 func TestInPats(t *testing.T) {
-	InPats = etensor.NewFloat32([]int{4, 4, 1}, nil, []string{"pat", "Y", "X"})
+	InPats = tensor.NewFloat32([]int{4, 4, 1}, nil, []string{"pat", "Y", "X"})
 	for pi := 0; pi < 4; pi++ {
 		InPats.Set([]int{pi, pi, 0}, 1)
 	}

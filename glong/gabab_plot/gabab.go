@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// eqplot plots an equation updating over time in a etable.Table and Plot2D.
+// eqplot plots an equation updating over time in a table.Table and Plot2D.
 // This is a good starting point for any plotting to explore specific equations.
 // This example plots a double exponential (biexponential) model of synaptic currents.
 package main
@@ -13,10 +13,10 @@ import (
 
 	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/plot"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tree"
-	"github.com/emer/etable/v2/eplot"
-	"github.com/emer/etable/v2/etable"
-	"github.com/emer/etable/v2/etensor"
 )
 
 func main() {
@@ -68,10 +68,10 @@ type Sim struct {
 	GsXInit float64
 
 	// time when peak conductance occurs, in TimeInc units
-	MaxTime float64 `inactive:"+"`
+	MaxTime float64 `edit:"-"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float64 `inactive:"+"`
+	TauFact float64 `edit:"-"`
 
 	// total number of time steps to take
 	TimeSteps int
@@ -80,22 +80,22 @@ type Sim struct {
 	TimeInc float64
 
 	// table for plot
-	VGTable *etable.Table `view:"no-inline"`
+	VGTable *table.Table `display:"no-inline"`
 
 	// table for plot
-	SGTable *etable.Table `view:"no-inline"`
+	SGTable *table.Table `display:"no-inline"`
 
 	// table for plot
-	TimeTable *etable.Table `view:"no-inline"`
+	TimeTable *table.Table `display:"no-inline"`
 
 	// the plot
-	VGPlot *eplot.Plot2D `display:"-"`
+	VGPlot *plot.Plot2D `display:"-"`
 
 	// the plot
-	SGPlot *eplot.Plot2D `display:"-"`
+	SGPlot *plot.Plot2D `display:"-"`
 
 	// the plot
-	TimePlot *eplot.Plot2D `display:"-"`
+	TimePlot *plot.Plot2D `display:"-"`
 
 	// main GUI window
 	Win *core.Window `display:"-"`
@@ -123,13 +123,13 @@ func (ss *Sim) Config() {
 	ss.TimeInc = .001
 	ss.Update()
 
-	ss.VGTable = &etable.Table{}
+	ss.VGTable = &table.Table{}
 	ss.ConfigVGTable(ss.VGTable)
 
-	ss.SGTable = &etable.Table{}
+	ss.SGTable = &table.Table{}
 	ss.ConfigSGTable(ss.SGTable)
 
-	ss.TimeTable = &etable.Table{}
+	ss.TimeTable = &table.Table{}
 	ss.ConfigTimeTable(ss.TimeTable)
 }
 
@@ -158,25 +158,25 @@ func (ss *Sim) VGRun() {
 	ss.VGPlot.Update()
 }
 
-func (ss *Sim) ConfigVGTable(dt *etable.Table) {
+func (ss *Sim) ConfigVGTable(dt *table.Table) {
 	dt.SetMetaData("name", "EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"V", etensor.FLOAT64, nil, nil},
-		{"g_GABAb", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"V", tensor.FLOAT64, nil, nil},
+		{"g_GABAb", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigVGPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigVGPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "V-G Function Plot"
 	plt.Params.XAxisCol = "V"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("V", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("g_GABAb", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("V", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("g_GABAb", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -200,25 +200,25 @@ func (ss *Sim) SGRun() {
 	ss.SGPlot.Update()
 }
 
-func (ss *Sim) ConfigSGTable(dt *etable.Table) {
+func (ss *Sim) ConfigSGTable(dt *table.Table) {
 	dt.SetMetaData("name", "SG_EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"S", etensor.FLOAT64, nil, nil},
-		{"gmax_GABAb", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"S", tensor.FLOAT64, nil, nil},
+		{"gmax_GABAb", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigSGPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigSGPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "S-G Function Plot"
 	plt.Params.XAxisCol = "S"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("S", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("gmax_GABAb", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("S", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("gmax_GABAb", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -248,27 +248,27 @@ func (ss *Sim) TimeRun() {
 	ss.TimePlot.Update()
 }
 
-func (ss *Sim) ConfigTimeTable(dt *etable.Table) {
+func (ss *Sim) ConfigTimeTable(dt *table.Table) {
 	dt.SetMetaData("name", "TimeEqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"Time", etensor.FLOAT64, nil, nil},
-		{"Gs", etensor.FLOAT64, nil, nil},
-		{"GsX", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"Time", tensor.FLOAT64, nil, nil},
+		{"Gs", tensor.FLOAT64, nil, nil},
+		{"GsX", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigTimePlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigTimePlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "G Time Function Plot"
 	plt.Params.XAxisCol = "Time"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Time", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Gs", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("GsX", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Time", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("Gs", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("GsX", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -303,13 +303,13 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	tv := core.AddNewTabView(split, "tv")
 
-	plt := tv.AddNewTab(eplot.KiT_Plot2D, "VGPlot").(*eplot.Plot2D)
+	plt := tv.AddNewTab(plot.KiT_Plot2D, "VGPlot").(*plot.Plot2D)
 	ss.VGPlot = ss.ConfigVGPlot(plt, ss.VGTable)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "SGPlot").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "SGPlot").(*plot.Plot2D)
 	ss.SGPlot = ss.ConfigSGPlot(plt, ss.SGTable)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TimePlot").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "TimePlot").(*plot.Plot2D)
 	ss.TimePlot = ss.ConfigTimePlot(plt, ss.TimeTable)
 
 	split.SetSplits(.3, .7)

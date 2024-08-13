@@ -19,7 +19,7 @@ type CHLParams struct {
 	Hebb float32 `def:"0.001" min:"0" max:"1"`
 
 	// amount of error driven learning, automatically computed to be 1-Hebb
-	Err float32 `def:"0.999" min:"0" max:"1" inactive:"+"`
+	Err float32 `def:"0.999" min:"0" max:"1" edit:"-"`
 
 	// if true, use ActQ1 as the minus phase -- otherwise ActM
 	MinusQ1 bool
@@ -85,7 +85,7 @@ type CHLPath struct {
 	leabra.Path // access as .Path
 
 	// parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible
-	CHL CHLParams `view:"inline"`
+	CHL CHLParams `display:"inline"`
 }
 
 func (pj *CHLPath) Defaults() {

@@ -15,7 +15,7 @@ type ActParams struct {
 	leabra.ActParams
 
 	// spiking parameters
-	Spike SpikeParams `view:"inline"`
+	Spike SpikeParams `display:"inline"`
 }
 
 func (sk *ActParams) Defaults() {

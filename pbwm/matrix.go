@@ -74,7 +74,7 @@ type MatrixLayer struct {
 	DaR DaReceptors
 
 	// matrix parameters
-	Matrix MatrixParams `view:"inline"`
+	Matrix MatrixParams `display:"inline"`
 
 	// slice of MatrixNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
 	MatrixNeurs []MatrixNeuron
@@ -198,15 +198,15 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 		return
 	}
 
-	ypN := ly.Shp.Dim(0)
-	xpN := ly.Shp.Dim(1)
-	ynN := ly.Shp.Dim(2)
-	xnN := ly.Shp.Dim(3)
+	ypN := ly.Shape.Dim(0)
+	xpN := ly.Shape.Dim(1)
+	ynN := ly.Shape.Dim(2)
+	xnN := ly.Shape.Dim(3)
 	for yp := 0; yp < ypN; yp++ {
 		for xp := ly.MaintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
 				for xn := 0; xn < xnN; xn++ {
-					ni := ly.Shp.Offset([]int{yp, xp, yn, xn})
+					ni := ly.Shape.Offset([]int{yp, xp, yn, xn})
 					nrn := &ly.Neurons[ni]
 					if nrn.Off {
 						continue

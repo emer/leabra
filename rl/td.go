@@ -19,7 +19,7 @@ type TDRewPredLayer struct {
 	leabra.Layer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+"`
+	DA float32 `edit:"-"`
 }
 
 // DALayer interface:
