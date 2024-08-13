@@ -94,19 +94,19 @@ type Sim struct {
 	Env PVLVEnv
 
 	// stepping menu layout. Default is one button, true means original "wide" setup
-	devMenuSetup bool `view:"-" desc:"stepping menu layout. Default is one button, true means original \"wide\" setup"`
+	devMenuSetup bool `display:"-" desc:"stepping menu layout. Default is one button, true means original \"wide\" setup"`
 
 	// number of StopStepGrain steps to execute before stopping
-	StepsToRun int `view:"-"`
+	StepsToRun int `display:"-"`
 
 	//
-	nStepsBox *core.SpinBox `view:"-"`
+	nStepsBox *core.SpinBox `display:"-"`
 
 	// saved number of StopStepGrain steps to execute before stopping
-	OrigSteps int `view:"-"`
+	OrigSteps int `display:"-"`
 
 	// granularity for the Step command
-	StepGrain StepGrain `view:"-"`
+	StepGrain StepGrain `display:"-"`
 
 	// granularity for conditional stop
 	StopStepCondition StopStepCond
@@ -115,10 +115,10 @@ type Sim struct {
 	StopConditionTrialNameString string
 
 	// number of times we've hit whatever StopStepGrain is set to'
-	StopStepCounter env.Ctr `inactive:"+" view:"-"`
+	StopStepCounter env.Counter `inactive:"+" display:"-"`
 
 	// running from Step command?
-	StepMode bool `view:"-"`
+	StepMode bool `display:"-"`
 
 	// testing mode, no training
 	TestMode bool `inactive:"+"`
@@ -146,7 +146,7 @@ type Sim struct {
 	CycleDataPlot *eplot.Plot2D `view:"no-inline"`
 
 	//
-	CycleOutputMetadata map[string][]string `view:"-"`
+	CycleOutputMetadata map[string][]string `display:"-"`
 
 	// current block within current run phase
 	TimeLogBlock int
@@ -167,22 +167,22 @@ type Sim struct {
 	TestUpdate leabra.TimeScales
 
 	// names of layers to record activations etc of during testing
-	TstRecLays []string `view:"-"`
+	TstRecLays []string `display:"-"`
 
 	// how to treat multi-part contexts. elemental=all parts, conjunctive=single context encodes parts, both=parts plus conjunctively encoded
 	ContextModel ContextModel
 
 	// main GUI window
-	Win *core.Window `view:"-"`
+	Win *core.Window `display:"-"`
 
 	// the network viewer
-	NetView *netview.NetView `view:"-"`
+	NetView *netview.NetView `display:"-"`
 
 	// the master toolbar
-	ToolBar *core.ToolBar `view:"-"`
+	ToolBar *core.ToolBar `display:"-"`
 
 	// the weights grid view
-	WtsGrid *etview.TensorGrid `view:"-"`
+	WtsGrid *etview.TensorGrid `display:"-"`
 
 	// data for the TrialTypeData plot
 	TrialTypeData *etable.Table `view:"no-inline"`
@@ -200,76 +200,76 @@ type Sim struct {
 	TrialTypeDataPerBlock bool
 
 	//
-	TrialTypeSet map[string]int `view:"-"`
+	TrialTypeSet map[string]int `display:"-"`
 
 	//
-	GlobalTrialTypeSet map[string]int `view:"-"`
+	GlobalTrialTypeSet map[string]int `display:"-"`
 
 	// block plot
-	TrialTypeBlockFirst *eplot.Plot2D `view:"-"`
+	TrialTypeBlockFirst *eplot.Plot2D `display:"-"`
 
 	// block plot
-	TrialTypeBlockFirstCmp *eplot.Plot2D `view:"-"`
+	TrialTypeBlockFirstCmp *eplot.Plot2D `display:"-"`
 
 	// trial history
-	HistoryGraph *eplot.Plot2D `view:"-"`
+	HistoryGraph *eplot.Plot2D `display:"-"`
 
 	// ??
-	RealTimeData *eplot.Plot2D `view:"-"`
+	RealTimeData *eplot.Plot2D `display:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWeights bool `view:"-"`
+	SaveWeights bool `display:"-"`
 
 	// if true, runing in no GUI mode
-	NoGui bool `view:"-"`
+	NoGui bool `display:"-"`
 
 	// the current random seed
 	RndSeed int64
 
 	//
-	Stepper *stepper.Stepper `view:"-"`
+	Stepper *stepper.Stepper `display:"-"`
 
 	//
-	SimHasRun bool `view:"-"`
+	SimHasRun bool `display:"-"`
 
 	//
-	IsRunning bool `view:"-"`
+	IsRunning bool `display:"-"`
 
 	//
-	InitHasRun bool `view:"-"`
+	InitHasRun bool `display:"-"`
 
 	//
-	VerboseInit bool `view:"-"`
+	VerboseInit bool `display:"-"`
 
 	// use per-layer threads
 	LayerThreads bool
 
 	//
-	TrialTypeBlockFirstLogged map[string]bool `view:"-"`
+	TrialTypeBlockFirstLogged map[string]bool `display:"-"`
 
 	// the run plot
-	RunPlot *eplot.Plot2D `view:"-"`
+	RunPlot *eplot.Plot2D `display:"-"`
 
 	// log file
-	TrnEpcFile *os.File `view:"-"`
+	TrnEpcFile *os.File `display:"-"`
 
 	// log file
-	RunFile *os.File `view:"-"`
+	RunFile *os.File `display:"-"`
 
 	// for holding layer values
-	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
+	ValuesTsrs map[string]*etensor.Float32 `display:"-"`
 
 	// if true, print message for all params that are set
-	LogSetParams bool `view:"-"`
+	LogSetParams bool `display:"-"`
 
 	// true iff running through the GUI
-	Interactive bool `view:"-"`
+	Interactive bool `display:"-"`
 
 	// structure view for this struct
-	StructView *views.StructView `view:"-"`
+	StructView *views.StructView `display:"-"`
 
 	//
-	InputShapes map[string][]int `view:"-"`
+	InputShapes map[string][]int `display:"-"`
 
 	// master list of RunParams records
 	MasterRunParams data.RunParamsMap `view:"no-inline"`
@@ -281,7 +281,7 @@ type Sim struct {
 	MasterTrialBlockParams data.TrialBlockMap
 
 	// maximum number of conditions to run through
-	MaxConditions  int `view:"-"`
+	MaxConditions  int `display:"-"`
 	simOneTimeInit sync.Once
 }
 
@@ -1559,7 +1559,7 @@ func GetLeabraMonitorValue(ly *leabra.Layer, data []string) float64 {
 	if err != nil {
 		fmt.Printf("string to int conversion failed for %v_%v_%v%v: \n", ly.Name(), data[1], valType, err)
 	}
-	val = ly.UnitVal1D(varIndex, unitIndex)
+	val = ly.UnitValue1D(varIndex, unitIndex)
 	return float64(val)
 }
 

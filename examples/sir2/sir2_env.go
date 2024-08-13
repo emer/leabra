@@ -75,9 +75,6 @@ type SIREnv struct {
 	Trial env.Ctr `view:"inline"`
 }
 
-func (ev *SIREnv) Name() string { return ev.Nm }
-func (ev *SIREnv) Desc() string { return ev.Dsc }
-
 // SetNStim initializes env for given number of stimuli, init states
 func (ev *SIREnv) SetNStim(n int) {
 	ev.NStim = n
@@ -92,7 +89,7 @@ func (ev *SIREnv) SetNStim(n int) {
 
 func (ev *SIREnv) Validate() error {
 	if ev.NStim <= 0 {
-		return fmt.Errorf("SIREnv: %v NStim == 0 -- must set with SetNStim call", ev.Nm)
+		return fmt.Errorf("SIREnv: %v NStim == 0 -- must set with SetNStim call", ev.Name)
 	}
 	return nil
 }

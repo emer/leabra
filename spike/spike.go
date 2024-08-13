@@ -133,7 +133,7 @@ type SpikeParams struct {
 	RateTau float32 `def:"5" min:"1"`
 
 	// rate = 1 / tau
-	RateDt float32 `view:"-"`
+	RateDt float32 `display:"-"`
 }
 
 func (sk *SpikeParams) Defaults() {

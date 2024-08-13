@@ -31,7 +31,7 @@ type GABABParams struct {
 	MaxTime float32 `inactive:"+"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float32 `view:"-"`
+	TauFact float32 `display:"-"`
 }
 
 func (gp *GABABParams) Defaults() {

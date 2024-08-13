@@ -56,7 +56,7 @@ type SelfInhibParams struct {
 	Tau float32 `viewif:"On" def:"1.4"`
 
 	// rate = 1 / tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	Dt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 func (si *SelfInhibParams) Update() {
@@ -107,7 +107,7 @@ type ActAvgParams struct {
 	Adjust float32 `viewif:"Fixed=false" def:"1"`
 
 	// rate = 1 / tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	Dt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 func (aa *ActAvgParams) Update() {

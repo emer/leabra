@@ -67,19 +67,19 @@ type Sim struct {
 	Table *etable.Table `view:"no-inline"`
 
 	// the plot
-	Plot *eplot.Plot2D `view:"-"`
+	Plot *eplot.Plot2D `display:"-"`
 
 	// table for plot
 	TimeTable *etable.Table `view:"no-inline"`
 
 	// the plot
-	TimePlot *eplot.Plot2D `view:"-"`
+	TimePlot *eplot.Plot2D `display:"-"`
 
 	// main GUI window
-	Win *core.Window `view:"-"`
+	Win *core.Window `display:"-"`
 
 	// the master toolbar
-	ToolBar *core.ToolBar `view:"-"`
+	ToolBar *core.ToolBar `display:"-"`
 }
 
 // TheSim is the overall state for this simulation

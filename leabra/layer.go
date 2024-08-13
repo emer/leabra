@@ -27,25 +27,6 @@ import (
 
 // leabra.Layer has parameters for running a basic rate-coded Leabra layer
 type Layer struct {
-	LayerBase
-
-	// Activation parameters and methods for computing activations
-	Act ActParams `view:"add-fields"`
-
-	// Inhibition parameters and methods for computing layer-level inhibition
-	Inhib InhibParams `view:"add-fields"`
-
-	// Learning parameters and methods that operate at the neuron level
-	Learn LearnNeurParams `view:"add-fields"`
-
-	// slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values.
-	Neurons []Neuron
-
-	// inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values.
-	Pools []Pool
-
-	// cosine difference between ActM, ActP stats
-	CosDiff CosDiffStats
 }
 
 // AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
@@ -132,11 +113,11 @@ func (ly *Layer) UnitVarNum() int {
 	return len(NeuronVars)
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
+func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()
 	}
@@ -166,7 +147,7 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i, di)
+		(*vals)[i] = ly.LeabraLay.UnitValue1D(vidx, i, di)
 	}
 	return nil
 }
@@ -189,7 +170,7 @@ func (ly *Layer) UnitValuesTensor(tsr etensor.Tensor, varNm string, di int) erro
 		return err
 	}
 	for i := range ly.Neurons {
-		v := ly.LeabraLay.UnitVal1D(vidx, i, di)
+		v := ly.LeabraLay.UnitValue1D(vidx, i, di)
 		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -231,7 +212,7 @@ func (ly *Layer) UnitValuesRepTensor(tsr etensor.Tensor, varNm string, di int) e
 		return err
 	}
 	for i, ui := range ly.RepIxs {
-		v := ly.LeabraLay.UnitVal1D(vidx, ui, di)
+		v := ly.LeabraLay.UnitValue1D(vidx, ui, di)
 		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -249,7 +230,7 @@ func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 		return math32.NaN()
 	}
 	fidx := ly.Shp.Offset(idx)
-	return ly.LeabraLay.UnitVal1D(vidx, fidx, di)
+	return ly.LeabraLay.UnitValue1D(vidx, fidx, di)
 }
 
 // RecvPathValues fills in values of given synapse variable name,

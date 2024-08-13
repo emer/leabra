@@ -47,34 +47,34 @@ type Params struct {
 	VmActThr float32 `def:"0.01"`
 
 	// multiplier on sigmoid used for computing values for net < thr
-	SigMult float32 `def:"0.33" view:"-" json:"-" xml:"-"`
+	SigMult float32 `def:"0.33" display:"-" json:"-" xml:"-"`
 
 	// power for computing sig_mult_eff as function of gain * nvar
-	SigMultPow float32 `def:"0.8" view:"-" json:"-" xml:"-"`
+	SigMultPow float32 `def:"0.8" display:"-" json:"-" xml:"-"`
 
 	// gain multipler on (net - thr) for sigmoid used for computing values for net < thr
-	SigGain float32 `def:"3" view:"-" json:"-" xml:"-"`
+	SigGain float32 `def:"3" display:"-" json:"-" xml:"-"`
 
 	// interpolation range above zero to use interpolation
-	InterpRange float32 `def:"0.01" view:"-" json:"-" xml:"-"`
+	InterpRange float32 `def:"0.01" display:"-" json:"-" xml:"-"`
 
 	// range in units of nvar over which to apply gain correction to compensate for convolution
-	GainCorRange float32 `def:"10" view:"-" json:"-" xml:"-"`
+	GainCorRange float32 `def:"10" display:"-" json:"-" xml:"-"`
 
 	// gain correction multiplier -- how much to correct gains
-	GainCor float32 `def:"0.1" view:"-" json:"-" xml:"-"`
+	GainCor float32 `def:"0.1" display:"-" json:"-" xml:"-"`
 
 	// sig_gain / nvar
-	SigGainNVar float32 `view:"-" json:"-" xml:"-"`
+	SigGainNVar float32 `display:"-" json:"-" xml:"-"`
 
 	// overall multiplier on sigmoidal component for values below threshold = sig_mult * pow(gain * nvar, sig_mult_pow)
-	SigMultEff float32 `view:"-" json:"-" xml:"-"`
+	SigMultEff float32 `display:"-" json:"-" xml:"-"`
 
 	// 0.5 * sig_mult_eff -- used for interpolation portion
-	SigValAt0 float32 `view:"-" json:"-" xml:"-"`
+	SigValAt0 float32 `display:"-" json:"-" xml:"-"`
 
 	// function value at interp_range - sig_val_at_0 -- for interpolation
-	InterpVal float32 `view:"-" json:"-" xml:"-"`
+	InterpVal float32 `display:"-" json:"-" xml:"-"`
 }
 
 func (xp *Params) Update() {

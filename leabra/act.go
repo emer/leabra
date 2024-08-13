@@ -52,10 +52,10 @@ type ActParams struct {
 	KNa knadapt.Params `view:"no-inline"`
 
 	// Erev - Act.Thr for each channel -- used in computing GeThrFmG among others
-	ErevSubThr chans.Chans `inactive:"+" view:"-" json:"-" xml:"-"`
+	ErevSubThr chans.Chans `inactive:"+" display:"-" json:"-" xml:"-"`
 
 	// Act.Thr - Erev for each channel -- used in computing GeThrFmG among others
-	ThrSubErev chans.Chans `inactive:"+" view:"-" json:"-" xml:"-"`
+	ThrSubErev chans.Chans `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 func (ac *ActParams) Defaults() {
@@ -347,13 +347,13 @@ type DtParams struct {
 	AvgTau float32 `def:"200"`
 
 	// nominal rate = Integ / tau
-	VmDt float32 `view:"-" json:"-" xml:"-"`
+	VmDt float32 `display:"-" json:"-" xml:"-"`
 
 	// rate = Integ / tau
-	GDt float32 `view:"-" json:"-" xml:"-"`
+	GDt float32 `display:"-" json:"-" xml:"-"`
 
 	// rate = 1 / tau
-	AvgDt float32 `view:"-" json:"-" xml:"-"`
+	AvgDt float32 `display:"-" json:"-" xml:"-"`
 }
 
 func (dp *DtParams) Update() {

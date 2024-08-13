@@ -163,7 +163,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	// to CElAcqPosD1
 	pj = net.ConnectLayers(celExtPosD2, celAcqPosD1, pjPools, emer.Inhib) //
 	pj.SetClass("CElExtToAcqInhib")
-	posPV.AddPVReceiver(celAcqPosD1.Nm)
+	posPV.AddPVReceiver(celAcqPosD1.Name)
 	pj = net.ConnectLayersPath(stimIn, celAcqPosD1, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygCons")
 	//pj = net.ConnectLayers(stimIn, celAcqPosD1, pjFull, emer.Forward) // in CEmer, but off
@@ -173,7 +173,7 @@ func (ss *Sim) ConfigNet(net *pvlv.Network) {
 	// to CElAcqNegD2
 	pj = net.ConnectLayers(celExtNegD1, celAcqNegD2, pjPools, emer.Inhib)
 	pj.SetClass("CElExtToAcqInhib")
-	negPV.AddPVReceiver(celAcqNegD2.Nm)
+	negPV.AddPVReceiver(celAcqNegD2.Name)
 	pj = net.ConnectLayersPath(stimIn, celAcqNegD2, pjFull, emer.Forward, &pvlv.AmygModPath{})
 	pj.SetClass("CElAmygCons")
 	//pj = net.ConnectLayers(stimIn, celAcqNegD2, pjFull, emer.Forward) // in CEmer, but off

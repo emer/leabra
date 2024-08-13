@@ -36,19 +36,19 @@ type PVLVEnv struct {
 	GlobalStep int
 
 	// top-level counter for multi-run sequence
-	MultiRunCt env.Ctr `inactive:"+" view:"inline"`
+	MultiRunCt env.Counter `inactive:"+" view:"inline"`
 
 	// top-level counter for multi-trial group run
-	ConditionCt env.Ctr `inactive:"+" view:"inline"`
+	ConditionCt env.Counter `inactive:"+" view:"inline"`
 
 	// trial group within a block
-	TrialBlockCt env.Ctr `inactive:"+" view:"inline"`
+	TrialBlockCt env.Counter `inactive:"+" view:"inline"`
 
 	// trial group within a set of trial groups
-	TrialCt env.Ctr `inactive:"+" view:"inline"`
+	TrialCt env.Counter `inactive:"+" view:"inline"`
 
 	// step within a trial
-	AlphaCycle env.Ctr `inactive:"+" view:"inline"`
+	AlphaCycle env.Counter `inactive:"+" view:"inline"`
 
 	// name of current alpha trial step
 	AlphaTrialName string `inactive:"+"`
@@ -67,15 +67,15 @@ type PVLVEnv struct {
 	ContextModel ContextModel `inactive:"+"`
 
 	// running from a top-level sequence?
-	SeqRun bool `view:"-"`
+	SeqRun bool `display:"-"`
 
 	// params for currently executing block, whether from selection or sequence
-	CurConditionParams *data.ConditionParams `view:"-"`
+	CurConditionParams *data.ConditionParams `display:"-"`
 	TrialsPerBlock     int                   `inactive:"+"`
 	DataLoopOrder      data.DataLoopOrder    `inactive:"+"`
 
 	//
-	BlockEnded bool `view:"-"`
+	BlockEnded bool `display:"-"`
 
 	// Input data tensors
 	TsrStimIn    etensor.Float64
@@ -85,13 +85,13 @@ type PVLVEnv struct {
 	TsrUSTimeIn  etensor.Float64
 
 	//
-	NormContextTotalAct bool `view:"-"`
+	NormContextTotalAct bool `display:"-"`
 
 	//
-	NormStimTotalAct bool `view:"-"`
+	NormStimTotalAct bool `display:"-"`
 
 	//
-	NormUSTimeTotalAct bool `view:"-"`
+	NormUSTimeTotalAct bool `display:"-"`
 
 	// amount to add to denominator for StimIn normalization
 	PctNormTotalActStim float64
@@ -104,9 +104,6 @@ type PVLVEnv struct {
 
 	InputShapes *map[string][]int
 }
-
-func (ev *PVLVEnv) Name() string { return ev.Nm }
-func (ev *PVLVEnv) Desc() string { return ev.Dsc }
 
 func (ev *PVLVEnv) New(ss *Sim) {
 	ev.CurConditionParams = ss.ConditionParams

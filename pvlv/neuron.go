@@ -145,7 +145,7 @@ func (ly *ModLayer) ModUnitValues(vals *[]float32, varNm string, di int) error {
 		*vals = (*vals)[0:nn]
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i, di)
+		(*vals)[i] = ly.LeabraLay.UnitValue1D(vidx, i, di)
 	}
 	return nil
 }

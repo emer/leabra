@@ -36,7 +36,7 @@ type Chan struct {
 	Tau float32 `viewif:"On"`
 
 	// 1/Tau rate constant
-	Dt float32 `view:"-"`
+	Dt float32 `display:"-"`
 }
 
 func (ka *Chan) Defaults() {

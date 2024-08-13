@@ -301,115 +301,115 @@ type Sim struct {
 	NZero int `inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumSSE float64 `view:"-" inactive:"+"`
+	SumSSE float64 `display:"-" inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumAvgSSE float64 `view:"-" inactive:"+"`
+	SumAvgSSE float64 `display:"-" inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumCosDiff float64 `view:"-" inactive:"+"`
+	SumCosDiff float64 `display:"-" inactive:"+"`
 
 	// sum of errs to increment as we go through epoch
-	CntErr int `view:"-" inactive:"+"`
+	CntErr int `display:"-" inactive:"+"`
 
 	// main GUI window
-	Win *core.Window `view:"-"`
+	Win *core.Window `display:"-"`
 
 	// the network viewer
-	NetView *netview.NetView `view:"-"`
+	NetView *netview.NetView `display:"-"`
 
 	// the master toolbar
-	ToolBar *core.ToolBar `view:"-"`
+	ToolBar *core.ToolBar `display:"-"`
 
 	// the training trial plot
-	TrnTrlPlot *eplot.Plot2D `view:"-"`
+	TrnTrlPlot *eplot.Plot2D `display:"-"`
 
 	// the training epoch plot
-	TrnEpcPlot *eplot.Plot2D `view:"-"`
+	TrnEpcPlot *eplot.Plot2D `display:"-"`
 
 	// the testing epoch plot
-	TstEpcPlot *eplot.Plot2D `view:"-"`
+	TstEpcPlot *eplot.Plot2D `display:"-"`
 
 	// the test-trial plot
-	TstTrlPlot *eplot.Plot2D `view:"-"`
+	TstTrlPlot *eplot.Plot2D `display:"-"`
 
 	// the test-cycle plot
-	TstCycPlot *eplot.Plot2D `view:"-"`
+	TstCycPlot *eplot.Plot2D `display:"-"`
 
 	// the run plot
-	RunPlot *eplot.Plot2D `view:"-"`
+	RunPlot *eplot.Plot2D `display:"-"`
 
 	// the run stats plot - ABmem
-	RunStatsPlot1 *eplot.Plot2D `view:"-"`
+	RunStatsPlot1 *eplot.Plot2D `display:"-"`
 
 	// the run stats plot - learning time
-	RunStatsPlot2 *eplot.Plot2D `view:"-"`
+	RunStatsPlot2 *eplot.Plot2D `display:"-"`
 
 	// log file
-	TrnCycPatSimFile *os.File `view:"-"`
+	TrnCycPatSimFile *os.File `display:"-"`
 
 	// headers written
-	TrnCycPatSimHdrs bool `view:"-"`
+	TrnCycPatSimHdrs bool `display:"-"`
 
 	// log file
-	TstEpcFile *os.File `view:"-"`
+	TstEpcFile *os.File `display:"-"`
 
 	// headers written
-	TstEpcHdrs bool `view:"-"`
+	TstEpcHdrs bool `display:"-"`
 
 	// log file
-	RunFile *os.File `view:"-"`
+	RunFile *os.File `display:"-"`
 
 	// headers written
-	RunHdrs bool `view:"-"`
+	RunHdrs bool `display:"-"`
 
 	// temp slice for holding values -- prevent mem allocs
-	TmpValues []float32 `view:"-"`
+	TmpValues []float32 `display:"-"`
 
 	// names of layers to collect more detailed stats on (avg act, etc)
-	LayStatNms []string `view:"-"`
+	LayStatNms []string `display:"-"`
 
 	// names of test tables
-	TstNms []string `view:"-"`
+	TstNms []string `display:"-"`
 
 	// names of sim mat stats
-	SimMatStats []string `view:"-"`
+	SimMatStats []string `display:"-"`
 
 	// names of test stats
-	TstStatNms []string `view:"-"`
+	TstStatNms []string `display:"-"`
 
 	// for holding layer values
-	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
+	ValuesTsrs map[string]*etensor.Float32 `display:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWeights bool `view:"-"`
+	SaveWeights bool `display:"-"`
 
 	// pretrained weights file
-	PreTrainWts []byte `view:"-"`
+	PreTrainWts []byte `display:"-"`
 
 	// if true, pretraining is done
-	PretrainDone bool `view:"-"`
+	PretrainDone bool `display:"-"`
 
 	// if true, runing in no GUI mode
-	NoGui bool `view:"-"`
+	NoGui bool `display:"-"`
 
 	// if true, print message for all params that are set
-	LogSetParams bool `view:"-"`
+	LogSetParams bool `display:"-"`
 
 	// true if sim is running
-	IsRunning bool `view:"-"`
+	IsRunning bool `display:"-"`
 
 	// flag to stop running
-	StopNow bool `view:"-"`
+	StopNow bool `display:"-"`
 
 	// flag to initialize NewRun if last one finished
-	NeedsNewRun bool `view:"-"`
+	NeedsNewRun bool `display:"-"`
 
 	// the current random seed
-	RndSeed int64 `view:"-"`
+	RndSeed int64 `display:"-"`
 
 	// timer for last epoch
-	LastEpcTime time.Time `view:"-"`
+	LastEpcTime time.Time `display:"-"`
 }
 
 // TheSim is the overall state for this simulation
@@ -516,14 +516,12 @@ func (ss *Sim) ConfigEnv() {
 		ss.PreTrainEpcs = 5 // seems sufficient? increase?
 	}
 
-	ss.TrainEnv.Nm = "TrainEnv"
-	ss.TrainEnv.Dsc = "training params and state"
+	ss.TrainEnv.Name = "TrainEnv"
 	ss.TrainEnv.Table = etable.NewIndexView(ss.TrainAB)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
-	ss.TestEnv.Nm = "TestEnv"
-	ss.TestEnv.Dsc = "testing params and state"
+	ss.TestEnv.Name = "TestEnv"
 	ss.TestEnv.Table = etable.NewIndexView(ss.TestAB)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
@@ -1025,9 +1023,9 @@ func (ss *Sim) MemStats(train bool) {
 	targi, _ := ecout.UnitVarIndex("Targ")
 	actQ1i, _ := ecout.UnitVarIndex("ActQ1")
 	for ni := 0; ni < nn; ni++ {
-		actm := ecout.UnitVal1D(actMi, ni)
-		trg := ecout.UnitVal1D(targi, ni) // full pattern target
-		inact := ecin.UnitVal1D(actQ1i, ni)
+		actm := ecout.UnitValue1D(actMi, ni)
+		trg := ecout.UnitValue1D(targi, ni) // full pattern target
+		inact := ecin.UnitValue1D(actQ1i, ni)
 		if trg < 0.5 { // trgOff
 			trgOffN += 1
 			if actm > 0.5 {

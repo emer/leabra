@@ -40,17 +40,17 @@ func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
 	return nn, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIndex int, idx int, di int) float32 {
+func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	nn := ly.AlphaMaxLayer.UnitVarNum()
 	if varIndex < 0 || varIndex > nn { // nn = DA
 		return math32.NaN()
 	}
 	if varIndex < nn {
-		return ly.AlphaMaxLayer.UnitVal1D(varIndex, idx, di)
+		return ly.AlphaMaxLayer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()

@@ -16,312 +16,57 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"sync"
 
 	"cogentcore.org/core/core"
 	"cogentcore.org/core/gox/indent"
-	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/path"
-	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/emergent/v2/timer"
 	"github.com/emer/emergent/v2/weights"
 )
 
-// LayFunChan is a channel that runs LeabraLayer functions
-type LayFunChan chan func(ly LeabraLayer)
-
-// leabra.NetworkBase holds the basic structural components of a network (layers)
-type NetworkBase struct {
-
-	// we need a pointer to ourselves as an emer.Network, which can always be used to extract the true underlying type of object when network is embedded in other structs -- function receivers do not have this ability so this is necessary.
-	EmerNet emer.Network `copy:"-" json:"-" xml:"-" view:"-"`
-
-	// overall name of network -- helps discriminate if there are multiple
-	Nm string
+// leabra.Network implements the Leabra algorithm, managing the Layers.
+type Network struct {
+	emer.NetworkBase
 
 	// list of layers
-	Layers emer.Layers
+	Layers []*Layer
 
-	// filename of last weights file loaded or saved
-	WtsFile string
-
-	// map of name to layers -- layer names must be unique
-	LayMap map[string]emer.Layer `view:"-"`
-
-	// map of layer classes -- made during Build
-	LayClassMap map[string][]string `view:"-"`
-
-	// minimum display position in network
-	MinPos math32.Vector3 `view:"-"`
-
-	// maximum display position in network
-	MaxPos math32.Vector3 `view:"-"`
-
-	// optional metadata that is saved in network weights files -- e.g., can indicate number of epochs that were trained, or any other information about this network that would be useful to save
-	MetaData map[string]string
-
-	// number of parallel threads (go routines) to use -- this is computed directly from the Layers which you must explicitly allocate to different threads -- updated during Build of network
+	// number of parallel threads (go routines) to use.
 	NThreads int `inactive:"+"`
 
-	// if set, runtime.LockOSThread() is called on the compute threads, which can be faster on large networks on some architectures -- experimentation is recommended
-	LockThreads bool
-
-	// layers per thread -- outer group is threads and inner is layers operated on by that thread -- based on user-assigned threads, initialized during Build
-	ThrLay [][]emer.Layer `view:"-" inactive:"+"`
-
-	// layer function channels, per thread
-	ThrChans []LayFunChan `view:"-"`
-
-	// timers for each thread, so you can see how evenly the workload is being distributed
-	ThrTimes []timer.Time `view:"-"`
-
 	// timers for each major function (step of processing)
-	FunTimes map[string]*timer.Time `view:"-"`
-
-	// network-level wait group for synchronizing threaded layer calls
-	WaitGp sync.WaitGroup `view:"-"`
+	FunTimes map[string]*timer.Time `display:"-"`
 }
 
-// InitName MUST be called to initialize the network's pointer to itself as an emer.Network
-// which enables the proper interface methods to be called.  Also sets the name.
-func (nt *NetworkBase) InitName(net emer.Network, name string) {
-	nt.EmerNet = net
-	nt.Nm = name
+func (nt *NetworkBase) NumLayers() int               { return len(nt.Layers) }
+func (nt *NetworkBase) EmerLayer(idx int) emer.Layer { return nt.Layers[idx] }
+func (nt *NetworkBase) MaxParallelData() int         { return 1 }
+func (nt *NetworkBase) NParallelData() int           { return 1 }
+
+// NewNetwork returns a new leabra Network
+func NewNetwork(name string) *Network {
+	net := &Network{}
+	emer.InitNetwork(net, name)
+	return net
 }
 
-// emer.Network interface methods:
-func (nt *NetworkBase) Name() string                      { return nt.Nm }
-func (nt *NetworkBase) Label() string                     { return nt.Nm }
-func (nt *NetworkBase) NLayers() int                      { return len(nt.Layers) }
-func (nt *NetworkBase) Layer(idx int) emer.Layer          { return nt.Layers[idx] }
-func (nt *NetworkBase) Bounds() (min, max math32.Vector3) { min = nt.MinPos; max = nt.MaxPos; return }
-func (nt *NetworkBase) MaxParallelData() int              { return 1 }
-func (nt *NetworkBase) NParallelData() int                { return 1 }
-
-// LayerByName returns a layer by looking it up by name in the layer map (nil if not found).
-// Will create the layer map if it is nil or a different size than layers slice,
-// but otherwise needs to be updated manually.
-func (nt *NetworkBase) LayerByName(name string) emer.Layer {
-	if nt.LayMap == nil || len(nt.LayMap) != len(nt.Layers) {
-		nt.MakeLayMap()
-	}
-	ly := nt.LayMap[name]
-	return ly
-}
-
-// LayerByNameTry returns a layer by looking it up by name -- emits a log error message
-// if layer is not found
-func (nt *NetworkBase) LayerByNameTry(name string) (emer.Layer, error) {
-	ly := nt.LayerByName(name)
-	if ly == nil {
-		err := fmt.Errorf("Layer named: %v not found in Network: %v", name, nt.Nm)
-		log.Println(err)
-		return ly, err
-	}
-	return ly, nil
-}
-
-// MakeLayMap updates layer map based on current layers
-func (nt *NetworkBase) MakeLayMap() {
-	nt.LayMap = make(map[string]emer.Layer, len(nt.Layers))
-	for _, ly := range nt.Layers {
-		nt.LayMap[ly.Name()] = ly
-	}
-}
-
-// PathByNameTry returns a Path by looking it up by name in the list of pathways
+// LayerByName returns a layer by looking it up by name in the layer map
 // (nil if not found).
-func (nt *NetworkBase) PathByNameTry(name string) (emer.Path, error) {
-	for _, ly := range nt.Layers {
-		for i := range ly.NRecvPaths() {
-			pj := ly.RecvPath(i)
-			if name == pj.Name() {
-				return pj, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("could not find path with name %q", name)
-}
-
-// LayersByClass returns a list of layer names by given class(es).
-// Lists are compiled when network Build() function called.
-// The layer Type is always included as a Class, along with any other
-// space-separated strings specified in Class for parameter styling, etc.
-// If no classes are passed, all layer names in order are returned.
-func (nt *NetworkBase) LayersByClass(classes ...string) []string {
-	var nms []string
-	hasName := map[string]bool{}
-	if len(classes) == 0 {
-		for _, ly := range nt.Layers {
-			if ly.Off {
-				continue
-			}
-			nm := ly.Name()
-			if !hasName[nm] {
-				hasName[nm] = true
-				nms = append(nms, nm)
-			}
-		}
-		return nms
-	}
-	for _, lc := range classes {
-		ns := nt.LayClassMap[lc]
-		for _, nm := range ns {
-			if !hasName[nm] {
-				hasName[nm] = true
-				nms = append(nms, nm)
-			}
-		}
-	}
-	return nms
-}
-
-// BuildThreads constructs the layer thread allocation based on Thread setting in the layers
-func (nt *NetworkBase) BuildThreads() {
-	nthr := 0
-	for _, lyi := range nt.Layers {
-		if lyi.Off {
-			continue
-		}
-		ly := lyi.(LeabraLayer).AsLeabra()
-		nthr = max(nthr, ly.Thr)
-	}
-	nt.NThreads = nthr + 1
-	nt.ThrLay = make([][]emer.Layer, nt.NThreads)
-	nt.ThrChans = make([]LayFunChan, nt.NThreads)
-	nt.ThrTimes = make([]timer.Time, nt.NThreads)
-	nt.FunTimes = make(map[string]*timer.Time)
-	for _, lyi := range nt.Layers {
-		if lyi.Off {
-			continue
-		}
-		ly := lyi.(LeabraLayer).AsLeabra()
-		th := ly.Thr
-		nt.ThrLay[th] = append(nt.ThrLay[th], ly)
-	}
-	for th := 0; th < nt.NThreads; th++ {
-		if len(nt.ThrLay[th]) == 0 {
-			log.Printf("Network BuildThreads: Network %v has no layers for thread: %v\n", nt.Nm, th)
-		}
-		nt.ThrChans[th] = make(LayFunChan)
-	}
-}
-
-// StdVertLayout arranges layers in a standard vertical (z axis stack) layout, by setting
-// the Rel settings
-func (nt *NetworkBase) StdVertLayout() {
-	lstnm := ""
-	for li, ly := range nt.Layers {
-		if li == 0 {
-			ly.SetRelPos(relpos.Rel{Rel: relpos.NoRel})
-			lstnm = ly.Name()
-		} else {
-			ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstnm, XAlign: relpos.Middle, YAlign: relpos.Front})
-		}
-	}
-}
-
-// Layout computes the 3D layout of layers based on their relative position settings
-func (nt *NetworkBase) Layout() {
-	for itr := 0; itr < 5; itr++ {
-		var lstly emer.Layer
-		for _, ly := range nt.Layers {
-			rp := ly.RelPos()
-			var oly emer.Layer
-			if lstly != nil && rp.Rel == relpos.NoRel {
-				oly = lstly
-				ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
-			} else {
-				if rp.Other != "" {
-					var err error
-					oly, err = nt.LayerByNameTry(rp.Other)
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-				} else if lstly != nil {
-					oly = lstly
-					ly.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: lstly.Name(), XAlign: relpos.Middle, YAlign: relpos.Front})
-				}
-			}
-			if oly != nil {
-				ly.SetPos(rp.Pos(oly.Pos(), oly.Size(), ly.Size()))
-			}
-			lstly = ly
-		}
-	}
-	nt.BoundsUpdate()
-}
-
-// BoundsUpdate updates the Min / Max display bounds for 3D display
-func (nt *NetworkBase) BoundsUpdate() {
-	mn := math32.Vector3Scalar(math32.Infinity)
-	mx := math32.Vector3{}
-	for _, ly := range nt.Layers {
-		ps := ly.Pos()
-		sz := ly.Size()
-		ru := ps
-		ru.X += sz.X
-		ru.Y += sz.Y
-		mn.SetMax(ps)
-		mx.SetMax(ru)
-	}
-	nt.MaxPos = mn
-	nt.MaxPos = mx
-}
-
-// ApplyParams applies given parameter style Sheet to layers and paths in this network.
-// Calls UpdateParams to ensure derived parameters are all updated.
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-// returns true if any params were set, and error if there were any errors.
-func (nt *NetworkBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
-	applied := false
-	var rerr error
-	for _, ly := range nt.Layers {
-		app, err := ly.ApplyParams(pars, setMsg)
-		if app {
-			applied = true
-		}
-		if err != nil {
-			rerr = err
-		}
-	}
-	return applied, rerr
-}
-
-// NonDefaultParams returns a listing of all parameters in the Network that
-// are not at their default values -- useful for setting param styles etc.
-func (nt *NetworkBase) NonDefaultParams() string {
-	nds := ""
-	for _, ly := range nt.Layers {
-		nd := ly.NonDefaultParams()
-		nds += nd
-	}
-	return nds
-}
-
-// AllParams returns a listing of all parameters in the Network.
-func (nt *NetworkBase) AllParams() string {
-	nds := ""
-	for _, ly := range nt.Layers {
-		nd := ly.AllParams()
-		nds += nd
-	}
-	return nds
+func (nt *Network) LayerByName(name string) *Layer {
+	ely, _ := nt.EmerLayerByName(name)
+	return ely.(*Layer)
 }
 
 // KeyLayerParams returns a listing for all layers in the network,
 // of the most important layer-level params (specific to each algorithm).
-func (nt *NetworkBase) KeyLayerParams() string {
+func (nt *Network) KeyLayerParams() string {
 	return "" // todo: implement!
 }
 
 // KeyPathParams returns a listing for all Recv pathways in the network,
 // of the most important pathway-level params (specific to each algorithm).
-func (nt *NetworkBase) KeyPathParams() string {
+func (nt *Network) KeyPathParams() string {
 	return nt.AllWtScales()
 }
 
@@ -329,7 +74,7 @@ func (nt *NetworkBase) KeyPathParams() string {
 // in all Layers, Recv pathways.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep
 // track of what they all are set to.
-func (nt *NetworkBase) AllWtScales() string {
+func (nt *Network) AllWtScales() string {
 	str := ""
 	for _, lyi := range nt.Layers {
 		if lyi.Off {
@@ -351,15 +96,17 @@ func (nt *NetworkBase) AllWtScales() string {
 
 // AddLayerInit is implementation routine that takes a given layer and
 // adds it to the network, and initializes and configures it properly.
-func (nt *NetworkBase) AddLayerInit(ly emer.Layer, name string, shape []int, typ emer.LayerType) {
-	if nt.EmerNet == nil {
-		log.Printf("Network EmerNet is nil -- you MUST call InitName on network, passing a pointer to the network to initialize properly!")
+func (nt *Network) AddLayerInit(ly *Layer, name string, shape []int, typ LayerTypes) {
+	if nt.EmerNetwork == nil {
+		log.Printf("Network EmerNetwork is nil: MUST call emer.InitNetwork on network, passing a pointer to the network to initialize properly!")
 		return
 	}
-	ly.InitName(ly, name, nt.EmerNet)
+	emer.InitLayer(ly, name)
+	ly.SetShape(shape)
+	ly.Type = typ
 	ly.Config(shape, typ)
 	nt.Layers = append(nt.Layers, ly)
-	nt.MakeLayMap()
+	nt.UpdateLayerMaps()
 }
 
 // AddLayer adds a new layer with given name and shape to the network.
@@ -369,7 +116,7 @@ func (nt *NetworkBase) AddLayerInit(ly emer.Layer, name string, shape []int, typ
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each unit
 // group having 4 rows (Y) of 5 (X) units.
-func (nt *NetworkBase) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
+func (nt *Network) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
 	ly := nt.EmerNet.(LeabraNetwork).NewLayer() // essential to use EmerNet interface here!
 	nt.AddLayerInit(ly, name, shape, typ)
 	return ly
@@ -377,7 +124,7 @@ func (nt *NetworkBase) AddLayer(name string, shape []int, typ emer.LayerType) em
 
 // AddLayer2D adds a new layer with given name and 2D shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential.
-func (nt *NetworkBase) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerType) emer.Layer {
+func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerType) emer.Layer {
 	return nt.AddLayer(name, []int{shapeY, shapeX}, typ)
 }
 
@@ -386,7 +133,7 @@ func (nt *NetworkBase) AddLayer2D(name string, shapeY, shapeX int, typ emer.Laye
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each pool
 // having 4 rows (Y) of 5 (X) neurons.
-func (nt *NetworkBase) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ emer.LayerType) emer.Layer {
+func (nt *Network) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ emer.LayerType) emer.Layer {
 	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
 }
 
@@ -394,7 +141,7 @@ func (nt *NetworkBase) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 // adding to the recv and send pathway lists on each side of the connection.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat path.Pattern, typ emer.PathType) (rlay, slay emer.Layer, pj emer.Path, err error) {
+func (nt *Network) ConnectLayerNames(send, recv string, pat path.Pattern, typ emer.PathType) (rlay, slay emer.Layer, pj emer.Path, err error) {
 	rlay, err = nt.LayerByNameTry(recv)
 	if err != nil {
 		return
@@ -411,7 +158,7 @@ func (nt *NetworkBase) ConnectLayerNames(send, recv string, pat path.Pattern, ty
 // adding to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ emer.PathType) emer.Path {
+func (nt *Network) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ emer.PathType) emer.Path {
 	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
 	return nt.ConnectLayersPath(send, recv, pat, typ, pj)
 }
@@ -420,7 +167,7 @@ func (nt *NetworkBase) ConnectLayers(send, recv emer.Layer, pat path.Pattern, ty
 // adding given path to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
+func (nt *Network) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
 	pj.Init(pj)
 	pj.(LeabraPath).AsLeabra().Connect(send, recv, pat, typ)
 	recv.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
@@ -433,7 +180,7 @@ func (nt *NetworkBase) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern
 // to the high layer, and receives a Back pathway in the opposite direction.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat path.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Path, err error) {
+func (nt *Network) BidirConnectLayerNames(low, high string, pat path.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Path, err error) {
 	lowlay, err = nt.LayerByNameTry(low)
 	if err != nil {
 		return
@@ -452,7 +199,7 @@ func (nt *NetworkBase) BidirConnectLayerNames(low, high string, pat path.Pattern
 // and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
+func (nt *Network) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
 	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
 	backpj = nt.ConnectLayers(high, low, pat, emer.Back)
 	return
@@ -464,7 +211,7 @@ func (nt *NetworkBase) BidirConnectLayers(low, high emer.Layer, pat path.Pattern
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 // Py = python version with no return vals.
-func (nt *NetworkBase) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
+func (nt *Network) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
 	nt.ConnectLayers(low, high, pat, emer.Forward)
 	nt.ConnectLayers(high, low, pat, emer.Back)
 }
@@ -472,7 +219,7 @@ func (nt *NetworkBase) BidirConnectLayersPy(low, high emer.Layer, pat path.Patte
 // LateralConnectLayer establishes a self-pathway within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Path {
+func (nt *Network) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Path {
 	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
 	return nt.LateralConnectLayerPath(lay, pat, pj)
 }
@@ -480,7 +227,7 @@ func (nt *NetworkBase) LateralConnectLayer(lay emer.Layer, pat path.Pattern) eme
 // LateralConnectLayerPath makes lateral self-pathway using given pathway.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *NetworkBase) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
+func (nt *Network) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
 	pj.Init(pj)
 	pj.(LeabraPath).AsLeabra().Connect(lay, lay, pat, emer.Lateral)
 	lay.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
@@ -490,7 +237,7 @@ func (nt *NetworkBase) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern,
 
 // Build constructs the layer and pathway state based on the layer shapes
 // and patterns of interconnectivity
-func (nt *NetworkBase) Build() error {
+func (nt *Network) Build() error {
 	nt.StopThreads() // any existing..
 	nt.LayClassMap = make(map[string][]string)
 	emsg := ""
@@ -524,7 +271,7 @@ func (nt *NetworkBase) Build() error {
 
 // SaveWeightsJSON saves network weights (and any other state that adapts with learning)
 // to a JSON-formatted file.  If filename has .gz extension, then file is gzip compressed.
-func (nt *NetworkBase) SaveWeightsJSON(filename core.Filename) error {
+func (nt *Network) SaveWeightsJSON(filename core.Filename) error {
 	fp, err := os.Create(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -546,7 +293,7 @@ func (nt *NetworkBase) SaveWeightsJSON(filename core.Filename) error {
 
 // OpenWeightsJSON opens network weights (and any other state that adapts with learning)
 // from a JSON-formatted file.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWeightsJSON(filename core.Filename) error {
+func (nt *Network) OpenWeightsJSON(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -572,7 +319,7 @@ func (nt *NetworkBase) OpenWeightsJSON(filename core.Filename) error {
 // WriteWtsJSON writes the weights from this layer from the receiver-side perspective
 // in a JSON text format.  We build in the indentation logic to make it much faster and
 // more efficient.
-func (nt *NetworkBase) WriteWtsJSON(w io.Writer) error {
+func (nt *Network) WriteWtsJSON(w io.Writer) error {
 	depth := 0
 	w.Write(indent.TabBytes(depth))
 	w.Write([]byte("{\n"))
@@ -613,7 +360,7 @@ func (nt *NetworkBase) WriteWtsJSON(w io.Writer) error {
 // ReadWtsJSON reads network weights from the receiver-side perspective
 // in a JSON text format.  Reads entire file into a temporary weights.Weights
 // structure that is then passed to Layers etc using SetWts method.
-func (nt *NetworkBase) ReadWtsJSON(r io.Reader) error {
+func (nt *Network) ReadWtsJSON(r io.Reader) error {
 	nw, err := weights.NetReadJSON(r)
 	if err != nil {
 		return err // note: already logged
@@ -626,7 +373,7 @@ func (nt *NetworkBase) ReadWtsJSON(r io.Reader) error {
 }
 
 // SetWts sets the weights for this network from weights.Network decoded values
-func (nt *NetworkBase) SetWts(nw *weights.Network) error {
+func (nt *Network) SetWts(nw *weights.Network) error {
 	var err error
 	if nw.Network != "" {
 		nt.Nm = nw.Network
@@ -654,7 +401,7 @@ func (nt *NetworkBase) SetWts(nw *weights.Network) error {
 
 // OpenWeightsCpp opens network weights (and any other state that adapts with learning)
 // from old C++ emergent format.  If filename has .gz extension, then file is gzip uncompressed.
-func (nt *NetworkBase) OpenWeightsCpp(filename core.Filename) error {
+func (nt *Network) OpenWeightsCpp(filename core.Filename) error {
 	fp, err := os.Open(string(filename))
 	defer fp.Close()
 	if err != nil {
@@ -678,7 +425,7 @@ func (nt *NetworkBase) OpenWeightsCpp(filename core.Filename) error {
 // ReadWtsCpp reads the weights from old C++ emergent format.
 // Reads entire file into a temporary weights.Weights
 // structure that is then passed to Layers etc using SetWts method.
-func (nt *NetworkBase) ReadWtsCpp(r io.Reader) error {
+func (nt *Network) ReadWtsCpp(r io.Reader) error {
 	nw, err := weights.NetReadCpp(r)
 	if err != nil {
 		return err // note: already logged
@@ -692,7 +439,7 @@ func (nt *NetworkBase) ReadWtsCpp(r io.Reader) error {
 
 // VarRange returns the min / max values for given variable
 // todo: support r. s. pathway values
-func (nt *NetworkBase) VarRange(varNm string) (min, max float32, err error) {
+func (nt *Network) VarRange(varNm string) (min, max float32, err error) {
 	first := true
 	for _, ly := range nt.Layers {
 		lmin, lmax, lerr := ly.VarRange(varNm)
@@ -719,7 +466,7 @@ func (nt *NetworkBase) VarRange(varNm string) (min, max float32, err error) {
 //  Threading infrastructure
 
 // StartThreads starts up the computation threads, which monitor the channels for work
-func (nt *NetworkBase) StartThreads() {
+func (nt *Network) StartThreads() {
 	fmt.Printf("NThreads: %d\tgo max procs: %d\tnum cpu:%d\n", nt.NThreads, runtime.GOMAXPROCS(0), runtime.NumCPU())
 	for th := 0; th < nt.NThreads; th++ {
 		go nt.ThrWorker(th) // start the worker thread for this channel
@@ -727,14 +474,14 @@ func (nt *NetworkBase) StartThreads() {
 }
 
 // StopThreads stops the computation threads
-func (nt *NetworkBase) StopThreads() {
+func (nt *Network) StopThreads() {
 	for th := 0; th < nt.NThreads; th++ {
 		close(nt.ThrChans[th])
 	}
 }
 
 // ThrWorker is the worker function run by the worker threads
-func (nt *NetworkBase) ThrWorker(tt int) {
+func (nt *Network) ThrWorker(tt int) {
 	if nt.LockThreads {
 		runtime.LockOSThread()
 	}
@@ -757,7 +504,7 @@ func (nt *NetworkBase) ThrWorker(tt int) {
 
 // ThrLayFun calls function on layer, using threaded (go routine worker) computation if NThreads > 1
 // and otherwise just iterates over layers in the current thread.
-func (nt *NetworkBase) ThrLayFun(fun func(ly LeabraLayer), funame string) {
+func (nt *Network) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 	nt.FunTimerStart(funame)
 	if nt.NThreads <= 1 {
 		for _, ly := range nt.Layers {
@@ -777,7 +524,7 @@ func (nt *NetworkBase) ThrLayFun(fun func(ly LeabraLayer), funame string) {
 }
 
 // TimerReport reports the amount of time spent in each function, and in each thread
-func (nt *NetworkBase) TimerReport() {
+func (nt *Network) TimerReport() {
 	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Nm, nt.NThreads)
 	fmt.Printf("\t%13s \t%7s\t%7s\n", "Function Name", "Secs", "Pct")
 	nfn := len(nt.FunTimes)
@@ -815,14 +562,14 @@ func (nt *NetworkBase) TimerReport() {
 }
 
 // ThrTimerReset resets the per-thread timers
-func (nt *NetworkBase) ThrTimerReset() {
+func (nt *Network) ThrTimerReset() {
 	for th := 0; th < nt.NThreads; th++ {
 		nt.ThrTimes[th].Reset()
 	}
 }
 
 // FunTimerStart starts function timer for given function name -- ensures creation of timer
-func (nt *NetworkBase) FunTimerStart(fun string) {
+func (nt *Network) FunTimerStart(fun string) {
 	ft, ok := nt.FunTimes[fun]
 	if !ok {
 		ft = &timer.Time{}
@@ -832,7 +579,7 @@ func (nt *NetworkBase) FunTimerStart(fun string) {
 }
 
 // FunTimerStop stops function timer -- timer must already exist
-func (nt *NetworkBase) FunTimerStop(fun string) {
+func (nt *Network) FunTimerStop(fun string) {
 	ft := nt.FunTimes[fun]
 	ft.Stop()
 }

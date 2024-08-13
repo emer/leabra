@@ -297,17 +297,17 @@ func (ly *SuperLayer) UnitVarIndex(varNm string) (int, error) {
 	return vidx, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *SuperLayer) UnitVal1D(varIndex int, idx int, di int) float32 {
+func (ly *SuperLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	if varIndex < 0 {
 		return math32.NaN()
 	}
 	nn := ly.TopoInhibLayer.UnitVarNum()
 	if varIndex < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIndex, idx, di)
+		return ly.TopoInhibLayer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
 		return math32.NaN()

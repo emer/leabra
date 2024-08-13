@@ -42,23 +42,20 @@ type FSAEnv struct {
 	NextLabels etensor.String
 
 	// current run of model as provided during Init
-	Run env.Ctr `view:"inline"`
+	Run env.Counter `view:"inline"`
 
 	// number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline"`
+	Epoch env.Counter `view:"inline"`
 
 	// sequence counter within epoch
-	Seq env.Ctr `view:"inline"`
+	Seq env.Counter `view:"inline"`
 
 	// tick counter within sequence
-	Tick env.Ctr `view:"inline"`
+	Tick env.Counter `view:"inline"`
 
 	// trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
-	Trial env.Ctr `view:"inline"`
+	Trial env.Counter `view:"inline"`
 }
-
-func (ev *FSAEnv) Name() string { return ev.Nm }
-func (ev *FSAEnv) Desc() string { return ev.Dsc }
 
 // InitTMat initializes matrix and labels to given size
 func (ev *FSAEnv) InitTMat(nst int) {
@@ -97,7 +94,7 @@ func (ev *FSAEnv) TMatReber() {
 
 func (ev *FSAEnv) Validate() error {
 	if ev.TMat.Len() == 0 {
-		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", ev.Nm)
+		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", ev.Name)
 	}
 	return nil
 }

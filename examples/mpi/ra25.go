@@ -232,91 +232,91 @@ type Sim struct {
 	NZero int `inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumErr float64 `view:"-" inactive:"+"`
+	SumErr float64 `display:"-" inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumSSE float64 `view:"-" inactive:"+"`
+	SumSSE float64 `display:"-" inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumAvgSSE float64 `view:"-" inactive:"+"`
+	SumAvgSSE float64 `display:"-" inactive:"+"`
 
 	// sum to increment as we go through epoch
-	SumCosDiff float64 `view:"-" inactive:"+"`
+	SumCosDiff float64 `display:"-" inactive:"+"`
 
 	// main GUI window
-	Win *core.Window `view:"-"`
+	Win *core.Window `display:"-"`
 
 	// the network viewer
-	NetView *netview.NetView `view:"-"`
+	NetView *netview.NetView `display:"-"`
 
 	// the master toolbar
-	ToolBar *core.ToolBar `view:"-"`
+	ToolBar *core.ToolBar `display:"-"`
 
 	// the training epoch plot
-	TrnEpcPlot *eplot.Plot2D `view:"-"`
+	TrnEpcPlot *eplot.Plot2D `display:"-"`
 
 	// the train-trial plot
-	TrnTrlPlot *eplot.Plot2D `view:"-"`
+	TrnTrlPlot *eplot.Plot2D `display:"-"`
 
 	// the testing epoch plot
-	TstEpcPlot *eplot.Plot2D `view:"-"`
+	TstEpcPlot *eplot.Plot2D `display:"-"`
 
 	// the test-trial plot
-	TstTrlPlot *eplot.Plot2D `view:"-"`
+	TstTrlPlot *eplot.Plot2D `display:"-"`
 
 	// the test-cycle plot
-	TstCycPlot *eplot.Plot2D `view:"-"`
+	TstCycPlot *eplot.Plot2D `display:"-"`
 
 	// the run plot
-	RunPlot *eplot.Plot2D `view:"-"`
+	RunPlot *eplot.Plot2D `display:"-"`
 
 	// log file
-	TrnEpcFile *os.File `view:"-"`
+	TrnEpcFile *os.File `display:"-"`
 
 	// log file
-	TrnTrlFile *os.File `view:"-"`
+	TrnTrlFile *os.File `display:"-"`
 
 	// log file
-	RunFile *os.File `view:"-"`
+	RunFile *os.File `display:"-"`
 
 	// for holding layer values
-	ValuesTsrs map[string]*etensor.Float32 `view:"-"`
+	ValuesTsrs map[string]*etensor.Float32 `display:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWeights bool `view:"-"`
+	SaveWeights bool `display:"-"`
 
 	// if true, runing in no GUI mode
-	NoGui bool `view:"-"`
+	NoGui bool `display:"-"`
 
 	// if true, print message for all params that are set
-	LogSetParams bool `view:"-"`
+	LogSetParams bool `display:"-"`
 
 	// true if sim is running
-	IsRunning bool `view:"-"`
+	IsRunning bool `display:"-"`
 
 	// flag to stop running
-	StopNow bool `view:"-"`
+	StopNow bool `display:"-"`
 
 	// flag to initialize NewRun if last one finished
-	NeedsNewRun bool `view:"-"`
+	NeedsNewRun bool `display:"-"`
 
 	// the current random seed
-	RndSeed int64 `view:"-"`
+	RndSeed int64 `display:"-"`
 
 	// timer for last epoch
-	LastEpcTime time.Time `view:"-"`
+	LastEpcTime time.Time `display:"-"`
 
 	// if true, use MPI to distribute computation across nodes
-	UseMPI bool `view:"-"`
+	UseMPI bool `display:"-"`
 
 	// mpi communicator
-	Comm *mpi.Comm `view:"-"`
+	Comm *mpi.Comm `display:"-"`
 
 	// buffer of all dwt weight changes -- for mpi sharing
-	AllDWts []float32 `view:"-"`
+	AllDWts []float32 `display:"-"`
 
 	// buffer of MPI summed dwt weight changes
-	SumDWts []float32 `view:"-"`
+	SumDWts []float32 `display:"-"`
 }
 
 // TheSim is the overall state for this simulation
@@ -373,13 +373,11 @@ func (ss *Sim) ConfigEnv() {
 	}
 
 	ss.TrainEnv.Nm = "TrainEnv"
-	ss.TrainEnv.Dsc = "training params and state"
 	ss.TrainEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
 	ss.TestEnv.Nm = "TestEnv"
-	ss.TestEnv.Dsc = "testing params and state"
 	ss.TestEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()

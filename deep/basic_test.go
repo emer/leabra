@@ -390,17 +390,17 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx] = hidLay.RcvPaths[0].SynValue("DWt", pi, pi)
-			outdwt[didx] = outLay.RcvPaths[0].SynValue("DWt", pi, pi)
-			hidnorm[didx] = hidLay.RcvPaths[0].SynValue("Norm", pi, pi)
-			outnorm[didx] = outLay.RcvPaths[0].SynValue("Norm", pi, pi)
-			hidmoment[didx] = hidLay.RcvPaths[0].SynValue("Moment", pi, pi)
-			outmoment[didx] = outLay.RcvPaths[0].SynValue("Moment", pi, pi)
+			hiddwt[didx] = hidLay.RecvPaths[0].SynValue("DWt", pi, pi)
+			outdwt[didx] = outLay.RecvPaths[0].SynValue("DWt", pi, pi)
+			hidnorm[didx] = hidLay.RecvPaths[0].SynValue("Norm", pi, pi)
+			outnorm[didx] = outLay.RecvPaths[0].SynValue("Norm", pi, pi)
+			hidmoment[didx] = hidLay.RecvPaths[0].SynValue("Moment", pi, pi)
+			outmoment[didx] = outLay.RecvPaths[0].SynValue("Moment", pi, pi)
 
 			TestNet.WtFmDWt()
 
-			hidwt[didx] = hidLay.RcvPaths[0].SynValue("Wt", pi, pi)
-			outwt[didx] = outLay.RcvPaths[0].SynValue("Wt", pi, pi)
+			hidwt[didx] = hidLay.RecvPaths[0].SynValue("Wt", pi, pi)
+			outwt[didx] = outLay.RecvPaths[0].SynValue("Wt", pi, pi)
 
 			switch pi {
 			case 0:

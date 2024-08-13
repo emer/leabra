@@ -20,10 +20,7 @@ import (
 type ExEnv struct {
 
 	// name of this environment
-	Nm string
-
-	// description of this environment
-	Dsc string
+	Name string
 
 	// size of each dimension in 2D input
 	Size int
@@ -41,17 +38,16 @@ type ExEnv struct {
 	Y etensor.Float32
 
 	// current run of model as provided during Init
-	Run env.Ctr `view:"inline"`
+	Run env.Counter `view:"inline"`
 
 	// number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline"`
+	Epoch env.Counter `view:"inline"`
 
 	// trial increments over input states -- could add Event as a lower level
-	Trial env.Ctr `view:"inline"`
+	Trial env.Counter `view:"inline"`
 }
 
-func (ev *ExEnv) Name() string { return ev.Nm }
-func (ev *ExEnv) Desc() string { return ev.Dsc }
+func (ev *ExEnv) Label() string { return ev.Name }
 
 // Config sets the size, number of trials to run per epoch, and configures the states
 func (ev *ExEnv) Config(sz int, ntrls int) {
@@ -60,13 +56,6 @@ func (ev *ExEnv) Config(sz int, ntrls int) {
 	ev.Input.SetShape([]int{sz, sz}, nil, []string{"Y", "X"})
 	ev.X.SetShape([]int{sz}, nil, []string{"X"})
 	ev.Y.SetShape([]int{sz}, nil, []string{"Y"})
-}
-
-func (ev *ExEnv) Validate() error {
-	if ev.Size == 0 {
-		return fmt.Errorf("ExEnv: %v has size == 0 -- need to Config", ev.Nm)
-	}
-	return nil
 }
 
 func (ev *ExEnv) State(element string) etensor.Tensor {

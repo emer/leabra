@@ -190,16 +190,16 @@ type LrnActAvgParams struct {
 	Init float32 `def:"0.15" min:"0" max:"1"`
 
 	// rate = 1 / tau
-	SSDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	SSDt float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 
 	// rate = 1 / tau
-	SDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	SDt float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 
 	// rate = 1 / tau
-	MDt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	MDt float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 
 	// 1-LrnM
-	LrnS float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	LrnS float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 }
 
 // AvgsFmAct computes averages based on current act
@@ -261,10 +261,10 @@ type AvgLParams struct {
 	ModMin float32 `def:"0.01" viewif:"ErrMod=true"`
 
 	// rate = 1 / tau
-	Dt float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	Dt float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 
 	// (LrnMax - LrnMin) / (Gain - Min)
-	LrnFact float32 `view:"-" json:"-" xml:"-" inactive:"+"`
+	LrnFact float32 `display:"-" json:"-" xml:"-" inactive:"+"`
 }
 
 // AvgLFmAvgM computes long-term average activation value, and learning factor, from given
@@ -315,10 +315,10 @@ type CosDiffParams struct {
 	Tau float32 `def:"100" min:"1"`
 
 	// rate constant = 1 / Tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	Dt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 
 	// complement of rate constant = 1 - Dt
-	DtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	DtC float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 func (cd *CosDiffParams) Update() {
@@ -419,7 +419,7 @@ type XCalParams struct {
 	LrnThr float32 `def:"0.01"`
 
 	// -(1-DRev)/DRev -- multiplication factor in learning rule -- builds in the minus sign!
-	DRevRatio float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	DRevRatio float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 func (xc *XCalParams) Update() {
@@ -579,10 +579,10 @@ type DWtNormParams struct {
 	Stats bool `viewif:"On" def:"false"`
 
 	// rate constant of decay = 1 / decay_tau
-	DecayDt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	DecayDt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 
 	// complement rate constant of decay = 1 - (1 / decay_tau)
-	DecayDtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	DecayDtC float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 // DWtNormParams updates the dwnorm running max_abs, slowly decaying value
@@ -627,10 +627,10 @@ type MomentumParams struct {
 	LrComp float32 `viewif:"On" min:"0" def:"0.1"`
 
 	// rate constant of momentum integration = 1 / m_tau
-	MDt float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	MDt float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 
 	// complement rate constant of momentum integration = 1 - (1 / m_tau)
-	MDtC float32 `inactive:"+" view:"-" json:"-" xml:"-"`
+	MDtC float32 `inactive:"+" display:"-" json:"-" xml:"-"`
 }
 
 // MomentFmDWt updates synaptic moment variable based on dwt weight change value

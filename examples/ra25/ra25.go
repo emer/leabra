@@ -187,25 +187,25 @@ type Sim struct {
 	PCAInterval int
 
 	// manages all the gui elements
-	GUI egui.GUI `view:"-"`
+	GUI egui.GUI `display:"-"`
 
 	// for command-line run only, auto-save final weights after each run
-	SaveWeights bool `view:"-"`
+	SaveWeights bool `display:"-"`
 
 	// if true, runing in no GUI mode
-	NoGui bool `view:"-"`
+	NoGui bool `display:"-"`
 
 	// if true, print message for all params that are set
-	LogSetParams bool `view:"-"`
+	LogSetParams bool `display:"-"`
 
 	// flag to initialize NewRun if last one finished
-	NeedsNewRun bool `view:"-"`
+	NeedsNewRun bool `display:"-"`
 
 	// a list of random seeds to use for each run
-	RndSeeds []int64 `view:"-"`
+	RndSeeds []int64 `display:"-"`
 
 	// net data for recording in nogui mode
-	NetData *netview.NetData `view:"-"`
+	NetData *netview.NetData `display:"-"`
 }
 
 // TheSim is the overall state for this simulation
@@ -250,14 +250,12 @@ func (ss *Sim) ConfigEnv() {
 		ss.NZeroStop = 5
 	}
 
-	ss.TrainEnv.Nm = "TrainEnv"
-	ss.TrainEnv.Dsc = "training params and state"
+	ss.TrainEnv.Name = "TrainEnv"
 	ss.TrainEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TrainEnv.Validate()
 	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
 
-	ss.TestEnv.Nm = "TestEnv"
-	ss.TestEnv.Dsc = "testing params and state"
+	ss.TestEnv.Name = "TestEnv"
 	ss.TestEnv.Table = etable.NewIndexView(ss.Pats)
 	ss.TestEnv.Sequential = true
 	ss.TestEnv.Validate()
@@ -633,12 +631,12 @@ func (ss *Sim) RunEpochName(run, epc int) string {
 
 // WeightsFileName returns default current weights file name
 func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
 }
 
 // LogFileName returns default log file name
 func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
+	return ss.Net.Name + "_" + ss.RunName() + "_" + lognm + ".tsv"
 }
 
 // InitStats initializes all the statistics.
@@ -1009,7 +1007,7 @@ func (ss *Sim) CmdArgs() {
 	ss.Logs.CloseLogFiles()
 
 	if saveNetData {
-		ndfn := ss.Net.Nm + "_" + ss.RunName() + ".netdata.gz"
+		ndfn := ss.Net.Name + "_" + ss.RunName() + ".netdata.gz"
 		ss.NetData.SaveJSON(core.Filename(ndfn))
 	}
 }

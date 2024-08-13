@@ -26,8 +26,7 @@ const NLrnPars = 4
 
 // Note: subsequent params applied after Base
 var ParamSets = params.Sets{
-	{Name: "Base", Desc: "base testing", Sheets: params.Sheets{
-		"Network": &params.Sheet{
+	{Name: "Base" {
 			{Sel: "Layer", Desc: "layer defaults",
 				Params: params.Params{
 					"Layer.Act.Gbar.L": "0.2", // was default when test created, now is 0.1
@@ -43,32 +42,25 @@ var ParamSets = params.Sets{
 					"Path.WtScale.Rel": "0.2",
 				}},
 		},
-	}},
-	{Name: "NormOn", Desc: "Learn.Norm on", Sheets: params.Sheets{
-		"Network": &params.Sheet{
+	{Name: "NormOn" {
 			{Sel: "Path", Desc: "norm on",
 				Params: params.Params{
 					"Path.Learn.Norm.On": "true",
 				}},
 		},
-	}},
-	{Name: "MomentOn", Desc: "Learn.Momentum on", Sheets: params.Sheets{
-		"Network": &params.Sheet{
+	{Name: "MomentOn" {
 			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
 					"Path.Learn.Momentum.On": "true",
 				}},
 		},
-	}},
-	{Name: "NormMomentOn", Desc: "both Learn.Momentum and Norm on", Sheets: params.Sheets{
-		"Network": &params.Sheet{
+	{Name: "NormMomentOn" {
 			{Sel: "Path", Desc: "moment on",
 				Params: params.Params{
 					"Path.Learn.Momentum.On": "true",
 					"Path.Learn.Norm.On":     "true",
 				}},
 		},
-	}},
 }
 
 func TestMakeNet(t *testing.T) {
@@ -406,17 +398,17 @@ func TestNetLearn(t *testing.T) {
 
 			didx := ti*4 + pi
 
-			hiddwt[didx] = hidLay.RcvPaths[0].SynValue("DWt", pi, pi)
-			outdwt[didx] = outLay.RcvPaths[0].SynValue("DWt", pi, pi)
-			hidnorm[didx] = hidLay.RcvPaths[0].SynValue("Norm", pi, pi)
-			outnorm[didx] = outLay.RcvPaths[0].SynValue("Norm", pi, pi)
-			hidmoment[didx] = hidLay.RcvPaths[0].SynValue("Moment", pi, pi)
-			outmoment[didx] = outLay.RcvPaths[0].SynValue("Moment", pi, pi)
+			hiddwt[didx] = hidLay.RecvPaths[0].SynValue("DWt", pi, pi)
+			outdwt[didx] = outLay.RecvPaths[0].SynValue("DWt", pi, pi)
+			hidnorm[didx] = hidLay.RecvPaths[0].SynValue("Norm", pi, pi)
+			outnorm[didx] = outLay.RecvPaths[0].SynValue("Norm", pi, pi)
+			hidmoment[didx] = hidLay.RecvPaths[0].SynValue("Moment", pi, pi)
+			outmoment[didx] = outLay.RecvPaths[0].SynValue("Moment", pi, pi)
 
 			TestNet.WtFmDWt()
 
-			hidwt[didx] = hidLay.RcvPaths[0].SynValue("Wt", pi, pi)
-			outwt[didx] = outLay.RcvPaths[0].SynValue("Wt", pi, pi)
+			hidwt[didx] = hidLay.RecvPaths[0].SynValue("Wt", pi, pi)
+			outwt[didx] = outLay.RecvPaths[0].SynValue("Wt", pi, pi)
 
 			switch pi {
 			case 0:

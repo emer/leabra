@@ -13,201 +13,54 @@ import (
 	"github.com/emer/etable/v2/etensor"
 )
 
-// LayerBase manages the structural elements of the layer, which are common
-// to any Layer type
-type LayerBase struct {
+// Layer implements the Leabra algorithm at the layer level,
+// managing neurons and pathways.
+type Layer struct {
+	emer.LayerBase
 
-	// we need a pointer to ourselves as an LeabraLayer (which subsumes emer.Layer), which can always be used to extract the true underlying type of object when layer is embedded in other structs -- function receivers do not have this ability so this is necessary.
-	LeabraLay LeabraLayer `copy:"-" json:"-" xml:"-" view:"-"`
+	// our parent network, in case we need to use it to
+	// find other layers etc; set when added by network
+	Network *Network `copier:"-" json:"-" xml:"-" display:"-"`
 
-	// our parent network, in case we need to use it to find other layers etc -- set when added by network
-	Network emer.Network `copy:"-" json:"-" xml:"-" view:"-"`
-
-	// Name of the layer -- this must be unique within the network, which has a map for quick lookup and layers are typically accessed directly by name
-	Nm string
-
-	// Class is for applying parameter styles, can be space separated multple tags
-	Cls string
-
-	// inactivate this layer -- allows for easy experimentation
-	Off bool
-
-	// shape of the layer -- can be 2D for basic layers and 4D for layers with sub-groups (hypercolumns) -- order is outer-to-inner (row major) so Y then X for 2D and for 4D: Y-X unit pools then Y-X neurons within pools
-	Shp etensor.Shape
-
-	// type of layer -- Hidden, Input, Target, Compare, or extended type in specialized algorithms -- matches against .Class parameter styles (e.g., .Hidden etc)
-	Typ emer.LayerType
-
-	// the thread number (go routine) to use in updating this layer. The user is responsible for allocating layers to threads, trying to maintain an even distribution across layers and establishing good break-points.
-	Thr int
-
-	// Spatial relationship to other layer, determines positioning
-	Rel relpos.Rel `view:"inline"`
-
-	// position of lower-left-hand corner of layer in 3D space, computed from Rel.  Layers are in X-Y width - height planes, stacked vertically in Z axis.
-	Ps math32.Vector3
-
-	// a 0..n-1 index of the position of the layer within list of layers in the network. For Leabra networks, it only has significance in determining who gets which weights for enforcing initial weight symmetry -- higher layers get weights from lower layers.
-	Index int
-
-	// indexes of representative units in the layer, for computationally expensive stats or displays
-	RepIxs []int
-
-	// shape of representative units in the layer -- if RepIxs is empty or .Shp is nil, use overall layer shape
-	RepShp etensor.Shape
+	// type of layer.
+	Type LayerType
 
 	// list of receiving pathways into this layer from other layers
-	RcvPaths LeabraPaths
+	RecvPaths []*Path
 
 	// list of sending pathways from this layer to other layers
-	SndPaths LeabraPaths
+	SendPaths []*Path
+
+	// Activation parameters and methods for computing activations
+	Act ActParams `view:"add-fields"`
+
+	// Inhibition parameters and methods for computing layer-level inhibition
+	Inhib InhibParams `view:"add-fields"`
+
+	// Learning parameters and methods that operate at the neuron level
+	Learn LearnNeurParams `view:"add-fields"`
+
+	// slice of neurons for this layer, as a flat list of len = Shape.Len().
+	// Must iterate over index and use pointer to modify values.
+	Neurons []Neuron
+
+	// inhibition and other pooled, aggregate state variables.
+	// flat list has at least of 1 for layer, and one for each sub-pool
+	// if shape supports that (4D).
+	// Must iterate over index and use pointer to modify values.
+	Pools []Pool
+
+	// cosine difference between ActM, ActP stats
+	CosDiff CosDiffStats
 }
 
 // emer.Layer interface methods
 
-// InitName MUST be called to initialize the layer's pointer to itself as an emer.Layer
-// which enables the proper interface methods to be called.  Also sets the name, and
-// the parent network that this layer belongs to (which layers may want to retain).
-func (ls *LayerBase) InitName(lay emer.Layer, name string, net emer.Network) {
-	ls.LeabraLay = lay.(LeabraLayer)
-	ls.Nm = name
-	ls.Network = net
-}
-
-func (ls *LayerBase) Name() string        { return ls.Nm }
-func (ls *LayerBase) SetName(nm string)   { ls.Nm = nm }
-func (ls *LayerBase) Label() string       { return ls.Nm }
-func (ls *LayerBase) Class() string       { return ls.Typ.String() + " " + ls.Cls }
-func (ls *LayerBase) SetClass(cls string) { ls.Cls = cls }
-func (ly *LayerBase) AddClass(cls string) { ly.Cls = params.AddClass(ly.Cls, cls) }
-
-func (ls *LayerBase) TypeName() string           { return "Layer" } // type category, for params..
-func (ls *LayerBase) Type() emer.LayerType       { return ls.Typ }
-func (ls *LayerBase) SetType(typ emer.LayerType) { ls.Typ = typ }
-func (ls *LayerBase) IsOff() bool                { return ls.Off }
-func (ls *LayerBase) SetOff(off bool)            { ls.Off = off }
-func (ls *LayerBase) Shape() *etensor.Shape      { return &ls.Shp }
-func (ls *LayerBase) Is2D() bool                 { return ls.Shp.NumDims() == 2 }
-func (ls *LayerBase) Is4D() bool                 { return ls.Shp.NumDims() == 4 }
-func (ls *LayerBase) Thread() int                { return ls.Thr }
-func (ls *LayerBase) SetThread(thr int)          { ls.Thr = thr }
-func (ls *LayerBase) RelPos() relpos.Rel         { return ls.Rel }
-func (ls *LayerBase) Pos() math32.Vector3        { return ls.Ps }
-func (ls *LayerBase) SetPos(pos math32.Vector3)  { ls.Ps = pos }
-func (ls *LayerBase) Index() int                 { return ls.Index }
-func (ls *LayerBase) SetIndex(idx int)           { ls.Index = idx }
-func (ls *LayerBase) RecvPaths() *LeabraPaths    { return &ls.RcvPaths }
-func (ls *LayerBase) NRecvPaths() int            { return len(ls.RcvPaths) }
-func (ls *LayerBase) RecvPath(idx int) emer.Path { return ls.RcvPaths[idx] }
-func (ls *LayerBase) SendPaths() *LeabraPaths    { return &ls.SndPaths }
-func (ls *LayerBase) NSendPaths() int            { return len(ls.SndPaths) }
-func (ls *LayerBase) SendPath(idx int) emer.Path { return ls.SndPaths[idx] }
-func (ls *LayerBase) RepIndexes() []int          { return ls.RepIxs }
-
-func (ly *LayerBase) SendNameTry(sender string) (emer.Path, error) {
-	return emer.SendNameTry(ly.LeabraLay, sender)
-}
-func (ly *LayerBase) SendName(sender string) emer.Path {
-	pj, _ := emer.SendNameTry(ly.LeabraLay, sender)
-	return pj
-}
-func (ly *LayerBase) SendNameTypeTry(sender, typ string) (emer.Path, error) {
-	return emer.SendNameTypeTry(ly.LeabraLay, sender, typ)
-}
-func (ly *LayerBase) RecvNameTry(receiver string) (emer.Path, error) {
-	return emer.RecvNameTry(ly.LeabraLay, receiver)
-}
-func (ly *LayerBase) RecvName(receiver string) emer.Path {
-	pj, _ := emer.RecvNameTry(ly.LeabraLay, receiver)
-	return pj
-}
-func (ly *LayerBase) RecvNameTypeTry(receiver, typ string) (emer.Path, error) {
-	return emer.RecvNameTypeTry(ly.LeabraLay, receiver, typ)
-}
-
-func (ls *LayerBase) Index4DFrom2D(x, y int) ([]int, bool) {
-	lshp := ls.Shape()
-	nux := lshp.Dim(3)
-	nuy := lshp.Dim(2)
-	ux := x % nux
-	uy := y % nuy
-	px := x / nux
-	py := y / nuy
-	idx := []int{py, px, uy, ux}
-	if !lshp.IndexIsValid(idx) {
-		return nil, false
-	}
-	return idx, true
-}
-
-func (ls *LayerBase) SetRelPos(rel relpos.Rel) {
-	ls.Rel = rel
-	if ls.Rel.Scale == 0 {
-		ls.Rel.Defaults()
-	}
-}
-
-func (ls *LayerBase) Size() math32.Vector2 {
-	if ls.Rel.Scale == 0 {
-		ls.Rel.Defaults()
-	}
-	var sz math32.Vector2
-	switch {
-	case ls.Is2D():
-		sz = math32.Vector2{float32(ls.Shp.Dim(1)), float32(ls.Shp.Dim(0))} // Y, X
-	case ls.Is4D():
-		// note: pool spacing is handled internally in display and does not affect overall size
-		sz = math32.Vector2{float32(ls.Shp.Dim(1) * ls.Shp.Dim(3)), float32(ls.Shp.Dim(0) * ls.Shp.Dim(2))} // Y, X
-	default:
-		sz = math32.Vector2{float32(ls.Shp.Len()), 1}
-	}
-	return sz.MulScalar(ls.Rel.Scale)
-}
-
-// SetShape sets the layer shape and also uses default dim names
-func (ls *LayerBase) SetShape(shape []int) {
-	var dnms []string
-	if len(shape) == 2 {
-		dnms = emer.LayerDimNames2D
-	} else if len(shape) == 4 {
-		dnms = emer.LayerDimNames4D
-	}
-	ls.Shp.SetShape(shape, nil, dnms) // row major default
-}
-
-// SetRepIndexesShape sets the RepIndexes, and RepShape and as list of dimension sizes
-func (ls *LayerBase) SetRepIndexesShape(idxs, shape []int) {
-	ls.RepIxs = idxs
-	var dnms []string
-	if len(shape) == 2 {
-		dnms = emer.LayerDimNames2D
-	} else if len(shape) == 4 {
-		dnms = emer.LayerDimNames4D
-	}
-	ls.RepShp.SetShape(shape, nil, dnms) // row major default
-}
-
-// RepShape returns the shape to use for representative units
-func (ls *LayerBase) RepShape() *etensor.Shape {
-	sz := len(ls.RepIxs)
-	if sz == 0 {
-		return &ls.Shp
-	}
-	if ls.RepShp.Len() < sz {
-		ls.RepShp.SetShape([]int{sz}, nil, nil) // row major default
-	}
-	return &ls.RepShp
-}
-
-// NPools returns the number of unit sub-pools according to the shape parameters.
-// Currently supported for a 4D shape, where the unit pools are the first 2 Y,X dims
-// and then the units within the pools are the 2nd 2 Y,X dims
-func (ls *LayerBase) NPools() int {
-	if ls.Shp.NumDims() != 4 {
-		return 0
-	}
-	return ls.Shp.Dim(0) * ls.Shp.Dim(1)
-}
+func (ls *LayerBase) TypeName() string           { return ly.Type.String() }
+func (ls *LayerBase) NumRecvPaths() int          { return len(ls.RecvPaths) }
+func (ls *LayerBase) RecvPath(idx int) emer.Path { return ls.RecvPaths[idx] }
+func (ls *LayerBase) NumSendPaths() int          { return len(ls.SendPaths) }
+func (ls *LayerBase) SendPath(idx int) emer.Path { return ls.SendPaths[idx] }
 
 // RecipToSendPath finds the reciprocal pathway relative to the given sending pathway
 // found within the SendPaths of this layer.  This is then a recv path within this layer:
@@ -216,18 +69,12 @@ func (ls *LayerBase) NPools() int {
 //
 // returns false if not found.
 func (ls *LayerBase) RecipToSendPath(spj emer.Path) (emer.Path, bool) {
-	for _, rpj := range ls.RcvPaths {
+	for _, rpj := range ls.RecvPaths {
 		if rpj.SendLay() == spj.RecvLay() {
 			return rpj, true
 		}
 	}
 	return nil, false
-}
-
-// Config configures the basic properties of the layer
-func (ls *LayerBase) Config(shape []int, typ emer.LayerType) {
-	ls.SetShape(shape)
-	ls.Typ = typ
 }
 
 // ApplyParams applies given parameter style Sheet to this layer and its recv pathways.
@@ -246,7 +93,7 @@ func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 	if err != nil {
 		rerr = err
 	}
-	for _, pj := range ls.RcvPaths {
+	for _, pj := range ls.RecvPaths {
 		app, err = pj.ApplyParams(pars, setMsg)
 		if app {
 			applied = true
@@ -256,15 +103,4 @@ func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) 
 		}
 	}
 	return applied, rerr
-}
-
-// NonDefaultParams returns a listing of all parameters in the Layer that
-// are not at their default values -- useful for setting param styles etc.
-func (ls *LayerBase) NonDefaultParams() string {
-	nds := views.StructNonDefFieldsStr(ls.LeabraLay, ls.Nm)
-	for _, pj := range ls.RcvPaths {
-		pnd := pj.NonDefaultParams()
-		nds += pnd
-	}
-	return nds
 }
