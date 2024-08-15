@@ -200,7 +200,7 @@ func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 func (ly *GPiThalLayer) SendGateShape() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
-		tly, err := ly.Network.LayerByNameTry(lnm)
+		tly, err := ly.Network.LayerByName(lnm)
 		if err != nil {
 			log.Printf("GPiThalLayer %s SendGateShape: %v\n", ly.Name(), err)
 			lasterr = err
@@ -252,7 +252,7 @@ func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error)
 func (ly *GPiThalLayer) SendToCheck() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
-		tly, err := ly.Network.LayerByNameTry(lnm)
+		tly, err := ly.Network.LayerByName(lnm)
 		if err != nil {
 			log.Printf("GPiThalLayer %s SendToCheck: %v\n", ly.Name(), err)
 			lasterr = err
@@ -315,7 +315,7 @@ func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		goRaw := goPath.GeRaw[ni]
@@ -338,7 +338,7 @@ func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		gs := ly.GateState(int(nrn.SubPool) - 1)
@@ -387,7 +387,7 @@ func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			gnr := &ly.GPiNeurs[ni]

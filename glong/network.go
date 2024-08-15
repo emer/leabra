@@ -6,7 +6,7 @@ package glong
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -42,7 +42,7 @@ func (nt *Network) NewLayer() emer.Layer {
 }
 
 // ConnectNMDA adds a NMDAPath between given layers
-func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat path.Pattern) emer.Path {
+func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return ConnectNMDA(&nt.Network, send, recv, pat)
 }
 
@@ -53,18 +53,18 @@ func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat path.Pattern) emer.Pat
 // AddGlongLayer2D adds a glong.Layer using 2D shape
 func AddGlongLayer2D(nt *leabra.Network, name string, nNeurY, nNeurX int) *Layer {
 	ly := &Layer{}
-	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
 // AddGlongLayer4D adds a glong.Layer using 4D shape with pools
 func AddGlongLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
 	ly := &Layer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
 // ConnectNMDA adds a NMDAPath between given layers
-func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return nt.ConnectLayersPath(send, recv, pat, NMDA, &NMDAPath{})
 }

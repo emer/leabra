@@ -10,9 +10,8 @@ import (
 
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -78,13 +77,13 @@ var ParamSets = params.Sets{
 
 func TestMakeNet(t *testing.T) {
 	TestNet.InitName(&TestNet, "TestNet")
-	inLay := TestNet.AddLayer("Input", []int{4, 1}, emer.Input)
-	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden)
-	outLay := TestNet.AddLayer("Output", []int{4, 1}, emer.Target)
+	inLay := TestNet.AddLayer("Input", []int{4, 1}, InputLayer)
+	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, HiddenLayer)
+	outLay := TestNet.AddLayer("Output", []int{4, 1}, TargetLayer)
 
-	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
+	TestNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
+	TestNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
+	TestNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
@@ -157,7 +156,7 @@ func TestNetAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpaceTry([]int{pi})
+		inpat, err := InPats.SubSpace([]int{pi})
 		if err != nil {
 			t.Error(err)
 		}
@@ -316,7 +315,7 @@ func TestNetLearn(t *testing.T) {
 		ltime := leabra.NewTime()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat, err := InPats.SubSpaceTry([]int{pi})
+			inpat, err := InPats.SubSpace([]int{pi})
 			if err != nil {
 				t.Error(err)
 			}

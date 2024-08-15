@@ -18,40 +18,30 @@ import (
 	"strings"
 	"time"
 
-	"cogentcore.org/core/gimain"
-	"cogentcore.org/core/kit"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/stats/split"
 	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 )
 
 func main() {
-	TheSim.New()
-	TheSim.Config()
-	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	sim := &Sim{}
+	sim.New()
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		sim.RunGUI()
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		sim.RunNoGUI()
 	}
-}
-
-func guirun() {
-	TheSim.Init()
-	win := TheSim.ConfigGUI()
-	win.StartEventLoop()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -307,10 +297,6 @@ type Sim struct {
 	LastEpcTime time.Time `display:"-"`
 }
 
-// this registers this Sim Type and gives it properties that e.g.,
-// prompt for filename for save methods.
-var KiT_Sim = kit.Types.AddType(&Sim{}, SimProps)
-
 // TheSim is the overall state for this simulation
 var TheSim Sim
 
@@ -380,20 +366,20 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "RA25")
-	inp := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1 := net.AddLayer2D("Hidden1", 7, 7, emer.Hidden)
-	hid2 := net.AddLayer4D("Hidden2", 2, 4, 3, 2, emer.Hidden)
-	out := net.AddLayer2D("Output", 5, 5, emer.Target)
+	inp := net.AddLayer2D("Input", 5, 5, leabra.InputLayer)
+	hid1 := net.AddLayer2D("Hidden1", 7, 7, leabra.SuperLayer)
+	hid2 := net.AddLayer4D("Hidden2", 2, 4, 3, 2, leabra.SuperLayer)
+	out := net.AddLayer2D("Output", 5, 5, leabra.TargetLayer)
 
 	// use this to position layers relative to each other
 	// default is Above, YAlign = Front, XAlign = Center
 	hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
 	// note: see emergent/path module for all the options on how to connect
-	// NewFull returns a new path.Full connectivity pattern
-	full := path.NewFull()
+	// NewFull returns a new paths.Full connectivity pattern
+	full := paths.NewFull()
 
-	net.ConnectLayers(inp, hid1, full, emer.Forward)
+	net.ConnectLayers(inp, hid1, full, leabra.ForwardPath)
 	net.BidirConnectLayers(hid1, hid2, full)
 	net.BidirConnectLayers(hid2, out, full)
 
@@ -1112,11 +1098,11 @@ func (ss *Sim) LogTstEpc(dt *table.Table) {
 	// data table, instead of incrementing on the Sim
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
-	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.Mean(tix, "Err")[0])
-	dt.SetCellFloat("PctCor", row, 1-agg.Mean(tix, "Err")[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
+	dt.SetCellFloat("SSE", row, stats.Sum(tix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(tix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.Mean(tix, "Err")[0])
+	dt.SetCellFloat("PctCor", row, 1-stats.Mean(tix, "Err")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(tix, "CosDiff")[0])
 
 	trlix := table.NewIndexView(trl)
 	trlix.Filter(func(et *table.Table, row int) bool {
@@ -1125,11 +1111,11 @@ func (ss *Sim) LogTstEpc(dt *table.Table) {
 	ss.TstErrLog = trlix.NewTable()
 
 	allsp := split.All(trlix)
-	split.Agg(allsp, "SSE", agg.AggSum)
-	split.Agg(allsp, "AvgSSE", agg.AggMean)
-	split.Agg(allsp, "InAct", agg.AggMean)
-	split.Agg(allsp, "OutActM", agg.AggMean)
-	split.Agg(allsp, "OutActP", agg.AggMean)
+	split.Agg(allsp, "SSE", stats.AggSum)
+	split.Agg(allsp, "AvgSSE", stats.AggMean)
+	split.Agg(allsp, "InAct", stats.AggMean)
+	split.Agg(allsp, "OutActM", stats.AggMean)
+	split.Agg(allsp, "OutActP", stats.AggMean)
 
 	ss.TstErrStats = allsp.AggsToTable(table.AddAggName)
 
@@ -1252,11 +1238,11 @@ func (ss *Sim) LogRun(dt *table.Table) {
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
 	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
-	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
-	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
+	dt.SetCellFloat("SSE", row, stats.Mean(epcix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(epcix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.Mean(epcix, "PctErr")[0])
+	dt.SetCellFloat("PctCor", row, stats.Mean(epcix, "PctCor")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(epcix, "CosDiff")[0])
 
 	runix := table.NewIndexView(dt)
 	spl := split.GroupBy(runix, []string{"Params"})

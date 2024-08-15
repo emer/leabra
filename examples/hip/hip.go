@@ -15,41 +15,31 @@ import (
 	"strings"
 	"time"
 
-	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/metric"
-	"cogentcore.org/core/tensor/simat"
-	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/stats/metric"
+	"cogentcore.org/core/tensor/stats/simat"
+	"cogentcore.org/core/tensor/stats/split"
 	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/path"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/hip"
 	"github.com/emer/leabra/v2/leabra"
 )
 
 func main() {
-	TheSim.New()
-	TheSim.Config()
-	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	sim := &Sim{}
+	sim.New()
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		sim.RunGUI()
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		sim.RunNoGUI()
 	}
-}
-
-func guirun() {
-	TheSim.Init()
-	win := TheSim.ConfigGUI()
-	win.StartEventLoop()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -488,12 +478,12 @@ func (ss *Sim) SetEnv(trainAC bool) {
 
 func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.InitName(net, "Hip")
-	in := net.AddLayer4D("Input", 6, 2, 3, 4, emer.Input)
-	ecin := net.AddLayer4D("ECin", 6, 2, 3, 4, emer.Hidden)
-	ecout := net.AddLayer4D("ECout", 6, 2, 3, 4, emer.Target) // clamped in plus phase
-	ca1 := net.AddLayer4D("CA1", 6, 2, 4, 10, emer.Hidden)
-	dg := net.AddLayer2D("DG", 25, 25, emer.Hidden)
-	ca3 := net.AddLayer2D("CA3", 30, 10, emer.Hidden)
+	in := net.AddLayer4D("Input", 6, 2, 3, 4, leabra.InputLayer)
+	ecin := net.AddLayer4D("ECin", 6, 2, 3, 4, leabra.SuperLayer)
+	ecout := net.AddLayer4D("ECout", 6, 2, 3, 4, leabra.TargetLayer) // clamped in plus phase
+	ca1 := net.AddLayer4D("CA1", 6, 2, 4, 10, leabra.SuperLayer)
+	dg := net.AddLayer2D("DG", 25, 25, leabra.SuperLayer)
+	ca3 := net.AddLayer2D("CA3", 30, 10, leabra.SuperLayer)
 
 	ecin.SetClass("EC")
 	ecout.SetClass("EC")
@@ -504,41 +494,41 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ca3.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: "DG", YAlign: relpos.Front, XAlign: relpos.Left, Space: 0})
 	ca1.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "CA3", YAlign: relpos.Front, Space: 2})
 
-	onetoone := path.NewOneToOne()
-	pool1to1 := path.NewPoolOneToOne()
-	full := path.NewFull()
+	onetoone := paths.NewOneToOne()
+	pool1to1 := paths.NewPoolOneToOne()
+	full := paths.NewFull()
 
-	net.ConnectLayers(in, ecin, onetoone, emer.Forward)
+	net.ConnectLayers(in, ecin, onetoone, leabra.ForwardPath)
 	net.ConnectLayers(ecout, ecin, onetoone, BackPath)
 
 	// EC <-> CA1 encoder pathways
-	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, leabra.ForwardPath, &hip.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
-	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, emer.Forward, &hip.EcCa1Path{})
+	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, leabra.ForwardPath, &hip.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
 	pj = net.ConnectLayersPath(ecout, ca1, pool1to1, BackPath, &hip.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
 
 	// Perforant pathway
-	ppath := path.NewUnifRnd()
+	ppath := paths.NewUnifRnd()
 	ppath.PCon = 0.25
 
-	pj = net.ConnectLayersPath(ecin, dg, ppath, emer.Forward, &hip.CHLPath{})
+	pj = net.ConnectLayersPath(ecin, dg, ppath, leabra.ForwardPath, &hip.CHLPath{})
 	pj.SetClass("HippoCHL")
 
-	pj = net.ConnectLayersPath(ecin, ca3, ppath, emer.Forward, &hip.EcCa1Path{})
+	pj = net.ConnectLayersPath(ecin, ca3, ppath, leabra.ForwardPath, &hip.EcCa1Path{})
 	pj.SetClass("PPath")
 	pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.EcCa1Path{})
 	pj.SetClass("PPath")
 
 	// Mossy fibers
-	mossy := path.NewUnifRnd()
+	mossy := paths.NewUnifRnd()
 	mossy.PCon = 0.02
-	pj = net.ConnectLayersPath(dg, ca3, mossy, emer.Forward, &hip.CHLPath{}) // no learning
+	pj = net.ConnectLayersPath(dg, ca3, mossy, leabra.ForwardPath, &hip.CHLPath{}) // no learning
 	pj.SetClass("HippoCHL")
 
 	// Schafer collaterals
-	pj = net.ConnectLayersPath(ca3, ca1, full, emer.Forward, &hip.CHLPath{})
+	pj = net.ConnectLayersPath(ca3, ca1, full, leabra.ForwardPath, &hip.CHLPath{})
 	pj.SetClass("HippoCHL")
 
 	// using 3 threads total
@@ -633,7 +623,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	ca3FmDg.WtScale.Rel = 0 // turn off DG input to CA3 in first quarter
 
 	if train {
-		ecout.SetType(emer.Target) // clamp a plus phase during testing
+		ecout.SetType(leabra.TargetLayer) // clamp a plus phase during testing
 	} else {
 		ecout.SetType(emer.Compare) // don't clamp
 	}
@@ -1087,7 +1077,7 @@ func (ss *Sim) SetParams(sheet string, setMsg bool) error {
 // otherwise just the named sheet
 // if setMsg = true then we output a message for each param that was set.
 func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
-	pset, err := ss.Params.SetByNameTry(setNm)
+	pset, err := ss.Params.SetByName(setNm)
 	if err != nil {
 		return err
 	}
@@ -1310,10 +1300,10 @@ func (ss *Sim) LogTrnEpc(dt *table.Table) {
 	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
 	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
 
-	mem := agg.Mean(tix, "Mem")[0]
+	mem := stats.Mean(tix, "Mem")[0]
 	dt.SetCellFloat("Mem", row, mem)
-	dt.SetCellFloat("TrgOnWasOff", row, agg.Mean(tix, "TrgOnWasOff")[0])
-	dt.SetCellFloat("TrgOffWasOn", row, agg.Mean(tix, "TrgOffWasOn")[0])
+	dt.SetCellFloat("TrgOnWasOff", row, stats.Mean(tix, "TrgOnWasOff")[0])
+	dt.SetCellFloat("TrgOffWasOn", row, stats.Mean(tix, "TrgOffWasOn")[0])
 
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
@@ -1450,7 +1440,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *table.Table) {
 	}
 	for _, lnm := range ss.LayStatNms {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		sch = append(sch, table.Column{lnm + "Act", tensor.FLOAT64, ly.Shape.Shp, nil})
+		sch = append(sch, table.Column{lnm + "Act", tensor.FLOAT64, ly.Shape.Sizes, nil})
 	}
 
 	dt.SetFromSchema(sch, nt)
@@ -1524,20 +1514,20 @@ func (ss *Sim) LogTstEpc(dt *table.Table) {
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
 	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
-	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("SSE", row, stats.Sum(tix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(tix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val > 0
 	})[0])
-	dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("PctCor", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val == 0
 	})[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(tix, "CosDiff")[0])
 
 	trix := table.NewIndexView(trl)
 	spl := split.GroupBy(trix, []string{"TestNm"})
 	for _, ts := range ss.TstStatNms {
-		split.Agg(spl, ts, agg.AggMean)
+		split.Agg(spl, ts, stats.AggMean)
 	}
 	ss.TstStats = spl.AggsToTable(table.ColNameOnly)
 
@@ -1714,16 +1704,16 @@ func (ss *Sim) LogRun(dt *table.Table) {
 	dt.SetCellString("Params", row, params)
 	dt.SetCellFloat("NEpochs", row, float64(ss.TstEpcLog.Rows))
 	dt.SetCellFloat("FirstZero", row, float64(fzero))
-	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
-	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
+	dt.SetCellFloat("SSE", row, stats.Mean(epcix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(epcix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.Mean(epcix, "PctErr")[0])
+	dt.SetCellFloat("PctCor", row, stats.Mean(epcix, "PctCor")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(epcix, "CosDiff")[0])
 
 	for _, tn := range ss.TstNms {
 		for _, ts := range ss.TstStatNms {
 			nm := tn + " " + ts
-			dt.SetCellFloat(nm, row, agg.Mean(epcix, nm)[0])
+			dt.SetCellFloat(nm, row, stats.Mean(epcix, nm)[0])
 		}
 	}
 

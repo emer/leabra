@@ -12,7 +12,7 @@ import (
 //  learn.go contains the learning params and functions for leabra
 
 // leabra.LearnNeurParams manages learning-related parameters at the neuron-level.
-// This is mainly the running average activations that drive learning
+// This is mainly the running average activations that drive learning.
 type LearnNeurParams struct {
 
 	// parameters for computing running average activations that drive learning

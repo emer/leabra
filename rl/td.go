@@ -31,7 +31,7 @@ func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase
@@ -88,7 +88,7 @@ func (ly *TDRewIntegLayer) GetDA() float32   { return ly.DA }
 func (ly *TDRewIntegLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewInteg.RewPred)
+	tly, err := ly.Network.LayerByName(ly.RewInteg.RewPred)
 	if err != nil {
 		log.Printf("TDRewIntegLayer %s RewPredLayer: %v\n", ly.Name(), err)
 		return nil, err
@@ -115,7 +115,7 @@ func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
 	rpAct := rply.Neurons[0].Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase
@@ -158,7 +158,7 @@ func (ly *TDDaLayer) GetDA() float32   { return ly.DA }
 func (ly *TDDaLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewInteg)
+	tly, err := ly.Network.LayerByName(ly.RewInteg)
 	if err != nil {
 		log.Printf("TDDaLayer %s RewIntegLayer: %v\n", ly.Name(), err)
 		return nil, err
@@ -190,7 +190,7 @@ func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
 	da := rpActP - rpActM
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if ltime.Quarter == 3 { // plus phase

@@ -139,7 +139,7 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
@@ -157,7 +157,7 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 func (ly *Layer) GABABFmGi(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -183,7 +183,7 @@ func (ly *Layer) ActFmG(ltime *leabra.Time) {
 func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -195,7 +195,7 @@ func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
 func (ly *Layer) ActLrnFmAlphaMax() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
@@ -208,7 +208,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 	mx := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]

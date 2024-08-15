@@ -190,7 +190,7 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		amax := ly.Matrix.LrnFactor(ly.AlphaMaxs[ni])

@@ -8,11 +8,10 @@ import (
 	"log"
 	"math/rand"
 
+	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
-	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/erand"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -103,10 +102,10 @@ func (ly *Layer) InitExt() {
 func (ly *Layer) ApplyExtFlags() (clear, set []enums.BitFlag, toTarg bool) {
 	clear = []enums.BitFlag{NeurHasExt, NeurHasTarg, NeurHasCmpr}
 	toTarg = false
-	if ly.Type == emer.Target {
+	if ly.Type == TargetLayer {
 		set = []enums.BitFlag{NeurHasTarg}
 		toTarg = true
-	} else if ly.Type == emer.Compare {
+	} else if ly.Type == CompareLayer {
 		set = []enums.BitFlag{NeurHasCmpr}
 		toTarg = true
 	} else {
@@ -137,15 +136,15 @@ func (ly *Layer) ApplyExt(ext tensor.Tensor) {
 // ApplyExt2D applies 2D tensor external input
 func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
-	ymx := min(ext.Dim(0), ly.Shape.Dim(0))
-	xmx := min(ext.Dim(1), ly.Shape.Dim(1))
+	ymx := min(ext.DimSize(0), ly.Shape.DimSize(0))
+	xmx := min(ext.DimSize(1), ly.Shape.DimSize(1))
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatValue(idx))
+			vl := float32(ext.Float(idx))
 			i := ly.Shape.Offset(idx)
 			nrn := &ly.Neurons[i]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			if toTarg {
@@ -162,17 +161,17 @@ func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
 // ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
 func (ly *Layer) ApplyExt2Dto4D(ext tensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
-	lNy, lNx, _, _ := tensor.Path2DShape(&ly.Shape, false)
+	lNy, lNx, _, _ := tensor.Projection2DShape(&ly.Shape, false)
 
-	ymx := min(ext.Dim(0), lNy)
-	xmx := min(ext.Dim(1), lNx)
+	ymx := min(ext.DimSize(0), lNy)
+	xmx := min(ext.DimSize(1), lNx)
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatValue(idx))
-			ui := tensor.Path2DIndex(&ly.Shape, false, y, x)
+			vl := float32(ext.Float(idx))
+			ui := tensor.Projection2DIndex(&ly.Shape, false, y, x)
 			nrn := &ly.Neurons[ui]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			if toTarg {
@@ -189,19 +188,19 @@ func (ly *Layer) ApplyExt2Dto4D(ext tensor.Tensor) {
 // ApplyExt4D applies 4D tensor external input
 func (ly *Layer) ApplyExt4D(ext tensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
-	ypmx := min(ext.Dim(0), ly.Shape.Dim(0))
-	xpmx := min(ext.Dim(1), ly.Shape.Dim(1))
-	ynmx := min(ext.Dim(2), ly.Shape.Dim(2))
-	xnmx := min(ext.Dim(3), ly.Shape.Dim(3))
+	ypmx := min(ext.DimSize(0), ly.Shape.DimSize(0))
+	xpmx := min(ext.DimSize(1), ly.Shape.DimSize(1))
+	ynmx := min(ext.DimSize(2), ly.Shape.DimSize(2))
+	xnmx := min(ext.DimSize(3), ly.Shape.DimSize(3))
 	for yp := 0; yp < ypmx; yp++ {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, xn}
-					vl := float32(ext.FloatValue(idx))
+					vl := float32(ext.Float(idx))
 					i := ly.Shape.Offset(idx)
 					nrn := &ly.Neurons[i]
-					if nrn.Off {
+					if nrn.IsOff() {
 						continue
 					}
 					if toTarg {
@@ -225,10 +224,10 @@ func (ly *Layer) ApplyExt1DTsr(ext tensor.Tensor) {
 	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
-		vl := float32(ext.FloatValue1D(i))
+		vl := float32(ext.Float1D(i))
 		if toTarg {
 			nrn.Targ = vl
 		} else {
@@ -247,7 +246,7 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		vl := float32(ext[i])
@@ -272,7 +271,7 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		vl := ext[i]
@@ -293,7 +292,7 @@ func (ly *Layer) UpdateExtFlags() {
 	clear, set, _ := ly.ApplyExtFlags()
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		nrn.SetFlag(false, clear...)
@@ -319,7 +318,7 @@ func (ly *Layer) ActAvgFmAct() {
 func (ly *Layer) ActQ0FmActP() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		nrn.ActQ0 = nrn.ActP
@@ -344,12 +343,12 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 		ly.ActAvgFmAct()
 	}
 	ly.GScaleFmAvgAct() // need to do this always, in case hasn't been done at all yet
-	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
+	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != randx.Mean {
 		ly.GenNoise()
 	}
 	ly.DecayState(ly.Act.Init.Decay)
 	ly.InitGInc()
-	if ly.Act.Clamp.Hard && ly.Type == emer.Input {
+	if ly.Act.Clamp.Hard && ly.Type == InputLayer {
 		ly.HardClamp()
 	}
 }
@@ -358,7 +357,7 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 func (ly *Layer) AvgLFmAvgM() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Learn.AvgLFmAvgM(nrn)
@@ -380,7 +379,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 		if pt.Off {
 			continue
 		}
-		slay := pt.Send.(LeabraLayer).AsLeabra()
+		slay := pt.Send
 		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
@@ -419,7 +418,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 func (ly *Layer) GenNoise() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		nrn.Noise = float32(ly.Act.Noise.Gen(-1))
+		nrn.Noise = float32(ly.Act.Noise.Gen())
 	}
 }
 
@@ -428,7 +427,7 @@ func (ly *Layer) GenNoise() {
 func (ly *Layer) DecayState(decay float32) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.DecayState(nrn, decay)
@@ -446,7 +445,7 @@ func (ly *Layer) DecayStatePool(pool int, decay float32) {
 	pl := &ly.Pools[pi]
 	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.DecayState(nrn, decay)
@@ -459,7 +458,7 @@ func (ly *Layer) DecayStatePool(pool int, decay float32) {
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.HardClamp(nrn)
@@ -477,7 +476,7 @@ func (ly *Layer) HardClamp() {
 func (ly *Layer) InitGInc() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.InitGInc(nrn)
@@ -495,7 +494,7 @@ func (ly *Layer) InitGInc() {
 func (ly *Layer) SendGDelta(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
@@ -545,7 +544,7 @@ func (ly *Layer) RecvGInc(ltime *Time) {
 func (ly *Layer) GFmIncNeur(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		// note: each step broken out here so other variants can add extra terms to Raw
@@ -561,7 +560,7 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 		pl.Inhib.Ge.Init()
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			pl.Inhib.Ge.UpdateValue(nrn.Ge, int32(ni))
@@ -605,7 +604,7 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 func (ly *Layer) InhibFmPool(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		pl := &ly.Pools[nrn.SubPool]
@@ -619,7 +618,7 @@ func (ly *Layer) InhibFmPool(ltime *Time) {
 func (ly *Layer) ActFmG(ltime *Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.VmFmG(nrn)
@@ -635,7 +634,7 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 		pl.Inhib.Act.Init()
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			pl.Inhib.Act.UpdateValue(nrn.Act, int32(ni))
@@ -668,7 +667,7 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		switch ltime.Quarter {
@@ -704,7 +703,7 @@ func (ly *Layer) CosDiffFmActs() {
 	ssp := float32(0)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ap := nrn.ActP - avgP // zero mean
@@ -732,7 +731,7 @@ func (ly *Layer) CosDiffFmActs() {
 }
 
 // IsTarget returns true if this layer is a Target layer.
-// By default, returns true for layers of Type == emer.Target
+// By default, returns true for layers of Type == TargetLayer
 // Other Target layers include the TRCLayer in deep predictive learning.
 // This is used for turning off BCM hebbian learning,
 // in CosDiffFmActs to set the CosDiff.ModAvgLLrn value
@@ -740,7 +739,7 @@ func (ly *Layer) CosDiffFmActs() {
 // It is also used in WtBal to not apply it to target layers.
 // In both cases, Target layers are purely error-driven.
 func (ly *Layer) IsTarget() bool {
-	return ly.Type == emer.Target
+	return ly.Type == TargetLayer
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -825,11 +824,11 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 	sse = 0.0
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		var d float32
-		if ly.Type == emer.Compare {
+		if ly.Type == CompareLayer {
 			d = nrn.Targ - nrn.ActM
 		} else {
 			d = nrn.ActP - nrn.ActM

@@ -6,7 +6,6 @@ package deep
 
 import (
 	"cogentcore.org/core/math32"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -48,12 +47,12 @@ func (pj *CTCtxtPath) UpdateParams() {
 	pj.Path.UpdateParams()
 }
 
-func (pj *CTCtxtPath) Type() emer.PathType {
+func (pj *CTCtxtPath) Type() PathTypes {
 	return CTCtxt
 }
 
 func (pj *CTCtxtPath) PathTypeName() string {
-	if pj.Type < emer.PathTypeN {
+	if pj.Type < PathTypesN {
 		return pj.Typ.String()
 	}
 	ptyp := PathType(pj.Typ)
@@ -187,8 +186,8 @@ func (pj *CTCtxtPath) DWt() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  PathType
 
-// PathType has the DeepLeabra extensions to the emer.PathType types, for gui
-type PathType emer.PathType //enums:enum
+// PathType has the DeepLeabra extensions to the PathTypes types, for gui
+type PathType PathTypes //enums:enum
 
 // The DeepLeabra path types
 const (
@@ -197,12 +196,12 @@ const (
 	// at end of a DeepBurst quarter.  These pathways also use a special learning
 	// rule that takes into account the temporal delays in the activation states.
 	// Can also add self context from CT for deeper temporal context.
-	CTCtxt emer.PathType = emer.PathTypeN + iota
+	CTCtxt PathTypes = PathTypesN + iota
 )
 
 // gui versions
 const (
-	CTCtxt_ PathType = PathType(emer.PathTypeN) + iota
+	CTCtxt_ PathType = PathType(PathTypesN) + iota
 )
 
 // var PathProps = tree.Props{

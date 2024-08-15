@@ -79,7 +79,7 @@ type LHBRMTgInternalState struct {
 
 func AddLHbRMTgLayer(nt *Network, name string) *LHbRMTgLayer {
 	ly := LHbRMTgLayer{}
-	nt.AddLayerInit(&ly, name, []int{1, 1, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(&ly, name, []int{1, 1, 1, 1}, leabra.SuperLayer)
 	ly.SetClass("LHbRMTg")
 	ly.PVNegDiscount = 0.8 // from cemer
 	return &ly

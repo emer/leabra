@@ -11,7 +11,7 @@ import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"cogentcore.org/core/tensor"
 )
 
@@ -66,12 +66,12 @@ var ParamSets = params.Sets{
 func TestMakeNet(t *testing.T) {
 	TestNet.InitName(&TestNet, "TestNet")
 	inLay := TestNet.AddLayer("Input", []int{4, 1}, emer.Input)
-	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden)
-	outLay := TestNet.AddLayer("Output", []int{4, 1}, emer.Target)
+	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, SuperLayer)
+	outLay := TestNet.AddLayer("Output", []int{4, 1}, leabra.TargetLayer)
 
-	TestNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	TestNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
+	TestNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
+	TestNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
+	TestNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
 
 	TestNet.Defaults()
 	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
@@ -165,7 +165,7 @@ func TestNetAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpaceTry([]int{pi})
+		inpat, err := InPats.SubSpace([]int{pi})
 		if err != nil {
 			t.Error(err)
 		}
@@ -324,7 +324,7 @@ func TestNetLearn(t *testing.T) {
 		ltime := NewTime()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat, err := InPats.SubSpaceTry([]int{pi})
+			inpat, err := InPats.SubSpace([]int{pi})
 			if err != nil {
 				t.Error(err)
 			}
@@ -455,14 +455,14 @@ func TestInhibAct(t *testing.T) {
 	var InhibNet Network
 	InhibNet.InitName(&InhibNet, "InhibNet")
 
-	inLay := InhibNet.AddLayer("Input", []int{4, 1}, emer.Input).(*Layer)
-	hidLay := InhibNet.AddLayer("Hidden", []int{4, 1}, emer.Hidden).(*Layer)
-	outLay := InhibNet.AddLayer("Output", []int{4, 1}, emer.Target).(*Layer)
+	inLay := InhibNet.AddLayer("Input", []int{4, 1}, InputLayer).(*Layer)
+	hidLay := InhibNet.AddLayer("Hidden", []int{4, 1}, SuperLayer).(*Layer)
+	outLay := InhibNet.AddLayer("Output", []int{4, 1}, TargetLayer).(*Layer)
 
-	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(inLay, hidLay, path.NewOneToOne(), InhibPath)
-	InhibNet.ConnectLayers(hidLay, outLay, path.NewOneToOne(), emer.Forward)
-	InhibNet.ConnectLayers(outLay, hidLay, path.NewOneToOne(), BackPath)
+	InhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
+	InhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), InhibPath)
+	InhibNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
+	InhibNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
 
 	InhibNet.Defaults()
 	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg
@@ -501,7 +501,7 @@ func TestInhibAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpaceTry([]int{pi})
+		inpat, err := InPats.SubSpace([]int{pi})
 		if err != nil {
 			t.Error(err)
 		}

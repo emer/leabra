@@ -8,7 +8,7 @@ import (
 	"log"
 
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor/minmax"
+	"cogentcore.org/core/math32/minmax"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -41,7 +41,7 @@ func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		nrn.Act = ly.PredRange.ClipValue(nrn.Ge) // clipped linear
@@ -90,12 +90,12 @@ func (ly *RWDaLayer) SetDA(da float32) { ly.DA = da }
 
 // RWLayers returns the reward and RWPred layers based on names
 func (ly *RWDaLayer) RWLayers() (*leabra.Layer, *RWPredLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewLay)
+	tly, err := ly.Network.LayerByName(ly.RewLay)
 	if err != nil {
 		log.Printf("RWDaLayer %s, RewLay: %v\n", ly.Name(), err)
 		return nil, nil, err
 	}
-	ply, err := ly.Network.LayerByNameTry(ly.RWPredLay)
+	ply, err := ly.Network.LayerByName(ly.RWPredLay)
 	if err != nil {
 		log.Printf("RWDaLayer %s, RWPredLay: %v\n", ly.Name(), err)
 		return nil, nil, err
@@ -132,7 +132,7 @@ func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
 	pact := pnrn.Act
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if hasRew {

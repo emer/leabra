@@ -182,7 +182,7 @@ func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		pnr := &ly.PFCNeurs[ni]
@@ -262,13 +262,13 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 		return
 	}
 	sly := slyi.AsLeabra()
-	yN := ly.Shape.Dim(2)
-	xN := ly.Shape.Dim(3)
+	yN := ly.Shape.DimSize(2)
+	xN := ly.Shape.DimSize(3)
 
 	nn := yN * xN
 
-	syN := sly.Shape.Dim(2)
-	sxN := sly.Shape.Dim(3)
+	syN := sly.Shape.DimSize(2)
+	sxN := sly.Shape.DimSize(3)
 	snn := syN * sxN
 
 	dper := yN / syN  // dyn per sender -- should be len(Dyns)
@@ -276,7 +276,7 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ui := ni % nn
@@ -330,7 +330,7 @@ func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			pnr := &ly.PFCNeurs[ni]

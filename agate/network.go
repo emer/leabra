@@ -6,7 +6,7 @@ package agate
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/glong"
@@ -58,7 +58,7 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, sp
 }
 
 // ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat path.Pattern) emer.Path {
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return pcore.ConnectToMatrix(&nt.Network.Network, send, recv, pat)
 }
 
@@ -79,8 +79,8 @@ func (nt *Network) AddPFC(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, pul
 // and lateral NMDAMaint PoolOneToOne connectivity.
 func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *MaintLayer {
 	ly := &MaintLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
-	glong.ConnectNMDA(nt, ly, ly, path.NewPoolOneToOne())
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
+	glong.ConnectNMDA(nt, ly, ly, paths.NewPoolOneToOne())
 	return ly
 }
 
@@ -88,7 +88,7 @@ func AddMaintLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 // and lateral PoolOneToOne connectivity.
 func AddOutLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *OutLayer {
 	ly := &OutLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
@@ -114,12 +114,12 @@ func AddPFC(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX in
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: name, YAlign: relpos.Front, Space: 2})
 	maint.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: out.Name(), XAlign: relpos.Left, Space: 2})
 
-	one2one := path.NewOneToOne()
-	deep.ConnectCtxtToCT(nt, super, ct, path.NewPoolOneToOne())
+	one2one := paths.NewOneToOne()
+	deep.ConnectCtxtToCT(nt, super, ct, paths.NewPoolOneToOne())
 
-	pj := nt.ConnectLayers(super, maint, one2one, emer.Forward)
+	pj := nt.ConnectLayers(super, maint, one2one, leabra.ForwardPath)
 	pj.SetClass("PFCFixed")
-	pj = nt.ConnectLayers(maint, out, one2one, emer.Forward)
+	pj = nt.ConnectLayers(maint, out, one2one, leabra.ForwardPath)
 	pj.SetClass("PFCFixed")
 	mainti.InterInhib.Lays.Add(out.Name())
 

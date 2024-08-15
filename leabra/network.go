@@ -6,16 +6,12 @@ package leabra
 
 import (
 	"fmt"
-	"math"
-	"math/rand"
 	"strings"
 	"unsafe"
 
-	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
 	"github.com/c2h5oh/datasize"
-	"github.com/emer/emergent/v2/erand"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -23,9 +19,6 @@ import (
 //
 //  The following methods constitute the primary user-called API during
 //  AlphaCyc method to compute one complete algorithmic alpha cycle update.
-//
-//  They just call the corresponding Impl method using the LeabraNetwork interface
-//  so that other network types can specialize any of these entry points.
 
 // AlphaCycInit handles all initialization at start of new input pattern.
 // Should already have presented the external input to the network at this point.
@@ -36,8 +29,8 @@ import (
 // and this can then change the behavior of the network,
 // so if you want 100% repeatable testing results, set this to false to
 // keep the existing scaling factors (e.g., can pass a train bool to
-// only update during training).  This flag also affects the AvgL learning
-// threshold
+// only update during training).
+// This flag also affects the AvgL learning threshold.
 func (nt *Network) AlphaCycInit(updtActAvg bool) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
@@ -61,7 +54,12 @@ func (nt *Network) Cycle(ltime *Time) {
 	nt.InhibFmGeAct(ltime)
 	nt.ActFmG(ltime)
 	nt.AvgMaxAct(ltime)
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.CyclePost(ltime) }, "CyclePost")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.CyclePost(ltime)
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -70,33 +68,68 @@ func (nt *Network) Cycle(ltime *Time) {
 // SendGeDelta sends change in activation since last sent, if above thresholds
 // and integrates sent deltas into GeRaw and time-integrated Ge values
 func (nt *Network) SendGDelta(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.SendGDelta(ltime) }, "SendGDelta")
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.GFmInc(ltime) }, "GFmInc")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.SendGDelta(ltime)
+	}
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.GFmInc(ltime)
+	}
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
 func (nt *Network) AvgMaxGe(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxGe(ltime) }, "AvgMaxGe")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.AvgMaxGe(ltime)
+	}
 }
 
 // InhibiFmGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
 func (nt *Network) InhibFmGeAct(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.InhibFmGeAct(ltime) }, "InhibFmGeAct")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.InhibFmGeAct(ltime)
+	}
 }
 
 // ActFmG computes rate-code activation from Ge, Gi, Gl conductances
 func (nt *Network) ActFmG(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.ActFmG(ltime) }, "ActFmG")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.ActFmG(ltime)
+	}
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
 func (nt *Network) AvgMaxAct(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.AvgMaxAct(ltime) }, "AvgMaxAct")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.AvgMaxAct(ltime)
+	}
 }
 
 // QuarterFinal does updating after end of a quarter
 func (nt *Network) QuarterFinal(ltime *Time) {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.QuarterFinal(ltime) }, "QuarterFinal")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.QuarterFinal(ltime)
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -105,17 +138,34 @@ func (nt *Network) QuarterFinal(ltime *Time) {
 // DWt computes the weight change (learning) based on current
 // running-average activation values
 func (nt *Network) DWt() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.DWt() }, "DWt")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.DWt()
+	}
 }
 
 // WtFmDWt updates the weights from delta-weight changes.
 // Also calls WtBalFmWt every WtBalInterval times
 func (nt *Network) WtFmDWt() {
-	nt.ThrLayFun(func(ly LeabraLayer) { ly.WtFmDWt() }, "WtFmDWt")
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.WtFmDWt()
+	}
+
 	nt.WtBalCtr++
 	if nt.WtBalCtr >= nt.WtBalInterval {
 		nt.WtBalCtr = 0
-		nt.ThrLayFun(func(ly LeabraLayer) { ly.WtBalFmWt() }, "WtBalFmWt")
+		for _, ly := range nt.Layers {
+			if ly.Off {
+				continue
+			}
+
+			ly.WtBalFmWt()
+		}
 	}
 }
 
@@ -126,67 +176,61 @@ func (nt *Network) LrateMult(mult float32) {
 		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
-		ly.(LeabraLayer).LrateMult(mult)
+		ly.LrateMult(mult)
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// InitWeights initializes synaptic weights and all other associated long-term state variables
-// including running-average state values (e.g., layer running average activations etc)
+// InitWeights initializes synaptic weights and all other
+// associated long-term state variables including running-average
+// state values (e.g., layer running average activations etc).
 func (nt *Network) InitWeights() {
 	nt.WtBalCtr = 0
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitWeights()
+		ly.InitWeights()
 	}
-	// separate pass to enforce symmetry
-	// st := time.Now()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitWtSym()
+		ly.InitWtSym()
 	}
-	// dur := time.Now().Sub(st)
-	// fmt.Printf("sym: %v\n", dur)
 }
 
 // InitTopoScales initializes synapse-specific scale parameters from
 // path types that support them, with flags set to support it,
-// includes: path.PoolTile path.Circle.
-// call before InitWeights if using Topo wts
+// includes: paths.PoolTile paths.Circle.
+// call before InitWeights if using Topo wts.
 func (nt *Network) InitTopoScales() {
 	scales := &tensor.Float32{}
-	for _, lyi := range nt.Layers {
-		if lyi.Off {
+	for _, ly := range nt.Layers {
+		if ly.Off {
 			continue
 		}
-		ly := lyi.(LeabraLayer).AsLeabra()
 		rpjn := ly.RecvPaths
-		for _, p := range rpjn {
-			if p.Off {
+		for _, pt := range rpjn {
+			if pt.Off {
 				continue
 			}
-			pat := p.Pattern()
-			switch pt := pat.(type) {
-			case *path.PoolTile:
-				if !pt.HasTopoWts() {
+			pat := pt.Pattern
+			switch ptn := pat.(type) {
+			case *paths.PoolTile:
+				if !ptn.HasTopoWeights() {
 					continue
 				}
-				pj := p.AsLeabra()
-				slay := p.Send
-				pt.TopoWts(slay.Shape, ly.Shape, scales)
-				pj.SetScalesRPool(scales)
-			case *path.Circle:
-				if !pt.TopoWts {
+				slay := pt.Send
+				ptn.TopoWeights(&slay.Shape, &ly.Shape, scales)
+				pt.SetScalesRPool(scales)
+			case *paths.Circle:
+				if !ptn.TopoWeights {
 					continue
 				}
-				pj := p.AsLeabra()
-				pj.SetScalesFunc(pt.GaussWts)
+				pt.SetScalesFunc(ptn.GaussWts)
 			}
 		}
 	}
@@ -201,7 +245,7 @@ func (nt *Network) DecayState(decay float32) {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).DecayState(decay)
+		ly.DecayState(decay)
 	}
 }
 
@@ -211,43 +255,45 @@ func (nt *Network) InitActs() {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitActs()
+		ly.InitActs()
 	}
 }
 
-// InitExt initializes external input state -- call prior to applying external inputs to layers
+// InitExt initializes external input state.
+// call prior to applying external inputs to layers.
 func (nt *Network) InitExt() {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitExt()
+		ly.InitExt()
 	}
 }
 
-// UpdateExtFlags updates the neuron flags for external input based on current
-// layer Type field -- call this if the Type has changed since the last
+// UpdateExtFlags updates the neuron flags for external input
+// based on current layer Type field.
+// call this if the Type has changed since the last
 // ApplyExt* method call.
 func (nt *Network) UpdateExtFlags() {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).UpdateExtFlags()
+		ly.UpdateExtFlags()
 	}
 }
 
-// InitGinc initializes the Ge excitatory and Gi inhibitory conductance accumulation states
-// including ActSent and G*Raw values.
-// called at start of trial always (at layer level), and can be called optionally
-// when delta-based Ge computation needs to be updated (e.g., weights
-// might have changed strength)
+// InitGinc initializes the Ge excitatory and Gi inhibitory
+// conductance accumulation states including ActSent and G*Raw values.
+// called at start of trial always (at layer level), and can be
+// called optionally when delta-based Ge computation needs
+// to be updated (e.g., weights might have changed strength).
 func (nt *Network) InitGInc() {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).InitGInc()
+		ly.InitGInc()
 	}
 }
 
@@ -263,7 +309,7 @@ func (nt *Network) GScaleFmAvgAct() {
 		if ly.Off {
 			continue
 		}
-		ly.(LeabraLayer).GScaleFmAvgAct()
+		ly.GScaleFmAvgAct()
 	}
 }
 
@@ -273,7 +319,7 @@ func (nt *Network) GScaleFmAvgAct() {
 // LayersSetOff sets the Off flag for all layers to given setting
 func (nt *Network) LayersSetOff(off bool) {
 	for _, ly := range nt.Layers {
-		ly.SetOff(off)
+		ly.Off = off
 	}
 }
 
@@ -284,7 +330,7 @@ func (nt *Network) UnLesionNeurons() {
 		// if ly.Off { // keep all sync'd
 		// 	continue
 		// }
-		ly.(LeabraLayer).AsLeabra().UnLesionNeurons()
+		ly.UnLesionNeurons()
 	}
 }
 
@@ -304,17 +350,15 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 		*dwts = make([]float32, 0, nwts)
 		made = true
 	}
-	for _, lyi := range nt.Layers {
-		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SendPaths {
-			pj := pji.AsLeabra()
-			ns := len(pj.Syns)
+	for _, ly := range nt.Layers {
+		for _, pt := range ly.SendPaths {
+			ns := len(pt.Syns)
 			nsz := idx + ns
 			if len(*dwts) < nsz {
 				*dwts = append(*dwts, make([]float32, nsz-len(*dwts))...)
 			}
-			for j := range pj.Syns {
-				sy := &(pj.Syns[j])
+			for j := range pt.Syns {
+				sy := &(pt.Syns[j])
 				(*dwts)[idx+j] = sy.DWt
 			}
 			idx += ns
@@ -323,16 +367,15 @@ func (nt *Network) CollectDWts(dwts *[]float32, nwts int) bool {
 	return made
 }
 
-// SetDWts sets the DWt weight changes from given array of floats, which must be correct size
+// SetDWts sets the DWt weight changes from given array of floats,
+// which must be correct size.
 func (nt *Network) SetDWts(dwts []float32) {
 	idx := 0
-	for _, lyi := range nt.Layers {
-		ly := lyi.(LeabraLayer).AsLeabra()
-		for _, pji := range ly.SendPaths {
-			pj := pji.AsLeabra()
-			ns := len(pj.Syns)
-			for j := range pj.Syns {
-				sy := &(pj.Syns[j])
+	for _, ly := range nt.Layers {
+		for _, pt := range ly.SendPaths {
+			ns := len(pt.Syns)
+			for j := range pt.Syns {
+				sy := &(pt.Syns[j])
 				sy.DWt = dwts[idx+j]
 			}
 			idx += ns
@@ -341,157 +384,31 @@ func (nt *Network) SetDWts(dwts []float32) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  Misc Reports / Threading Allocation
+//  Misc Reports
 
-// SizeReport returns a string reporting the size of each layer and pathway
-// in the network, and total memory footprint.
+// SizeReport returns a string reporting the size of
+// each layer and pathway in the network, and total memory footprint.
 func (nt *Network) SizeReport() string {
 	var b strings.Builder
 	neur := 0
 	neurMem := 0
 	syn := 0
 	synMem := 0
-	for _, lyi := range nt.Layers {
-		ly := lyi.(LeabraLayer).AsLeabra()
+	for _, ly := range nt.Layers {
 		nn := len(ly.Neurons)
 		nmem := nn * int(unsafe.Sizeof(Neuron{}))
 		neur += nn
 		neurMem += nmem
 		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.ByteSize)(nmem).HumanReadable())
-		for _, pji := range ly.SendPaths {
-			pj := pji.AsLeabra()
-			ns := len(pj.Syns)
+		for _, pt := range ly.SendPaths {
+			ns := len(pt.Syns)
 			syn += ns
-			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pj.GInc)*4 + len(pj.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))
+			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pt.GInc)*4 + len(pt.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))
 			synMem += pmem
-			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pj.Recv.Name(), ns, (datasize.ByteSize)(pmem).HumanReadable())
+			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pt.Recv.Name, ns, (datasize.ByteSize)(pmem).HumanReadable())
 		}
 	}
-	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Nm, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
-	return b.String()
-}
-
-// ThreadAlloc allocates layers to given number of threads,
-// attempting to evenly divide computation.  Returns report
-// of thread allocations and estimated computational cost per thread.
-func (nt *Network) ThreadAlloc(nThread int) string {
-	nl := len(nt.Layers)
-	if nl < nThread {
-		return fmt.Sprintf("Number of threads: %d > number of layers: %d -- must be less\n", nThread, nl)
-	}
-	if nl == nThread {
-		for li, lyi := range nt.Layers {
-			ly := lyi.(LeabraLayer).AsLeabra()
-			ly.SetThread(li)
-		}
-		return fmt.Sprintf("Number of threads: %d == number of layers: %d\n", nThread, nl)
-	}
-
-	type td struct {
-		Lays []int
-		Neur int // neur cost
-		Syn  int // send syn cost
-		Tot  int // total cost
-	}
-
-	avgFunc := func(thds []td) float32 {
-		avg := 0
-		for i := range thds {
-			avg += thds[i].Tot
-		}
-		return float32(avg) / float32(len(thds))
-	}
-
-	devFunc := func(thds []td) float32 {
-		avg := avgFunc(thds)
-		dev := float32(0)
-		for i := range thds {
-			dev += math32.Abs(float32(thds[i].Tot) - avg)
-		}
-		return float32(dev) / float32(len(thds))
-	}
-
-	// cache per-layer data first
-	ld := make([]td, nl)
-	for li, lyi := range nt.Layers {
-		ly := lyi.(LeabraLayer).AsLeabra()
-		ld[li].Neur, ld[li].Syn, ld[li].Tot = ly.CostEst()
-	}
-
-	// number of initial random permutations to create
-	initN := 100
-	pth := float64(nl) / float64(nThread)
-	if pth < 2 {
-		initN = 10
-	} else if pth > 3 {
-		initN = 500
-	}
-	thrs := make([][]td, initN)
-	devs := make([]float32, initN)
-	ord := rand.Perm(nl)
-	minDev := float32(1.0e20)
-	minDevIndex := -1
-	for ti := 0; ti < initN; ti++ {
-		thds := &thrs[ti]
-		*thds = make([]td, nThread)
-		for t := 0; t < nThread; t++ {
-			thd := &(*thds)[t]
-			ist := int(math.Round(float64(t) * pth))
-			ied := int(math.Round(float64(t+1) * pth))
-			thd.Neur = 0
-			thd.Syn = 0
-			for i := ist; i < ied; i++ {
-				li := ord[i]
-				thd.Neur += ld[li].Neur
-				thd.Syn += ld[li].Syn
-				thd.Tot += ld[li].Tot
-				thd.Lays = append(thd.Lays, ord[i])
-			}
-		}
-		dev := devFunc(*thds)
-		if dev < minDev {
-			minDev = dev
-			minDevIndex = ti
-		}
-		devs[ti] = dev
-		erand.PermuteInts(ord)
-	}
-
-	// todo: could optimize best case further by trying to switch one layer at random with each other
-	// thread, and seeing if that is faster..  but probably not worth it given inaccuracy of estimate.
-
-	var b strings.Builder
-	b.WriteString(nt.ThreadReport())
-
-	fmt.Fprintf(&b, "Deviation: %s \t Index: %d\n", (datasize.ByteSize)(minDev).HumanReadable(), minDevIndex)
-
-	nt.StopThreads()
-	nt.BuildThreads()
-	nt.StartThreads()
-
-	return b.String()
-}
-
-// ThreadReport returns report of thread allocations and
-// estimated computational cost per thread.
-func (nt *Network) ThreadReport() string {
-	var b strings.Builder
-	// p := message.NewPrinter(language.English)
-	fmt.Fprintf(&b, "Network: %s Auto Thread Allocation for %d threads:\n", nt.Nm, nt.NThreads)
-	for th := 0; th < nt.NThreads; th++ {
-		tneur := 0
-		tsyn := 0
-		ttot := 0
-		for _, lyi := range nt.ThrLay[th] {
-			ly := lyi.(LeabraLayer).AsLeabra()
-			neur, syn, tot := ly.CostEst()
-			tneur += neur
-			tsyn += syn
-			ttot += tot
-			fmt.Fprintf(&b, "\t%14s: cost: %d K \t neur: %d K \t syn: %d K\n", ly.Name, tot/1000, neur/1000, syn/1000)
-		}
-		fmt.Fprintf(&b, "Thread: %d \t cost: %d K \t neur: %d K \t syn: %d K\n", th, ttot/1000, tneur/1000, tsyn/1000)
-	}
+	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Name, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
 	return b.String()
 }
 

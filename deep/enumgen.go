@@ -4,7 +4,6 @@ package deep
 
 import (
 	"cogentcore.org/core/enums"
-	"github.com/emer/emergent/v2/emer"
 )
 
 var _PathTypeValues = []PathType{4}
@@ -20,13 +19,13 @@ var _PathTypeMap = map[PathType]string{4: `CTCtxt_`}
 
 // String returns the string representation of this PathType value.
 func (i PathType) String() string {
-	return enums.StringExtended[PathType, emer.PathType](i, _PathTypeMap)
+	return enums.StringExtended[PathType, PathTypes](i, _PathTypeMap)
 }
 
 // SetString sets the PathType value from its string representation,
 // and returns an error if the string is invalid.
 func (i *PathType) SetString(s string) error {
-	return enums.SetStringExtended(i, (*emer.PathType)(i), s, _PathTypeValueMap)
+	return enums.SetStringExtended(i, (*PathTypes)(i), s, _PathTypeValueMap)
 }
 
 // Int64 returns the PathType value as an int64.
@@ -37,17 +36,17 @@ func (i *PathType) SetInt64(in int64) { *i = PathType(in) }
 
 // Desc returns the description of the PathType value.
 func (i PathType) Desc() string {
-	return enums.DescExtended[PathType, emer.PathType](i, _PathTypeDescMap)
+	return enums.DescExtended[PathType, PathTypes](i, _PathTypeDescMap)
 }
 
 // PathTypeValues returns all possible values for the type PathType.
 func PathTypeValues() []PathType {
-	return enums.ValuesGlobalExtended(_PathTypeValues, emer.PathTypeValues())
+	return enums.ValuesGlobalExtended(_PathTypeValues, PathTypesValues())
 }
 
 // Values returns all possible values for the type PathType.
 func (i PathType) Values() []enums.Enum {
-	return enums.ValuesExtended(_PathTypeValues, emer.PathTypeValues())
+	return enums.ValuesExtended(_PathTypeValues, PathTypesValues())
 }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.
@@ -69,13 +68,13 @@ var _LayerTypeMap = map[LayerType]string{4: `CT_`, 5: `TRC_`}
 
 // String returns the string representation of this LayerType value.
 func (i LayerType) String() string {
-	return enums.StringExtended[LayerType, emer.LayerType](i, _LayerTypeMap)
+	return enums.StringExtended[LayerType, LayerTypes](i, _LayerTypeMap)
 }
 
 // SetString sets the LayerType value from its string representation,
 // and returns an error if the string is invalid.
 func (i *LayerType) SetString(s string) error {
-	return enums.SetStringExtended(i, (*emer.LayerType)(i), s, _LayerTypeValueMap)
+	return enums.SetStringExtended(i, (*LayerTypes)(i), s, _LayerTypeValueMap)
 }
 
 // Int64 returns the LayerType value as an int64.
@@ -86,17 +85,17 @@ func (i *LayerType) SetInt64(in int64) { *i = LayerType(in) }
 
 // Desc returns the description of the LayerType value.
 func (i LayerType) Desc() string {
-	return enums.DescExtended[LayerType, emer.LayerType](i, _LayerTypeDescMap)
+	return enums.DescExtended[LayerType, LayerTypes](i, _LayerTypeDescMap)
 }
 
 // LayerTypeValues returns all possible values for the type LayerType.
 func LayerTypeValues() []LayerType {
-	return enums.ValuesGlobalExtended(_LayerTypeValues, emer.LayerTypeValues())
+	return enums.ValuesGlobalExtended(_LayerTypeValues, LayerTypesValues())
 }
 
 // Values returns all possible values for the type LayerType.
 func (i LayerType) Values() []enums.Enum {
-	return enums.ValuesExtended(_LayerTypeValues, emer.LayerTypeValues())
+	return enums.ValuesExtended(_LayerTypeValues, LayerTypesValues())
 }
 
 // MarshalText implements the [encoding.TextMarshaler] interface.

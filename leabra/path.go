@@ -16,15 +16,15 @@ import (
 
 // SetScalesRPool initializes synaptic Scale values using given tensor
 // of values which has unique values for each recv neuron within a given pool.
-func (pj *Path) SetScalesRPool(scales tensor.Tensor) {
-	rNuY := scales.Dim(0)
-	rNuX := scales.Dim(1)
+func (pt *Path) SetScalesRPool(scales tensor.Tensor) {
+	rNuY := scales.DimSize(0)
+	rNuX := scales.DimSize(1)
 	rNu := rNuY * rNuX
 	rfsz := scales.Len() / rNu
 
-	rsh := pj.Recv.Shape
-	rNpY := rsh.Dim(0)
-	rNpX := rsh.Dim(1)
+	rsh := pt.Recv.Shape
+	rNpY := rsh.DimSize(0)
+	rNpX := rsh.DimSize(1)
 	r2d := false
 	if rsh.NumDims() != 4 {
 		r2d = true
@@ -43,13 +43,13 @@ func (pj *Path) SetScalesRPool(scales tensor.Tensor) {
 						ri = rsh.Offset([]int{rpy, rpx, ruy, rux})
 					}
 					scst := (ruy*rNuX + rux) * rfsz
-					nc := int(pj.RConN[ri])
-					st := int(pj.RConIndexSt[ri])
+					nc := int(pt.RConN[ri])
+					st := int(pt.RConIndexSt[ri])
 					for ci := 0; ci < nc; ci++ {
 						// si := int(pj.RConIndex[st+ci]) // could verify coords etc
-						rsi := pj.RSynIndex[st+ci]
-						sy := &pj.Syns[rsi]
-						sc := scales.FloatValue1D(scst + ci)
+						rsi := pt.RSynIndex[st+ci]
+						sy := &pt.Syns[rsi]
+						sc := scales.Float1D(scst + ci)
 						sy.Scale = float32(sc)
 					}
 				}
@@ -60,40 +60,40 @@ func (pj *Path) SetScalesRPool(scales tensor.Tensor) {
 
 // SetWtsFunc initializes synaptic Wt value using given function
 // based on receiving and sending unit indexes.
-func (pj *Path) SetWtsFunc(wtFun func(si, ri int, send, recv *tensor.Shape) float32) {
-	rsh := pj.Recv.Shape
+func (pt *Path) SetWtsFunc(wtFun func(si, ri int, send, recv *tensor.Shape) float32) {
+	rsh := &pt.Recv.Shape
 	rn := rsh.Len()
-	ssh := pj.Send.Shape
+	ssh := &pt.Send.Shape
 
 	for ri := 0; ri < rn; ri++ {
-		nc := int(pj.RConN[ri])
-		st := int(pj.RConIndexSt[ri])
+		nc := int(pt.RConN[ri])
+		st := int(pt.RConIndexSt[ri])
 		for ci := 0; ci < nc; ci++ {
-			si := int(pj.RConIndex[st+ci])
+			si := int(pt.RConIndex[st+ci])
 			wt := wtFun(si, ri, ssh, rsh)
-			rsi := pj.RSynIndex[st+ci]
-			sy := &pj.Syns[rsi]
+			rsi := pt.RSynIndex[st+ci]
+			sy := &pt.Syns[rsi]
 			sy.Wt = wt * sy.Scale
-			pj.Learn.LWtFmWt(sy)
+			pt.Learn.LWtFmWt(sy)
 		}
 	}
 }
 
 // SetScalesFunc initializes synaptic Scale values using given function
 // based on receiving and sending unit indexes.
-func (pj *Path) SetScalesFunc(scaleFun func(si, ri int, send, recv *tensor.Shape) float32) {
-	rsh := pj.Recv.Shape
+func (pt *Path) SetScalesFunc(scaleFun func(si, ri int, send, recv *tensor.Shape) float32) {
+	rsh := &pt.Recv.Shape
 	rn := rsh.Len()
-	ssh := pj.Send.Shape
+	ssh := &pt.Send.Shape
 
 	for ri := 0; ri < rn; ri++ {
-		nc := int(pj.RConN[ri])
-		st := int(pj.RConIndexSt[ri])
+		nc := int(pt.RConN[ri])
+		st := int(pt.RConIndexSt[ri])
 		for ci := 0; ci < nc; ci++ {
-			si := int(pj.RConIndex[st+ci])
+			si := int(pt.RConIndex[st+ci])
 			sc := scaleFun(si, ri, ssh, rsh)
-			rsi := pj.RSynIndex[st+ci]
-			sy := &pj.Syns[rsi]
+			rsi := pt.RSynIndex[st+ci]
+			sy := &pt.Syns[rsi]
 			sy.Scale = sc
 		}
 	}
@@ -102,11 +102,11 @@ func (pj *Path) SetScalesFunc(scaleFun func(si, ri int, send, recv *tensor.Shape
 // InitWeightsSyn initializes weight values based on WtInit randomness parameters
 // for an individual synapse.
 // It also updates the linear weight value based on the sigmoidal weight value.
-func (pj *Path) InitWeightsSyn(syn *Synapse) {
+func (pt *Path) InitWeightsSyn(syn *Synapse) {
 	if syn.Scale == 0 {
 		syn.Scale = 1
 	}
-	syn.Wt = float32(pj.WtInit.Gen(-1))
+	syn.Wt = float32(pt.WtInit.Gen())
 	// enforce normalized weight range -- required for most uses and if not
 	// then a new type of path should be used:
 	if syn.Wt < 0 {
@@ -115,7 +115,7 @@ func (pj *Path) InitWeightsSyn(syn *Synapse) {
 	if syn.Wt > 1 {
 		syn.Wt = 1
 	}
-	syn.LWt = pj.Learn.WtSig.LinFmSigWt(syn.Wt)
+	syn.LWt = pt.Learn.WtSig.LinFmSigWt(syn.Wt)
 	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
 	syn.DWt = 0
 	syn.Norm = 0
@@ -123,43 +123,42 @@ func (pj *Path) InitWeightsSyn(syn *Synapse) {
 }
 
 // InitWeights initializes weight values according to Learn.WtInit params
-func (pj *Path) InitWeights() {
-	for si := range pj.Syns {
-		sy := &pj.Syns[si]
-		pj.InitWeightsSyn(sy)
+func (pt *Path) InitWeights() {
+	for si := range pt.Syns {
+		sy := &pt.Syns[si]
+		pt.InitWeightsSyn(sy)
 	}
-	for wi := range pj.WbRecv {
-		wb := &pj.WbRecv[wi]
+	for wi := range pt.WbRecv {
+		wb := &pt.WbRecv[wi]
 		wb.Init()
 	}
-	pj.LeabraPrj.InitGInc()
+	pt.InitGInc()
 }
 
 // InitWtSym initializes weight symmetry -- is given the reciprocal pathway where
 // the Send and Recv layers are reversed.
-func (pj *Path) InitWtSym(rpjp LeabraPath) {
-	rpj := rpjp.AsLeabra()
-	slay := pj.Send.(LeabraLayer).AsLeabra()
+func (pt *Path) InitWtSym(rpt *Path) {
+	slay := pt.Send
 	ns := int32(len(slay.Neurons))
 	for si := int32(0); si < ns; si++ {
-		nc := pj.SConN[si]
-		st := pj.SConIndexSt[si]
+		nc := pt.SConN[si]
+		st := pt.SConIndexSt[si]
 		for ci := int32(0); ci < nc; ci++ {
-			sy := &pj.Syns[st+ci]
-			ri := pj.SConIndex[st+ci]
-			// now we need to find the reciprocal synapse on rpj!
+			sy := &pt.Syns[st+ci]
+			ri := pt.SConIndex[st+ci]
+			// now we need to find the reciprocal synapse on rpt!
 			// look in ri for sending connections
 			rsi := ri
-			if len(rpj.SConN) == 0 {
+			if len(rpt.SConN) == 0 {
 				continue
 			}
-			rsnc := rpj.SConN[rsi]
+			rsnc := rpt.SConN[rsi]
 			if rsnc == 0 {
 				continue
 			}
-			rsst := rpj.SConIndexSt[rsi]
-			rist := rpj.SConIndex[rsst]        // starting index in recv path
-			ried := rpj.SConIndex[rsst+rsnc-1] // ending index
+			rsst := rpt.SConIndexSt[rsi]
+			rist := rpt.SConIndex[rsst]        // starting index in recv path
+			ried := rpt.SConIndex[rsst+rsnc-1] // ending index
 			if si < rist || si > ried {        // fast reject -- paths are always in order!
 				continue
 			}
@@ -175,9 +174,9 @@ func (pj *Path) InitWtSym(rpjp LeabraPath) {
 				if up < rsnc {
 					doing = true
 					rrii := rsst + up
-					rri := rpj.SConIndex[rrii]
+					rri := rpt.SConIndex[rrii]
 					if rri == si {
-						rsy := &rpj.Syns[rrii]
+						rsy := &rpt.Syns[rrii]
 						rsy.Wt = sy.Wt
 						rsy.LWt = sy.LWt
 						rsy.Scale = sy.Scale
@@ -189,9 +188,9 @@ func (pj *Path) InitWtSym(rpjp LeabraPath) {
 				if dn >= 0 {
 					doing = true
 					rrii := rsst + dn
-					rri := rpj.SConIndex[rrii]
+					rri := rpt.SConIndex[rrii]
 					if rri == si {
-						rsy := &rpj.Syns[rrii]
+						rsy := &rpt.Syns[rrii]
 						rsy.Wt = sy.Wt
 						rsy.LWt = sy.LWt
 						rsy.Scale = sy.Scale
@@ -210,9 +209,9 @@ func (pj *Path) InitWtSym(rpjp LeabraPath) {
 
 // InitGInc initializes the per-pathway GInc threadsafe increment -- not
 // typically needed (called during InitWeights only) but can be called when needed
-func (pj *Path) InitGInc() {
-	for ri := range pj.GInc {
-		pj.GInc[ri] = 0
+func (pt *Path) InitGInc() {
+	for ri := range pt.GInc {
+		pt.GInc[ri] = 0
 	}
 }
 
@@ -221,32 +220,32 @@ func (pj *Path) InitGInc() {
 
 // SendGDelta sends the delta-activation from sending neuron index si,
 // to integrate synaptic conductances on receivers
-func (pj *Path) SendGDelta(si int, delta float32) {
-	scdel := delta * pj.GScale
-	nc := pj.SConN[si]
-	st := pj.SConIndexSt[si]
-	syns := pj.Syns[st : st+nc]
-	scons := pj.SConIndex[st : st+nc]
+func (pt *Path) SendGDelta(si int, delta float32) {
+	scdel := delta * pt.GScale
+	nc := pt.SConN[si]
+	st := pt.SConIndexSt[si]
+	syns := pt.Syns[st : st+nc]
+	scons := pt.SConIndex[st : st+nc]
 	for ci := range syns {
 		ri := scons[ci]
-		pj.GInc[ri] += scdel * syns[ci].Wt
+		pt.GInc[ri] += scdel * syns[ci].Wt
 	}
 }
 
 // RecvGInc increments the receiver's GeRaw or GiRaw from that of all the pathways.
-func (pj *Path) RecvGInc() {
-	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if pj.Type == InhibPath {
+func (pt *Path) RecvGInc() {
+	rlay := pt.Recv
+	if pt.Type == InhibPath {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			rn.GiRaw += pj.GInc[ri]
-			pj.GInc[ri] = 0
+			rn.GiRaw += pt.GInc[ri]
+			pt.GInc[ri] = 0
 		}
 	} else {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
-			rn.GeRaw += pj.GInc[ri]
-			pj.GInc[ri] = 0
+			rn.GeRaw += pt.GInc[ri]
+			pt.GInc[ri] = 0
 		}
 	}
 }
@@ -255,43 +254,43 @@ func (pj *Path) RecvGInc() {
 //  Learn methods
 
 // DWt computes the weight change (learning) -- on sending pathways
-func (pj *Path) DWt() {
-	if !pj.Learn.Learn {
+func (pt *Path) DWt() {
+	if !pt.Learn.Learn {
 		return
 	}
-	slay := pj.Send.(LeabraLayer).AsLeabra()
-	rlay := pj.Recv.(LeabraLayer).AsLeabra()
+	slay := pt.Send
+	rlay := pt.Recv
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
-		if sn.AvgS < pj.Learn.XCal.LrnThr && sn.AvgM < pj.Learn.XCal.LrnThr {
+		if sn.AvgS < pt.Learn.XCal.LrnThr && sn.AvgM < pt.Learn.XCal.LrnThr {
 			continue
 		}
-		nc := int(pj.SConN[si])
-		st := int(pj.SConIndexSt[si])
-		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIndex[st : st+nc]
+		nc := int(pt.SConN[si])
+		st := int(pt.SConIndexSt[si])
+		syns := pt.Syns[st : st+nc]
+		scons := pt.SConIndex[st : st+nc]
 		for ci := range syns {
 			sy := &syns[ci]
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
-			err, bcm := pj.Learn.CHLdWt(sn.AvgSLrn, sn.AvgM, rn.AvgSLrn, rn.AvgM, rn.AvgL)
+			err, bcm := pt.Learn.CHLdWt(sn.AvgSLrn, sn.AvgM, rn.AvgSLrn, rn.AvgM, rn.AvgL)
 
-			bcm *= pj.Learn.XCal.LongLrate(rn.AvgLLrn)
-			err *= pj.Learn.XCal.MLrn
+			bcm *= pt.Learn.XCal.LongLrate(rn.AvgLLrn)
+			err *= pt.Learn.XCal.MLrn
 			dwt := bcm + err
 			norm := float32(1)
-			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+			if pt.Learn.Norm.On {
+				norm = pt.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
-			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+			if pt.Learn.Momentum.On {
+				dwt = norm * pt.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
-			sy.DWt += pj.Learn.Lrate * dwt
+			sy.DWt += pt.Learn.Lrate * dwt
 		}
 		// aggregate max DWtNorm over sending synapses
-		if pj.Learn.Norm.On {
+		if pt.Learn.Norm.On {
 			maxNorm := float32(0)
 			for ci := range syns {
 				sy := &syns[ci]
@@ -308,49 +307,49 @@ func (pj *Path) DWt() {
 }
 
 // WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
-func (pj *Path) WtFmDWt() {
-	if !pj.Learn.Learn {
+func (pt *Path) WtFmDWt() {
+	if !pt.Learn.Learn {
 		return
 	}
-	if pj.Learn.WtBal.On {
-		for si := range pj.Syns {
-			sy := &pj.Syns[si]
-			ri := pj.SConIndex[si]
-			wb := &pj.WbRecv[ri]
-			pj.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
+	if pt.Learn.WtBal.On {
+		for si := range pt.Syns {
+			sy := &pt.Syns[si]
+			ri := pt.SConIndex[si]
+			wb := &pt.WbRecv[ri]
+			pt.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	} else {
-		for si := range pj.Syns {
-			sy := &pj.Syns[si]
-			pj.Learn.WtFmDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
+		for si := range pt.Syns {
+			sy := &pt.Syns[si]
+			pt.Learn.WtFmDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	}
 }
 
 // WtBalFmWt computes the Weight Balance factors based on average recv weights
-func (pj *Path) WtBalFmWt() {
-	if !pj.Learn.Learn || !pj.Learn.WtBal.On {
+func (pt *Path) WtBalFmWt() {
+	if !pt.Learn.Learn || !pt.Learn.WtBal.On {
 		return
 	}
 
-	rlay := pj.Recv.(LeabraLayer).AsLeabra()
-	if !pj.Learn.WtBal.Targs && rlay.LeabraLay.IsTarget() {
+	rlay := pt.Recv
+	if !pt.Learn.WtBal.Targs && rlay.IsTarget() {
 		return
 	}
 	for ri := range rlay.Neurons {
-		nc := int(pj.RConN[ri])
+		nc := int(pt.RConN[ri])
 		if nc < 1 {
 			continue
 		}
-		wb := &pj.WbRecv[ri]
-		st := int(pj.RConIndexSt[ri])
-		rsidxs := pj.RSynIndex[st : st+nc]
+		wb := &pt.WbRecv[ri]
+		st := int(pt.RConIndexSt[ri])
+		rsidxs := pt.RSynIndex[st : st+nc]
 		sumWt := float32(0)
 		sumN := 0
 		for ci := range rsidxs {
 			rsi := rsidxs[ci]
-			sy := &pj.Syns[rsi]
-			if sy.Wt >= pj.Learn.WtBal.AvgThr {
+			sy := &pt.Syns[rsi]
+			if sy.Wt >= pt.Learn.WtBal.AvgThr {
 				sumWt += sy.Wt
 				sumN++
 			}
@@ -361,14 +360,14 @@ func (pj *Path) WtBalFmWt() {
 			sumWt = 0
 		}
 		wb.Avg = sumWt
-		wb.Fact, wb.Inc, wb.Dec = pj.Learn.WtBal.WtBal(sumWt)
+		wb.Fact, wb.Inc, wb.Dec = pt.Learn.WtBal.WtBal(sumWt)
 	}
 }
 
 // LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
-func (pj *Path) LrateMult(mult float32) {
-	pj.Learn.Lrate = pj.Learn.LrateInit * mult
+func (pt *Path) LrateMult(mult float32) {
+	pt.Learn.Lrate = pt.Learn.LrateInit * mult
 }
 
 ///////////////////////////////////////////////////////////////////////

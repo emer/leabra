@@ -15,40 +15,29 @@ import (
 	"strconv"
 	"time"
 
-	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	_ "cogentcore.org/core/tensor/etview" // _ = include to get gui views
-	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/stats/split"
 	"cogentcore.org/core/tensor/table"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/leabra"
 )
 
 func main() {
-	TheSim.New()
-	TheSim.Config()
-	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	sim := &Sim{}
+	sim.New()
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		sim.RunGUI()
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		sim.RunNoGUI()
 	}
-}
-
-func guirun() {
-	TheSim.Init()
-	win := TheSim.ConfigGUI()
-	win.StartEventLoop()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -390,13 +379,13 @@ func (ss *Sim) ConfigEnv() {
 
 func (ss *Sim) ConfigNet(net *deep.Network) {
 	net.InitName(net, "DeepFSA")
-	in := net.AddLayer2D("Input", 1, 7, emer.Input)
+	in := net.AddLayer2D("Input", 1, 7, leabra.InputLayer)
 	hid, hidct, hidp := net.AddDeep2D("Hidden", 8, 8)
 
 	hidp.Shape.CopyShape(in.Shape)
 	hidp.(*deep.TRCLayer).Drivers.Add("Input")
 
-	trg := net.AddLayer2D("Targets", 1, 7, emer.Input) // just for visualization
+	trg := net.AddLayer2D("Targets", 1, 7, leabra.InputLayer) // just for visualization
 
 	in.SetClass("Input")
 	hidp.SetClass("Input")
@@ -406,10 +395,10 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
 	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
 
-	full := path.NewFull()
+	full := paths.NewFull()
 	full.SelfCon = true // unclear if this makes a diff for self cons at all
 
-	net.ConnectLayers(in, hid, full, emer.Forward)
+	net.ConnectLayers(in, hid, full, leabra.ForwardPath)
 
 	// for this small localist model with longer-term dependencies,
 	// these additional context pathways turn out to be essential!
@@ -833,7 +822,7 @@ func (ss *Sim) SetParams(sheet string, setMsg bool) error {
 // otherwise just the named sheet
 // if setMsg = true then we output a message for each param that was set.
 func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
-	pset, err := ss.Params.SetByNameTry(setNm)
+	pset, err := ss.Params.SetByName(setNm)
 	if err != nil {
 		return err
 	}
@@ -1109,15 +1098,15 @@ func (ss *Sim) LogTstEpc(dt *table.Table) {
 	// data table, instead of incrementing on the Sim
 	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
 	dt.SetCellFloat("Epoch", row, float64(epc))
-	dt.SetCellFloat("SSE", row, agg.Sum(tix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(tix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("SSE", row, stats.Sum(tix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(tix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val > 0
 	})[0])
-	dt.SetCellFloat("PctCor", row, agg.PropIf(tix, "SSE", func(idx int, val float64) bool {
+	dt.SetCellFloat("PctCor", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
 		return val == 0
 	})[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(tix, "CosDiff")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(tix, "CosDiff")[0])
 
 	trlix := table.NewIndexView(trl)
 	trlix.Filter(func(et *table.Table, row int) bool {
@@ -1126,11 +1115,11 @@ func (ss *Sim) LogTstEpc(dt *table.Table) {
 	ss.TstErrLog = trlix.NewTable()
 
 	allsp := split.All(trlix)
-	split.Agg(allsp, "SSE", agg.AggSum)
-	split.Agg(allsp, "AvgSSE", agg.AggMean)
-	split.Agg(allsp, "InActM", agg.AggMean)
-	split.Agg(allsp, "InActP", agg.AggMean)
-	split.Agg(allsp, "Targs", agg.AggMean)
+	split.Agg(allsp, "SSE", stats.AggSum)
+	split.Agg(allsp, "AvgSSE", stats.AggMean)
+	split.Agg(allsp, "InActM", stats.AggMean)
+	split.Agg(allsp, "InActP", stats.AggMean)
+	split.Agg(allsp, "Targs", stats.AggMean)
 
 	ss.TstErrStats = allsp.AggsToTable(table.AddAggName)
 
@@ -1246,11 +1235,11 @@ func (ss *Sim) LogRun(dt *table.Table) {
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
 	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
-	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
-	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
+	dt.SetCellFloat("SSE", row, stats.Mean(epcix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(epcix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.Mean(epcix, "PctErr")[0])
+	dt.SetCellFloat("PctCor", row, stats.Mean(epcix, "PctCor")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(epcix, "CosDiff")[0])
 
 	runix := table.NewIndexView(dt)
 	spl := split.GroupBy(runix, []string{"Params"})

@@ -6,10 +6,6 @@ package deep
 
 //go:generate core generate
 
-import (
-	"github.com/emer/emergent/v2/emer"
-)
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  LayerType
 
@@ -17,13 +13,13 @@ import (
 // but need to use the *old type* in the code, so we have this unfortunate
 // redundancy here.
 
-// LayerType has the DeepLeabra extensions to the emer.LayerType types, for gui
-type LayerType emer.LayerType //enums:enum
+// LayerType has the DeepLeabra extensions to the LayerTypes types, for gui
+type LayerType LayerTypes //enums:enum
 
 const (
 	// CT are layer 6 corticothalamic projecting neurons, which drive predictions
 	// in TRC (Pulvinar) via standard pathways.
-	CT emer.LayerType = emer.LayerTypeN + iota
+	CT LayerTypes = LayerTypesN + iota
 
 	// TRC are thalamic relay cell neurons in the Pulvinar / MD thalamus,
 	// which alternately reflect predictions driven by Deep layer pathways,
@@ -34,7 +30,7 @@ const (
 
 // gui versions
 const (
-	CT_ LayerType = LayerType(emer.LayerTypeN) + iota
+	CT_ LayerType = LayerType(LayerTypesN) + iota
 	TRC_
 )
 

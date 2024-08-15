@@ -4,7 +4,7 @@
 
 package fffb
 
-import "cogentcore.org/core/tensor/minmax"
+import "cogentcore.org/core/math32/minmax"
 
 // Inhib contains state values for computed FFFB inhibition
 type Inhib struct {

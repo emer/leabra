@@ -18,20 +18,18 @@ import (
 	"strings"
 	"time"
 
-	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
-	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/etview" // include to get gui views
-	"cogentcore.org/core/tensor/simat"
-	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor" // include to get gui views
+	"cogentcore.org/core/tensor/stats/simat"
+	"cogentcore.org/core/tensor/stats/split"
+	"cogentcore.org/core/tensor/stats/stats"
 	"cogentcore.org/core/tensor/table"
-	"github.com/emer/emergent/v2/emer"
+	"cogentcore.org/core/tensor/tensorcore"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 	"github.com/emer/leabra/v2/pbwm"
@@ -39,21 +37,14 @@ import (
 )
 
 func main() {
-	TheSim.New()
-	TheSim.Config()
-	if len(os.Args) > 1 {
-		TheSim.CmdArgs() // simple assumption is that any args = no gui -- could add explicit arg if you want
+	sim := &Sim{}
+	sim.New()
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		sim.RunGUI()
 	} else {
-		gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-			guirun()
-		})
+		sim.RunNoGUI()
 	}
-}
-
-func guirun() {
-	TheSim.Init()
-	win := TheSim.ConfigGUI()
-	win.StartEventLoop()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -372,7 +363,7 @@ type Sim struct {
 	ToolBar *core.ToolBar `display:"-"`
 
 	// the weights grid view
-	WtsGrid *etview.TensorGrid `display:"-"`
+	WtsGrid *tensorcore.TensorGrid `display:"-"`
 
 	// the training epoch plot
 	TrnEpcPlot *plot.Plot2D `display:"-"`
@@ -497,10 +488,10 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	snc := da.(*rl.RWDaLayer)
 	snc.SetName("SNc")
 
-	inp := net.AddLayer2D("Input", 1, 4, emer.Input)
-	ctrl := net.AddLayer2D("CtrlInput", 1, 5, emer.Input)
-	out := net.AddLayer2D("Output", 1, 4, emer.Target)
-	hid := net.AddLayer2D("Hidden", 7, 7, emer.Hidden)
+	inp := net.AddLayer2D("Input", 1, 4, leabra.InputLayer)
+	ctrl := net.AddLayer2D("CtrlInput", 1, 5, leabra.InputLayer)
+	out := net.AddLayer2D("Output", 1, 4, leabra.TargetLayer)
+	hid := net.AddLayer2D("Hidden", 7, 7, leabra.SuperLayer)
 	inp.SetRelPos(relpos.Rel{Rel: relpos.Above, Other: rew.Name(), YAlign: relpos.Front, XAlign: relpos.Left})
 	out.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Input", YAlign: relpos.Front, Space: 1})
 	ctrl.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", XAlign: relpos.Left, Space: 2})
@@ -519,31 +510,31 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 
 	mtxGo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Rew", YAlign: relpos.Front, Space: 14})
 
-	full := path.NewFull()
-	fmin := path.NewRect()
+	full := paths.NewFull()
+	fmin := paths.NewRect()
 	fmin.Size.Set(1, 1)
 	fmin.Scale.Set(1, 1)
 	fmin.Wrap = true
 
-	net.ConnectLayersPath(ctrl, rp, full, emer.Forward, &rl.RWPath{})
-	net.ConnectLayersPath(pfcMntD, rp, full, emer.Forward, &rl.RWPath{})
-	net.ConnectLayersPath(pfcOutD, rp, full, emer.Forward, &rl.RWPath{})
+	net.ConnectLayersPath(ctrl, rp, full, leabra.ForwardPath, &rl.RWPath{})
+	net.ConnectLayersPath(pfcMntD, rp, full, leabra.ForwardPath, &rl.RWPath{})
+	net.ConnectLayersPath(pfcOutD, rp, full, leabra.ForwardPath, &rl.RWPath{})
 
-	pj := net.ConnectLayersPath(ctrl, mtxGo, fmin, emer.Forward, &pbwm.MatrixTracePath{})
+	pj := net.ConnectLayersPath(ctrl, mtxGo, fmin, leabra.ForwardPath, &pbwm.MatrixTracePath{})
 	pj.SetClass("MatrixPath")
-	pj = net.ConnectLayersPath(ctrl, mtxNoGo, fmin, emer.Forward, &pbwm.MatrixTracePath{})
+	pj = net.ConnectLayersPath(ctrl, mtxNoGo, fmin, leabra.ForwardPath, &pbwm.MatrixTracePath{})
 	pj.SetClass("MatrixPath")
-	pj = net.ConnectLayers(inp, pfcMnt, fmin, emer.Forward)
+	pj = net.ConnectLayers(inp, pfcMnt, fmin, leabra.ForwardPath)
 	pj.SetClass("PFCFixed")
 
-	net.ConnectLayers(inp, hid, full, emer.Forward)
-	net.ConnectLayers(ctrl, hid, full, emer.Forward)
+	net.ConnectLayers(inp, hid, full, leabra.ForwardPath)
+	net.ConnectLayers(ctrl, hid, full, leabra.ForwardPath)
 	net.BidirConnectLayers(hid, out, full)
-	pj = net.ConnectLayers(pfcOutD, hid, full, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, hid, full, leabra.ForwardPath)
 	pj.SetClass("FmPFCOutD")
-	pj = net.ConnectLayers(pfcOutD, out, full, emer.Forward)
+	pj = net.ConnectLayers(pfcOutD, out, full, leabra.ForwardPath)
 	pj.SetClass("FmPFCOutD")
-	net.ConnectLayers(inp, out, full, emer.Forward)
+	net.ConnectLayers(inp, out, full, leabra.ForwardPath)
 
 	snc.SendDA.AddAllBut(net) // send dopamine to all layers..
 
@@ -1201,7 +1192,7 @@ func (ss *Sim) ConfigTstTrlLog(dt *table.Table) {
 	}
 	for _, lnm := range ss.TstRecLays {
 		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		sch = append(sch, table.Column{lnm, tensor.FLOAT64, ly.Shape.Shp, nil})
+		sch = append(sch, table.Column{lnm, tensor.FLOAT64, ly.Shape.Sizes, nil})
 	}
 	dt.SetFromSchema(sch, nt)
 }
@@ -1295,11 +1286,11 @@ func (ss *Sim) LogRun(dt *table.Table) {
 	dt.SetCellFloat("Run", row, float64(run))
 	dt.SetCellString("Params", row, params)
 	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
-	dt.SetCellFloat("SSE", row, agg.Mean(epcix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, agg.Mean(epcix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, agg.Mean(epcix, "PctErr")[0])
-	dt.SetCellFloat("PctCor", row, agg.Mean(epcix, "PctCor")[0])
-	dt.SetCellFloat("CosDiff", row, agg.Mean(epcix, "CosDiff")[0])
+	dt.SetCellFloat("SSE", row, stats.Mean(epcix, "SSE")[0])
+	dt.SetCellFloat("AvgSSE", row, stats.Mean(epcix, "AvgSSE")[0])
+	dt.SetCellFloat("PctErr", row, stats.Mean(epcix, "PctErr")[0])
+	dt.SetCellFloat("PctCor", row, stats.Mean(epcix, "PctCor")[0])
+	dt.SetCellFloat("CosDiff", row, stats.Mean(epcix, "CosDiff")[0])
 
 	runix := table.NewIndexView(dt)
 	spl := split.GroupBy(runix, []string{"Params"})

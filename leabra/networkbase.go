@@ -4,16 +4,15 @@
 
 package leabra
 
+//go:generate core generate
+
 import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
-	"strings"
 
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/path"
-	"github.com/emer/emergent/v2/timer"
+	"github.com/emer/emergent/v2/paths"
 )
 
 // leabra.Network implements the Leabra algorithm, managing the Layers.
@@ -32,20 +31,18 @@ type Network struct {
 
 	// counter for how long it has been since last WtBal.
 	WtBalCtr int `edit:"-"`
-
-	// timers for each major function (step of processing).
-	FunTimes map[string]*timer.Time `display:"-"`
 }
 
-func (nt *NetworkBase) NumLayers() int               { return len(nt.Layers) }
-func (nt *NetworkBase) EmerLayer(idx int) emer.Layer { return nt.Layers[idx] }
-func (nt *NetworkBase) MaxParallelData() int         { return 1 }
-func (nt *NetworkBase) NParallelData() int           { return 1 }
+func (nt *Network) NumLayers() int               { return len(nt.Layers) }
+func (nt *Network) EmerLayer(idx int) emer.Layer { return nt.Layers[idx] }
+func (nt *Network) MaxParallelData() int         { return 1 }
+func (nt *Network) NParallelData() int           { return 1 }
 
 // NewNetwork returns a new leabra Network
 func NewNetwork(name string) *Network {
 	net := &Network{}
 	emer.InitNetwork(net, name)
+	net.NThreads = 1
 	return net
 }
 
@@ -74,19 +71,16 @@ func (nt *Network) KeyPathParams() string {
 // track of what they all are set to.
 func (nt *Network) AllWtScales() string {
 	str := ""
-	for _, lyi := range nt.Layers {
-		if lyi.Off {
+	for _, ly := range nt.Layers {
+		if ly.Off {
 			continue
 		}
-		ly := lyi.(LeabraLayer).AsLeabra()
-		str += "\nLayer: " + ly.Name() + "\n"
-		rpjn := ly.RecvPaths
-		for _, p := range rpjn {
-			if p.Off {
+		str += "\nLayer: " + ly.Name + "\n"
+		for _, pt := range ly.RecvPaths {
+			if pt.Off {
 				continue
 			}
-			pj := p.AsLeabra()
-			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pj.Name(), pj.WtScale.Abs, pj.WtScale.Rel)
+			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pt.Name, pt.WtScale.Abs, pt.WtScale.Rel)
 		}
 	}
 	return str
@@ -98,7 +92,7 @@ func (nt *Network) Defaults() {
 	nt.WtBalCtr = 0
 	for li, ly := range nt.Layers {
 		ly.Defaults()
-		ly.SetIndex(li)
+		ly.Index = li
 	}
 }
 
@@ -146,7 +140,6 @@ func (nt *Network) AddLayerInit(ly *Layer, name string, shape []int, typ LayerTy
 	emer.InitLayer(ly, name)
 	ly.SetShape(shape)
 	ly.Type = typ
-	ly.Config(shape, typ)
 	nt.Layers = append(nt.Layers, ly)
 	nt.UpdateLayerMaps()
 }
@@ -158,15 +151,15 @@ func (nt *Network) AddLayerInit(ly *Layer, name string, shape []int, typ LayerTy
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each unit
 // group having 4 rows (Y) of 5 (X) units.
-func (nt *Network) AddLayer(name string, shape []int, typ emer.LayerType) emer.Layer {
-	ly := nt.EmerNet.(LeabraNetwork).NewLayer() // essential to use EmerNet interface here!
+func (nt *Network) AddLayer(name string, shape []int, typ LayerTypes) *Layer {
+	ly := &Layer{} // essential to use EmerNet interface here!
 	nt.AddLayerInit(ly, name, shape, typ)
 	return ly
 }
 
 // AddLayer2D adds a new layer with given name and 2D shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential.
-func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerType) emer.Layer {
+func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ LayerTypes) *Layer {
 	return nt.AddLayer(name, []int{shapeY, shapeX}, typ)
 }
 
@@ -175,7 +168,7 @@ func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ emer.LayerTyp
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each pool
 // having 4 rows (Y) of 5 (X) neurons.
-func (nt *Network) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ emer.LayerType) emer.Layer {
+func (nt *Network) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ LayerTypes) *Layer {
 	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
 }
 
@@ -183,16 +176,16 @@ func (nt *Network) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int,
 // adding to the recv and send pathway lists on each side of the connection.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *Network) ConnectLayerNames(send, recv string, pat path.Pattern, typ emer.PathType) (rlay, slay emer.Layer, pj emer.Path, err error) {
-	rlay, err = nt.LayerByNameTry(recv)
-	if err != nil {
+func (nt *Network) ConnectLayerNames(send, recv string, pat paths.Pattern, typ PathTypes) (rlay, slay *Layer, pt *Path, err error) {
+	rlay = nt.LayerByName(recv)
+	if rlay == nil {
 		return
 	}
-	slay, err = nt.LayerByNameTry(send)
-	if err != nil {
+	slay = nt.LayerByName(send)
+	if slay == nil {
 		return
 	}
-	pj = nt.ConnectLayers(slay, rlay, pat, typ)
+	pt = nt.ConnectLayers(slay, rlay, pat, typ)
 	return
 }
 
@@ -200,21 +193,13 @@ func (nt *Network) ConnectLayerNames(send, recv string, pat path.Pattern, typ em
 // adding to the recv and send pathway lists on each side of the connection.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *Network) ConnectLayers(send, recv emer.Layer, pat path.Pattern, typ emer.PathType) emer.Path {
-	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
-	return nt.ConnectLayersPath(send, recv, pat, typ, pj)
-}
-
-// ConnectLayersPath makes connection using given pathway between two layers,
-// adding given path to the recv and send pathway lists on each side of the connection.
-// Does not yet actually connect the units within the layers -- that
-// requires Build.
-func (nt *Network) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, typ emer.PathType, pj emer.Path) emer.Path {
-	pj.Init(pj)
-	pj.AsLeabra().Connect(send, recv, pat, typ)
-	recv.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
-	send.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
-	return pj
+func (nt *Network) ConnectLayers(send, recv *Layer, pat paths.Pattern, typ PathTypes) *Path {
+	pt := &Path{}
+	emer.InitPath(pt)
+	pt.Connect(send, recv, pat, typ)
+	recv.RecvPaths = append(recv.RecvPaths, pt)
+	send.SendPaths = append(send.SendPaths, pt)
+	return pt
 }
 
 // BidirConnectLayerNames establishes bidirectional pathways between two layers,
@@ -222,16 +207,16 @@ func (nt *Network) ConnectLayersPath(send, recv emer.Layer, pat path.Pattern, ty
 // to the high layer, and receives a Back pathway in the opposite direction.
 // Returns error if not successful.
 // Does not yet actually connect the units within the layers -- that requires Build.
-func (nt *Network) BidirConnectLayerNames(low, high string, pat path.Pattern) (lowlay, highlay emer.Layer, fwdpj, backpj emer.Path, err error) {
-	lowlay, err = nt.LayerByNameTry(low)
-	if err != nil {
+func (nt *Network) BidirConnectLayerNames(low, high string, pat paths.Pattern) (lowlay, highlay *Layer, fwdpj, backpj *Path, err error) {
+	lowlay = nt.LayerByName(low)
+	if lowlay == nil {
 		return
 	}
-	highlay, err = nt.LayerByNameTry(high)
-	if err != nil {
+	highlay = nt.LayerByName(high)
+	if highlay == nil {
 		return
 	}
-	fwdpj = nt.ConnectLayers(lowlay, highlay, pat, emer.Forward)
+	fwdpj = nt.ConnectLayers(lowlay, highlay, pat, ForwardPath)
 	backpj = nt.ConnectLayers(highlay, lowlay, pat, BackPath)
 	return
 }
@@ -241,8 +226,8 @@ func (nt *Network) BidirConnectLayerNames(low, high string, pat path.Pattern) (l
 // and receives a Back pathway in the opposite direction.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *Network) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (fwdpj, backpj emer.Path) {
-	fwdpj = nt.ConnectLayers(low, high, pat, emer.Forward)
+func (nt *Network) BidirConnectLayers(low, high *Layer, pat paths.Pattern) (fwdpj, backpj *Path) {
+	fwdpj = nt.ConnectLayers(low, high, pat, ForwardPath)
 	backpj = nt.ConnectLayers(high, low, pat, BackPath)
 	return
 }
@@ -253,59 +238,47 @@ func (nt *Network) BidirConnectLayers(low, high emer.Layer, pat path.Pattern) (f
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 // Py = python version with no return vals.
-func (nt *Network) BidirConnectLayersPy(low, high emer.Layer, pat path.Pattern) {
-	nt.ConnectLayers(low, high, pat, emer.Forward)
+func (nt *Network) BidirConnectLayersPy(low, high *Layer, pat paths.Pattern) {
+	nt.ConnectLayers(low, high, pat, ForwardPath)
 	nt.ConnectLayers(high, low, pat, BackPath)
 }
 
 // LateralConnectLayer establishes a self-pathway within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *Network) LateralConnectLayer(lay emer.Layer, pat path.Pattern) emer.Path {
-	pj := nt.EmerNet.(LeabraNetwork).NewPath() // essential to use EmerNet interface here!
-	return nt.LateralConnectLayerPath(lay, pat, pj)
+func (nt *Network) LateralConnectLayer(lay *Layer, pat paths.Pattern) *Path {
+	pt := &Path{}
+	return nt.LateralConnectLayerPath(lay, pat, pt)
 }
 
 // LateralConnectLayerPath makes lateral self-pathway using given pathway.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
-func (nt *Network) LateralConnectLayerPath(lay emer.Layer, pat path.Pattern, pj emer.Path) emer.Path {
-	pj.Init(pj)
-	pj.AsLeabra().Connect(lay, lay, pat, emer.Lateral)
-	lay.(LeabraLayer).RecvPaths().Add(pj.(LeabraPath))
-	lay.(LeabraLayer).SendPaths().Add(pj.(LeabraPath))
-	return pj
+func (nt *Network) LateralConnectLayerPath(lay *Layer, pat paths.Pattern, pt *Path) *Path {
+	// pt.Init(pt)
+	pt.Connect(lay, lay, pat, LateralPath)
+	lay.RecvPaths = append(lay.RecvPaths, pt)
+	lay.SendPaths = append(lay.SendPaths, pt)
+	return pt
 }
 
 // Build constructs the layer and pathway state based on the layer shapes
 // and patterns of interconnectivity
 func (nt *Network) Build() error {
-	nt.StopThreads() // any existing..
-	nt.LayClassMap = make(map[string][]string)
-	emsg := ""
+	nt.MakeLayerMaps()
+	var errs []error
 	for li, ly := range nt.Layers {
-		ly.SetIndex(li)
+		ly.Index = li
 		if ly.Off {
 			continue
 		}
 		err := ly.Build()
 		if err != nil {
-			emsg += err.Error() + "\n"
-		}
-		cls := strings.Split(ly.Class(), " ")
-		for _, cl := range cls {
-			ll := nt.LayClassMap[cl]
-			ll = append(ll, ly.Name())
-			nt.LayClassMap[cl] = ll
+			errs = append(errs, err)
 		}
 	}
-	nt.Layout()
-	nt.BuildThreads()
-	nt.StartThreads()
-	if emsg != "" {
-		return errors.New(emsg)
-	}
-	return nil
+	nt.LayoutLayers()
+	return errors.Join(errs...)
 }
 
 // VarRange returns the min / max values for given variable
@@ -331,58 +304,4 @@ func (nt *Network) VarRange(varNm string) (min, max float32, err error) {
 		}
 	}
 	return
-}
-
-// TimerReport reports the amount of time spent in each function, and in each thread
-func (nt *Network) TimerReport() {
-	fmt.Printf("TimerReport: %v, NThreads: %v\n", nt.Nm, nt.NThreads)
-	fmt.Printf("\t%13s \t%7s\t%7s\n", "Function Name", "Secs", "Pct")
-	nfn := len(nt.FunTimes)
-	fnms := make([]string, nfn)
-	idx := 0
-	for k := range nt.FunTimes {
-		fnms[idx] = k
-		idx++
-	}
-	sort.StringSlice(fnms).Sort()
-	pcts := make([]float64, nfn)
-	tot := 0.0
-	for i, fn := range fnms {
-		pcts[i] = nt.FunTimes[fn].TotalSecs()
-		tot += pcts[i]
-	}
-	for i, fn := range fnms {
-		fmt.Printf("\t%13s \t%7.3f\t%7.1f\n", fn, pcts[i], 100*(pcts[i]/tot))
-	}
-	fmt.Printf("\t%13s \t%7.3f\n", "Total", tot)
-
-	if nt.NThreads <= 1 {
-		return
-	}
-	fmt.Printf("\n\tThr\tSecs\tPct\n")
-	pcts = make([]float64, nt.NThreads)
-	tot = 0.0
-	for th := 0; th < nt.NThreads; th++ {
-		pcts[th] = nt.ThrTimes[th].TotalSecs()
-		tot += pcts[th]
-	}
-	for th := 0; th < nt.NThreads; th++ {
-		fmt.Printf("\t%v \t%7.3f\t%7.1f\n", th, pcts[th], 100*(pcts[th]/tot))
-	}
-}
-
-// FunTimerStart starts function timer for given function name -- ensures creation of timer
-func (nt *Network) FunTimerStart(fun string) {
-	ft, ok := nt.FunTimes[fun]
-	if !ok {
-		ft = &timer.Time{}
-		nt.FunTimes[fun] = ft
-	}
-	ft.Start()
-}
-
-// FunTimerStop stops function timer -- timer must already exist
-func (nt *Network) FunTimerStop(fun string) {
-	ft := nt.FunTimes[fun]
-	ft.Stop()
 }

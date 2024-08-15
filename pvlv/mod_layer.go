@@ -13,7 +13,7 @@ import (
 	"strconv"
 
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor/minmax"
+	"cogentcore.org/core/math32/minmax"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -450,7 +450,7 @@ func (ly *ModLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]
@@ -580,7 +580,7 @@ func (ly *ModLayer) AvgMaxMod(_ *leabra.Time) {
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			mnr := &ly.ModNeurs[ni]
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			mpl.ModNetStats.UpdateValue(mnr.ModNet, int32(ni))
@@ -597,7 +597,7 @@ func (ly *ModLayer) ActFmG(_ *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		mnr := &ly.ModNeurs[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.VmFmG(nrn)

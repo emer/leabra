@@ -6,7 +6,6 @@ package glong
 
 import (
 	"cogentcore.org/core/math32"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -70,12 +69,12 @@ func (pj *NMDAPath) UpdateParams() {
 	pj.Path.UpdateParams()
 }
 
-func (pj *NMDAPath) Type() emer.PathType {
+func (pj *NMDAPath) Type() PathTypes {
 	return NMDA
 }
 
 func (pj *NMDAPath) PathTypeName() string {
-	if pj.Type < emer.PathTypeN {
+	if pj.Type < PathTypesN {
 		return pj.Typ.String()
 	}
 	ptyp := PathType(pj.Typ)
@@ -90,18 +89,18 @@ func (pj *NMDAPath) PathTypeName() string {
 //////////////////////////////////////////////////////////////////////////////////////
 //  PathType
 
-// PathType has the GLong extensions to the emer.PathType types, for gui
-type PathType emer.PathType //enums:enum
+// PathType has the GLong extensions to the PathTypes types, for gui
+type PathType PathTypes //enums:enum
 
 // The GLong path types
 const (
 	// NMDAPath are pathways that have strong NMDA channels supporting maintenance
-	NMDA emer.PathType = emer.PathType(emer.PathTypeN) + iota
+	NMDA PathTypes = PathTypes(PathTypesN) + iota
 )
 
 // gui versions
 const (
-	NMDA_ PathType = PathType(emer.PathTypeN) + iota
+	NMDA_ PathType = PathType(PathTypesN) + iota
 )
 
 // var PathProps = tree.Props{

@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"cogentcore.org/core/math32"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -122,7 +121,7 @@ func (ly *MSNLayer) GetMonitorValue(data []string) float64 {
 // and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)
 func AddMSNLayer(nt *Network, name string, nY, nX, nNeurY, nNeurX int, cpmt StriatalCompartment, da DaRType) *MSNLayer {
 	ly := &MSNLayer{}
-	nt.AddLayerInit(ly, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nY, nX, nNeurY, nNeurX}, leabra.SuperLayer)
 	ly.ModLayer.Init()
 	ly.DaMod.RecepType = da
 	ly.Compartment = cpmt
@@ -252,7 +251,7 @@ func (ly *MSNLayer) PoolDelayedInhib(pl *leabra.Pool) {
 	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		dis := &ly.DIState[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Inhib.Self.Inhib(&nrn.GiSelf, nrn.Act)
@@ -265,7 +264,7 @@ func (ly *MSNLayer) ModsFmInc(_ *leabra.Time) {
 	plMax := ly.ModPools[0].ModNetStats.Max
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		mnr := &ly.ModNeurs[ni]

@@ -300,12 +300,12 @@ func (ly *MSNLayer) RecvPathValues(vals *[]float32, varNm string, sendLay emer.L
 	}
 	var pj emer.Path
 	if pathType != "" {
-		pj, err = sendLay.RecvNameTypeTry(ly.Name, pathType)
+		pj, err = sendLay.RecvNameType(ly.Name, pathType)
 		if pj == nil {
-			pj, err = sendLay.RecvNameTry(ly.Name)
+			pj, err = sendLay.RecvName(ly.Name)
 		}
 	} else {
-		pj, err = sendLay.RecvNameTry(ly.Name)
+		pj, err = sendLay.RecvName(ly.Name)
 	}
 	if pj == nil {
 		return err
@@ -333,12 +333,12 @@ func (ly *MSNLayer) SendPathValues(vals *[]float32, varNm string, recvLay emer.L
 	}
 	var pj emer.Path
 	if pathType != "" {
-		pj, err = recvLay.SendNameTypeTry(ly.Name, pathType)
+		pj, err = recvLay.SendNameType(ly.Name, pathType)
 		if pj == nil {
-			pj, err = recvLay.SendNameTry(ly.Name)
+			pj, err = recvLay.SendName(ly.Name)
 		}
 	} else {
-		pj, err = recvLay.SendNameTry(ly.Name)
+		pj, err = recvLay.SendName(ly.Name)
 	}
 	if pj == nil {
 		return err

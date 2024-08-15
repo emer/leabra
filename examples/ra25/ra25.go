@@ -21,10 +21,8 @@ import (
 	"cogentcore.org/core/icons"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/split"
+	"cogentcore.org/core/tensor/stats/split"
 	"cogentcore.org/core/tensor/table"
-	"cogentcore.org/core/views"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
 	"github.com/emer/emergent/v2/emer"
@@ -34,7 +32,7 @@ import (
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -275,20 +273,20 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ss.Params.SetObject("NetSize")
 
 	net.InitName(net, "RA25")
-	inp := net.AddLayer2D("Input", 5, 5, emer.Input)
-	hid1 := net.AddLayer2D("Hidden1", ss.Params.LayY("Hidden1", 7), ss.Params.LayX("Hidden1", 7), emer.Hidden)
-	hid2 := net.AddLayer2D("Hidden2", ss.Params.LayY("Hidden2", 7), ss.Params.LayX("Hidden2", 7), emer.Hidden)
-	out := net.AddLayer2D("Output", 5, 5, emer.Target)
+	inp := net.AddLayer2D("Input", 5, 5, leabra.InputLayer)
+	hid1 := net.AddLayer2D("Hidden1", ss.Params.LayY("Hidden1", 7), ss.Params.LayX("Hidden1", 7), leabra.SuperLayer)
+	hid2 := net.AddLayer2D("Hidden2", ss.Params.LayY("Hidden2", 7), ss.Params.LayX("Hidden2", 7), leabra.SuperLayer)
+	out := net.AddLayer2D("Output", 5, 5, leabra.TargetLayer)
 
 	// use this to position layers relative to each other
 	// default is Above, YAlign = Front, XAlign = Center
 	// hid2.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden1", YAlign: relpos.Front, Space: 2})
 
 	// note: see emergent/path module for all the options on how to connect
-	// NewFull returns a new path.Full connectivity pattern
-	full := path.NewFull()
+	// NewFull returns a new paths.Full connectivity pattern
+	full := paths.NewFull()
 
-	net.ConnectLayers(inp, hid1, full, emer.Forward)
+	net.ConnectLayers(inp, hid1, full, leabra.ForwardPath)
 	net.BidirConnectLayers(hid1, hid2, full)
 	net.BidirConnectLayers(hid2, out, full)
 
@@ -734,7 +732,7 @@ func (ss *Sim) LogTestErrors() {
 	ss.Logs.MiscTables["TestErrors"] = ix.NewTable()
 
 	allsp := split.All(ix)
-	split.Agg(allsp, "SSE", agg.AggSum)
+	split.Agg(allsp, "SSE", stats.AggSum)
 	// note: can add other stats to compute
 	ss.Logs.MiscTables["TestErrorStats"] = allsp.AggsToTable(table.AddAggName)
 }
@@ -871,7 +869,7 @@ func (ss *Sim) ConfigGUI() {
 			Func: func() {
 				d := core.NewBody().AddTitle("Test item").AddText("Enter the name of a given input pattern to test (case insensitive, contains given string.")
 				name := ""
-				views.NewValue(d, &name)
+				//views.NewValue(d, &name)
 				d.AddBottomBar(func(pw core.Widget) {
 					d.AddCancel(pw)
 					d.AddOK(pw).OnClick(func(e events.Event) {

@@ -7,8 +7,8 @@ package deep
 import (
 	"log"
 
+	"cogentcore.org/core/math32/vecint"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/evec"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ func (ep *EPools) Add(laynm string, wt float32) *EPool {
 func (ep *EPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
 	for _, p := range *ep {
-		_, err := net.LayerByNameTry(p.LayNm)
+		_, err := net.LayerByName(p.LayNm)
 		if err != nil {
 			log.Printf("%s EPools.Validate: %v\n", ctxt, err)
 			lasterr = err
@@ -68,10 +68,10 @@ type IPool struct {
 	PoolWt float32
 
 	// offset into source, sending layer
-	SOff evec.Vector2i
+	SOff vecint.Vector2i
 
 	// offset into our own receiving layer
-	ROff evec.Vector2i
+	ROff vecint.Vector2i
 }
 
 func (ip *IPool) Defaults() {
@@ -93,7 +93,7 @@ func (ip *IPools) Add(laynm string, wt float32) *IPool {
 func (ip *IPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
 	for _, p := range *ip {
-		_, err := net.LayerByNameTry(p.LayNm)
+		_, err := net.LayerByName(p.LayNm)
 		if err != nil {
 			log.Printf("%s IPools.Validate: %v\n", ctxt, err)
 			lasterr = err

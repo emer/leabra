@@ -80,7 +80,7 @@ and coordinates both sides of the state.  This clarifies and simplifies a lot of
 There is no separate equivalent of LeabraConSpec / LeabraConState at the level of
 connection groups per unit per pathway.
 
-The pattern of connectivity between units is specified by the path.Pattern interface
+The pattern of connectivity between units is specified by the paths.Pattern interface
 and all the different standard options are avail in that path package.  The Pattern
 code generates a full tensor bitmap of binary 1's and 0's for connected (1's) and not
 (0's) units, and can use any method to do so.  This full lookup-table approach is not the most

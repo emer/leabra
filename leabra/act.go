@@ -5,9 +5,9 @@
 package leabra
 
 import (
+	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor/minmax"
-	"github.com/emer/emergent/v2/erand"
+	"cogentcore.org/core/math32/minmax"
 	"github.com/emer/leabra/v2/chans"
 	"github.com/emer/leabra/v2/knadapt"
 	"github.com/emer/leabra/v2/nxx1"
@@ -171,8 +171,8 @@ func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 
 	ac.Dt.GFmRaw(geRaw, &nrn.Ge)
 	// first place noise is required -- generate here!
-	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != erand.Mean {
-		nrn.Noise = float32(ac.Noise.Gen(-1))
+	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != randx.Mean {
+		nrn.Noise = float32(ac.Noise.Gen())
 	}
 	if ac.Noise.Type == GeNoise {
 		nrn.Ge += nrn.Noise
@@ -403,7 +403,7 @@ const (
 
 // ActNoiseParams contains parameters for activation-level noise
 type ActNoiseParams struct {
-	erand.RndParams
+	randx.RandParams
 
 	// where and how to add processing noise
 	Type ActNoiseType
@@ -463,7 +463,7 @@ func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
 // WtInitParams are weight initialization parameters -- basically the
 // random distribution parameters but also Symmetry flag
 type WtInitParams struct {
-	erand.RndParams
+	randx.RandParams
 
 	// symmetrize the weight values with those in reciprocal pathway -- typically true for bidirectional excitatory connections
 	Sym bool
@@ -472,7 +472,7 @@ type WtInitParams struct {
 func (wp *WtInitParams) Defaults() {
 	wp.Mean = 0.5
 	wp.Var = 0.25
-	wp.Dist = erand.Uniform
+	wp.Dist = randx.Uniform
 	wp.Sym = true
 }
 

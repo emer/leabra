@@ -5,7 +5,7 @@
 package leabra
 
 import (
-	"cogentcore.org/core/tensor/minmax"
+	"cogentcore.org/core/math32/minmax"
 	"github.com/emer/leabra/v2/fffb"
 )
 

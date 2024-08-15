@@ -80,7 +80,7 @@ func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		nrn.Act = ract

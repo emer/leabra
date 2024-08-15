@@ -59,7 +59,7 @@ func (ly *CTLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		geRaw := nrn.GeRaw + ly.CtxtGes[ni]
@@ -78,7 +78,7 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {

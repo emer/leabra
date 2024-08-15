@@ -17,7 +17,7 @@ const (
 	// Super is a superficial cortical layer (lamina 2-3-4)
 	// which does not receive direct input or targets.
 	// In more generic models, it should be used as a Hidden layer,
-	// and maps onto the Hidden type in emer.LayerType.
+	// and maps onto the Hidden type in LayerTypes.
 	SuperLayer LayerTypes = iota
 
 	// Input is a layer that receives direct external input
@@ -82,4 +82,4 @@ const (
 	// This layer provides the primary input to VSPatch US-timing
 	// prediction layers, and other layers that require predictive dynamic
 	PTPredLayer
-}
+)

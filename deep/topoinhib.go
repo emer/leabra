@@ -73,8 +73,8 @@ func (ly *TopoInhibLayer) UpdateParams() {
 
 // TopoGiPos returns position-specific Gi contribution
 func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
-	pyn := ly.Shape.Dim(0)
-	pxn := ly.Shape.Dim(1)
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	if py < 0 || py >= pyn {
 		return 0
 	}
@@ -89,8 +89,8 @@ func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
 
 // TopoGi computes topographic Gi between pools
 func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
-	pyn := ly.Shape.Dim(0)
-	pxn := ly.Shape.Dim(1)
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	wd := ly.TopoInhib.Width
 
 	laymax := float32(0)

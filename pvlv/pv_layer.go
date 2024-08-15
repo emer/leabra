@@ -20,7 +20,7 @@ type PVLayer struct {
 	PVReceivers   emer.LayNames
 }
 
-func AddPVLayer(nt *Network, name string, nY, nX int, typ emer.LayerType) *PVLayer {
+func AddPVLayer(nt *Network, name string, nY, nX int, typ LayerTypes) *PVLayer {
 	ly := PVLayer{Net: nt}
 	nt.AddLayerInit(&ly, name, []int{nY, nX, 1, 1}, typ)
 	return &ly

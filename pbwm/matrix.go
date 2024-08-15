@@ -198,17 +198,17 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 		return
 	}
 
-	ypN := ly.Shape.Dim(0)
-	xpN := ly.Shape.Dim(1)
-	ynN := ly.Shape.Dim(2)
-	xnN := ly.Shape.Dim(3)
+	ypN := ly.Shape.DimSize(0)
+	xpN := ly.Shape.DimSize(1)
+	ynN := ly.Shape.DimSize(2)
+	xnN := ly.Shape.DimSize(3)
 	for yp := 0; yp < ypN; yp++ {
 		for xp := ly.MaintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
 				for xn := 0; xn < xnN; xn++ {
 					ni := ly.Shape.Offset([]int{yp, xp, yn, xn})
 					nrn := &ly.Neurons[ni]
-					if nrn.Off {
+					if nrn.IsOff() {
 						continue
 					}
 					mnr := &ly.MatrixNeurs[ni]
@@ -232,7 +232,7 @@ func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
 func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		mnr := &ly.MatrixNeurs[ni]
@@ -259,7 +259,7 @@ func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
 		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
-			if nrn.Off {
+			if nrn.IsOff() {
 				continue
 			}
 			mnr := &ly.MatrixNeurs[ni]

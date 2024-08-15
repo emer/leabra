@@ -21,14 +21,8 @@ import (
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
-	_ "cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/etview"
-	_ "cogentcore.org/core/tensor/split"
 	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/env"
-	"github.com/emer/emergent/v2/stepper"
-
-	"cogentcore.org/core/gimain"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/leabra/v2/leabra"
@@ -40,19 +34,14 @@ import (
 var TheSim Sim // this is in a global mainly for debugging--otherwise it can be impossible to find
 
 func main() {
-	// TheSim is the overall state for this simulation
-	TheSim.VerboseInit, TheSim.LayerThreads = TheSim.CmdArgs() // doesn't return if nogui command line arg set
-	TheSim.New()
-	TheSim.Config()
-	gimain.Main(func() { // this starts the GUI
-		guirun(&TheSim)
-	})
-}
-
-func guirun(ss *Sim) {
-	ss.InitSim()
-	win := ss.ConfigGUI()
-	win.StartEventLoop()
+	sim := &Sim{}
+	sim.New()
+	sim.ConfigAll()
+	if sim.Config.GUI {
+		sim.RunGUI()
+	} else {
+		sim.RunNoGUI()
+	}
 }
 
 // MonitorVal is similar to the Neuron field mechanism, but allows us to implement monitors for arbitrary
@@ -182,7 +171,7 @@ type Sim struct {
 	ToolBar *core.ToolBar `display:"-"`
 
 	// the weights grid view
-	WtsGrid *etview.TensorGrid `display:"-"`
+	WtsGrid *tensorcore.TensorGrid `display:"-"`
 
 	// data for the TrialTypeData plot
 	TrialTypeData *table.Table `display:"no-inline"`
@@ -227,7 +216,7 @@ type Sim struct {
 	RndSeed int64
 
 	//
-	Stepper *stepper.Stepper `display:"-"`
+	// Stepper *stepper.Stepper `display:"-"`
 
 	//
 	SimHasRun bool `display:"-"`
@@ -317,9 +306,9 @@ func (ss *Sim) New() {
 		ss.StepsToRun = 1
 		ss.StepGrain = SGTrial
 		ss.StopStepCondition = SSNone
-		ss.Stepper = stepper.New()
-		ss.Stepper.StopCheckFn = ss.CheckStopCondition
-		ss.Stepper.PauseNotifyFn = ss.NotifyPause
+		// ss.Stepper = stepper.New()
+		// ss.Stepper.StopCheckFn = ss.CheckStopCondition
+		// ss.Stepper.PauseNotifyFn = ss.NotifyPause
 	})
 	ss.Defaults()
 	ss.Params = ParamSets
@@ -403,7 +392,7 @@ const (
 func (ss *Sim) InitSim() {
 	ev := &ss.Env
 	rand.Seed(ss.RndSeed)
-	ss.Stepper.Init()
+	// ss.Stepper.Init()
 	ev.TrialInstances = data.NewTrialInstanceRecs(nil)
 	err := ss.SetParams("", ss.VerboseInit) // all sheets
 	if err != nil {
@@ -444,7 +433,7 @@ func (ss *Sim) UpdateView() {
 
 // Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar
 func (ss *Sim) NotifyStopped() {
-	ss.Stepper.Stop()
+	// ss.Stepper.Stop()
 	if ss.Win != nil {
 		vp := ss.Win.WinViewport2D()
 		if ss.ToolBar != nil {
@@ -687,11 +676,11 @@ func (ss *Sim) ConfigNetView(nv *netview.NetView) {
 }
 
 func (ss *Sim) Stopped() bool {
-	return ss.Stepper.RunState == stepper.Stopped
+	// return ss.Stepper.RunState == stepper.Stopped
 }
 
 func (ss *Sim) Paused() bool {
-	return ss.Stepper.RunState == stepper.Paused
+	// return ss.Stepper.RunState == stepper.Paused
 }
 
 var CemerWtsFname = ""
@@ -782,7 +771,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	//plt = tv.AddNewTab(plot.KiT_Plot2D, "RealTimeData").(*plot.Plot2D)
 	//ss.RealTimeData = ss.ConfigRealTimeData(plt, ss.RealTimeDataLog)
 
-	input := tv.AddNewTab(etview.KiT_TableView, "StdInputData").(*etview.TableView)
+	input := tv.AddNewTab(tensorcore.KiT_TableView, "StdInputData").(*tensorcore.TableView)
 	input.SetName("StdInputData")
 	input.SetTable(ss.Env.StdInputData, nil)
 
@@ -794,7 +783,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	tbar.AddAction(core.ActOpts{Label: "Init", Icon: "update", Tooltip: "Block init code. Global variables retain current values unless reset in the init code", UpdateFunc: func(act *core.Action) {
 		act.SetActiveStateUpdate(!ss.IsRunning)
 	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		ss.Stepper.Stop()
+		// ss.Stepper.Stop()
 		if !ss.InitHasRun {
 			ss.InitSim()
 		}
@@ -833,22 +822,22 @@ func (ss *Sim) ConfigGUI() *core.Window {
 		if !ss.SimHasRun {
 			_ = ss.InitRun()
 		}
-		if !ss.Stepper.Active() {
-			if ss.Stopped() {
-				ss.SimHasRun = true
-				ss.Stepper.Enter(stepper.Running)
-				go ss.ExecuteRun()
-			} else if ss.Paused() {
-				ss.Stepper.Enter(stepper.Running)
-			}
-		}
+		// if !ss.Stepper.Active() {
+		// 	if ss.Stopped() {
+		// 		ss.SimHasRun = true
+		// 		ss.Stepper.Enter(stepper.Running)
+		// 		go ss.ExecuteRun()
+		// 	} else if ss.Paused() {
+		// 		ss.Stepper.Enter(stepper.Running)
+		// 	}
+		// }
 	})
 
 	tbar.AddAction(core.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Stop the current program at its next natural stopping point (i.e., cleanly stopping when appropriate chunks of computation have completed).", UpdateFunc: func(act *core.Action) {
 		act.SetActiveStateUpdate(ss.IsRunning)
 	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		fmt.Println("STOP!")
-		ss.Stepper.Pause()
+		// ss.Stepper.Pause()
 		ss.IsRunning = false
 		ss.ToolBar.UpdateActions()
 		ss.Win.WinViewport2D().SetNeedsFullRender()
@@ -1015,22 +1004,22 @@ func (ss *Sim) RunSteps(grain StepGrain, tbar *core.ToolBar) {
 		}
 		if int(ss.nStepsBox.Value) != ss.StepsToRun ||
 			int(ss.nStepsBox.Value) != ss.Stepper.StepsPer ||
-			ss.StepsToRun != ss.Stepper.StepsPer ||
-			ss.Stepper.StepGrain != int(ss.StepGrain) {
+			// ss.StepsToRun != ss.Stepper.StepsPer ||
+			// ss.Stepper.StepGrain != int(ss.StepGrain) {
 			ss.StepsToRun = int(ss.nStepsBox.Value)
 			ss.OrigSteps = ss.StepsToRun
-			ss.Stepper.ResetParams(ss.StepsToRun, int(ss.StepGrain))
+			// ss.Stepper.ResetParams(ss.StepsToRun, int(ss.StepGrain))
 		}
 		if ss.Stopped() {
 			ss.SimHasRun = true
 			ss.OrigSteps = ss.StepsToRun
-			ss.Stepper.Start(int(grain), ss.StepsToRun)
+			// ss.Stepper.Start(int(grain), ss.StepsToRun)
 			ss.ToolBar.UpdateActions()
 			go ss.ExecuteRun()
 		} else if ss.Paused() {
-			ss.Stepper.StepGrain = int(grain)
-			ss.Stepper.StepsPer = ss.StepsToRun
-			ss.Stepper.Enter(stepper.Stepping)
+			// ss.Stepper.StepGrain = int(grain)
+			// ss.Stepper.StepsPer = ss.StepsToRun
+			// ss.Stepper.Enter(stepper.Stepping)
 			ss.ToolBar.UpdateActions()
 		}
 	}
@@ -1304,9 +1293,9 @@ func (ss *Sim) ExecuteRun() bool {
 		if ss.ViewOn && ss.TrainUpdate >= leabra.Run {
 			ss.UpdateView()
 		}
-		ss.Stepper.StepPoint(int(Condition))
+		// ss.Stepper.StepPoint(int(Condition))
 	}
-	ss.Stepper.Stop()
+	// ss.Stepper.Stop()
 	ss.IsRunning = false
 	return allDone
 }
@@ -1353,13 +1342,13 @@ func (ss *Sim) CheckStopCondition(_ int) bool {
 // Stepper variables should be set directly, rather than calling Stepper methods,
 // which would try to take the lock and then deadlock.
 func (ss *Sim) NotifyPause() {
-	if int(ss.StepGrain) != ss.Stepper.StepGrain {
-		ss.Stepper.StepGrain = int(ss.StepGrain)
-	}
-	if ss.StepsToRun != ss.OrigSteps { // User has changed the step count while running
-		ss.Stepper.StepsPer = ss.StepsToRun
-		ss.OrigSteps = ss.StepsToRun
-	}
+	// if int(ss.StepGrain) != ss.Stepper.StepGrain {
+	// 	ss.Stepper.StepGrain = int(ss.StepGrain)
+	// }
+	// if ss.StepsToRun != ss.OrigSteps { // User has changed the step count while running
+	// 	ss.Stepper.StepsPer = ss.StepsToRun
+	// 	ss.OrigSteps = ss.StepsToRun
+	// }
 	ss.IsRunning = false
 	ss.ToolBar.UpdateActions()
 	ss.UpdateView()

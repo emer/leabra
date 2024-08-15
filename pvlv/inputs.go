@@ -4,7 +4,7 @@
 
 package pvlv
 
-import "github.com/emer/table/v2/tensor"
+import "cogentcore.org/core/tensor"
 
 type Inputs interface {
 	Empty() bool

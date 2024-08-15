@@ -11,7 +11,6 @@ import (
 	"math"
 	"strconv"
 
-	"cogentcore.org/core/gimain"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
@@ -20,15 +19,11 @@ import (
 )
 
 func main() {
-	TheSim.Config()
-	gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-		guirun()
-	})
-}
-
-func guirun() {
-	win := TheSim.ConfigGUI()
-	win.StartEventLoop()
+	sim := &Sim{}
+	sim.Config()
+	sim.VmRun()
+	b := sim.ConfigGUI()
+	b.RunMainWindow()
 }
 
 // LogPrec is precision for saving float values in logs

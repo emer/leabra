@@ -5,12 +5,19 @@
 package leabra
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"strconv"
+	"strings"
+
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/views"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/params"
-	"github.com/emer/emergent/v2/relpos"
+	"github.com/emer/emergent/v2/weights"
 )
 
 // Layer implements the Leabra algorithm at the layer level,
@@ -19,25 +26,25 @@ type Layer struct {
 	emer.LayerBase
 
 	// our parent network, in case we need to use it to
-	// find other layers etc; set when added by network
+	// find other layers etc; set when added by network.
 	Network *Network `copier:"-" json:"-" xml:"-" display:"-"`
 
 	// type of layer.
-	Type LayerType
+	Type LayerTypes
 
-	// list of receiving pathways into this layer from other layers
+	// list of receiving pathways into this layer from other layers.
 	RecvPaths []*Path
 
-	// list of sending pathways from this layer to other layers
+	// list of sending pathways from this layer to other layers.
 	SendPaths []*Path
 
-	// Activation parameters and methods for computing activations
+	// Activation parameters and methods for computing activations.
 	Act ActParams `display:"add-fields"`
 
-	// Inhibition parameters and methods for computing layer-level inhibition
+	// Inhibition parameters and methods for computing layer-level inhibition.
 	Inhib InhibParams `display:"add-fields"`
 
-	// Learning parameters and methods that operate at the neuron level
+	// Learning parameters and methods that operate at the neuron level.
 	Learn LearnNeurParams `display:"add-fields"`
 
 	// slice of neurons for this layer, as a flat list of len = Shape.Len().
@@ -50,25 +57,26 @@ type Layer struct {
 	// Must iterate over index and use pointer to modify values.
 	Pools []Pool
 
-	// cosine difference between ActM, ActP stats
+	// cosine difference between ActM, ActP stats.
 	CosDiff CosDiffStats
 }
 
 // emer.Layer interface methods
 
-func (ls *LayerBase) TypeName() string           { return ly.Type.String() }
-func (ls *LayerBase) NumRecvPaths() int          { return len(ls.RecvPaths) }
-func (ls *LayerBase) RecvPath(idx int) emer.Path { return ls.RecvPaths[idx] }
-func (ls *LayerBase) NumSendPaths() int          { return len(ls.SendPaths) }
-func (ls *LayerBase) SendPath(idx int) emer.Path { return ls.SendPaths[idx] }
+func (ly *Layer) StyleObject() any           { return ly }
+func (ly *Layer) TypeName() string           { return ly.Type.String() }
+func (ly *Layer) NumRecvPaths() int          { return len(ly.RecvPaths) }
+func (ly *Layer) RecvPath(idx int) emer.Path { return ly.RecvPaths[idx] }
+func (ly *Layer) NumSendPaths() int          { return len(ly.SendPaths) }
+func (ly *Layer) SendPath(idx int) emer.Path { return ly.SendPaths[idx] }
 
 func (ly *Layer) Defaults() {
 	ly.Act.Defaults()
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
 	ly.Inhib.Layer.On = true
-	for _, pj := range ly.RecvPaths {
-		pj.Defaults()
+	for _, pt := range ly.RecvPaths {
+		pt.Defaults()
 	}
 }
 
@@ -78,8 +86,8 @@ func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
-	for _, pj := range ly.RecvPaths {
-		pj.UpdateParams()
+	for _, pt := range ly.RecvPaths {
+		pt.UpdateParams()
 	}
 }
 
@@ -103,8 +111,8 @@ func (ly *Layer) AllParams() string {
 	str += "Inhib: {\n " + JsonToParams(b)
 	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
 	str += "Learn: {\n " + JsonToParams(b)
-	for _, pj := range ly.RecvPaths {
-		pstr := pj.AllParams()
+	for _, pt := range ly.RecvPaths {
+		pstr := pt.AllParams()
 		str += pstr
 	}
 	return str
@@ -116,41 +124,13 @@ func (ly *Layer) AllParams() string {
 //	S=A -> R=B recip: R=A <- S=B -- ly = A -- we are the sender of srj and recv of rpj.
 //
 // returns false if not found.
-func (ls *LayerBase) RecipToSendPath(spj emer.Path) (emer.Path, bool) {
-	for _, rpj := range ls.RecvPaths {
+func (ly *Layer) RecipToSendPath(spj *Path) (*Path, bool) {
+	for _, rpj := range ly.RecvPaths {
 		if rpj.Send == spj.Recv {
 			return rpj, true
 		}
 	}
 	return nil, false
-}
-
-// ApplyParams applies given parameter style Sheet to this layer and its recv pathways.
-// Calls UpdateParams on anything set to ensure derived parameters are all updated.
-// If setMsg is true, then a message is printed to confirm each parameter that is set.
-// it always prints a message if a parameter fails to be set.
-// returns true if any params were set, and error if there were any errors.
-func (ls *LayerBase) ApplyParams(pars *params.Sheet, setMsg bool) (bool, error) {
-	applied := false
-	var rerr error
-	app, err := pars.Apply(ls.LeabraLay, setMsg) // essential to go through LeabraPrj
-	if app {
-		ls.LeabraLay.UpdateParams()
-		applied = true
-	}
-	if err != nil {
-		rerr = err
-	}
-	for _, pj := range ls.RecvPaths {
-		app, err = pj.ApplyParams(pars, setMsg)
-		if app {
-			applied = true
-		}
-		if err != nil {
-			rerr = err
-		}
-	}
-	return applied, rerr
 }
 
 // UnitVarNames returns a list of variable names available on the units in this layer
@@ -201,7 +181,7 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 	} else if len(*vals) < nn {
 		*vals = (*vals)[0:nn]
 	}
-	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
+	vidx, err := ly.UnitVarIndex(varNm)
 	if err != nil {
 		nan := math32.NaN()
 		for i := range ly.Neurons {
@@ -210,7 +190,7 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 		return err
 	}
 	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitValue1D(vidx, i, di)
+		(*vals)[i] = ly.UnitValue1D(vidx, i, di)
 	}
 	return nil
 }
@@ -223,8 +203,8 @@ func (ly *Layer) UnitValuesTensor(tsr tensor.Tensor, varNm string, di int) error
 		log.Println(err)
 		return err
 	}
-	tsr.SetShape(ly.Shape.Shp, ly.Shape.Strd, ly.Shape.Nms)
-	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
+	tsr.SetShape(ly.Shape.Sizes, ly.Shape.Names...)
+	vidx, err := ly.UnitVarIndex(varNm)
 	if err != nil {
 		nan := math.NaN()
 		for i := range ly.Neurons {
@@ -233,7 +213,7 @@ func (ly *Layer) UnitValuesTensor(tsr tensor.Tensor, varNm string, di int) error
 		return err
 	}
 	for i := range ly.Neurons {
-		v := ly.LeabraLay.UnitValue1D(vidx, i, di)
+		v := ly.UnitValue1D(vidx, i, di)
 		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -264,9 +244,9 @@ func (ly *Layer) UnitValuesSampleTensor(tsr tensor.Tensor, varNm string, di int)
 		return err
 	}
 	if tsr.Len() != nu {
-		tsr.SetShape([]int{nu}, nil, []string{"Units"})
+		tsr.SetShape([]int{nu}, "Units")
 	}
-	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
+	vidx, err := ly.UnitVarIndex(varNm)
 	if err != nil {
 		nan := math.NaN()
 		for i, _ := range ly.SampleIndexes {
@@ -275,7 +255,7 @@ func (ly *Layer) UnitValuesSampleTensor(tsr tensor.Tensor, varNm string, di int)
 		return err
 	}
 	for i, ui := range ly.SampleIndexes {
-		v := ly.LeabraLay.UnitValue1D(vidx, ui, di)
+		v := ly.UnitValue1D(vidx, ui, di)
 		if math32.IsNaN(v) {
 			tsr.SetFloat1D(i, math.NaN())
 		} else {
@@ -288,12 +268,12 @@ func (ly *Layer) UnitValuesSampleTensor(tsr tensor.Tensor, varNm string, di int)
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
-	vidx, err := ly.LeabraLay.UnitVarIndex(varNm)
+	vidx, err := ly.UnitVarIndex(varNm)
 	if err != nil {
 		return math32.NaN()
 	}
 	fidx := ly.Shape.Offset(idx)
-	return ly.LeabraLay.UnitValue1D(vidx, fidx, di)
+	return ly.UnitValue1D(vidx, fidx, di)
 }
 
 // RecvPathValues fills in values of given synapse variable name,
@@ -322,23 +302,24 @@ func (ly *Layer) RecvPathValues(vals *[]float32, varNm string, sendLay emer.Laye
 	if sendLay == nil {
 		return fmt.Errorf("sending layer is nil")
 	}
-	var pj emer.Path
+	slay := sendLay.AsEmer()
+	var pt emer.Path
 	if pathType != "" {
-		pj, err = sendLay.RecvNameTypeTry(ly.Name, pathType)
-		if pj == nil {
-			pj, err = sendLay.RecvNameTry(ly.Name)
+		pt, err = slay.SendPathByRecvNameType(ly.Name, pathType)
+		if pt == nil {
+			pt, err = slay.SendPathByRecvName(ly.Name)
 		}
 	} else {
-		pj, err = sendLay.RecvNameTry(ly.Name)
+		pt, err = slay.SendPathByRecvName(ly.Name)
 	}
-	if pj == nil {
+	if pt == nil {
 		return err
 	}
-	if pj.Off {
+	if pt.AsEmer().Off {
 		return fmt.Errorf("pathway is off")
 	}
 	for ri := 0; ri < nn; ri++ {
-		(*vals)[ri] = pj.SynValue(varNm, sendIndex1D, ri) // this will work with any variable -- slower, but necessary
+		(*vals)[ri] = pt.AsEmer().SynValue(varNm, sendIndex1D, ri) // this will work with any variable -- slower, but necessary
 	}
 	return nil
 }
@@ -369,23 +350,24 @@ func (ly *Layer) SendPathValues(vals *[]float32, varNm string, recvLay emer.Laye
 	if recvLay == nil {
 		return fmt.Errorf("receiving layer is nil")
 	}
-	var pj emer.Path
+	rlay := recvLay.AsEmer()
+	var pt emer.Path
 	if pathType != "" {
-		pj, err = recvLay.SendNameTypeTry(ly.Name, pathType)
-		if pj == nil {
-			pj, err = recvLay.SendNameTry(ly.Name)
+		pt, err = rlay.RecvPathBySendNameType(ly.Name, pathType)
+		if pt == nil {
+			pt, err = rlay.RecvPathBySendName(ly.Name)
 		}
 	} else {
-		pj, err = recvLay.SendNameTry(ly.Name)
+		pt, err = rlay.RecvPathBySendName(ly.Name)
 	}
-	if pj == nil {
+	if pt == nil {
 		return err
 	}
-	if pj.Off {
+	if pt.AsEmer().Off {
 		return fmt.Errorf("pathway is off")
 	}
 	for si := 0; si < nn; si++ {
-		(*vals)[si] = pj.SynValue(varNm, si, recvIndex1D)
+		(*vals)[si] = pt.AsEmer().SynValue(varNm, si, recvIndex1D)
 	}
 	return nil
 }
@@ -403,7 +385,7 @@ func (ly *Layer) BuildSubPools() {
 	if !ly.Is4D() {
 		return
 	}
-	sh := ly.Shape
+	sh := ly.Shape.Sizes
 	spy := sh[0]
 	spx := sh[1]
 	pi := 1
@@ -425,7 +407,7 @@ func (ly *Layer) BuildSubPools() {
 
 // BuildPools builds the inhibitory pools structures -- nu = number of units in layer
 func (ly *Layer) BuildPools(nu int) error {
-	np := 1 + ly.NPools()
+	np := 1 + ly.NumPools()
 	ly.Pools = make([]Pool, np)
 	lpl := &ly.Pools[0]
 	lpl.StIndex = 0
@@ -439,11 +421,11 @@ func (ly *Layer) BuildPools(nu int) error {
 // BuildPaths builds the pathways, recv-side
 func (ly *Layer) BuildPaths() error {
 	emsg := ""
-	for _, pj := range ly.RecvPaths {
-		if pj.Off {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		err := pj.Build()
+		err := pt.Build()
 		if err != nil {
 			emsg += err.Error() + "\n"
 		}
@@ -469,69 +451,18 @@ func (ly *Layer) Build() error {
 	return err
 }
 
-// WriteWtsJSON writes the weights from this layer from the receiver-side perspective
+// WriteWeightsJSON writes the weights from this layer from the receiver-side perspective
 // in a JSON text format.  We build in the indentation logic to make it much faster and
 // more efficient.
-func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("{\n"))
-	depth++
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"Layer\": %q,\n", ly.Name)))
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"MetaData\": {\n")))
-	depth++
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"ActMAvg\": \"%g\",\n", ly.Pools[0].ActAvg.ActMAvg)))
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"ActPAvg\": \"%g\"\n", ly.Pools[0].ActAvg.ActPAvg)))
-	depth--
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("},\n"))
-	w.Write(indent.TabBytes(depth))
-	onps := make(emer.Paths, 0, len(ly.RecvPaths))
-	for _, pj := range ly.RecvPaths {
-		if !pj.Off {
-			onps = append(onps, pj)
-		}
-	}
-	np := len(onps)
-	if np == 0 {
-		w.Write([]byte(fmt.Sprintf("\"Paths\": null\n")))
-	} else {
-		w.Write([]byte(fmt.Sprintf("\"Paths\": [\n")))
-		depth++
-		for pi, pj := range onps {
-			pj.WriteWtsJSON(w, depth) // this leaves path unterminated
-			if pi == np-1 {
-				w.Write([]byte("\n"))
-			} else {
-				w.Write([]byte(",\n"))
-			}
-		}
-		depth--
-		w.Write(indent.TabBytes(depth))
-		w.Write([]byte("]\n"))
-	}
-	depth--
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("}")) // note: leave unterminated as outer loop needs to add , or just \n depending
+func (ly *Layer) WriteWeightsJSON(w io.Writer, depth int) {
+	ly.MetaData = make(map[string]string)
+	ly.MetaData["ActMAvg"] = fmt.Sprintf("%g", ly.Pools[0].ActAvg.ActMAvg)
+	ly.MetaData["ActPAvg"] = fmt.Sprintf("%g", ly.Pools[0].ActAvg.ActPAvg)
+	ly.LayerBase.WriteWeightsJSONBase(w, depth)
 }
 
-// ReadWtsJSON reads the weights from this layer from the receiver-side perspective
-// in a JSON text format.  This is for a set of weights that were saved *for one layer only*
-// and is not used for the network-level ReadWtsJSON, which reads into a separate
-// structure -- see SetWts method.
-func (ly *Layer) ReadWtsJSON(r io.Reader) error {
-	lw, err := weights.LayReadJSON(r)
-	if err != nil {
-		return err // note: already logged
-	}
-	return ly.SetWts(lw)
-}
-
-// SetWts sets the weights for this layer from weights.Layer decoded values
-func (ly *Layer) SetWts(lw *weights.Layer) error {
+// SetWeights sets the weights for this layer from weights.Layer decoded values
+func (ly *Layer) SetWeights(lw *weights.Layer) error {
 	if ly.Off {
 		return nil
 	}
@@ -548,12 +479,12 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 		}
 	}
 	var err error
-	rpjs := ly.RecvPaths()
-	if len(lw.Paths) == len(*rpjs) { // this is essential if multiple paths from same layer
+	rpts := ly.RecvPaths
+	if len(lw.Paths) == len(rpts) { // this is essential if multiple paths from same layer
 		for pi := range lw.Paths {
 			pw := &lw.Paths[pi]
-			pj := (*rpjs)[pi]
-			er := pj.SetWts(pw)
+			pt := (rpts)[pi]
+			er := pt.SetWeights(pw)
 			if er != nil {
 				err = er
 			}
@@ -561,9 +492,9 @@ func (ly *Layer) SetWts(lw *weights.Layer) error {
 	} else {
 		for pi := range lw.Paths {
 			pw := &lw.Paths[pi]
-			pj, err := ly.SendNameTry(pw.From)
+			pt, err := ly.RecvPathBySendName(pw.From)
 			if err == nil {
-				er := pj.SetWts(pw)
+				er := pt.SetWeights(pw)
 				if er != nil {
 					err = er
 				}

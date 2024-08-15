@@ -16,14 +16,13 @@ import (
 	"math/rand"
 	"os"
 
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/base/timer"
 	"cogentcore.org/core/tensor"
 	"cogentcore.org/core/tensor/table"
-	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/erand"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
-	"github.com/emer/emergent/v2/path"
-	"github.com/emer/emergent/v2/timer"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -71,20 +70,20 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
 
-	inLay := net.AddLayer("Input", shp, emer.Input)
-	hid1Lay := net.AddLayer("Hidden1", shp, emer.Hidden)
-	hid2Lay := net.AddLayer("Hidden2", shp, emer.Hidden)
-	hid3Lay := net.AddLayer("Hidden3", shp, emer.Hidden)
-	outLay := net.AddLayer("Output", shp, emer.Target)
+	inLay := net.AddLayer("Input", shp, leabra.InputLayer)
+	hid1Lay := net.AddLayer("Hidden1", shp, leabra.SuperLayer)
+	hid2Lay := net.AddLayer("Hidden2", shp, leabra.SuperLayer)
+	hid3Lay := net.AddLayer("Hidden3", shp, leabra.SuperLayer)
+	outLay := net.AddLayer("Output", shp, leabra.TargetLayer)
 
-	net.ConnectLayers(inLay, hid1Lay, path.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, path.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, hid3Lay, path.NewFull(), emer.Forward)
-	net.ConnectLayers(hid3Lay, outLay, path.NewFull(), emer.Forward)
+	net.ConnectLayers(inLay, hid1Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid1Lay, hid2Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid2Lay, hid3Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid3Lay, outLay, paths.NewFull(), leabra.ForwardPath)
 
-	net.ConnectLayers(outLay, hid3Lay, path.NewFull(), BackPath)
-	net.ConnectLayers(hid3Lay, hid2Lay, path.NewFull(), BackPath)
-	net.ConnectLayers(hid2Lay, hid1Lay, path.NewFull(), BackPath)
+	net.ConnectLayers(outLay, hid3Lay, paths.NewFull(), BackPath)
+	net.ConnectLayers(hid3Lay, hid2Lay, paths.NewFull(), BackPath)
+	net.ConnectLayers(hid2Lay, hid1Lay, paths.NewFull(), BackPath)
 
 	switch threads {
 	case 2:
@@ -159,7 +158,7 @@ func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
 	tmr := timer.Time{}
 	tmr.Start()
 	for epc := 0; epc < epcs; epc++ {
-		erand.PermuteInts(porder)
+		randx.PermuteInts(porder)
 		outCosDiff := float32(0)
 		cntErr := 0
 		sse := 0.0

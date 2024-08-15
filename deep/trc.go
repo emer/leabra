@@ -172,18 +172,18 @@ func (ly *TRCLayer) InitWeights() {
 // UnitsSize returns the dimension of the units, either within a pool for 4D, or layer for 2D
 func UnitsSize(ly *leabra.Layer) (x, y int) {
 	if ly.Is4D() {
-		y = ly.Shape.Dim(2)
-		x = ly.Shape.Dim(3)
+		y = ly.Shape.DimSize(2)
+		x = ly.Shape.DimSize(3)
 	} else {
-		y = ly.Shape.Dim(0)
-		x = ly.Shape.Dim(1)
+		y = ly.Shape.DimSize(0)
+		x = ly.Shape.DimSize(1)
 	}
 	return
 }
 
 // DriverLayer returns the driver layer for given Driver
 func (ly *TRCLayer) DriverLayer(drv *Driver) (*leabra.Layer, error) {
-	tly, err := ly.Network.LayerByNameTry(drv.Driver)
+	tly, err := ly.Network.LayerByName(drv.Driver)
 	if err != nil {
 		err = fmt.Errorf("TRCLayer %s: Driver Layer: %v", ly.Name(), err)
 		log.Println(err)
@@ -236,7 +236,7 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	nrn := &ly.Neurons[tni]
-	if nrn.Off {
+	if nrn.IsOff() {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
@@ -248,8 +248,8 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 func (ly *TRCLayer) SetDriverActs() {
 	nux, nuy := UnitsSize(&ly.Layer)
 	nun := nux * nuy
-	pyn := ly.Shape.Dim(0)
-	pxn := ly.Shape.Dim(1)
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	for _, drv := range ly.Drivers {
 		dly, err := ly.DriverLayer(drv)
 		if err != nil {
@@ -279,8 +279,8 @@ func (ly *TRCLayer) SetDriverActs() {
 				}
 			}
 		} else { // dly is 4D
-			dpyn := dly.Shape.Dim(0)
-			dpxn := dly.Shape.Dim(1)
+			dpyn := dly.Shape.DimSize(0)
+			dpxn := dly.Shape.DimSize(1)
 			duxn, duyn := UnitsSize(dly)
 			dnun := duxn * duyn
 			if ly.Is2D() {

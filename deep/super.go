@@ -110,7 +110,7 @@ func (ly *SuperLayer) DecayState(decay float32) {
 
 // TRCLayer returns the TRC layer for attentional modulation
 func (ly *SuperLayer) TRCLayer() (*leabra.Layer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.Attn.TRCLay)
+	tly, err := ly.Network.LayerByName(ly.Attn.TRCLay)
 	if err != nil {
 		err = fmt.Errorf("SuperLayer %s: TRC Layer: %v", ly.Name(), err)
 		log.Println(err)
@@ -146,7 +146,7 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -197,7 +197,7 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 	thr = math32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -222,7 +222,7 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		snr := &ly.SuperNeurs[ni]
@@ -254,7 +254,7 @@ func (ly *SuperLayer) ValidateTRCLayer() error {
 		ly.Attn.On = false
 		return err
 	}
-	if !(trc.Shp.Dim(0) == ly.Shape.Dim(0) && trc.Shp.Dim(1) == ly.Shape.Dim(1)) {
+	if !(trc.Shp.DimSize(0) == ly.Shape.DimSize(0) && trc.Shp.DimSize(1) == ly.Shape.DimSize(1)) {
 		ly.Attn.On = false
 		err = fmt.Errorf("TRC Layer must have the same group-level shape as this layer")
 		log.Println(err)

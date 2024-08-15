@@ -6,7 +6,7 @@ package deep
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -38,14 +38,14 @@ func (nt *Network) UnitVarNames() []string {
 // AddSuperLayer2D adds a SuperLayer of given size, with given name.
 func AddSuperLayer2D(nt *leabra.Network, name string, nNeurY, nNeurX int) *SuperLayer {
 	ly := &SuperLayer{}
-	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
 // AddSuperLayer4D adds a SuperLayer of given size, with given name.
 func AddSuperLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *SuperLayer {
 	ly := &SuperLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
@@ -81,7 +81,7 @@ func AddTRCLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 // This automatically sets the FmSuper flag to engage proper defaults,
 // uses a OneToOne path pattern, and sets the class to CTFmSuper
 func ConnectSuperToCT(nt *leabra.Network, send, recv emer.Layer) emer.Path {
-	pj := nt.ConnectLayersPath(send, recv, path.NewOneToOne(), CTCtxt, &CTCtxtPath{}).(*CTCtxtPath)
+	pj := nt.ConnectLayersPath(send, recv, paths.NewOneToOne(), CTCtxt, &CTCtxtPath{}).(*CTCtxtPath)
 	pj.SetClass("CTFmSuper")
 	pj.FmSuper = true
 	return pj
@@ -89,7 +89,7 @@ func ConnectSuperToCT(nt *leabra.Network, send, recv emer.Layer) emer.Path {
 
 // ConnectCtxtToCT adds a CTCtxtPath from given sending layer to a CT layer
 // Use ConnectSuperToCT for main pathway from corresponding superficial layer.
-func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return nt.ConnectLayersPath(send, recv, pat, CTCtxt, &CTCtxtPath{})
 }
 
@@ -97,14 +97,14 @@ func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern
 // uses a OneToOne path pattern, and sets the class to CTFmSuper.
 // This does NOT make a CTCtxtPath -- instead makes a regular leabra.Path -- for testing!
 func ConnectSuperToCTFake(nt *leabra.Network, send, recv emer.Layer) emer.Path {
-	pj := nt.ConnectLayers(send, recv, path.NewOneToOne(), CTCtxt)
+	pj := nt.ConnectLayers(send, recv, paths.NewOneToOne(), CTCtxt)
 	pj.SetClass("CTFmSuper")
 	return pj
 }
 
 // ConnectCtxtToCTFake adds a FAKE CTCtxtPath from given sending layer to a CT layer
 // This does NOT make a CTCtxtPath -- instead makes a regular leabra.Path -- for testing!
-func ConnectCtxtToCTFake(nt *leabra.Network, send, recv emer.Layer, pat path.Pattern) emer.Path {
+func ConnectCtxtToCTFake(nt *leabra.Network, send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return nt.ConnectLayers(send, recv, pat, CTCtxt)
 }
 
@@ -117,12 +117,12 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 	super = AddSuperLayer2D(nt, name, shapeY, shapeX)
 	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	full := path.NewFull()
+	full := paths.NewFull()
 	ConnectSuperToCT(nt, super, ct)
 	trci := AddTRCLayer2D(nt, name+"P", shapeY, shapeX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
-	nt.ConnectLayers(ct, trc, full, emer.Forward)
+	nt.ConnectLayers(ct, trc, full, leabra.ForwardPath)
 	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FmPulv")
 	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FmPulv")
 	return
@@ -137,12 +137,12 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	pone2one := path.NewPoolOneToOne()
+	pone2one := paths.NewPoolOneToOne()
 	ConnectSuperToCT(nt, super, ct)
 	trci := AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
-	nt.ConnectLayers(ct, trc, pone2one, emer.Forward)
+	nt.ConnectLayers(ct, trc, pone2one, leabra.ForwardPath)
 	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FmPulv")
 	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FmPulv")
 	return
@@ -180,12 +180,12 @@ func AddDeep2DFakeCT(nt *leabra.Network, name string, shapeY, shapeX int) (super
 	super = AddSuperLayer2D(nt, name, shapeY, shapeX)
 	ct = AddCTLayer2D(nt, name+"CT", shapeY, shapeX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	full := path.NewFull()
+	full := paths.NewFull()
 	ConnectSuperToCTFake(nt, super, ct)
 	trci := AddTRCLayer2D(nt, name+"P", shapeY, shapeX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
-	nt.ConnectLayers(ct, trc, full, emer.Forward)
+	nt.ConnectLayers(ct, trc, full, leabra.ForwardPath)
 	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FmPulv")
 	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FmPulv")
 	return
@@ -201,12 +201,12 @@ func AddDeep4DFakeCT(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, 
 	super = AddSuperLayer4D(nt, name, nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct = AddCTLayer4D(nt, name+"CT", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	ct.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name, XAlign: relpos.Left, Space: 2})
-	pone2one := path.NewPoolOneToOne()
+	pone2one := paths.NewPoolOneToOne()
 	ConnectSuperToCTFake(nt, super, ct)
 	trci := AddTRCLayer4D(nt, name+"P", nPoolsY, nPoolsX, nNeurY, nNeurX)
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
-	nt.ConnectLayers(ct, trc, pone2one, emer.Forward)
+	nt.ConnectLayers(ct, trc, pone2one, leabra.ForwardPath)
 	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FmPulv")
 	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FmPulv")
 	return
@@ -305,7 +305,7 @@ func (nt *Network) AddDeepNoTRC4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX 
 }
 
 // ConnectCtxtToCT adds a CTCtxtPath from given sending layer to a CT layer
-func (nt *Network) ConnectCtxtToCT(send, recv emer.Layer, pat path.Pattern) emer.Path {
+func (nt *Network) ConnectCtxtToCT(send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return ConnectCtxtToCT(&nt.Network, send, recv, pat)
 }
 

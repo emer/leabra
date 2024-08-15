@@ -154,7 +154,7 @@ func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 	acqExt AcqExt, val Valence, dar DaRType) *CElAmygLayer {
 	ly := CElAmygLayer{CElTyp: CElAmygLayerType{AcqExt: acqExt, Valence: val}}
 	ly.DaMod.RecepType = dar
-	nt.AddLayerInit(&ly, name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(&ly, name, []int{nY, nX, nNeurY, nNeurX}, leabra.SuperLayer)
 	ly.ModLayer.Init()
 	class := "CEl" + acqExt.String() + strings.Title(strings.ToLower(val.String())) + dar.String()[0:2] + " CElAmyg"
 	ly.SetClass(class)
@@ -162,7 +162,7 @@ func (nt *Network) AddCElAmygLayer(name string, nY, nX, nNeurY, nNeurX int,
 }
 
 // AddBlAmygLayer adds a Basolateral Amygdala layer with specified 4D geometry, acquisition/extinction, valence, and DA receptor type
-func (nt *Network) AddBlAmygLayer(name string, nY, nX, nNeurY, nNeurX int, val Valence, dar DaRType, lTyp emer.LayerType) *BlAmygLayer {
+func (nt *Network) AddBlAmygLayer(name string, nY, nX, nNeurY, nNeurX int, val Valence, dar DaRType, lTyp LayerTypes) *BlAmygLayer {
 	ly := BlAmygLayer{Valence: val}
 	ly.DaMod.RecepType = dar
 	nt.AddLayerInit(&ly, name, []int{nY, nX, nNeurY, nNeurX}, lTyp)

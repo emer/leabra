@@ -25,7 +25,7 @@ func (ly *ModLayer) GFmInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ltime.PlusPhase)
@@ -46,7 +46,7 @@ func (ly *ModLayer) ActFmG(ltime *leabra.Time) {
 	ly.Act.XX1.Update()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		if nrn.Off {
+		if nrn.IsOff() {
 			continue
 		}
 		ly.Act.VmFmG(nrn)

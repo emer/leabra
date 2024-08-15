@@ -5,11 +5,9 @@
 package main
 
 import (
+	"cogentcore.org/core/math32/minmax"
 	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/agg"
-	"cogentcore.org/core/tensor/minmax"
 	"github.com/emer/emergent/v2/elog"
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/etime"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -77,10 +75,10 @@ func (ss *Sim) ConfigLogItems() {
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatFloat("TrlSSE")
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5)
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "AvgSSE",
@@ -90,10 +88,10 @@ func (ss *Sim) ConfigLogItems() {
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatFloat("TrlAvgSSE")
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5)
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Err",
@@ -110,7 +108,7 @@ func (ss *Sim) ConfigLogItems() {
 		Range:  minmax.F64{Max: 1},
 		Write: elog.WriteMap{
 			etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
-				pcterr := ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", agg.AggMean)
+				pcterr := ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", stats.AggMean)
 				epc := ctx.Stats.Int("Epoch")
 				if ss.Stats.Int("FirstZero") < 0 && pcterr[0] == 0 {
 					ss.Stats.SetInt("FirstZero", epc)
@@ -122,10 +120,10 @@ func (ss *Sim) ConfigLogItems() {
 					ss.Stats.SetInt("NZero", 0)
 				}
 			}, etime.Scope(etime.Test, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", agg.AggMean)
+				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:   "PctCor",
@@ -137,7 +135,7 @@ func (ss *Sim) ConfigLogItems() {
 				ctx.SetFloat64(1 - ctx.ItemFloatScope(ctx.Scope, "PctErr"))
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:   "CosDiff",
@@ -148,10 +146,10 @@ func (ss *Sim) ConfigLogItems() {
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetFloat64(ss.Stats.Float("TrlCosDiff"))
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.Train, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(etime.Train, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "PerTrlMSec",
@@ -230,18 +228,18 @@ func (ss *Sim) ConfigLogItems() {
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_Act",
 			Type:      tensor.FLOAT64,
-			CellShape: cly.Shape.Shp,
+			CellShape: cly.Shape.Sizes,
 			FixMax:    elog.DTrue,
 			Range:     minmax.F64{Max: 1},
 			Write: elog.WriteMap{
 				etime.Scope(etime.Test, etime.Trial): func(ctx *elog.Context) {
 					ctx.SetLayerTensor(clnm, "Act")
 				}}})
-		if cly.Type() == emer.Target {
+		if cly.Type() == leabra.TargetLayer {
 			ss.Logs.AddItem(&elog.Item{
 				Name:      clnm + "_ActM",
 				Type:      tensor.FLOAT64,
-				CellShape: cly.Shape.Shp,
+				CellShape: cly.Shape.Sizes,
 				FixMax:    elog.DTrue,
 				Range:     minmax.F64{Max: 1},
 				Write: elog.WriteMap{
@@ -259,7 +257,7 @@ func (ss *Sim) ConfigLogItems() {
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",
 			Type:      tensor.FLOAT64,
-			CellShape: cly.Shape.Shp,
+			CellShape: cly.Shape.Sizes,
 			FixMax:    elog.DTrue,
 			Range:     minmax.F64{Max: 1},
 			Write: elog.WriteMap{

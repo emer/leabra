@@ -79,7 +79,7 @@ type VTAState struct {
 
 func AddVTALayer(nt *Network, name string, val Valence) *VTALayer {
 	ly := &VTALayer{Valence: val}
-	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{1, 1}, leabra.SuperLayer)
 	return ly
 }
 

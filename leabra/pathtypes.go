@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package axon
+package leabra
 
 //gosl:start pathtypes
 
@@ -35,4 +35,4 @@ const (
 	// takes into account the temporal delays in the activation states.
 	// Can also add self context from CT for deeper temporal context.
 	CTCtxtPath
-}
+)

@@ -6,7 +6,7 @@ package pbwm
 
 import (
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/path"
+	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/relpos"
 	"github.com/emer/leabra/v2/leabra"
 )
@@ -63,7 +63,7 @@ func (nt *Network) SynVarNames() []string {
 func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
 	tX := nMaint + nOut
 	mtx := &MatrixLayer{}
-	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, leabra.SuperLayer)
 	mtx.DaR = da
 	mtx.GateShp.Set(nY, nMaint, nOut)
 	return mtx
@@ -129,7 +129,7 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 // AddCINLayer adds a CINLayer, with a single neuron.
 func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 	ly := &CINLayer{}
-	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{1, 1}, leabra.SuperLayer)
 	return ly
 }
 
@@ -139,7 +139,7 @@ func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 func AddMatrixLayer(nt *leabra.Network, name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
 	tX := nMaint + nOut
 	mtx := &MatrixLayer{}
-	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, leabra.SuperLayer)
 	mtx.DaR = da
 	mtx.GateShp.Set(nY, nMaint, nOut)
 	return mtx
@@ -151,7 +151,7 @@ func AddMatrixLayer(nt *leabra.Network, name string, nY, nMaint, nOut, nNeurY, n
 func AddGPeLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
 	gpe := &Layer{}
-	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, leabra.SuperLayer)
 	return gpe
 }
 
@@ -161,7 +161,7 @@ func AddGPeLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *Layer {
 func AddGPiThalLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *GPiThalLayer {
 	tX := nMaint + nOut
 	gpi := &GPiThalLayer{}
-	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, leabra.SuperLayer)
 	gpi.GateShp.Set(nY, nMaint, nOut)
 	return gpi
 }
@@ -185,11 +185,11 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
 	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name(), XAlign: relpos.Left, Space: 2})
 
-	pj := nt.ConnectLayersPath(mtxGo, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
+	pj := nt.ConnectLayersPath(mtxGo, gpi, paths.NewPoolOneToOne(), leabra.ForwardPath, &GPiThalPath{})
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(mtxNoGo, gpe, path.NewPoolOneToOne(), emer.Forward)
+	pj = nt.ConnectLayers(mtxNoGo, gpe, paths.NewPoolOneToOne(), leabra.ForwardPath)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayersPath(gpe, gpi, path.NewPoolOneToOne(), emer.Forward, &GPiThalPath{})
+	pj = nt.ConnectLayersPath(gpe, gpi, paths.NewPoolOneToOne(), leabra.ForwardPath, &GPiThalPath{})
 	pj.SetClass("BgFixed")
 
 	return
@@ -201,14 +201,14 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 // else Full set of 5 dynamic maintenance types. Both have the class "PFC" set.
 // deep is positioned behind super.
 func AddPFCLayer(nt *leabra.Network, name string, nY, nX, nNeurY, nNeurX int, out, dynMaint bool) (sp, dp leabra.LeabraLayer) {
-	sp = nt.AddLayer(name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden).(leabra.LeabraLayer)
+	sp = nt.AddLayer(name, []int{nY, nX, nNeurY, nNeurX}, leabra.SuperLayer).(leabra.LeabraLayer)
 	ddp := &PFCDeepLayer{}
 	dp = ddp
 	dym := 1
 	if !dynMaint {
 		dym = 5
 	}
-	nt.AddLayerInit(ddp, name+"D", []int{nY, nX, dym * nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ddp, name+"D", []int{nY, nX, dym * nNeurY, nNeurX}, leabra.SuperLayer)
 	sp.SetClass("PFC")
 	ddp.SetClass("PFC")
 	ddp.Gate.OutGate = out
@@ -242,7 +242,7 @@ func AddPFC(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX 
 
 	if pfcOut != nil && pfcMnt != nil {
 		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-		pj := nt.ConnectLayers(pfcMntD, pfcOut, path.NewOneToOne(), emer.Forward)
+		pj := nt.ConnectLayers(pfcMntD, pfcOut, paths.NewOneToOne(), leabra.ForwardPath)
 		pj.SetClass("PFCMntDToOut")
 	}
 	return

@@ -7,7 +7,6 @@ package pvlv
 import (
 	"strconv"
 
-	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/leabra/v2/leabra"
 	//"github.com/emer/leabra/v2/pbwm"
 )
@@ -45,7 +44,7 @@ func (ly *PPTgLayer) Defaults() {
 // Add a Pedunculopontine Gyrus layer. Acts as a positive rectifier for its inputs.
 func AddPPTgLayer(nt *Network, name string, nY, nX int) *PPTgLayer {
 	rl := &PPTgLayer{}
-	nt.AddLayerInit(rl, name, []int{nY, nX, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(rl, name, []int{nY, nX, 1, 1}, leabra.SuperLayer)
 	return rl
 }
 
