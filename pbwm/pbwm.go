@@ -26,15 +26,15 @@ type PBWMLayer interface {
 	// GateSend updates gating state and sends it along to other layers.
 	// Called after std Cycle methods.
 	// Only implemented for gating layers.
-	GateSend(ltime *leabra.Time)
+	GateSend(ctx *leabra.Context)
 
 	// RecGateAct records the gating activation from current activation, when gating occcurs
 	// based on GateState.Now
-	RecGateAct(ltime *leabra.Time)
+	RecGateAct(ctx *leabra.Context)
 
 	// SendMods is called at end of Cycle to send modulator signals (DA, etc)
 	// which will then be active for the next cycle of processing
-	SendMods(ltime *leabra.Time)
+	SendMods(ctx *leabra.Context)
 
 	// Quarter2DWt is optional Q2 DWt -- PFC and matrix layers can do this as appropriate
 	Quarter2DWt()

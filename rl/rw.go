@@ -38,7 +38,7 @@ func (ly *RWPredLayer) GetDA() float32   { return ly.DA }
 func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 
 // ActFromG computes linear activation for RWPred
-func (ly *RWPredLayer) ActFromG(ltime *leabra.Time) {
+func (ly *RWPredLayer) ActFromG(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -117,7 +117,7 @@ func (ly *RWDaLayer) Build() error {
 	return err
 }
 
-func (ly *RWDaLayer) ActFromG(ltime *leabra.Time) {
+func (ly *RWDaLayer) ActFromG(ctx *leabra.Context) {
 	rly, ply, _ := ly.RWLayers()
 	if rly == nil || ply == nil {
 		return
@@ -145,7 +145,7 @@ func (ly *RWDaLayer) ActFromG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send DA, which will then be active for the next cycle of processing.
-func (ly *RWDaLayer) CyclePost(ltime *leabra.Time) {
+func (ly *RWDaLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA.SendDA(ly.Network, act)

@@ -161,16 +161,16 @@ func (ly *MatrixLayer) InitActs() {
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
 // Matrix extends to call DALrnFromDA and updates AlphaMax -> ActLrn
-func (ly *MatrixLayer) ActFromG(ltime *leabra.Time) {
-	ly.Layer.ActFromG(ltime)
-	ly.DAActLrn(ltime)
+func (ly *MatrixLayer) ActFromG(ctx *leabra.Context) {
+	ly.Layer.ActFromG(ctx)
+	ly.DAActLrn(ctx)
 }
 
 // DAActLrn sets effective learning dopamine value from given raw DA value,
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
 // Also sets ActLrn based on whether corresponding VThal stripe fired
 // above ThalThr -- flips sign of learning for stripe firing vs. not.
-func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
+func (ly *MatrixLayer) DAActLrn(ctx *leabra.Context) {
 	da := ly.DA
 	if da > 0 {
 		da *= ly.Matrix.BurstGain
@@ -181,7 +181,7 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 		da *= -1
 	}
 	ly.DALrn = da
-	if ltime.Cycle < ly.AlphaMaxCyc {
+	if ctx.Cycle < ly.AlphaMaxCyc {
 		return
 	}
 	tly, err := ly.ThalLayer()

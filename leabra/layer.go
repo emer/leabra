@@ -491,7 +491,7 @@ func (ly *Layer) InitGInc() {
 
 // SendGDelta sends change in activation since last sent, to increment recv
 // synaptic conductances G, if above thresholds
-func (ly *Layer) SendGDelta(ltime *Time) {
+func (ly *Layer) SendGDelta(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -522,15 +522,15 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 }
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *Layer) GFromInc(ltime *Time) {
-	ly.RecvGInc(ltime)
-	ly.GFromIncNeur(ltime)
+func (ly *Layer) GFromInc(ctx *Context) {
+	ly.RecvGInc(ctx)
+	ly.GFromIncNeur(ctx)
 }
 
 // RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
 // This is called by GFromInc overall method, but separated out for cases that need to
 // do something different.
-func (ly *Layer) RecvGInc(ltime *Time) {
+func (ly *Layer) RecvGInc(ctx *Context) {
 	for _, pt := range ly.RecvPaths {
 		if pt.Off {
 			continue
@@ -541,7 +541,7 @@ func (ly *Layer) RecvGInc(ltime *Time) {
 
 // GFromIncNeur is the neuron-level code for GFromInc that integrates overall Ge, Gi values
 // from their G*Raw accumulators.
-func (ly *Layer) GFromIncNeur(ltime *Time) {
+func (ly *Layer) GFromIncNeur(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -554,7 +554,7 @@ func (ly *Layer) GFromIncNeur(ltime *Time) {
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (ly *Layer) AvgMaxGe(ltime *Time) {
+func (ly *Layer) AvgMaxGe(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Ge.Init()
@@ -570,15 +570,15 @@ func (ly *Layer) AvgMaxGe(ltime *Time) {
 }
 
 // InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) InhibFromGeAct(ltime *Time) {
+func (ly *Layer) InhibFromGeAct(ctx *Context) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFromGeAct(ltime)
-	ly.InhibFromPool(ltime)
+	ly.PoolInhibFromGeAct(ctx)
+	ly.InhibFromPool(ctx)
 }
 
 // PoolInhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) PoolInhibFromGeAct(ltime *Time) {
+func (ly *Layer) PoolInhibFromGeAct(ctx *Context) {
 	np := len(ly.Pools)
 	if np == 1 {
 		return
@@ -601,7 +601,7 @@ func (ly *Layer) PoolInhibFromGeAct(ltime *Time) {
 }
 
 // InhibFromPool computes inhibition Gi from Pool-level aggregated inhibition, including self and syn
-func (ly *Layer) InhibFromPool(ltime *Time) {
+func (ly *Layer) InhibFromPool(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -615,7 +615,7 @@ func (ly *Layer) InhibFromPool(ltime *Time) {
 
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act
-func (ly *Layer) ActFromG(ltime *Time) {
+func (ly *Layer) ActFromG(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -628,7 +628,7 @@ func (ly *Layer) ActFromG(ltime *Time) {
 }
 
 // AvgMaxAct computes the average and max Act stats, used in inhibition
-func (ly *Layer) AvgMaxAct(ltime *Time) {
+func (ly *Layer) AvgMaxAct(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Act.Init()
@@ -648,20 +648,20 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 // This is reserved for any kind of special ad-hoc types that
 // need to do something special after Act is finally computed.
 // For example, sending a neuromodulatory signal such as dopamine.
-func (ly *Layer) CyclePost(ltime *Time) {
+func (ly *Layer) CyclePost(ctx *Context) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarter
 
 // QuarterFinal does updating after end of quarters 1, 2
-func (ly *Layer) QuarterFinal(ltime *Time) {
+func (ly *Layer) QuarterFinal(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		switch ltime.Quarter {
+		switch ctx.Quarter {
 		case 0:
 			nrn.ActQ1 = nrn.Act
 		case 1:
@@ -671,7 +671,7 @@ func (ly *Layer) QuarterFinal(ltime *Time) {
 }
 
 // MinusPhase is called at the end of the minus phase (quarter 3), to record state.
-func (ly *Layer) MinusPhase(ltime *Time) {
+func (ly *Layer) MinusPhase(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.ActM = pl.Inhib.Act
@@ -690,7 +690,7 @@ func (ly *Layer) MinusPhase(ltime *Time) {
 }
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
-func (ly *Layer) PlusPhase(ltime *Time) {
+func (ly *Layer) PlusPhase(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.ActP = pl.Inhib.Act

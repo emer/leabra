@@ -191,8 +191,8 @@ func (ly *MatrixLayer) InitActs() {
 
 // InhibiFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 // Matrix version applies OutAChInhib to bias output gating on reward trials
-func (ly *MatrixLayer) InhibFromGeAct(ltime *leabra.Time) {
-	ly.GateLayer.InhibFromGeAct(ltime)
+func (ly *MatrixLayer) InhibFromGeAct(ctx *leabra.Context) {
+	ly.GateLayer.InhibFromGeAct(ctx)
 
 	if ly.Matrix.OutAChInhib == 0 {
 		return
@@ -223,13 +223,13 @@ func (ly *MatrixLayer) InhibFromGeAct(ltime *leabra.Time) {
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
 // Matrix extends to call DaAChFromLay
-func (ly *MatrixLayer) ActFromG(ltime *leabra.Time) {
-	ly.DaAChFromLay(ltime)
-	ly.GateLayer.ActFromG(ltime)
+func (ly *MatrixLayer) ActFromG(ctx *leabra.Context) {
+	ly.DaAChFromLay(ctx)
+	ly.GateLayer.ActFromG(ctx)
 }
 
 // DaAChFromLay computes Da and ACh from layer and Shunt received from PatchLayer units
-func (ly *MatrixLayer) DaAChFromLay(ltime *leabra.Time) {
+func (ly *MatrixLayer) DaAChFromLay(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -250,7 +250,7 @@ func (ly *MatrixLayer) DaAChFromLay(ltime *leabra.Time) {
 
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now
-func (ly *MatrixLayer) RecGateAct(ltime *leabra.Time) {
+func (ly *MatrixLayer) RecGateAct(ctx *leabra.Context) {
 	for gi := range ly.GateStates {
 		gs := &ly.GateStates[gi]
 		if !gs.Now { // not gating now

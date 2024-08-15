@@ -310,8 +310,8 @@ func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
 //  Cycle
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *GPiThalLayer) GFromInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
+func (ly *GPiThalLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
 	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -327,22 +327,22 @@ func (ly *GPiThalLayer) GFromInc(ltime *leabra.Time) {
 }
 
 // GateSend updates gating state and sends it along to other layers
-func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
-	ly.GateFromAct(ltime)
+func (ly *GPiThalLayer) GateSend(ctx *leabra.Context) {
+	ly.GateFromAct(ctx)
 	ly.SendGateStates()
 }
 
 // GateFromAct updates GateState from current activations, at time of gating
-func (ly *GPiThalLayer) GateFromAct(ltime *leabra.Time) {
-	gateQtr := ly.Timing.GateQtr.HasFlag(ltime.Quarter)
-	qtrCyc := ltime.QuarterCycle()
+func (ly *GPiThalLayer) GateFromAct(ctx *leabra.Context) {
+	gateQtr := ly.Timing.GateQtr.HasFlag(ctx.Quarter)
+	qtrCyc := ctx.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		gs := ly.GateState(int(nrn.SubPool) - 1)
-		if ltime.Quarter == 0 && qtrCyc == 0 {
+		if ctx.Quarter == 0 && qtrCyc == 0 {
 			gs.Act = 0 // reset at start
 		}
 		if gateQtr && qtrCyc == ly.Timing.Cycle { // gating
@@ -378,7 +378,7 @@ func (ly *GPiThalLayer) SendGateStates() {
 
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now
-func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
+func (ly *GPiThalLayer) RecGateAct(ctx *leabra.Context) {
 	for gi := range ly.GateStates {
 		gs := &ly.GateStates[gi]
 		if !gs.Now { // not gating now

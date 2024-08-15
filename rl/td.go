@@ -28,13 +28,13 @@ func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
 func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 
 // ActFromG computes linear activation for TDRewPred
-func (ly *TDRewPredLayer) ActFromG(ltime *leabra.Time) {
+func (ly *TDRewPredLayer) ActFromG(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = nrn.Ge // linear
 		} else {
 			nrn.Act = nrn.ActP // previous actP
@@ -106,7 +106,7 @@ func (ly *TDRewIntegLayer) Build() error {
 	return err
 }
 
-func (ly *TDRewIntegLayer) ActFromG(ltime *leabra.Time) {
+func (ly *TDRewIntegLayer) ActFromG(ctx *leabra.Context) {
 	rply, _ := ly.RewPredLayer()
 	if rply == nil {
 		return
@@ -118,7 +118,7 @@ func (ly *TDRewIntegLayer) ActFromG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = nrn.Ge + ly.RewInteg.Discount*rpAct
 		} else {
 			nrn.Act = rpActP // previous actP
@@ -180,7 +180,7 @@ func (ly *TDDaLayer) Build() error {
 	return err
 }
 
-func (ly *TDDaLayer) ActFromG(ltime *leabra.Time) {
+func (ly *TDDaLayer) ActFromG(ctx *leabra.Context) {
 	rily, _ := ly.RewIntegLayer()
 	if rily == nil {
 		return
@@ -193,7 +193,7 @@ func (ly *TDDaLayer) ActFromG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = da
 		} else {
 			nrn.Act = 0
@@ -203,7 +203,7 @@ func (ly *TDDaLayer) ActFromG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send DA, which will then be active for the next cycle of processing.
-func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
+func (ly *TDDaLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA.SendDA(ly.Network, act)

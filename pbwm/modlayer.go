@@ -17,18 +17,18 @@ type ModLayer struct {
 }
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *ModLayer) GFromInc(ltime *leabra.Time) {
+func (ly *ModLayer) GFromInc(ctx *leabra.Context) {
 	if !ly.DaMod.GeModOn() {
-		ly.Layer.GFromInc(ltime)
+		ly.Layer.GFromInc(ctx)
 		return
 	}
-	ly.RecvGInc(ltime)
+	ly.RecvGInc(ctx)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ltime.PlusPhase)
+		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ctx.PlusPhase)
 		ly.Act.GeFromRaw(nrn, geRaw)
 		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
@@ -36,13 +36,13 @@ func (ly *ModLayer) GFromInc(ltime *leabra.Time) {
 
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act
-func (ly *ModLayer) ActFromG(ltime *leabra.Time) {
+func (ly *ModLayer) ActFromG(ctx *leabra.Context) {
 	if !ly.DaMod.GainModOn() {
-		ly.Layer.ActFromG(ltime)
+		ly.Layer.ActFromG(ctx)
 		return
 	}
 	curGain := ly.Act.XX1.Gain
-	ly.Act.XX1.Gain = ly.DaMod.Gain(ly.DA, curGain, ltime.PlusPhase)
+	ly.Act.XX1.Gain = ly.DaMod.Gain(ly.DA, curGain, ctx.PlusPhase)
 	ly.Act.XX1.Update()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]

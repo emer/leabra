@@ -304,38 +304,38 @@ func AddPBWMPy(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nN
 
 // CycleImpl runs one cycle of activation updating
 // PBWM calls GateSend after Cycle and before DeepBurst
-func (nt *Network) CycleImpl(ltime *leabra.Time) {
-	nt.Network.CycleImpl(ltime) // basic version from leabra.Network
-	nt.GateSend(ltime)          // GateLayer (GPiThal) computes gating, sends to other layers
-	nt.RecGateAct(ltime)        // Record activation state at time of gating (in ActG neuron var)
+func (nt *Network) CycleImpl(ctx *leabra.Context) {
+	nt.Network.CycleImpl(ctx) // basic version from leabra.Network
+	nt.GateSend(ctx)          // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ctx)        // Record activation state at time of gating (in ActG neuron var)
 
-	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
+	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ctx) // always call this after std cycle..
 }
 
 // GateSend is called at end of Cycle, computes Gating and sends to other layers
-func (nt *Network) GateSend(ltime *leabra.Time) {
+func (nt *Network) GateSend(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.GateSend(ltime)
+			pl.GateSend(ctx)
 		}
 	}, "GateSend")
 }
 
 // RecGateAct is called after GateSend, to record gating activations at time of gating
-func (nt *Network) RecGateAct(ltime *leabra.Time) {
+func (nt *Network) RecGateAct(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.RecGateAct(ltime)
+			pl.RecGateAct(ctx)
 		}
 	}, "RecGateAct")
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing
-func (nt *Network) SendMods(ltime *leabra.Time) {
+func (nt *Network) SendMods(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.SendMods(ltime)
+			pl.SendMods(ctx)
 		}
 	}, "SendMods")
 }

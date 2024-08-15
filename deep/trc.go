@@ -378,10 +378,10 @@ func (ly *TRCLayer) SetDriverActs() {
 }
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *TRCLayer) GFromInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.HasFlag(ltime.Quarter) {
-		ly.GFromIncNeur(ltime) // regular
+func (ly *TRCLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
+	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.HasFlag(ctx.Quarter) {
+		ly.GFromIncNeur(ctx) // regular
 		return
 	}
 	ly.SetDriverActs()

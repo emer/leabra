@@ -186,7 +186,7 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 	}
 }
 
-func (ly *STNLayer) ActFromG(ltime *leabra.Time) {
+func (ly *STNLayer) ActFromG(ctx *leabra.Context) {
 	for ni := range ly.Neurons { // note: copied from leabra ActFromG, not calling it..
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

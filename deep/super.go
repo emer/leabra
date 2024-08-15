@@ -130,8 +130,8 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	return laymax
 }
 
-func (ly *SuperLayer) ActFromG(ltime *leabra.Time) {
-	ly.TopoInhibLayer.ActFromG(ltime)
+func (ly *SuperLayer) ActFromG(ctx *leabra.Context) {
+	ly.TopoInhibLayer.ActFromG(ctx)
 	if !ly.Attn.On {
 		return
 	}
@@ -160,9 +160,9 @@ func (ly *SuperLayer) ActFromG(ltime *leabra.Time) {
 //  Burst -- computed in CyclePost
 
 // QuarterFinal does updating after end of a quarter
-func (ly *SuperLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.TopoInhibLayer.QuarterFinal(ltime)
-	if ly.Burst.BurstQtr.HasNext(ltime.Quarter) {
+func (ly *SuperLayer) QuarterFinal(ctx *leabra.Context) {
+	ly.TopoInhibLayer.QuarterFinal(ctx)
+	if ly.Burst.BurstQtr.HasNext(ctx.Quarter) {
 		// if will be updating next quarter, save just prior
 		// this logic works for all cases, but e.g., BurstPrv doesn't update
 		// until end of minus phase for Q4 BurstQtr
@@ -179,15 +179,15 @@ func (ly *SuperLayer) BurstPrv() {
 }
 
 // CyclePost calls BurstFromAct
-func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
-	ly.TopoInhibLayer.CyclePost(ltime)
-	ly.BurstFromAct(ltime)
+func (ly *SuperLayer) CyclePost(ctx *leabra.Context) {
+	ly.TopoInhibLayer.CyclePost(ctx)
+	ly.BurstFromAct(ctx)
 }
 
 // BurstFromAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
-func (ly *SuperLayer) BurstFromAct(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.HasFlag(ltime.Quarter) {
+func (ly *SuperLayer) BurstFromAct(ctx *leabra.Context) {
+	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	lpl := &ly.Pools[0]
@@ -216,8 +216,8 @@ func (ly *SuperLayer) BurstFromAct(ltime *leabra.Time) {
 // CtxtGe excitatory conductance on CT layers.
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
-func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.HasFlag(ltime.Quarter) {
+func (ly *SuperLayer) SendCtxtGe(ctx *leabra.Context) {
+	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {

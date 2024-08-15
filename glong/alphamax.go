@@ -55,15 +55,15 @@ func (ly *AlphaMaxLayer) AlphaCycInit(updtActAvg bool) {
 	ly.InitAlphaMax()
 }
 
-func (ly *AlphaMaxLayer) ActFromG(ltime *leabra.Time) {
-	ly.Layer.ActFromG(ltime)
-	if ltime.Cycle >= ly.AlphaMaxCyc {
-		ly.AlphaMaxFromAct(ltime)
+func (ly *AlphaMaxLayer) ActFromG(ctx *leabra.Context) {
+	ly.Layer.ActFromG(ctx)
+	if ctx.Cycle >= ly.AlphaMaxCyc {
+		ly.AlphaMaxFromAct(ctx)
 	}
 }
 
 // AlphaMaxFromAct computes AlphaMax from Activation
-func (ly *AlphaMaxLayer) AlphaMaxFromAct(ltime *leabra.Time) {
+func (ly *AlphaMaxLayer) AlphaMaxFromAct(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

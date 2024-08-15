@@ -216,7 +216,7 @@ type Sim struct {
 	TestEnv env.FixedTable
 
 	// leabra timing parameters and state
-	Time leabra.Time
+	Time leabra.Context
 
 	// whether to update the network view while running
 	ViewOn bool
@@ -771,13 +771,13 @@ func (ss *Sim) AlphaCyc(train bool) {
 				ca3FmDg.WtScale.Rel = dgwtscale - ss.Hip.MossyDelTest // testing, NoDynMF key
 			}
 			ss.Net.GScaleFromAvgAct() // update computed scaling factors
-			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
+			ss.Net.InitGInc()         // scaling params change, so need to recompute all netins
 		case 3: // Fourth Quarter: CA1 back to ECin drive only
 			ca1FmECin.WtScale.Abs = 1
 			ca1FmCa3.WtScale.Abs = thetaLow
 			ss.Net.GScaleFromAvgAct() // update computed scaling factors
-			ss.Net.InitGInc()       // scaling params change, so need to recompute all netins
-			if train {              // clamp ECout from ECin
+			ss.Net.InitGInc()         // scaling params change, so need to recompute all netins
+			if train {                // clamp ECout from ECin
 				ecin.UnitValues(&ss.TmpValues, "Act") // note: could use input instead -- not much diff
 				ecout.ApplyExt1D32(ss.TmpValues)
 			}

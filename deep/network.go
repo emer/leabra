@@ -313,22 +313,22 @@ func (nt *Network) ConnectCtxtToCT(send, recv emer.Layer, pat paths.Pattern) eme
 //  Compute methods
 
 // QuarterFinal does updating after end of a quarter
-func (nt *Network) QuarterFinal(ltime *leabra.Time) {
-	nt.Network.QuarterFinal(ltime)
-	nt.CTCtxt(ltime)
+func (nt *Network) QuarterFinal(ctx *leabra.Context) {
+	nt.Network.QuarterFinal(ctx)
+	nt.CTCtxt(ctx)
 }
 
 // CTCtxt sends context to CT layers and integrates CtxtGe on CT layers
-func (nt *Network) CTCtxt(ltime *leabra.Time) {
+func (nt *Network) CTCtxt(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if dl, ok := ly.(CtxtSender); ok {
-			dl.SendCtxtGe(ltime)
+			dl.SendCtxtGe(ctx)
 		}
 	}, "SendCtxtGe")
 
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if dl, ok := ly.(*CTLayer); ok {
-			dl.CtxtFromGe(ltime)
+			dl.CtxtFromGe(ctx)
 		}
 	}, "CtxtFromGe")
 }

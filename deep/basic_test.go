@@ -128,7 +128,7 @@ func TestNetAct(t *testing.T) {
 	hidLay := TestNet.LayerByName("Hidden").(*leabra.Layer)
 	outLay := TestNet.LayerByName("Output").(*leabra.Layer)
 
-	ltime := leabra.NewTime()
+	ctx := leabra.NewTime()
 
 	printCycs := false
 	printQtrs := false
@@ -164,11 +164,11 @@ func TestNetAct(t *testing.T) {
 		outLay.ApplyExt(inpat)
 
 		TestNet.AlphaCycInit(true)
-		ltime.AlphaCycStart()
+		ctx.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
-			for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
-				TestNet.Cycle(ltime)
-				ltime.CycleInc()
+			for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
+				TestNet.Cycle(ctx)
+				ctx.CycleInc()
 
 				if printCycs {
 					inLay.UnitValues(&inActs, "Act")
@@ -181,8 +181,8 @@ func TestNetAct(t *testing.T) {
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 				}
 			}
-			TestNet.QuarterFinal(ltime)
-			ltime.QuarterInc()
+			TestNet.QuarterFinal(ctx)
+			ctx.QuarterInc()
 
 			if printCycs && printQtrs {
 				fmt.Printf("=============================\n")
@@ -197,7 +197,7 @@ func TestNetAct(t *testing.T) {
 			outLay.UnitValues(&outGis, "Gi")
 
 			if printQtrs {
-				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ltime.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
+				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ctx.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 			}
 
 			if printCycs && printQtrs {
@@ -312,7 +312,7 @@ func TestNetLearn(t *testing.T) {
 		TestNet.InitWeights()
 		TestNet.InitExt()
 
-		ltime := leabra.NewTime()
+		ctx := leabra.NewTime()
 
 		for pi := 0; pi < 4; pi++ {
 			inpat, err := InPats.SubSpace([]int{pi})
@@ -323,11 +323,11 @@ func TestNetLearn(t *testing.T) {
 			outLay.ApplyExt(inpat)
 
 			TestNet.AlphaCycInit(true)
-			ltime.AlphaCycStart()
+			ctx.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
-				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
-					TestNet.Cycle(ltime)
-					ltime.CycleInc()
+				for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
+					TestNet.Cycle(ctx)
+					ctx.CycleInc()
 
 					hidLay.UnitValues(&hidAct, "Act")
 					hidLay.UnitValues(&hidGes, "Ge")
@@ -340,12 +340,12 @@ func TestNetLearn(t *testing.T) {
 					outLay.UnitValues(&outAvgM, "AvgM")
 
 					if printCycs {
-						fmt.Printf("pat: %v qtr: %v cyc: %v\nhid act: %v ges: %v gis: %v\nhid avgss: %v avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAct, hidGes, hidGis, hidAvgSS, hidAvgS, hidAvgM, outAvgS, outAvgM)
+						fmt.Printf("pat: %v qtr: %v cyc: %v\nhid act: %v ges: %v gis: %v\nhid avgss: %v avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ctx.Cycle, hidAct, hidGes, hidGis, hidAvgSS, hidAvgS, hidAvgM, outAvgS, outAvgM)
 					}
 
 				}
-				TestNet.QuarterFinal(ltime)
-				ltime.QuarterInc()
+				TestNet.QuarterFinal(ctx)
+				ctx.QuarterInc()
 
 				hidLay.UnitValues(&hidAvgS, "AvgS")
 				hidLay.UnitValues(&hidAvgM, "AvgM")
@@ -354,7 +354,7 @@ func TestNetLearn(t *testing.T) {
 				outLay.UnitValues(&outAvgM, "AvgM")
 
 				if printQtrs {
-					fmt.Printf("pat: %v qtr: %v cyc: %v\nhid avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ltime.Cycle, hidAvgS, hidAvgM, outAvgS, outAvgM)
+					fmt.Printf("pat: %v qtr: %v cyc: %v\nhid avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ctx.Cycle, hidAvgS, hidAvgM, outAvgS, outAvgM)
 				}
 
 				if pi == 0 && qtr == 0 {

@@ -102,7 +102,7 @@ func (ly *ClampDaLayer) Build() error {
 
 // CyclePost is called at end of Cycle
 // We use it to send DA, which will then be active for the next cycle of processing.
-func (ly *ClampDaLayer) CyclePost(ltime *leabra.Time) {
+func (ly *ClampDaLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA.SendDA(ly.Network, act)

@@ -97,7 +97,7 @@ func (ly *ClampAChLayer) Build() error {
 
 // CyclePost is called at end of Cycle
 // We use it to send ACh, which will then be active for the next cycle of processing.
-func (ly *ClampAChLayer) CyclePost(ltime *leabra.Time) {
+func (ly *ClampAChLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)

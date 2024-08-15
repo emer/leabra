@@ -55,8 +55,8 @@ func (ly *CTLayer) InitActs() {
 }
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *CTLayer) GFromInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
+func (ly *CTLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -72,8 +72,8 @@ func (ly *CTLayer) GFromInc(ltime *leabra.Time) {
 // CtxtGe excitatory conductance on CT layers.
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
-func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
+func (ly *CTLayer) SendCtxtGe(ctx *leabra.Context) {
+	if !ly.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -103,8 +103,8 @@ func (ly *CTLayer) SendCtxtGe(ltime *leabra.Time) {
 // CtxtFromGe integrates new CtxtGe excitatory conductance from pathways, and computes
 // overall Ctxt value, only on Deep layers.
 // This must be called at the end of the DeepBurst quarter for this layer, after SendCtxtGe.
-func (ly *CTLayer) CtxtFromGe(ltime *leabra.Time) {
-	if !ly.BurstQtr.HasFlag(ltime.Quarter) {
+func (ly *CTLayer) CtxtFromGe(ctx *leabra.Context) {
+	if !ly.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.CtxtGes {

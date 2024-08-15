@@ -71,7 +71,7 @@ func (ly *CINLayer) MaxAbsRew() float32 {
 	return mx
 }
 
-func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
+func (ly *CINLayer) ActFmG(ctx *leabra.Context) {
 	ract := ly.MaxAbsRew()
 	if ly.RewThr > 0 {
 		if ract > ly.RewThr {
@@ -89,7 +89,7 @@ func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send ACh, which will then be active for the next cycle of processing.
-func (ly *CINLayer) CyclePost(ltime *leabra.Time) {
+func (ly *CINLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)

@@ -88,7 +88,7 @@ func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
 }
 
 // TopoGi computes topographic Gi between pools
-func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
+func (ly *TopoInhibLayer) TopoGi(ctx *leabra.Context) {
 	pyn := ly.Shape.DimSize(0)
 	pxn := ly.Shape.DimSize(1)
 	wd := ly.TopoInhib.Width
@@ -121,12 +121,12 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 }
 
 // InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *TopoInhibLayer) InhibFromGeAct(ltime *leabra.Time) {
+func (ly *TopoInhibLayer) InhibFromGeAct(ctx *leabra.Context) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFromGeAct(ltime)
+	ly.PoolInhibFromGeAct(ctx)
 	if ly.Is4D() && ly.TopoInhib.On {
-		ly.TopoGi(ltime)
+		ly.TopoGi(ctx)
 	}
-	ly.InhibFromPool(ltime)
+	ly.InhibFromPool(ctx)
 }

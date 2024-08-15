@@ -137,7 +137,7 @@ func ConfigEpcLog(dt *table.Table) {
 }
 
 func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
-	ltime := leabra.NewTime()
+	ctx := leabra.NewTime()
 	net.InitWeights()
 	np := pats.NumRows()
 	porder := rand.Perm(np) // randomly permuted order of ints
@@ -172,14 +172,14 @@ func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
 			outLay.ApplyExt(outp)
 
 			net.AlphaCycInit(true)
-			ltime.AlphaCycStart()
+			ctx.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
-				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
-					net.Cycle(ltime)
-					ltime.CycleInc()
+				for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
+					net.Cycle(ctx)
+					ctx.CycleInc()
 				}
-				net.QuarterFinal(ltime)
-				ltime.QuarterInc()
+				net.QuarterFinal(ctx)
+				ctx.QuarterInc()
 			}
 			net.DWt()
 			net.WtFmDWt()

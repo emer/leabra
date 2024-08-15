@@ -10,8 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"time"
 
+	"cogentcore.org/core/core"
+	"github.com/emer/emergent/v2/econfig"
 	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
 )
 
@@ -66,20 +72,99 @@ func (nt *Network) LayersByType(layType ...LayerTypes) []string {
 // KeyLayerParams returns a listing for all layers in the network,
 // of the most important layer-level params (specific to each algorithm).
 func (nt *Network) KeyLayerParams() string {
-	return "" // todo: implement!
+	return nt.AllLayerInhibs()
 }
 
 // KeyPathParams returns a listing for all Recv pathways in the network,
 // of the most important pathway-level params (specific to each algorithm).
 func (nt *Network) KeyPathParams() string {
-	return nt.AllWtScales()
+	return nt.AllPathScales()
 }
 
-// AllWtScales returns a listing of all WtScale parameters in the Network
+// SaveParamsSnapshot saves various views of current parameters
+// to either `params_good` if good = true (for current good reference params)
+// or `params_2006_01_02` (year, month, day) datestamp,
+// providing a snapshot of the simulation params for easy diffs and later reference.
+// Also saves current Config and Params state.
+func (nt *Network) SaveParamsSnapshot(pars *params.Sets, cfg any, good bool) error {
+	date := time.Now().Format("2006_01_02")
+	if good {
+		date = "good"
+	}
+	dir := "params_" + date
+	err := os.Mkdir(dir, 0775)
+	if err != nil {
+		log.Println(err) // notify but OK if it exists
+	}
+	econfig.Save(cfg, filepath.Join(dir, "config.toml"))
+	pars.SaveTOML(core.Filename(filepath.Join(dir, "params.toml")))
+	nt.SaveAllParams(core.Filename(filepath.Join(dir, "params_all.txt")))
+	nt.SaveNonDefaultParams(core.Filename(filepath.Join(dir, "params_nondef.txt")))
+	nt.SaveAllLayerInhibs(core.Filename(filepath.Join(dir, "params_layers.txt")))
+	nt.SaveAllPathScales(core.Filename(filepath.Join(dir, "params_paths.txt")))
+	return nil
+}
+
+// SaveAllLayerInhibs saves list of all layer Inhibition parameters to given file
+func (nt *Network) SaveAllLayerInhibs(filename core.Filename) error {
+	str := nt.AllLayerInhibs()
+	err := os.WriteFile(string(filename), []byte(str), 0666)
+	if err != nil {
+		log.Println(err)
+	}
+	return err
+}
+
+// SavePathScales saves a listing of all PathScale parameters in the Network
 // in all Layers, Recv pathways.  These are among the most important
 // and numerous of parameters (in larger networks) -- this helps keep
 // track of what they all are set to.
-func (nt *Network) AllWtScales() string {
+func (nt *Network) SaveAllPathScales(filename core.Filename) error {
+	str := nt.AllPathScales()
+	err := os.WriteFile(string(filename), []byte(str), 0666)
+	if err != nil {
+		log.Println(err)
+	}
+	return err
+}
+
+// AllLayerInhibs returns a listing of all Layer Inhibition parameters in the Network
+func (nt *Network) AllLayerInhibs() string {
+	str := ""
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ph := ly.ParamsHistory.ParamsHistory()
+		lh := ph["Layer.Inhib.ActAvg.Init"]
+		if lh != "" {
+			lh = "Params: " + lh
+		}
+		str += fmt.Sprintf("%15s\t\tNominal:\t%6.2f\t%s\n", ly.Name, ly.Inhib.ActAvg.Init, lh)
+		if ly.Inhib.Layer.On {
+			lh := ph["Layer.Inhib.Layer.Gi"]
+			if lh != "" {
+				lh = "Params: " + lh
+			}
+			str += fmt.Sprintf("\t\t\t\t\t\tLayer.Gi:\t%6.2f\t%s\n", ly.Inhib.Layer.Gi, lh)
+		}
+		if ly.Inhib.Pool.On {
+			lh := ph["Layer.Inhib.Pool.Gi"]
+			if lh != "" {
+				lh = "Params: " + lh
+			}
+			str += fmt.Sprintf("\t\t\t\t\t\tPool.Gi: \t%6.2f\t%s\n", ly.Inhib.Pool.Gi, lh)
+		}
+		str += fmt.Sprintf("\n")
+	}
+	return str
+}
+
+// AllPathScales returns a listing of all WtScale parameters in the Network
+// in all Layers, Recv pathways.  These are among the most important
+// and numerous of parameters (in larger networks) -- this helps keep
+// track of what they all are set to.
+func (nt *Network) AllPathScales() string {
 	str := ""
 	for _, ly := range nt.Layers {
 		if ly.Off {

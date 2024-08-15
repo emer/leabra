@@ -6,8 +6,8 @@ package leabra
 
 import "github.com/emer/emergent/v2/etime"
 
-// leabra.Time contains all the timing state and parameter information for running a model
-type Time struct {
+// leabra.Context contains all the timing state and parameter information for running a model
+type Context struct {
 
 	// accumulated amount of time the network has been running,
 	// in simulation-time (not real world time), in seconds.
@@ -43,21 +43,21 @@ type Time struct {
 	Mode etime.Modes
 }
 
-// NewTime returns a new Time struct with default parameters
-func NewTime() *Time {
-	tm := &Time{}
+// NewContext returns a new Context struct with default parameters
+func NewContext() *Context {
+	tm := &Context{}
 	tm.Defaults()
 	return tm
 }
 
 // Defaults sets default values
-func (tm *Time) Defaults() {
+func (tm *Context) Defaults() {
 	tm.TimePerCyc = 0.001
 	tm.CycPerQtr = 25
 }
 
 // Reset resets the counters all back to zero
-func (tm *Time) Reset() {
+func (tm *Context) Reset() {
 	tm.Time = 0
 	tm.Cycle = 0
 	tm.CycleTot = 0
@@ -69,26 +69,26 @@ func (tm *Time) Reset() {
 }
 
 // AlphaCycStart starts a new alpha-cycle (set of 4 quarters)
-func (tm *Time) AlphaCycStart() {
+func (tm *Context) AlphaCycStart() {
 	tm.Cycle = 0
 	tm.Quarter = 0
 	tm.PlusPhase = false
 }
 
 // CycleInc increments at the cycle level
-func (tm *Time) CycleInc() {
+func (tm *Context) CycleInc() {
 	tm.Cycle++
 	tm.CycleTot++
 	tm.Time += tm.TimePerCyc
 }
 
 // QuarterInc increments at the quarter level, updating Quarter and PlusPhase
-func (tm *Time) QuarterInc() {
+func (tm *Context) QuarterInc() {
 	tm.Quarter++
 }
 
 // QuarterCycle returns the number of cycles into current quarter
-func (tm *Time) QuarterCycle() int {
+func (tm *Context) QuarterCycle() int {
 	qmin := int(tm.Quarter) * tm.CycPerQtr
 	return tm.Cycle - qmin
 }

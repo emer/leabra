@@ -50,17 +50,17 @@ func (ly *Layer) AsGate() *GateLayer {
 
 // GateSend updates gating state and sends it along to other layers.
 // most layers don't implement -- only gating layers
-func (ly *Layer) GateSend(ltime *leabra.Time) {
+func (ly *Layer) GateSend(ctx *leabra.Context) {
 }
 
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now -- only for gating layers
-func (ly *Layer) RecGateAct(ltime *leabra.Time) {
+func (ly *Layer) RecGateAct(ctx *leabra.Context) {
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing
-func (ly *Layer) SendMods(ltime *leabra.Time) {
+func (ly *Layer) SendMods(ctx *leabra.Context) {
 }
 
 func (ly *Layer) Defaults() {
@@ -157,9 +157,9 @@ func (ly *Layer) DoQuarter2DWt() bool {
 }
 
 // QuarterFinal does updating after end of a quarter
-func (ly *Layer) QuarterFinal(ltime *leabra.Time) {
-	ly.Layer.QuarterFinal(ltime)
-	if ltime.Quarter == 1 {
+func (ly *Layer) QuarterFinal(ctx *leabra.Context) {
+	ly.Layer.QuarterFinal(ctx)
+	if ctx.Quarter == 1 {
 		ly.LeabraLay.(PBWMLayer).Quarter2DWt()
 	}
 }

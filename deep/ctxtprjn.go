@@ -17,7 +17,7 @@ type CtxtSender interface {
 	// SendCtxtGe sends activation over CTCtxtPath pathways to integrate
 	// CtxtGe excitatory conductance on CT layers.
 	// This must be called at the end of the Burst quarter for this layer.
-	SendCtxtGe(ltime *leabra.Time)
+	SendCtxtGe(ctx *leabra.Context)
 }
 
 // CTCtxtPath is the "context" temporally delayed pathway into CTLayer,

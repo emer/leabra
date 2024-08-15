@@ -48,17 +48,17 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 // * Average and Max Act stats
 // This basic version doesn't use the time info, but more specialized types do, and we
 // want to keep a consistent API for end-user code.
-func (nt *Network) Cycle(ltime *Time) {
-	nt.SendGDelta(ltime) // also does integ
-	nt.AvgMaxGe(ltime)
-	nt.InhibFromGeAct(ltime)
-	nt.ActFromG(ltime)
-	nt.AvgMaxAct(ltime)
+func (nt *Network) Cycle(ctx *Context) {
+	nt.SendGDelta(ctx) // also does integ
+	nt.AvgMaxGe(ctx)
+	nt.InhibFromGeAct(ctx)
+	nt.ActFromG(ctx)
+	nt.AvgMaxAct(ctx)
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.CyclePost(ltime)
+		ly.CyclePost(ctx)
 	}
 }
 
@@ -67,88 +67,88 @@ func (nt *Network) Cycle(ltime *Time) {
 
 // SendGeDelta sends change in activation since last sent, if above thresholds
 // and integrates sent deltas into GeRaw and time-integrated Ge values
-func (nt *Network) SendGDelta(ltime *Time) {
+func (nt *Network) SendGDelta(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.SendGDelta(ltime)
+		ly.SendGDelta(ctx)
 	}
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.GFromInc(ltime)
+		ly.GFromInc(ctx)
 	}
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxGe(ltime *Time) {
+func (nt *Network) AvgMaxGe(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.AvgMaxGe(ltime)
+		ly.AvgMaxGe(ctx)
 	}
 }
 
 // InhibiFromGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
-func (nt *Network) InhibFromGeAct(ltime *Time) {
+func (nt *Network) InhibFromGeAct(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.InhibFromGeAct(ltime)
+		ly.InhibFromGeAct(ctx)
 	}
 }
 
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
-func (nt *Network) ActFromG(ltime *Time) {
+func (nt *Network) ActFromG(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.ActFromG(ltime)
+		ly.ActFromG(ctx)
 	}
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxAct(ltime *Time) {
+func (nt *Network) AvgMaxAct(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.AvgMaxAct(ltime)
+		ly.AvgMaxAct(ctx)
 	}
 }
 
 // QuarterFinal does updating after end of a quarter, for first 2
-func (nt *Network) QuarterFinal(ltime *Time) {
+func (nt *Network) QuarterFinal(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.QuarterFinal(ltime)
+		ly.QuarterFinal(ctx)
 	}
 }
 
 // MinusPhase is called at the end of the minus phase (quarter 3), to record state.
-func (nt *Network) MinusPhase(ltime *Time) {
+func (nt *Network) MinusPhase(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.MinusPhase(ltime)
+		ly.MinusPhase(ctx)
 	}
 }
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
-func (nt *Network) PlusPhase(ltime *Time) {
+func (nt *Network) PlusPhase(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.PlusPhase(ltime)
+		ly.PlusPhase(ctx)
 	}
 }
 

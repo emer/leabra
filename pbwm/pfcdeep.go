@@ -178,8 +178,8 @@ func (ly *PFCDeepLayer) InitActs() {
 //  Cycle
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *PFCDeepLayer) GFromInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
+func (ly *PFCDeepLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -195,15 +195,15 @@ func (ly *PFCDeepLayer) GFromInc(ltime *leabra.Time) {
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
 // PFC extends to call Gating.
-func (ly *PFCDeepLayer) ActFromG(ltime *leabra.Time) {
-	ly.GateLayer.ActFromG(ltime)
-	ly.Gating(ltime)
+func (ly *PFCDeepLayer) ActFromG(ctx *leabra.Context) {
+	ly.GateLayer.ActFromG(ctx)
+	ly.Gating(ctx)
 }
 
 // Gating updates PFC Gating state
-func (ly *PFCDeepLayer) Gating(ltime *leabra.Time) {
+func (ly *PFCDeepLayer) Gating(ctx *leabra.Context) {
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
-		if ltime.Quarter > 1 {
+		if ctx.Quarter > 1 {
 			return
 		}
 	}
@@ -246,15 +246,15 @@ func (ly *PFCDeepLayer) ClearMaint(pool int) {
 }
 
 // QuarterFinal does updating after end of a quarter
-func (ly *PFCDeepLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.GateLayer.QuarterFinal(ltime)
-	ly.UpdateGateCnt(ltime)
-	ly.DeepMaint(ltime)
+func (ly *PFCDeepLayer) QuarterFinal(ctx *leabra.Context) {
+	ly.GateLayer.QuarterFinal(ctx)
+	ly.UpdateGateCnt(ctx)
+	ly.DeepMaint(ctx)
 }
 
 // DeepMaint updates deep maintenance activations
-func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.HasFlag(ltime.Quarter) {
+func (ly *PFCDeepLayer) DeepMaint(ctx *leabra.Context) {
+	if !ly.Gate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	slyi := ly.SuperPFC()
@@ -304,8 +304,8 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 }
 
 // UpdateGateCnt updates the gate counter
-func (ly *PFCDeepLayer) UpdateGateCnt(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.HasFlag(ltime.Quarter) {
+func (ly *PFCDeepLayer) UpdateGateCnt(ctx *leabra.Context) {
+	if !ly.Gate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for gi := range ly.GateStates {
@@ -321,7 +321,7 @@ func (ly *PFCDeepLayer) UpdateGateCnt(ltime *leabra.Time) {
 
 // RecGateAct records the gating activation from current activation,
 // when gating occcurs based on GateState.Now
-func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
+func (ly *PFCDeepLayer) RecGateAct(ctx *leabra.Context) {
 	for gi := range ly.GateStates {
 		gs := &ly.GateStates[gi]
 		if !gs.Now { // not gating now

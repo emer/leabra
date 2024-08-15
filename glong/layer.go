@@ -95,16 +95,16 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 }
 
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *Layer) GFromInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	ly.RecvGnmdaPInc(ltime)
-	ly.GFromIncNeur(ltime)
+func (ly *Layer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
+	ly.RecvGnmdaPInc(ctx)
+	ly.GFromIncNeur(ctx)
 }
 
 // RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
 // This is called by GFromInc overall method, but separated out for cases that need to
 // do something different.
-func (ly *Layer) RecvGInc(ltime *leabra.Time) {
+func (ly *Layer) RecvGInc(ctx *leabra.Context) {
 	for _, p := range ly.RecvPaths {
 		if p.Off {
 			continue
@@ -117,7 +117,7 @@ func (ly *Layer) RecvGInc(ltime *leabra.Time) {
 }
 
 // RecvGnmdaPInc increments the recurrent-specific GeInc
-func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
+func (ly *Layer) RecvGnmdaPInc(ctx *leabra.Context) {
 	for _, p := range ly.RecvPaths {
 		if p.Off {
 			continue
@@ -136,7 +136,7 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 
 // GFromIncNeur is the neuron-level code for GFromInc that integrates overall Ge, Gi values
 // from their G*Raw accumulators.
-func (ly *Layer) GFromIncNeur(ltime *leabra.Time) {
+func (ly *Layer) GFromIncNeur(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -154,7 +154,7 @@ func (ly *Layer) GFromIncNeur(ltime *leabra.Time) {
 	}
 }
 
-func (ly *Layer) GABABFromGi(ltime *leabra.Time) {
+func (ly *Layer) GABABFromGi(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -171,16 +171,16 @@ func (ly *Layer) GABABFromGi(ltime *leabra.Time) {
 	}
 }
 
-func (ly *Layer) ActFromG(ltime *leabra.Time) {
-	ly.Layer.ActFromG(ltime)
-	ly.GABABFromGi(ltime)
-	if ltime.Cycle >= ly.NMDA.AlphaMaxCyc {
-		ly.AlphaMaxFromAct(ltime)
+func (ly *Layer) ActFromG(ctx *leabra.Context) {
+	ly.Layer.ActFromG(ctx)
+	ly.GABABFromGi(ctx)
+	if ctx.Cycle >= ly.NMDA.AlphaMaxCyc {
+		ly.AlphaMaxFromAct(ctx)
 	}
 }
 
 // AlphaMaxFromAct computes AlphaMax from Activation
-func (ly *Layer) AlphaMaxFromAct(ltime *leabra.Time) {
+func (ly *Layer) AlphaMaxFromAct(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

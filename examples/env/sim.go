@@ -132,7 +132,7 @@ type Sim struct {
 	TestEnv ExEnv
 
 	// leabra timing parameters and state
-	Time leabra.Time
+	Time leabra.Context
 
 	// whether to update the network view while running
 	ViewOn bool

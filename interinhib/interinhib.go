@@ -9,11 +9,11 @@ Layer InhibFromGeAct method like this:
 
 // InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 
-	func (ly *Layer) InhibFromGeAct(ltime *Time) {
+	func (ly *Layer) InhibFromGeAct(ctx *Time) {
 		lpl := &ly.Pools[0]
 		ly.Inhib.Layer.Inhib(&lpl.Inhib)
 		ly.InterInhib.Inhib(&ly.Layer) // does inter-layer inhibition
-		ly.PoolInhibFromGeAct(ltime)
+		ly.PoolInhibFromGeAct(ctx)
 	}
 */
 package interinhib
