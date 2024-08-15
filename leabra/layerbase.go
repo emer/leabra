@@ -475,7 +475,7 @@ func (ly *Layer) SetWeights(lw *weights.Layer) error {
 			pv, _ := strconv.ParseFloat(ap, 32)
 			pl := &ly.Pools[0]
 			pl.ActAvg.ActPAvg = float32(pv)
-			ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
+			ly.Inhib.ActAvg.EffFromAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 		}
 	}
 	var err error

@@ -48,16 +48,16 @@ func (ln *LearnNeurParams) InitActAvg(nrn *Neuron) {
 	nrn.ActAvg = ln.ActAvg.Init
 }
 
-// AvgsFmAct updates the running averages based on current learning activation.
+// AvgsFromAct updates the running averages based on current learning activation.
 // Computed after new activation for current cycle is updated.
-func (ln *LearnNeurParams) AvgsFmAct(nrn *Neuron) {
-	ln.ActAvg.AvgsFmAct(nrn.ActLrn, &nrn.AvgSS, &nrn.AvgS, &nrn.AvgM, &nrn.AvgSLrn)
+func (ln *LearnNeurParams) AvgsFromAct(nrn *Neuron) {
+	ln.ActAvg.AvgsFromAct(nrn.ActLrn, &nrn.AvgSS, &nrn.AvgS, &nrn.AvgM, &nrn.AvgSLrn)
 }
 
-// AvgLFmAct computes long-term average activation value, and learning factor, from current AvgM.
+// AvgLFromAct computes long-term average activation value, and learning factor, from current AvgM.
 // Called at start of new alpha-cycle.
-func (ln *LearnNeurParams) AvgLFmAvgM(nrn *Neuron) {
-	ln.AvgL.AvgLFmAvgM(nrn.AvgM, &nrn.AvgL, &nrn.AvgLLrn)
+func (ln *LearnNeurParams) AvgLFromAvgM(nrn *Neuron) {
+	ln.AvgL.AvgLFromAvgM(nrn.AvgM, &nrn.AvgL, &nrn.AvgLLrn)
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -110,16 +110,16 @@ func (ls *LearnSynParams) Defaults() {
 	ls.WtBal.Defaults()
 }
 
-// LWtFmWt updates the linear weight value based on the current effective Wt value.
+// LWtFromWt updates the linear weight value based on the current effective Wt value.
 // effective weight is sigmoidally contrast-enhanced relative to the linear weight.
-func (ls *LearnSynParams) LWtFmWt(syn *Synapse) {
-	syn.LWt = ls.WtSig.LinFmSigWt(syn.Wt / syn.Scale) // must factor out scale too!
+func (ls *LearnSynParams) LWtFromWt(syn *Synapse) {
+	syn.LWt = ls.WtSig.LinFromSigWt(syn.Wt / syn.Scale) // must factor out scale too!
 }
 
-// WtFmLWt updates the effective weight value based on the current linear Wt value.
+// WtFromLWt updates the effective weight value based on the current linear Wt value.
 // effective weight is sigmoidally contrast-enhanced relative to the linear weight.
-func (ls *LearnSynParams) WtFmLWt(syn *Synapse) {
-	syn.Wt = ls.WtSig.SigFmLinWt(syn.LWt)
+func (ls *LearnSynParams) WtFromLWt(syn *Synapse) {
+	syn.Wt = ls.WtSig.SigFromLinWt(syn.LWt)
 	syn.Wt *= syn.Scale
 }
 
@@ -140,10 +140,10 @@ func (ls *LearnSynParams) BCMdWt(suAvgSLrn, ruAvgSLrn, ruAvgL float32) float32 {
 	return ls.XCal.DWt(srs, ruAvgL)
 }
 
-// WtFmDWt updates the synaptic weights from accumulated weight changes
+// WtFromDWt updates the synaptic weights from accumulated weight changes
 // wbInc and wbDec are the weight balance factors, wt is the sigmoidal contrast-enhanced
 // weight and lwt is the linear weight value
-func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, scale float32) {
+func (ls *LearnSynParams) WtFromDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, scale float32) {
 	if *dwt == 0 {
 		return
 	}
@@ -166,7 +166,7 @@ func (ls *LearnSynParams) WtFmDWt(wbInc, wbDec float32, dwt, wt, lwt *float32, s
 	} else if *lwt > 1 {
 		*lwt = 1
 	}
-	*wt = scale * ls.WtSig.SigFmLinWt(*lwt)
+	*wt = scale * ls.WtSig.SigFromLinWt(*lwt)
 	*dwt = 0
 }
 
@@ -202,8 +202,8 @@ type LrnActAvgParams struct {
 	LrnS float32 `display:"-" json:"-" xml:"-" edit:"-"`
 }
 
-// AvgsFmAct computes averages based on current act
-func (aa *LrnActAvgParams) AvgsFmAct(ruAct float32, avgSS, avgS, avgM, avgSLrn *float32) {
+// AvgsFromAct computes averages based on current act
+func (aa *LrnActAvgParams) AvgsFromAct(ruAct float32, avgSS, avgS, avgM, avgSLrn *float32) {
 	*avgSS += aa.SSDt * (ruAct - *avgSS)
 	*avgS += aa.SDt * (*avgSS - *avgS)
 	*avgM += aa.MDt * (*avgS - *avgM)
@@ -267,9 +267,9 @@ type AvgLParams struct {
 	LrnFact float32 `display:"-" json:"-" xml:"-" edit:"-"`
 }
 
-// AvgLFmAvgM computes long-term average activation value, and learning factor, from given
+// AvgLFromAvgM computes long-term average activation value, and learning factor, from given
 // medium-scale running average activation avgM
-func (al *AvgLParams) AvgLFmAvgM(avgM float32, avgL, lrn *float32) {
+func (al *AvgLParams) AvgLFromAvgM(avgM float32, avgL, lrn *float32) {
 	*avgL += al.Dt * (al.Gain*avgM - *avgL)
 	if *avgL < al.Min {
 		*avgL = al.Min
@@ -277,8 +277,8 @@ func (al *AvgLParams) AvgLFmAvgM(avgM float32, avgL, lrn *float32) {
 	*lrn = al.LrnFact * (*avgL - al.Min)
 }
 
-// ErrModFmLayErr computes AvgLLrn multiplier from layer cosine diff avg statistic
-func (al *AvgLParams) ErrModFmLayErr(layCosDiffAvg float32) float32 {
+// ErrModFromLayErr computes AvgLLrn multiplier from layer cosine diff avg statistic
+func (al *AvgLParams) ErrModFromLayErr(layCosDiffAvg float32) float32 {
 	mod := float32(1)
 	if !al.ErrMod {
 		return mod
@@ -331,8 +331,8 @@ func (cd *CosDiffParams) Defaults() {
 	cd.Update()
 }
 
-// AvgVarFmCos updates the average and variance from current cosine diff value
-func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
+// AvgVarFromCos updates the average and variance from current cosine diff value
+func (cd *CosDiffParams) AvgVarFromCos(avg, vr *float32, cos float32) {
 	if *avg == 0 { // first time -- set
 		*avg = cos
 		*vr = 0
@@ -369,7 +369,7 @@ func (cd *CosDiffParams) AvgVarFmCos(avg, vr *float32, cos float32) {
 // CosDiffStats holds cosine-difference statistics at the layer level
 type CosDiffStats struct {
 
-	// cosine (normalized dot product) activation difference between ActP and ActM on this alpha-cycle for this layer -- computed by CosDiffFmActs at end of QuarterFinal for quarter = 3
+	// cosine (normalized dot product) activation difference between ActP and ActM on this alpha-cycle for this layer -- computed by CosDiffFromActs at end of QuarterFinal for quarter = 3
 	Cos float32
 
 	// running average of cosine (normalized dot product) difference between ActP and ActM -- computed with CosDiff.Tau time constant in QuarterFinal, and used for modulating BCM Hebbian learning (see AvgLrn) and overall learning rate
@@ -532,8 +532,8 @@ func SigInvFun61(w float32) float32 {
 	return rval
 }
 
-// SigFmLinWt returns sigmoidal contrast-enhanced weight from linear weight
-func (ws *WtSigParams) SigFmLinWt(lw float32) float32 {
+// SigFromLinWt returns sigmoidal contrast-enhanced weight from linear weight
+func (ws *WtSigParams) SigFromLinWt(lw float32) float32 {
 	if ws.Gain == 1 && ws.Off == 1 {
 		return lw
 	}
@@ -543,8 +543,8 @@ func (ws *WtSigParams) SigFmLinWt(lw float32) float32 {
 	return SigFun(lw, ws.Gain, ws.Off)
 }
 
-// LinFmSigWt returns linear weight from sigmoidal contrast-enhanced weight
-func (ws *WtSigParams) LinFmSigWt(sw float32) float32 {
+// LinFromSigWt returns linear weight from sigmoidal contrast-enhanced weight
+func (ws *WtSigParams) LinFromSigWt(sw float32) float32 {
 	if ws.Gain == 1 && ws.Off == 1 {
 		return sw
 	}
@@ -588,7 +588,7 @@ type DWtNormParams struct {
 // DWtNormParams updates the dwnorm running max_abs, slowly decaying value
 // jumps up to max(abs_dwt) and slowly decays
 // returns the effective normalization factor, as a multiplier, including lrate comp
-func (dn *DWtNormParams) NormFmAbsDWt(norm *float32, absDwt float32) float32 {
+func (dn *DWtNormParams) NormFromAbsDWt(norm *float32, absDwt float32) float32 {
 	*norm = math32.Max(dn.DecayDtC**norm, absDwt)
 	if *norm == 0 {
 		return 1
@@ -633,9 +633,9 @@ type MomentumParams struct {
 	MDtC float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
-// MomentFmDWt updates synaptic moment variable based on dwt weight change value
+// MomentFromDWt updates synaptic moment variable based on dwt weight change value
 // and returns new momentum factor * LrComp
-func (mp *MomentumParams) MomentFmDWt(moment *float32, dwt float32) float32 {
+func (mp *MomentumParams) MomentFromDWt(moment *float32, dwt float32) float32 {
 	*moment = mp.MDtC**moment + dwt
 	return mp.LrComp * *moment
 }

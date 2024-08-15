@@ -51,8 +51,8 @@ func (ka *Chan) Update() {
 	ka.Dt = 1 / ka.Tau
 }
 
-// GcFmSpike updates the KNa conductance based on spike or not
-func (ka *Chan) GcFmSpike(gKNa *float32, spike bool) {
+// GcFromSpike updates the KNa conductance based on spike or not
+func (ka *Chan) GcFromSpike(gKNa *float32, spike bool) {
 	if ka.On {
 		if spike {
 			*gKNa += ka.Rise * (ka.Max - *gKNa)
@@ -64,9 +64,9 @@ func (ka *Chan) GcFmSpike(gKNa *float32, spike bool) {
 	}
 }
 
-// GcFmRate updates the KNa conductance based on rate-coded activation.
+// GcFromRate updates the KNa conductance based on rate-coded activation.
 // act should already have the compensatory rate multiplier prior to calling.
-func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
+func (ka *Chan) GcFromRate(gKNa *float32, act float32) {
 	if ka.On {
 		*gKNa += act*ka.Rise*(ka.Max-*gKNa) - (ka.Dt * *gKNa)
 	} else {
@@ -118,19 +118,19 @@ func (ka *Params) Update() {
 	ka.Slow.Update()
 }
 
-// GcFmSpike updates all time scales of KNa adaptation from spiking
-func (ka *Params) GcFmSpike(gKNaF, gKNaM, gKNaS *float32, spike bool) {
-	ka.Fast.GcFmSpike(gKNaF, spike)
-	ka.Med.GcFmSpike(gKNaM, spike)
-	ka.Slow.GcFmSpike(gKNaS, spike)
+// GcFromSpike updates all time scales of KNa adaptation from spiking
+func (ka *Params) GcFromSpike(gKNaF, gKNaM, gKNaS *float32, spike bool) {
+	ka.Fast.GcFromSpike(gKNaF, spike)
+	ka.Med.GcFromSpike(gKNaM, spike)
+	ka.Slow.GcFromSpike(gKNaS, spike)
 }
 
-// GcFmRate updates all time scales of KNa adaptation from rate code activation
-func (ka *Params) GcFmRate(gKNaF, gKNaM, gKNaS *float32, act float32) {
+// GcFromRate updates all time scales of KNa adaptation from rate code activation
+func (ka *Params) GcFromRate(gKNaF, gKNaM, gKNaS *float32, act float32) {
 	act *= ka.Rate
-	ka.Fast.GcFmRate(gKNaF, act)
-	ka.Med.GcFmRate(gKNaM, act)
-	ka.Slow.GcFmRate(gKNaS, act)
+	ka.Fast.GcFromRate(gKNaF, act)
+	ka.Med.GcFromRate(gKNaM, act)
+	ka.Slow.GcFromRate(gKNaS, act)
 }
 
 /*

@@ -48,15 +48,15 @@ func (gp *GABABParams) Update() {
 	gp.MaxTime = ((gp.RiseTau * gp.DecayTau) / (gp.DecayTau - gp.RiseTau)) * math32.Log(gp.DecayTau/gp.RiseTau)
 }
 
-// GFmV returns the GABA-B conductance as a function of normalized membrane potential
-func (gp *GABABParams) GFmV(v float32) float32 {
+// GFromV returns the GABA-B conductance as a function of normalized membrane potential
+func (gp *GABABParams) GFromV(v float32) float32 {
 	vbio := math32.Max(v*100-100, -90) // critical to not go past -90
 	return 1 / (1 + math32.FastExp(0.1*((vbio+90)+10)))
 }
 
-// GFmS returns the GABA-B conductance as a function of GABA spiking rate,
+// GFromS returns the GABA-B conductance as a function of GABA spiking rate,
 // based on normalized spiking factor (i.e., Gi from FFFB etc)
-func (gp *GABABParams) GFmS(s float32) float32 {
+func (gp *GABABParams) GFromS(s float32) float32 {
 	ss := s * gp.Smult // convert to spikes
 	return 1 / (1 + math32.FastExp(-(ss-7.1)/1.4))
 }
@@ -72,7 +72,7 @@ func (gp *GABABParams) BiExp(g, x float32) (dG, dX float32) {
 // based on current values and gi inhibitory conductance (proxy for GABA spikes)
 func (gp *GABABParams) GABAB(gabaB, gabaBx, gi float32) (g, x float32) {
 	dG, dX := gp.BiExp(gabaB, gabaBx)
-	x = gabaBx + gp.GFmS(gi) + dX // gets new input
+	x = gabaBx + gp.GFromS(gi) + dX // gets new input
 	g = gabaB + dG
 	return
 }
@@ -80,5 +80,5 @@ func (gp *GABABParams) GABAB(gabaB, gabaBx, gi float32) (g, x float32) {
 // GgabaB returns the overall net GABAB / GIRK conductance including
 // Gbar, Gbase, and voltage-gating
 func (gp *GABABParams) GgabaB(gabaB, vm float32) float32 {
-	return gp.Gbar * gp.GFmV(vm) * (gabaB + gp.Gbase)
+	return gp.Gbar * gp.GFromV(vm) * (gabaB + gp.Gbase)
 }

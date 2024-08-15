@@ -34,7 +34,7 @@ func (sk *ActParams) CopyFromAct(act *leabra.ActParams) {
 	sk.Update()
 }
 
-func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
+func (sk *ActParams) SpikeVmFromG(nrn *leabra.Neuron) {
 	updtVm := true
 	if sk.Spike.Tr > 0 && nrn.ISI >= 0 && nrn.ISI < float32(sk.Spike.Tr) {
 		updtVm = false // don't update the spiking vm during refract
@@ -48,9 +48,9 @@ func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
 		nrn.Gk = gk
 		vmEff := nrn.Vm
 		// midpoint method: take a half-step in vmEff
-		inet1 := sk.InetFmG(vmEff, ge, gi, gk)
+		inet1 := sk.InetFromG(vmEff, ge, gi, gk)
 		vmEff += .5 * sk.Dt.VmDt * inet1 // go half way
-		inet2 := sk.InetFmG(vmEff, ge, gi, gk)
+		inet2 := sk.InetFromG(vmEff, ge, gi, gk)
 		// add spike current if relevant
 		if sk.Spike.Exp {
 			inet2 += sk.Gbar.L * sk.Spike.ExpSlope *
@@ -66,9 +66,9 @@ func (sk *ActParams) SpikeVmFmG(nrn *leabra.Neuron) {
 	nrn.Vm = sk.VmRange.ClipValue(nwVm)
 }
 
-// SpikeActFmVm computes the discrete spiking activation
+// SpikeActFromVm computes the discrete spiking activation
 // from membrane potential Vm
-func (sk *ActParams) SpikeActFmVm(nrn *leabra.Neuron) {
+func (sk *ActParams) SpikeActFromVm(nrn *leabra.Neuron) {
 	var thr float32
 	if sk.Spike.Exp {
 		thr = sk.Spike.ExpThr
@@ -82,7 +82,7 @@ func (sk *ActParams) SpikeActFmVm(nrn *leabra.Neuron) {
 		if nrn.ISIAvg == -1 {
 			nrn.ISIAvg = -2
 		} else if nrn.ISI > 0 { // must have spiked to update
-			sk.Spike.AvgFmISI(&nrn.ISIAvg, nrn.ISI+1)
+			sk.Spike.AvgFromISI(&nrn.ISIAvg, nrn.ISI+1)
 		}
 		nrn.ISI = 0
 	} else {
@@ -91,11 +91,11 @@ func (sk *ActParams) SpikeActFmVm(nrn *leabra.Neuron) {
 			nrn.ISI += 1
 		}
 		if nrn.ISIAvg >= 0 && nrn.ISI > 0 && nrn.ISI > 1.2*nrn.ISIAvg {
-			sk.Spike.AvgFmISI(&nrn.ISIAvg, nrn.ISI)
+			sk.Spike.AvgFromISI(&nrn.ISIAvg, nrn.ISI)
 		}
 	}
 
-	nwAct := sk.Spike.ActFmISI(nrn.ISIAvg, .001, 1) // todo: use real #'s
+	nwAct := sk.Spike.ActFromISI(nrn.ISIAvg, .001, 1) // todo: use real #'s
 	if nwAct > 1 {
 		nwAct = 1
 	}
@@ -103,7 +103,7 @@ func (sk *ActParams) SpikeActFmVm(nrn *leabra.Neuron) {
 	nrn.ActDel = nwAct - nrn.Act
 	nrn.Act = nwAct
 	if sk.KNa.On {
-		sk.KNa.GcFmSpike(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Spike > .5)
+		sk.KNa.GcFromSpike(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Spike > .5)
 	}
 }
 
@@ -160,8 +160,8 @@ func (sk *SpikeParams) ActToISI(act, timeInc, integ float32) float32 {
 	return (1 / (timeInc * integ * act * sk.MaxHz))
 }
 
-// ActFmISI computes rate-code activation from estimated spiking interval
-func (sk *SpikeParams) ActFmISI(isi, timeInc, integ float32) float32 {
+// ActFromISI computes rate-code activation from estimated spiking interval
+func (sk *SpikeParams) ActFromISI(isi, timeInc, integ float32) float32 {
 	if isi <= 0 {
 		return 0
 	}
@@ -169,8 +169,8 @@ func (sk *SpikeParams) ActFmISI(isi, timeInc, integ float32) float32 {
 	return maxInt / isi                          // normalized
 }
 
-// AvgFmISI updates spiking ISI from current isi interval value
-func (sk *SpikeParams) AvgFmISI(avg *float32, isi float32) {
+// AvgFromISI updates spiking ISI from current isi interval value
+func (sk *SpikeParams) AvgFromISI(avg *float32, isi float32) {
 	if *avg <= 0 {
 		*avg = isi
 	} else if isi < 0.8**avg {

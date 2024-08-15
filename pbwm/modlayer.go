@@ -16,10 +16,10 @@ type ModLayer struct {
 	DaMod DaModParams
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *ModLayer) GFmInc(ltime *leabra.Time) {
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *ModLayer) GFromInc(ltime *leabra.Time) {
 	if !ly.DaMod.GeModOn() {
-		ly.Layer.GFmInc(ltime)
+		ly.Layer.GFromInc(ltime)
 		return
 	}
 	ly.RecvGInc(ltime)
@@ -29,16 +29,16 @@ func (ly *ModLayer) GFmInc(ltime *leabra.Time) {
 			continue
 		}
 		geRaw := ly.DaMod.Ge(ly.DA, nrn.GeRaw, ltime.PlusPhase)
-		ly.Act.GeFmRaw(nrn, geRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, geRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act
-func (ly *ModLayer) ActFmG(ltime *leabra.Time) {
+func (ly *ModLayer) ActFromG(ltime *leabra.Time) {
 	if !ly.DaMod.GainModOn() {
-		ly.Layer.ActFmG(ltime)
+		ly.Layer.ActFromG(ltime)
 		return
 	}
 	curGain := ly.Act.XX1.Gain
@@ -49,9 +49,9 @@ func (ly *ModLayer) ActFmG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
-		ly.Learn.AvgsFmAct(nrn)
+		ly.Act.VmFromG(nrn)
+		ly.Act.ActFromG(nrn)
+		ly.Learn.AvgsFromAct(nrn)
 	}
 	ly.Act.XX1.Gain = curGain
 	ly.Act.XX1.Update()

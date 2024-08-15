@@ -309,8 +309,8 @@ func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *GPiThalLayer) GFromInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
@@ -321,19 +321,19 @@ func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
 		goRaw := goPath.GeRaw[ni]
 		nogoRaw := nogoPath.GeRaw[ni]
 		nrn.GeRaw = ly.Gate.GeRaw(goRaw, nogoRaw)
-		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, nrn.GeRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
 // GateSend updates gating state and sends it along to other layers
 func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
-	ly.GateFmAct(ltime)
+	ly.GateFromAct(ltime)
 	ly.SendGateStates()
 }
 
-// GateFmAct updates GateState from current activations, at time of gating
-func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
+// GateFromAct updates GateState from current activations, at time of gating
+func (ly *GPiThalLayer) GateFromAct(ltime *leabra.Time) {
 	gateQtr := ly.Timing.GateQtr.HasFlag(ltime.Quarter)
 	qtrCyc := ltime.QuarterCycle()
 	for ni := range ly.Neurons {

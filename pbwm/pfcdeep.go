@@ -177,8 +177,8 @@ func (ly *PFCDeepLayer) InitActs() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *PFCDeepLayer) GFromInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -187,16 +187,16 @@ func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
 		}
 		pnr := &ly.PFCNeurs[ni]
 		geRaw := nrn.GeRaw + pnr.MaintGe
-		ly.Act.GeFmRaw(nrn, geRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, geRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
 // PFC extends to call Gating.
-func (ly *PFCDeepLayer) ActFmG(ltime *leabra.Time) {
-	ly.GateLayer.ActFmG(ltime)
+func (ly *PFCDeepLayer) ActFromG(ltime *leabra.Time) {
+	ly.GateLayer.ActFromG(ltime)
 	ly.Gating(ltime)
 }
 

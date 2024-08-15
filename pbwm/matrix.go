@@ -113,9 +113,9 @@ func (ly *MatrixLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
 
-// DALrnFmDA returns effective learning dopamine value from given raw DA value
+// DALrnFromDA returns effective learning dopamine value from given raw DA value
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
-func (ly *MatrixLayer) DALrnFmDA(da float32) float32 {
+func (ly *MatrixLayer) DALrnFromDA(da float32) float32 {
 	if da > 0 {
 		da *= ly.Matrix.BurstGain
 	} else {
@@ -189,10 +189,10 @@ func (ly *MatrixLayer) InitActs() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// InhibiFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+// InhibiFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 // Matrix version applies OutAChInhib to bias output gating on reward trials
-func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
-	ly.GateLayer.InhibFmGeAct(ltime)
+func (ly *MatrixLayer) InhibFromGeAct(ltime *leabra.Time) {
+	ly.GateLayer.InhibFromGeAct(ltime)
 
 	if ly.Matrix.OutAChInhib == 0 {
 		return
@@ -220,16 +220,16 @@ func (ly *MatrixLayer) InhibFmGeAct(ltime *leabra.Time) {
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
-// Matrix extends to call DaAChFmLay
-func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
-	ly.DaAChFmLay(ltime)
-	ly.GateLayer.ActFmG(ltime)
+// Matrix extends to call DaAChFromLay
+func (ly *MatrixLayer) ActFromG(ltime *leabra.Time) {
+	ly.DaAChFromLay(ltime)
+	ly.GateLayer.ActFromG(ltime)
 }
 
-// DaAChFmLay computes Da and ACh from layer and Shunt received from PatchLayer units
-func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
+// DaAChFromLay computes Da and ACh from layer and Shunt received from PatchLayer units
+func (ly *MatrixLayer) DaAChFromLay(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -244,7 +244,7 @@ func (ly *MatrixLayer) DaAChFmLay(ltime *leabra.Time) {
 				mnr.ACh *= ly.Matrix.PatchShunt
 			}
 		}
-		mnr.DALrn = ly.DALrnFmDA(mnr.DA)
+		mnr.DALrn = ly.DALrnFromDA(mnr.DA)
 	}
 }
 

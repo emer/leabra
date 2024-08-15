@@ -51,10 +51,10 @@ type ActParams struct {
 	// sodium-gated potassium channel adaptation parameters -- activates an inhibitory leak-like current as a function of neural activity (firing = Na influx) at three different time-scales (M-type = fast, Slick = medium, Slack = slow)
 	KNa knadapt.Params `display:"no-inline"`
 
-	// Erev - Act.Thr for each channel -- used in computing GeThrFmG among others
+	// Erev - Act.Thr for each channel -- used in computing GeThrFromG among others
 	ErevSubThr chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 
-	// Act.Thr - Erev for each channel -- used in computing GeThrFmG among others
+	// Act.Thr - Erev for each channel -- used in computing GeThrFromG among others
 	ThrSubErev chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
@@ -75,8 +75,8 @@ func (ac *ActParams) Defaults() {
 
 // Update must be called after any changes to parameters
 func (ac *ActParams) Update() {
-	ac.ErevSubThr.SetFmOtherMinus(ac.Erev, ac.XX1.Thr)
-	ac.ThrSubErev.SetFmMinusOther(ac.XX1.Thr, ac.Erev)
+	ac.ErevSubThr.SetFromOtherMinus(ac.Erev, ac.XX1.Thr)
+	ac.ThrSubErev.SetFromMinusOther(ac.XX1.Thr, ac.Erev)
 
 	ac.XX1.Update()
 	ac.OptThresh.Update()
@@ -158,9 +158,9 @@ func (ac *ActParams) InitActQs(nrn *Neuron) {
 ///////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GeFmRaw integrates Ge excitatory conductance from GeRaw value
+// GeFromRaw integrates Ge excitatory conductance from GeRaw value
 // (can add other terms to geRaw prior to calling this)
-func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
+func (ac *ActParams) GeFromRaw(nrn *Neuron, geRaw float32) {
 	if !ac.Clamp.Hard && nrn.HasFlag(NeurHasExt) {
 		if ac.Clamp.Avg {
 			geRaw = ac.Clamp.AvgGe(nrn.Ext, geRaw)
@@ -169,7 +169,7 @@ func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 		}
 	}
 
-	ac.Dt.GFmRaw(geRaw, &nrn.Ge)
+	ac.Dt.GFromRaw(geRaw, &nrn.Ge)
 	// first place noise is required -- generate here!
 	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != randx.Mean {
 		nrn.Noise = float32(ac.Noise.Gen())
@@ -179,26 +179,26 @@ func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 	}
 }
 
-// GiFmRaw integrates GiSyn inhibitory synaptic conductance from GiRaw value
+// GiFromRaw integrates GiSyn inhibitory synaptic conductance from GiRaw value
 // (can add other terms to geRaw prior to calling this)
-func (ac *ActParams) GiFmRaw(nrn *Neuron, giRaw float32) {
-	ac.Dt.GFmRaw(giRaw, &nrn.GiSyn)
+func (ac *ActParams) GiFromRaw(nrn *Neuron, giRaw float32) {
+	ac.Dt.GFromRaw(giRaw, &nrn.GiSyn)
 	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
 }
 
-// InetFmG computes net current from conductances and Vm
-func (ac *ActParams) InetFmG(vm, ge, gi, gk float32) float32 {
+// InetFromG computes net current from conductances and Vm
+func (ac *ActParams) InetFromG(vm, ge, gi, gk float32) float32 {
 	return ge*(ac.Erev.E-vm) + ac.Gbar.L*(ac.Erev.L-vm) + gi*(ac.Erev.I-vm) + gk*(ac.Erev.K-vm)
 }
 
-// VmFmG computes membrane potential Vm from conductances Ge, Gi, and Gk.
+// VmFromG computes membrane potential Vm from conductances Ge, Gi, and Gk.
 // The Vm value is only used in pure rate-code computation within the sub-threshold regime
 // because firing rate is a direct function of excitatory conductance Ge.
-func (ac *ActParams) VmFmG(nrn *Neuron) {
+func (ac *ActParams) VmFromG(nrn *Neuron) {
 	ge := nrn.Ge * ac.Gbar.E
 	gi := nrn.Gi * ac.Gbar.I
 	gk := nrn.Gk * ac.Gbar.K
-	nrn.Inet = ac.InetFmG(nrn.Vm, ge, gi, gk)
+	nrn.Inet = ac.InetFromG(nrn.Vm, ge, gi, gk)
 	nwVm := nrn.Vm + ac.Dt.VmDt*nrn.Inet
 
 	if ac.Noise.Type == VmNoise {
@@ -207,20 +207,20 @@ func (ac *ActParams) VmFmG(nrn *Neuron) {
 	nrn.Vm = ac.VmRange.ClipValue(nwVm)
 }
 
-// GeThrFmG computes the threshold for Ge based on all other conductances,
+// GeThrFromG computes the threshold for Ge based on all other conductances,
 // including Gk.  This is used for computing the adapted Act value.
-func (ac *ActParams) GeThrFmG(nrn *Neuron) float32 {
+func (ac *ActParams) GeThrFromG(nrn *Neuron) float32 {
 	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L + ac.Gbar.K*nrn.Gk*ac.ErevSubThr.K) / ac.ThrSubErev.E)
 }
 
-// GeThrFmGnoK computes the threshold for Ge based on other conductances,
+// GeThrFromGnoK computes the threshold for Ge based on other conductances,
 // excluding Gk.  This is used for computing the non-adapted ActLrn value.
-func (ac *ActParams) GeThrFmGnoK(nrn *Neuron) float32 {
+func (ac *ActParams) GeThrFromGnoK(nrn *Neuron) float32 {
 	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L) / ac.ThrSubErev.E)
 }
 
-// ActFmG computes rate-coded activation Act from conductances Ge, Gi, Gk
-func (ac *ActParams) ActFmG(nrn *Neuron) {
+// ActFromG computes rate-coded activation Act from conductances Ge, Gi, Gk
+func (ac *ActParams) ActFromG(nrn *Neuron) {
 	if ac.HasHardClamp(nrn) {
 		ac.HardClamp(nrn)
 		return
@@ -234,9 +234,9 @@ func (ac *ActParams) ActFmG(nrn *Neuron) {
 		nwActLrn = nwAct
 	} else {
 		ge := nrn.Ge * ac.Gbar.E
-		geThr := ac.GeThrFmG(nrn)
+		geThr := ac.GeThrFromG(nrn)
 		nwAct = ac.XX1.NoisyXX1(ge - geThr)
-		geThr = ac.GeThrFmGnoK(nrn)            // excludes K adaptation effect
+		geThr = ac.GeThrFromGnoK(nrn)            // excludes K adaptation effect
 		nwActLrn = ac.XX1.NoisyXX1(ge - geThr) // learning is non-adapted
 	}
 	curAct := nrn.Act
@@ -252,7 +252,7 @@ func (ac *ActParams) ActFmG(nrn *Neuron) {
 	nrn.ActLrn = nwActLrn
 
 	if ac.KNa.On {
-		ac.KNa.GcFmRate(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Act)
+		ac.KNa.GcFromRate(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Act)
 		nrn.Gk = nrn.GknaFast + nrn.GknaMed + nrn.GknaSlow
 	}
 }
@@ -370,7 +370,7 @@ func (dp *DtParams) Defaults() {
 	dp.Update()
 }
 
-func (dp *DtParams) GFmRaw(geRaw float32, ge *float32) {
+func (dp *DtParams) GFromRaw(geRaw float32, ge *float32) {
 	*ge += dp.GDt * (geRaw - *ge)
 }
 

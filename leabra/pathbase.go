@@ -246,7 +246,7 @@ func (pt *Path) SetSynValue(varNm string, sidx, ridx int, val float32) error {
 	sy := &pt.Syns[synIndex]
 	sy.SetVarByIndex(vidx, val)
 	if varNm == "Wt" {
-		pt.Learn.LWtFmWt(sy)
+		pt.Learn.LWtFromWt(sy)
 	}
 	return nil
 }

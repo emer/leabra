@@ -38,8 +38,8 @@ func (np *NMDAParams) VmEff(vm, act float32) float32 {
 	return vm + np.ActVm*act
 }
 
-// GFmV returns the NMDA conductance as a function of normalized membrane potential
-func (np *NMDAParams) GFmV(v float32) float32 {
+// GFromV returns the NMDA conductance as a function of normalized membrane potential
+func (np *NMDAParams) GFromV(v float32) float32 {
 	vbio := math32.Min(v*100-100, 0) // critical to not go past 0
 	return 1 / (1 + 0.28*math32.FastExp(-0.062*vbio))
 }
@@ -51,7 +51,7 @@ func (np *NMDAParams) NMDA(nmda, nmdaSyn float32) float32 {
 
 // Gnmda returns the NMDA net conductance from nmda activation and vm
 func (np *NMDAParams) Gnmda(nmda, vm float32) float32 {
-	return np.Gbar * np.GFmV(vm) * nmda
+	return np.Gbar * np.GFromV(vm) * nmda
 }
 
 ///////////////////////////////////////////////////////////////////////////

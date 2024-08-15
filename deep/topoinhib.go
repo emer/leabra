@@ -120,13 +120,13 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 	}
 }
 
-// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *TopoInhibLayer) InhibFmGeAct(ltime *leabra.Time) {
+// InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *TopoInhibLayer) InhibFromGeAct(ltime *leabra.Time) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime)
+	ly.PoolInhibFromGeAct(ltime)
 	if ly.Is4D() && ly.TopoInhib.On {
 		ly.TopoGi(ltime)
 	}
-	ly.InhibFmPool(ltime)
+	ly.InhibFromPool(ltime)
 }

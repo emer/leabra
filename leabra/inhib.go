@@ -132,8 +132,8 @@ func (aa *ActAvgParams) EffInit() float32 {
 	return aa.Adjust * aa.Init
 }
 
-// AvgFmAct updates the running-average activation given average activity level in layer
-func (aa *ActAvgParams) AvgFmAct(avg *float32, act float32) {
+// AvgFromAct updates the running-average activation given average activity level in layer
+func (aa *ActAvgParams) AvgFromAct(avg *float32, act float32) {
 	if act < 0.0001 {
 		return
 	}
@@ -144,8 +144,8 @@ func (aa *ActAvgParams) AvgFmAct(avg *float32, act float32) {
 	}
 }
 
-// EffFmAvg updates the effective value from the running-average value
-func (aa *ActAvgParams) EffFmAvg(eff *float32, avg float32) {
+// EffFromAvg updates the effective value from the running-average value
+func (aa *ActAvgParams) EffFromAvg(eff *float32, avg float32) {
 	if aa.Fixed {
 		*eff = aa.Init
 	} else {

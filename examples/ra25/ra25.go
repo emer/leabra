@@ -349,7 +349,7 @@ func (ss *Sim) NewRndSeed() {
 // AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
 // External inputs must have already been applied prior to calling,
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
-// If train is true, then learning DWt or WtFmDWt calls are made.
+// If train is true, then learning DWt or WtFromDWt calls are made.
 // Handles netview updating within scope of AlphaCycle
 func (ss *Sim) AlphaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
@@ -374,7 +374,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	if train {
 		ss.Net.DWt()
 		ss.ViewUpdate.RecordSyns() // note: critical to update weights here so DWt is visible
-		ss.Net.WtFmDWt()
+		ss.Net.WtFromDWt()
 	}
 	ss.ViewUpdate.UpdateTime(etime.AlphaCycle)
 	if !train {

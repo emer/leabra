@@ -23,12 +23,12 @@ type CtxtSender interface {
 // CTCtxtPath is the "context" temporally delayed pathway into CTLayer,
 // (corticothalamic deep layer 6) where the CtxtGe excitatory input
 // is integrated only at end of Burst Quarter.
-// Set FmSuper for the main pathway from corresponding Super layer.
+// Set FromSuper for the main pathway from corresponding Super layer.
 type CTCtxtPath struct {
 	leabra.Path // access as .Path
 
-	// if true, this is the pathway from corresponding Superficial layer -- should be OneToOne path, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true
-	FmSuper bool
+	// if true, this is the pathway from corresponding Superficial layer -- should be OneToOne path, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FromSuper = true
+	FromSuper bool
 
 	// local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value
 	CtxtGeInc []float32
@@ -36,7 +36,7 @@ type CTCtxtPath struct {
 
 func (pj *CTCtxtPath) Defaults() {
 	pj.Path.Defaults()
-	if pj.FmSuper {
+	if pj.FromSuper {
 		pj.Learn.Learn = false
 		pj.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
 		pj.WtInit.Var = 0
@@ -157,10 +157,10 @@ func (pj *CTCtxtPath) DWt() {
 			dwt := bcm + err
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}

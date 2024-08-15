@@ -78,12 +78,12 @@ func AddTRCLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nN
 }
 
 // ConnectSuperToCT adds a CTCtxtPath from given sending Super layer to a CT layer
-// This automatically sets the FmSuper flag to engage proper defaults,
-// uses a OneToOne path pattern, and sets the class to CTFmSuper
+// This automatically sets the FromSuper flag to engage proper defaults,
+// uses a OneToOne path pattern, and sets the class to CTFromSuper
 func ConnectSuperToCT(nt *leabra.Network, send, recv emer.Layer) emer.Path {
 	pj := nt.ConnectLayersPath(send, recv, paths.NewOneToOne(), CTCtxt, &CTCtxtPath{}).(*CTCtxtPath)
-	pj.SetClass("CTFmSuper")
-	pj.FmSuper = true
+	pj.SetClass("CTFromSuper")
+	pj.FromSuper = true
 	return pj
 }
 
@@ -94,11 +94,11 @@ func ConnectCtxtToCT(nt *leabra.Network, send, recv emer.Layer, pat paths.Patter
 }
 
 // ConnectSuperToCTFake adds a FAKE CTCtxtPath from given sending Super layer to a CT layer
-// uses a OneToOne path pattern, and sets the class to CTFmSuper.
+// uses a OneToOne path pattern, and sets the class to CTFromSuper.
 // This does NOT make a CTCtxtPath -- instead makes a regular leabra.Path -- for testing!
 func ConnectSuperToCTFake(nt *leabra.Network, send, recv emer.Layer) emer.Path {
 	pj := nt.ConnectLayers(send, recv, paths.NewOneToOne(), CTCtxt)
-	pj.SetClass("CTFmSuper")
+	pj.SetClass("CTFromSuper")
 	return pj
 }
 
@@ -110,7 +110,7 @@ func ConnectCtxtToCTFake(nt *leabra.Network, send, recv emer.Layer, pat paths.Pa
 
 // AddDeep2D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPath OneToOne pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, type = Back, class = FmPulv
+// TRC projects back to Super and CT layers, type = Back, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, trc emer.Layer) {
@@ -123,14 +123,14 @@ func AddDeep2D(nt *leabra.Network, name string, shapeY, shapeX int) (super, ct, 
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, full, leabra.ForwardPath)
-	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FmPulv")
-	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FromPulv")
+	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FromPulv")
 	return
 }
 
 // AddDeep4D adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPath OneToOne pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, also PoolOneToOne, class = FmPulv
+// TRC projects back to Super and CT layers, also PoolOneToOne, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) (super, ct, trc emer.Layer) {
@@ -143,8 +143,8 @@ func AddDeep4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, pone2one, leabra.ForwardPath)
-	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FmPulv")
-	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FromPulv")
+	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FromPulv")
 	return
 }
 
@@ -172,7 +172,7 @@ func AddDeepNoTRC4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, n
 
 // AddDeep2DFakeCT adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with FAKE CTCtxtPath OneToOne pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, type = Back, class = FmPulv
+// TRC projects back to Super and CT layers, type = Back, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 // This does NOT make a CTCtxtPath -- instead makes a regular leabra.Path -- for testing!
@@ -186,14 +186,14 @@ func AddDeep2DFakeCT(nt *leabra.Network, name string, shapeY, shapeX int) (super
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, full, leabra.ForwardPath)
-	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FmPulv")
-	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, full, BackPath).SetClass("FromPulv")
+	nt.ConnectLayers(trc, ct, full, BackPath).SetClass("FromPulv")
 	return
 }
 
 // AddDeep4DFakeCT adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with FAKE CTCtxtPath OneToOne pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, also PoolOneToOne, class = FmPulv
+// TRC projects back to Super and CT layers, also PoolOneToOne, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 // This does NOT make a CTCtxtPath -- instead makes a regular leabra.Path -- for testing!
@@ -207,8 +207,8 @@ func AddDeep4DFakeCT(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, 
 	trc = trci
 	trci.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: name + "CT", XAlign: relpos.Left, Space: 2})
 	nt.ConnectLayers(ct, trc, pone2one, leabra.ForwardPath)
-	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FmPulv")
-	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FmPulv")
+	nt.ConnectLayers(trc, super, pone2one, BackPath).SetClass("FromPulv")
+	nt.ConnectLayers(trc, ct, pone2one, BackPath).SetClass("FromPulv")
 	return
 }
 
@@ -217,7 +217,7 @@ func AddDeep4DFakeCT(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, 
 
 // AddDeep2DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPath Full pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, type = Back, class = FmPulv
+// TRC projects back to Super and CT layers, type = Back, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 // Py is Python version, returns layers as a slice
@@ -228,7 +228,7 @@ func AddDeep2DPy(nt *leabra.Network, name string, shapeY, shapeX int) []emer.Lay
 
 // AddDeep4DPy adds a superficial (SuperLayer) and corresponding CT (CT suffix) layer
 // with CTCtxtPath PoolOneToOne pathway from Super to CT, and TRC Pulvinar for Super (P suffix).
-// TRC projects back to Super and CT layers, also PoolOneToOne, class = FmPulv
+// TRC projects back to Super and CT layers, also PoolOneToOne, class = FromPulv
 // CT is placed Behind Super, and Pulvinar behind CT.
 // Drivers must be added to the TRC layer, and it must be sized appropriately for those drivers.
 // Py is Python version, returns layers as a slice
@@ -328,7 +328,7 @@ func (nt *Network) CTCtxt(ltime *leabra.Time) {
 
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if dl, ok := ly.(*CTLayer); ok {
-			dl.CtxtFmGe(ltime)
+			dl.CtxtFromGe(ltime)
 		}
-	}, "CtxtFmGe")
+	}, "CtxtFromGe")
 }

@@ -25,6 +25,7 @@ import (
 	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tensor/tensormpi"
 	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/etime"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
@@ -189,10 +190,10 @@ type Sim struct {
 	ViewOn bool
 
 	// at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model
-	TrainUpdate leabra.TimeScales
+	TrainUpdate etime.Times
 
 	// at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model
-	TestUpdate leabra.TimeScales
+	TestUpdate etime.Times
 
 	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
 	TestInterval int
@@ -469,7 +470,7 @@ func (ss *Sim) UpdateView(train bool) {
 // AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
 // External inputs must have already been applied prior to calling,
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
-// If train is true, then learning DWt or WtFmDWt calls are made.
+// If train is true, then learning DWt or WtFromDWt calls are made.
 // Handles netview updating within scope of AlphaCycle
 func (ss *Sim) AlphaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
@@ -483,7 +484,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.
 	if train {
-		ss.MPIWtFmDWt() // special MPI version
+		ss.MPIWtFromDWt() // special MPI version
 	}
 
 	ss.Net.AlphaCycInit(train)
@@ -1760,10 +1761,10 @@ func (ss *Sim) CollectDWts(net *leabra.Network) {
 	}
 }
 
-// MPIWtFmDWt updates weights from weight changes, using MPI to integrate
+// MPIWtFromDWt updates weights from weight changes, using MPI to integrate
 // DWt changes across parallel nodes, each of which are learning on different
 // sequences of inputs.
-func (ss *Sim) MPIWtFmDWt() {
+func (ss *Sim) MPIWtFromDWt() {
 	if ss.UseMPI {
 		ss.CollectDWts(ss.Net)
 		ndw := len(ss.AllDWts)
@@ -1773,5 +1774,5 @@ func (ss *Sim) MPIWtFmDWt() {
 		ss.Comm.AllReduceF32(mpi.OpSum, ss.SumDWts, ss.AllDWts)
 		ss.Net.SetDWts(ss.SumDWts)
 	}
-	ss.Net.WtFmDWt()
+	ss.Net.WtFromDWt()
 }

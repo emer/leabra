@@ -56,9 +56,9 @@ func (kc *CaParams) Defaults() {
 	kc.CaTau = 50   // 185.7
 }
 
-// KCaGFmCa returns the driving conductance for KCa channels based on given Ca level.
+// KCaGFromCa returns the driving conductance for KCa channels based on given Ca level.
 // This equation comes from Gillies & Willshaw, 2006.
-func (kc *CaParams) KCaGFmCa(ca float32) float32 {
+func (kc *CaParams) KCaGFromCa(ca float32) float32 {
 	return 0.81 / (1 + math32.Exp(-(math32.Log(ca)+0.3))/0.46)
 }
 
@@ -186,17 +186,17 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 	}
 }
 
-func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
-	for ni := range ly.Neurons { // note: copied from leabra ActFmG, not calling it..
+func (ly *STNLayer) ActFromG(ltime *leabra.Time) {
+	for ni := range ly.Neurons { // note: copied from leabra ActFromG, not calling it..
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
+		ly.Act.VmFromG(nrn)
+		ly.Act.ActFromG(nrn)
 
 		snr := &ly.STNNeurs[ni]
-		snr.KCa += (ly.Ca.KCaGFmCa(snr.Ca) - snr.KCa) / ly.Ca.KCaTau
+		snr.KCa += (ly.Ca.KCaGFromCa(snr.Ca) - snr.KCa) / ly.Ca.KCaTau
 		dCa := -snr.Ca / ly.Ca.CaTau
 		if nrn.Act >= ly.Ca.BurstThr {
 			dCa += ly.Ca.BurstCa
@@ -207,7 +207,7 @@ func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
 		snr.Ca += dCa
 		nrn.Gk = ly.Ca.GbarKCa * snr.KCa
 
-		ly.Learn.AvgsFmAct(nrn)
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 

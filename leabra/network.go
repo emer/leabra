@@ -51,8 +51,8 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 func (nt *Network) Cycle(ltime *Time) {
 	nt.SendGDelta(ltime) // also does integ
 	nt.AvgMaxGe(ltime)
-	nt.InhibFmGeAct(ltime)
-	nt.ActFmG(ltime)
+	nt.InhibFromGeAct(ltime)
+	nt.ActFromG(ltime)
 	nt.AvgMaxAct(ltime)
 	for _, ly := range nt.Layers {
 		if ly.Off {
@@ -78,7 +78,7 @@ func (nt *Network) SendGDelta(ltime *Time) {
 		if ly.Off {
 			continue
 		}
-		ly.GFmInc(ltime)
+		ly.GFromInc(ltime)
 	}
 }
 
@@ -92,23 +92,23 @@ func (nt *Network) AvgMaxGe(ltime *Time) {
 	}
 }
 
-// InhibiFmGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
-func (nt *Network) InhibFmGeAct(ltime *Time) {
+// InhibiFromGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
+func (nt *Network) InhibFromGeAct(ltime *Time) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.InhibFmGeAct(ltime)
+		ly.InhibFromGeAct(ltime)
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
-func (nt *Network) ActFmG(ltime *Time) {
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
+func (nt *Network) ActFromG(ltime *Time) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.ActFmG(ltime)
+		ly.ActFromG(ltime)
 	}
 }
 
@@ -122,13 +122,33 @@ func (nt *Network) AvgMaxAct(ltime *Time) {
 	}
 }
 
-// QuarterFinal does updating after end of a quarter
+// QuarterFinal does updating after end of a quarter, for first 2
 func (nt *Network) QuarterFinal(ltime *Time) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
 		ly.QuarterFinal(ltime)
+	}
+}
+
+// MinusPhase is called at the end of the minus phase (quarter 3), to record state.
+func (nt *Network) MinusPhase(ltime *Time) {
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.MinusPhase(ltime)
+	}
+}
+
+// PlusPhase is called at the end of the plus phase (quarter 4), to record state.
+func (nt *Network) PlusPhase(ltime *Time) {
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.PlusPhase(ltime)
 	}
 }
 
@@ -146,14 +166,14 @@ func (nt *Network) DWt() {
 	}
 }
 
-// WtFmDWt updates the weights from delta-weight changes.
-// Also calls WtBalFmWt every WtBalInterval times
-func (nt *Network) WtFmDWt() {
+// WtFromDWt updates the weights from delta-weight changes.
+// Also calls WtBalFromWt every WtBalInterval times
+func (nt *Network) WtFromDWt() {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.WtFmDWt()
+		ly.WtFromDWt()
 	}
 
 	nt.WtBalCtr++
@@ -164,7 +184,7 @@ func (nt *Network) WtFmDWt() {
 				continue
 			}
 
-			ly.WtBalFmWt()
+			ly.WtBalFromWt()
 		}
 	}
 }
@@ -297,19 +317,19 @@ func (nt *Network) InitGInc() {
 	}
 }
 
-// GScaleFmAvgAct computes the scaling factor for synaptic input conductances G,
+// GScaleFromAvgAct computes the scaling factor for synaptic input conductances G,
 // based on sending layer average activation.
 // This attempts to automatically adjust for overall differences in raw activity
 // coming into the units to achieve a general target of around .5 to 1
 // for the integrated Ge value.
 // This is automatically done during AlphaCycInit, but if scaling parameters are
 // changed at any point thereafter during AlphaCyc, this must be called.
-func (nt *Network) GScaleFmAvgAct() {
+func (nt *Network) GScaleFromAvgAct() {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.GScaleFmAvgAct()
+		ly.GScaleFromAvgAct()
 	}
 }
 

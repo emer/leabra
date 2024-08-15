@@ -53,6 +53,16 @@ func (nt *Network) LayerByName(name string) *Layer {
 	return ely.(*Layer)
 }
 
+// LayersByType returns a list of layer names by given layer type(s).
+func (nt *Network) LayersByType(layType ...LayerTypes) []string {
+	var nms []string
+	for _, tp := range layType {
+		nm := tp.String()
+		nms = append(nms, nm)
+	}
+	return nt.LayersByClass(nms...)
+}
+
 // KeyLayerParams returns a listing for all layers in the network,
 // of the most important layer-level params (specific to each algorithm).
 func (nt *Network) KeyLayerParams() string {

@@ -55,15 +55,15 @@ func (ly *AlphaMaxLayer) AlphaCycInit(updtActAvg bool) {
 	ly.InitAlphaMax()
 }
 
-func (ly *AlphaMaxLayer) ActFmG(ltime *leabra.Time) {
-	ly.Layer.ActFmG(ltime)
+func (ly *AlphaMaxLayer) ActFromG(ltime *leabra.Time) {
+	ly.Layer.ActFromG(ltime)
 	if ltime.Cycle >= ly.AlphaMaxCyc {
-		ly.AlphaMaxFmAct(ltime)
+		ly.AlphaMaxFromAct(ltime)
 	}
 }
 
-// AlphaMaxFmAct computes AlphaMax from Activation
-func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
+// AlphaMaxFromAct computes AlphaMax from Activation
+func (ly *AlphaMaxLayer) AlphaMaxFromAct(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -74,8 +74,8 @@ func (ly *AlphaMaxLayer) AlphaMaxFmAct(ltime *leabra.Time) {
 	}
 }
 
-// ActLrnFmAlphaMax sets ActLrn to AlphaMax
-func (ly *AlphaMaxLayer) ActLrnFmAlphaMax() {
+// ActLrnFromAlphaMax sets ActLrn to AlphaMax
+func (ly *AlphaMaxLayer) ActLrnFromAlphaMax() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

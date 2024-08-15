@@ -103,8 +103,8 @@ func (tp *TRCParams) DriveGe(act float32) float32 {
 	}
 }
 
-// GeFmMaxAvg returns the drive Ge value as function of max and average
-func (tp *TRCParams) GeFmMaxAvg(max, avg float32) float32 {
+// GeFromMaxAvg returns the drive Ge value as function of max and average
+func (tp *TRCParams) GeFromMaxAvg(max, avg float32) float32 {
 	deff := (1-tp.AvgMix)*max + tp.AvgMix*avg
 	return tp.DriveGe(deff)
 }
@@ -230,7 +230,7 @@ func DriveAct(dni int, dly *leabra.Layer, sly *SuperLayer, issuper bool) float32
 }
 
 // SetDriverNeuron sets the driver activation for given Neuron,
-// based on given Ge driving value (use DriveFmMaxAvg) from driver layer (Burst or Act)
+// based on given Ge driving value (use DriveFromMaxAvg) from driver layer (Burst or Act)
 func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 	if tni >= len(ly.Neurons) {
 		return
@@ -240,8 +240,8 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
-	ly.Act.GeFmRaw(nrn, geRaw)
-	ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+	ly.Act.GeFromRaw(nrn, geRaw)
+	ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 }
 
 // SetDriverActs sets the driver activations, integrating across all the driver layers
@@ -264,7 +264,7 @@ func (ly *TRCLayer) SetDriverActs() {
 				for dni := range dly.Neurons {
 					tni := drv.Off + dni
 					drvAct := DriveAct(dni, dly, sly, issuper)
-					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 				}
 			} else { // copy flat to all pools -- not typical
 				for dni := range dly.Neurons {
@@ -273,7 +273,7 @@ func (ly *TRCLayer) SetDriverActs() {
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
 							pni := (py*pxn+px)*nun + tni
-							ly.SetDriverNeuron(pni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
+							ly.SetDriverNeuron(pni, ly.TRC.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 						}
 					}
 				}
@@ -305,7 +305,7 @@ func (ly *TRCLayer) SetDriverActs() {
 						avg /= float32(avgn)
 					}
 					tni := drv.Off + dni
-					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(max, avg), drvInhib)
 				}
 			} else if ly.TRC.NoTopo { // ly is 4D
 				for dni := 0; dni < dnun; dni++ {
@@ -328,7 +328,7 @@ func (ly *TRCLayer) SetDriverActs() {
 					if avgn > 0 {
 						avg /= float32(avgn)
 					}
-					drvGe := ly.TRC.GeFmMaxAvg(max, avg)
+					drvGe := ly.TRC.GeFromMaxAvg(max, avg)
 					tni := drv.Off + dni
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
@@ -368,7 +368,7 @@ func (ly *TRCLayer) SetDriverActs() {
 								avg /= float32(avgn)
 							}
 							tni := pni + drv.Off + dni
-							ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
+							ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(max, avg), drvInhib)
 						}
 					}
 				}
@@ -377,11 +377,11 @@ func (ly *TRCLayer) SetDriverActs() {
 	}
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *TRCLayer) GFmInc(ltime *leabra.Time) {
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *TRCLayer) GFromInc(ltime *leabra.Time) {
 	ly.RecvGInc(ltime)
 	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.HasFlag(ltime.Quarter) {
-		ly.GFmIncNeur(ltime) // regular
+		ly.GFromIncNeur(ltime) // regular
 		return
 	}
 	ly.SetDriverActs()

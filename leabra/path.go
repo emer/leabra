@@ -74,7 +74,7 @@ func (pt *Path) SetWtsFunc(wtFun func(si, ri int, send, recv *tensor.Shape) floa
 			rsi := pt.RSynIndex[st+ci]
 			sy := &pt.Syns[rsi]
 			sy.Wt = wt * sy.Scale
-			pt.Learn.LWtFmWt(sy)
+			pt.Learn.LWtFromWt(sy)
 		}
 	}
 }
@@ -115,7 +115,7 @@ func (pt *Path) InitWeightsSyn(syn *Synapse) {
 	if syn.Wt > 1 {
 		syn.Wt = 1
 	}
-	syn.LWt = pt.Learn.WtSig.LinFmSigWt(syn.Wt)
+	syn.LWt = pt.Learn.WtSig.LinFromSigWt(syn.Wt)
 	syn.Wt *= syn.Scale // note: scale comes after so LWt is always "pure" non-scaled value
 	syn.DWt = 0
 	syn.Norm = 0
@@ -180,7 +180,7 @@ func (pt *Path) InitWtSym(rpt *Path) {
 						rsy.Wt = sy.Wt
 						rsy.LWt = sy.LWt
 						rsy.Scale = sy.Scale
-						// note: if we support SymFmTop then can have option to go other way
+						// note: if we support SymFromTop then can have option to go other way
 						break
 					}
 					up++
@@ -194,7 +194,7 @@ func (pt *Path) InitWtSym(rpt *Path) {
 						rsy.Wt = sy.Wt
 						rsy.LWt = sy.LWt
 						rsy.Scale = sy.Scale
-						// note: if we support SymFmTop then can have option to go other way
+						// note: if we support SymFromTop then can have option to go other way
 						break
 					}
 					dn--
@@ -280,10 +280,10 @@ func (pt *Path) DWt() {
 			dwt := bcm + err
 			norm := float32(1)
 			if pt.Learn.Norm.On {
-				norm = pt.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pt.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pt.Learn.Momentum.On {
-				dwt = norm * pt.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pt.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -306,8 +306,8 @@ func (pt *Path) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
-func (pt *Path) WtFmDWt() {
+// WtFromDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pt *Path) WtFromDWt() {
 	if !pt.Learn.Learn {
 		return
 	}
@@ -316,18 +316,18 @@ func (pt *Path) WtFmDWt() {
 			sy := &pt.Syns[si]
 			ri := pt.SConIndex[si]
 			wb := &pt.WbRecv[ri]
-			pt.Learn.WtFmDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
+			pt.Learn.WtFromDWt(wb.Inc, wb.Dec, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	} else {
 		for si := range pt.Syns {
 			sy := &pt.Syns[si]
-			pt.Learn.WtFmDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
+			pt.Learn.WtFromDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
 		}
 	}
 }
 
-// WtBalFmWt computes the Weight Balance factors based on average recv weights
-func (pt *Path) WtBalFmWt() {
+// WtBalFromWt computes the Weight Balance factors based on average recv weights
+func (pt *Path) WtBalFromWt() {
 	if !pt.Learn.Learn || !pt.Learn.WtBal.On {
 		return
 	}

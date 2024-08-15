@@ -64,8 +64,8 @@ the layer.go code should provide a clear sense of exactly how everything is comp
 you may need to the refer to act.go, learn.go etc to see the relevant details but at
 least the overall organization should be clear in layer.go.
 
-Computational methods are generally named: VarFmVar to specifically name what variable
-is being computed from what other input variables.  e.g., ActFmG computes activation from
+Computational methods are generally named: VarFromVar to specifically name what variable
+is being computed from what other input variables.  e.g., ActFromG computes activation from
 conductances G.
 
 The Pools (type Pool, in pool.go) hold state used for computing pooled inhibition, but also are

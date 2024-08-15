@@ -130,8 +130,8 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	return laymax
 }
 
-func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
-	ly.TopoInhibLayer.ActFmG(ltime)
+func (ly *SuperLayer) ActFromG(ltime *leabra.Time) {
+	ly.TopoInhibLayer.ActFromG(ltime)
 	if !ly.Attn.On {
 		return
 	}
@@ -178,15 +178,15 @@ func (ly *SuperLayer) BurstPrv() {
 	}
 }
 
-// CyclePost calls BurstFmAct
+// CyclePost calls BurstFromAct
 func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
 	ly.TopoInhibLayer.CyclePost(ltime)
-	ly.BurstFmAct(ltime)
+	ly.BurstFromAct(ltime)
 }
 
-// BurstFmAct updates Burst layer 5IB bursting value from current Act
+// BurstFromAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
-func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
+func (ly *SuperLayer) BurstFromAct(ltime *leabra.Time) {
 	if !ly.Burst.BurstQtr.HasFlag(ltime.Quarter) {
 		return
 	}

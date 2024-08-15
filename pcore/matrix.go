@@ -158,11 +158,11 @@ func (ly *MatrixLayer) InitActs() {
 	ly.ACh = 0
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
-// Matrix extends to call DALrnFmDA and updates AlphaMax -> ActLrn
-func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
-	ly.Layer.ActFmG(ltime)
+// Matrix extends to call DALrnFromDA and updates AlphaMax -> ActLrn
+func (ly *MatrixLayer) ActFromG(ltime *leabra.Time) {
+	ly.Layer.ActFromG(ltime)
 	ly.DAActLrn(ltime)
 }
 
@@ -362,13 +362,13 @@ func (pj *MatrixPath) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}

@@ -27,6 +27,7 @@ import (
 	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tensor/tensorcore"
 	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/etime"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
@@ -89,7 +90,7 @@ var ParamSets = params.Sets{
 					"Layer.Act.Clamp.Range.Min": "-1",
 					"Layer.Act.Clamp.Range.Max": "1",
 				}},
-			{Sel: ".PFCFmDeep", Desc: "PFC Deep -> PFC fixed",
+			{Sel: ".PFCFromDeep", Desc: "PFC Deep -> PFC fixed",
 				Params: params.Params{
 					"Path.Learn.Learn": "false",
 					"Path.WtInit.Mean": "0.8",
@@ -103,7 +104,7 @@ var ParamSets = params.Sets{
 					"Path.WtInit.Var":  "0",
 					"Path.WtInit.Sym":  "false",
 				}},
-			{Sel: ".FmPFCOutD", Desc: "PFC OutD needs to be strong b/c avg act says weak",
+			{Sel: ".FromPFCOutD", Desc: "PFC OutD needs to be strong b/c avg act says weak",
 				Params: params.Params{
 					"Path.WtScale.Abs": "4",
 				}},
@@ -270,10 +271,10 @@ type Sim struct {
 	ViewOn bool
 
 	// at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model
-	TrainUpdate leabra.TimeScales
+	TrainUpdate etime.Times
 
 	// at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model
-	TestUpdate leabra.TimeScales
+	TestUpdate etime.Times
 
 	// names of layers to record activations etc of during testing
 	TstRecLays []string
@@ -531,9 +532,9 @@ func (ss *Sim) ConfigNet(net *pbwm.Network) {
 	net.ConnectLayers(ctrl, hid, full, leabra.ForwardPath)
 	net.BidirConnectLayers(hid, out, full)
 	pj = net.ConnectLayers(pfcOutD, hid, full, leabra.ForwardPath)
-	pj.SetClass("FmPFCOutD")
+	pj.SetClass("FromPFCOutD")
 	pj = net.ConnectLayers(pfcOutD, out, full, leabra.ForwardPath)
-	pj.SetClass("FmPFCOutD")
+	pj.SetClass("FromPFCOutD")
 	net.ConnectLayers(inp, out, full, leabra.ForwardPath)
 
 	snc.SendDA.AddAllBut(net) // send dopamine to all layers..
@@ -592,7 +593,7 @@ func (ss *Sim) UpdateView(train bool) {
 // AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
 // External inputs must have already been applied prior to calling,
 // using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
-// If train is true, then learning DWt or WtFmDWt calls are made.
+// If train is true, then learning DWt or WtFromDWt calls are made.
 // Handles netview updating within scope of AlphaCycle
 func (ss *Sim) AlphaCyc(train bool) {
 	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
@@ -606,7 +607,7 @@ func (ss *Sim) AlphaCyc(train bool) {
 	// in which case, move it out to the TrainTrial method where the relevant
 	// counters are being dealt with.
 	if train {
-		ss.Net.WtFmDWt()
+		ss.Net.WtFromDWt()
 	}
 
 	ss.Net.AlphaCycInit(train)

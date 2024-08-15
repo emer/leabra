@@ -37,8 +37,8 @@ func (ly *RWPredLayer) Defaults() {
 func (ly *RWPredLayer) GetDA() float32   { return ly.DA }
 func (ly *RWPredLayer) SetDA(da float32) { ly.DA = da }
 
-// ActFmG computes linear activation for RWPred
-func (ly *RWPredLayer) ActFmG(ltime *leabra.Time) {
+// ActFromG computes linear activation for RWPred
+func (ly *RWPredLayer) ActFromG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -117,7 +117,7 @@ func (ly *RWDaLayer) Build() error {
 	return err
 }
 
-func (ly *RWDaLayer) ActFmG(ltime *leabra.Time) {
+func (ly *RWDaLayer) ActFromG(ltime *leabra.Time) {
 	rly, ply, _ := ly.RWLayers()
 	if rly == nil || ply == nil {
 		return
@@ -210,10 +210,10 @@ func (pj *RWPath) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -236,8 +236,8 @@ func (pj *RWPath) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
-func (pj *RWPath) WtFmDWt() {
+// WtFromDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *RWPath) WtFromDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

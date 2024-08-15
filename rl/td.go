@@ -27,8 +27,8 @@ type TDRewPredLayer struct {
 func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
 func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 
-// ActFmG computes linear activation for TDRewPred
-func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
+// ActFromG computes linear activation for TDRewPred
+func (ly *TDRewPredLayer) ActFromG(ltime *leabra.Time) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -106,7 +106,7 @@ func (ly *TDRewIntegLayer) Build() error {
 	return err
 }
 
-func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
+func (ly *TDRewIntegLayer) ActFromG(ltime *leabra.Time) {
 	rply, _ := ly.RewPredLayer()
 	if rply == nil {
 		return
@@ -180,7 +180,7 @@ func (ly *TDDaLayer) Build() error {
 	return err
 }
 
-func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
+func (ly *TDDaLayer) ActFromG(ltime *leabra.Time) {
 	rily, _ := ly.RewIntegLayer()
 	if rily == nil {
 		return
@@ -252,10 +252,10 @@ func (pj *TDRewPredPath) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, math32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -278,8 +278,8 @@ func (pj *TDRewPredPath) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
-func (pj *TDRewPredPath) WtFmDWt() {
+// WtFromDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *TDRewPredPath) WtFromDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

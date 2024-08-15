@@ -169,16 +169,16 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	nt.ConnectLayers(mtxGo, gpi, one2one, InhibPath)
 
 	pj = nt.ConnectLayers(stnp, gpeOut, one2one, leabra.ForwardPath)
-	pj.SetClass("FmSTNp")
+	pj.SetClass("FromSTNp")
 	pj = nt.ConnectLayers(stnp, gpeIn, one2one, leabra.ForwardPath)
-	pj.SetClass("FmSTNp")
+	pj.SetClass("FromSTNp")
 	pj = nt.ConnectLayers(stnp, gpeTA, full, leabra.ForwardPath)
-	pj.SetClass("FmSTNp")
+	pj.SetClass("FromSTNp")
 	pj = nt.ConnectLayers(stnp, gpi, one2one, leabra.ForwardPath)
-	pj.SetClass("FmSTNp")
+	pj.SetClass("FromSTNp")
 
 	pj = nt.ConnectLayers(stns, gpi, one2one, leabra.ForwardPath)
-	pj.SetClass("FmSTNs")
+	pj.SetClass("FromSTNs")
 
 	pj = nt.ConnectLayers(gpeTA, mtxGo, full, InhibPath)
 	pj.SetClass("GPeTAToMtx")

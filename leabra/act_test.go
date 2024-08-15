@@ -35,10 +35,10 @@ func TestActUpdate(t *testing.T) {
 
 	for i := range geinc {
 		nrn.GeRaw += geinc[i]
-		ac.GeFmRaw(nrn, nrn.GeRaw)
-		ac.GiFmRaw(nrn, nrn.GiRaw)
-		ac.VmFmG(nrn)
-		ac.ActFmG(nrn)
+		ac.GeFromRaw(nrn, nrn.GeRaw)
+		ac.GiFromRaw(nrn, nrn.GiRaw)
+		ac.VmFromG(nrn)
+		ac.ActFromG(nrn)
 		ge[i] = nrn.Ge
 		inet[i] = nrn.Inet
 		vm[i] = nrn.Vm

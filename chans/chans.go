@@ -31,12 +31,12 @@ func (ch *Chans) SetAll(e, l, i, k float32) {
 	ch.E, ch.L, ch.I, ch.K = e, l, i, k
 }
 
-// SetFmOtherMinus sets all the values from other Chans minus given value
-func (ch *Chans) SetFmOtherMinus(oth Chans, minus float32) {
+// SetFromOtherMinus sets all the values from other Chans minus given value
+func (ch *Chans) SetFromOtherMinus(oth Chans, minus float32) {
 	ch.E, ch.L, ch.I, ch.K = oth.E-minus, oth.L-minus, oth.I-minus, oth.K-minus
 }
 
-// SetFmMinusOther sets all the values from given value minus other Chans
-func (ch *Chans) SetFmMinusOther(minus float32, oth Chans) {
+// SetFromMinusOther sets all the values from given value minus other Chans
+func (ch *Chans) SetFromMinusOther(minus float32, oth Chans) {
 	ch.E, ch.L, ch.I, ch.K = minus-oth.E, minus-oth.L, minus-oth.I, minus-oth.K
 }
