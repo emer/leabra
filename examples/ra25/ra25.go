@@ -503,6 +503,7 @@ func (ss *Sim) ApplyInputs() {
 	ctx := &ss.Context
 	net := ss.Net
 	ev := ss.Envs.ByMode(ctx.Mode).(*env.FixedTable)
+	ev.Step()
 	lays := net.LayersByType(leabra.InputLayer, leabra.TargetLayer)
 	net.InitExt()
 	ss.Stats.SetString("TrialName", ev.TrialName.Cur)
@@ -691,7 +692,7 @@ func (ss *Sim) ConfigGUI() {
 	nv := ss.GUI.AddNetView("NetView")
 	nv.Params.MaxRecs = 300
 	nv.SetNet(ss.Net)
-	ss.ViewUpdate.Config(nv, etime.Phase, etime.Phase)
+	ss.ViewUpdate.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdate = &ss.ViewUpdate
 
 	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
