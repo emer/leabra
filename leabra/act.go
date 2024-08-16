@@ -236,7 +236,7 @@ func (ac *ActParams) ActFromG(nrn *Neuron) {
 		ge := nrn.Ge * ac.Gbar.E
 		geThr := ac.GeThrFromG(nrn)
 		nwAct = ac.XX1.NoisyXX1(ge - geThr)
-		geThr = ac.GeThrFromGnoK(nrn)            // excludes K adaptation effect
+		geThr = ac.GeThrFromGnoK(nrn)          // excludes K adaptation effect
 		nwActLrn = ac.XX1.NoisyXX1(ge - geThr) // learning is non-adapted
 	}
 	curAct := nrn.Act

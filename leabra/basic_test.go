@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"cogentcore.org/core/math32"
-	"github.com/emer/emergent/v2/emer"
+	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
-	"cogentcore.org/core/tensor"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of
@@ -26,58 +25,58 @@ const NLrnPars = 4
 
 // Note: subsequent params applied after Base
 var ParamSets = params.Sets{
-	{Name: "Base" {
-			{Sel: "Layer", Desc: "layer defaults",
-				Params: params.Params{
-					"Layer.Act.Gbar.L": "0.2", // was default when test created, now is 0.1
-				}},
-			{Sel: "Path", Desc: "for reproducibility, identical weights",
-				Params: params.Params{
-					"Path.WtInit.Var":        "0",
-					"Path.Learn.Norm.On":     "false",
-					"Path.Learn.Momentum.On": "false",
-				}},
-			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
-				Params: params.Params{
-					"Path.WtScale.Rel": "0.2",
-				}},
-		},
-	{Name: "NormOn" {
-			{Sel: "Path", Desc: "norm on",
-				Params: params.Params{
-					"Path.Learn.Norm.On": "true",
-				}},
-		},
-	{Name: "MomentOn" {
-			{Sel: "Path", Desc: "moment on",
-				Params: params.Params{
-					"Path.Learn.Momentum.On": "true",
-				}},
-		},
-	{Name: "NormMomentOn" {
-			{Sel: "Path", Desc: "moment on",
-				Params: params.Params{
-					"Path.Learn.Momentum.On": "true",
-					"Path.Learn.Norm.On":     "true",
-				}},
-		},
+	"Base": {
+		{Sel: "Layer", Desc: "layer defaults",
+			Params: params.Params{
+				"Layer.Act.Gbar.L": "0.2", // was default when test created, now is 0.1
+			}},
+		{Sel: "Path", Desc: "for reproducibility, identical weights",
+			Params: params.Params{
+				"Path.WtInit.Var":        "0",
+				"Path.Learn.Norm.On":     "false",
+				"Path.Learn.Momentum.On": "false",
+			}},
+		{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
+			Params: params.Params{
+				"Path.WtScale.Rel": "0.2",
+			}},
+	},
+	"NormOn": {
+		{Sel: "Path", Desc: "norm on",
+			Params: params.Params{
+				"Path.Learn.Norm.On": "true",
+			}},
+	},
+	"MomentOn": {
+		{Sel: "Path", Desc: "moment on",
+			Params: params.Params{
+				"Path.Learn.Momentum.On": "true",
+			}},
+	},
+	"NormMomentOn": {
+		{Sel: "Path", Desc: "moment on",
+			Params: params.Params{
+				"Path.Learn.Momentum.On": "true",
+				"Path.Learn.Norm.On":     "true",
+			}},
+	},
 }
 
-func TestMakeNet(t *testing.T) {
-	TestNet.InitName(&TestNet, "TestNet")
-	inLay := TestNet.AddLayer("Input", []int{4, 1}, emer.Input)
-	hidLay := TestNet.AddLayer("Hidden", []int{4, 1}, SuperLayer)
-	outLay := TestNet.AddLayer("Output", []int{4, 1}, leabra.TargetLayer)
+func MakeTestNet(t *testing.T) *Network {
+	testNet := NewNetwork("TestNet")
+	inLay := testNet.AddLayer("Input", []int{4, 1}, InputLayer)
+	hidLay := testNet.AddLayer("Hidden", []int{4, 1}, SuperLayer)
+	outLay := testNet.AddLayer("Output", []int{4, 1}, TargetLayer)
 
-	TestNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
-	TestNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
-	TestNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
+	testNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
+	testNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
+	testNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
 
-	TestNet.Defaults()
-	TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // false) // true) // no msg
-	TestNet.Build()
-	TestNet.InitWeights()
-	TestNet.AlphaCycInit(true) // get GScale
+	testNet.Defaults()
+	testNet.ApplyParams(ParamSets["Base"], false) // false) // true) // no msg
+	testNet.Build()
+	testNet.InitWeights()
+	testNet.AlphaCycInit(true) // get GScale
 
 	// var buf bytes.Buffer
 	// TestNet.WriteWtsJSON(&buf)
@@ -90,12 +89,15 @@ func TestMakeNet(t *testing.T) {
 	// 	t.Error(err)
 	// }
 	// fp.Write(wb)
+	return testNet
 }
 
 func TestSynValues(t *testing.T) {
-	TestNet.InitWeights()
-	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	fmIn := hidLay.SendName("Input").(*Path)
+	testNet := MakeTestNet(t)
+	testNet.InitWeights()
+	hidLay := testNet.LayerByName("Hidden")
+	fmIni, _ := hidLay.RecvPathBySendName("Input")
+	fmIn := fmIni.(*Path)
 
 	bfWt := fmIn.SynValue("Wt", 1, 1)
 	if math32.IsNaN(bfWt) {
@@ -114,7 +116,7 @@ func TestSynValues(t *testing.T) {
 }
 
 func TestInPats(t *testing.T) {
-	InPats = tensor.NewFloat32([]int{4, 4, 1}, nil, []string{"pat", "Y", "X"})
+	InPats = tensor.NewFloat32([]int{4, 4, 1}, "pat", "Y", "X")
 	for pi := 0; pi < 4; pi++ {
 		InPats.Set([]int{pi, pi, 0}, 1)
 	}
@@ -130,14 +132,15 @@ func CmprFloats(out, cor []float32, msg string, t *testing.T) {
 }
 
 func TestNetAct(t *testing.T) {
-	TestNet.InitWeights()
-	TestNet.InitExt()
+	testNet := MakeTestNet(t)
+	testNet.InitWeights()
+	testNet.InitExt()
 
-	inLay := TestNet.LayerByName("Input").(*Layer)
-	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	outLay := TestNet.LayerByName("Output").(*Layer)
+	inLay := testNet.LayerByName("Input")
+	hidLay := testNet.LayerByName("Hidden")
+	outLay := testNet.LayerByName("Output")
 
-	ctx := NewTime()
+	ctx := NewContext()
 
 	printCycs := false
 	printQtrs := false
@@ -165,45 +168,42 @@ func TestNetAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpace([]int{pi})
-		if err != nil {
-			t.Error(err)
-		}
+		inpat := InPats.SubSpace([]int{pi})
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
-		TestNet.AlphaCycInit(true)
+		testNet.AlphaCycInit(true)
 		ctx.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
 			for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
-				TestNet.Cycle(ctx)
+				testNet.Cycle(ctx)
 				ctx.CycleInc()
 
 				if printCycs {
-					inLay.UnitValues(&inActs, "Act")
-					hidLay.UnitValues(&hidActs, "Act")
-					hidLay.UnitValues(&hidGes, "Ge")
-					hidLay.UnitValues(&hidGis, "Gi")
-					outLay.UnitValues(&outActs, "Act")
-					outLay.UnitValues(&outGes, "Ge")
-					outLay.UnitValues(&outGis, "Gi")
+					inLay.UnitValues(&inActs, "Act", 0)
+					hidLay.UnitValues(&hidActs, "Act", 0)
+					hidLay.UnitValues(&hidGes, "Ge", 0)
+					hidLay.UnitValues(&hidGis, "Gi", 0)
+					outLay.UnitValues(&outActs, "Act", 0)
+					outLay.UnitValues(&outGes, "Ge", 0)
+					outLay.UnitValues(&outGis, "Gi", 0)
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 				}
 			}
-			TestNet.QuarterFinal(ctx)
+			testNet.QuarterFinal(ctx)
 			ctx.QuarterInc()
 
 			if printCycs && printQtrs {
 				fmt.Printf("=============================\n")
 			}
 
-			inLay.UnitValues(&inActs, "Act")
-			hidLay.UnitValues(&hidActs, "Act")
-			hidLay.UnitValues(&hidGes, "Ge")
-			hidLay.UnitValues(&hidGis, "Gi")
-			outLay.UnitValues(&outActs, "Act")
-			outLay.UnitValues(&outGes, "Ge")
-			outLay.UnitValues(&outGis, "Gi")
+			inLay.UnitValues(&inActs, "Act", 0)
+			hidLay.UnitValues(&hidActs, "Act", 0)
+			hidLay.UnitValues(&hidGes, "Ge", 0)
+			hidLay.UnitValues(&hidGis, "Gi", 0)
+			outLay.UnitValues(&outActs, "Act", 0)
+			outLay.UnitValues(&outGes, "Ge", 0)
+			outLay.UnitValues(&outGis, "Gi", 0)
 
 			if printQtrs {
 				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ctx.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
@@ -238,9 +238,10 @@ func TestNetAct(t *testing.T) {
 }
 
 func TestNetLearn(t *testing.T) {
-	inLay := TestNet.LayerByName("Input").(*Layer)
-	hidLay := TestNet.LayerByName("Hidden").(*Layer)
-	outLay := TestNet.LayerByName("Output").(*Layer)
+	testNet := MakeTestNet(t)
+	inLay := testNet.LayerByName("Input")
+	hidLay := testNet.LayerByName("Hidden")
+	outLay := testNet.LayerByName("Output")
 
 	printCycs := false
 	printQtrs := false
@@ -315,52 +316,49 @@ func TestNetLearn(t *testing.T) {
 	outAvgLLrn := []float32{}
 
 	for ti := 0; ti < NLrnPars; ti++ {
-		TestNet.Defaults()
-		TestNet.ApplyParams(ParamSets[0].Sheets["Network"], false)  // always apply base
-		TestNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
-		TestNet.InitWeights()
-		TestNet.InitExt()
+		testNet.Defaults()
+		testNet.ApplyParams(ParamSets["Base"], false) // always apply base
+		// testNet.ApplyParams(ParamSets[ti].Sheets["Network"], false) // then specific
+		testNet.InitWeights()
+		testNet.InitExt()
 
-		ctx := NewTime()
+		ctx := NewContext()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat, err := InPats.SubSpace([]int{pi})
-			if err != nil {
-				t.Error(err)
-			}
+			inpat := InPats.SubSpace([]int{pi})
 			inLay.ApplyExt(inpat)
 			outLay.ApplyExt(inpat)
 
-			TestNet.AlphaCycInit(true)
+			testNet.AlphaCycInit(true)
 			ctx.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
 				for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
-					TestNet.Cycle(ctx)
+					testNet.Cycle(ctx)
 					ctx.CycleInc()
 
-					hidLay.UnitValues(&hidAct, "Act")
-					hidLay.UnitValues(&hidGes, "Ge")
-					hidLay.UnitValues(&hidGis, "Gi")
-					hidLay.UnitValues(&hidAvgSS, "AvgSS")
-					hidLay.UnitValues(&hidAvgS, "AvgS")
-					hidLay.UnitValues(&hidAvgM, "AvgM")
+					hidLay.UnitValues(&hidAct, "Act", 0)
+					hidLay.UnitValues(&hidGes, "Ge", 0)
+					hidLay.UnitValues(&hidGis, "Gi", 0)
+					hidLay.UnitValues(&hidAvgSS, "AvgSS", 0)
+					hidLay.UnitValues(&hidAvgS, "AvgS", 0)
+					hidLay.UnitValues(&hidAvgM, "AvgM", 0)
 
-					outLay.UnitValues(&outAvgS, "AvgS")
-					outLay.UnitValues(&outAvgM, "AvgM")
+					outLay.UnitValues(&outAvgS, "AvgS", 0)
+					outLay.UnitValues(&outAvgM, "AvgM", 0)
 
 					if printCycs {
 						fmt.Printf("pat: %v qtr: %v cyc: %v\nhid act: %v ges: %v gis: %v\nhid avgss: %v avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ctx.Cycle, hidAct, hidGes, hidGis, hidAvgSS, hidAvgS, hidAvgM, outAvgS, outAvgM)
 					}
 
 				}
-				TestNet.QuarterFinal(ctx)
+				testNet.QuarterFinal(ctx)
 				ctx.QuarterInc()
 
-				hidLay.UnitValues(&hidAvgS, "AvgS")
-				hidLay.UnitValues(&hidAvgM, "AvgM")
+				hidLay.UnitValues(&hidAvgS, "AvgS", 0)
+				hidLay.UnitValues(&hidAvgM, "AvgM", 0)
 
-				outLay.UnitValues(&outAvgS, "AvgS")
-				outLay.UnitValues(&outAvgM, "AvgM")
+				outLay.UnitValues(&outAvgS, "AvgS", 0)
+				outLay.UnitValues(&outAvgM, "AvgM", 0)
 
 				if printQtrs {
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nhid avgs: %v avgm: %v\nout avgs: %v avgm: %v\n", pi, qtr, ctx.Cycle, hidAvgS, hidAvgM, outAvgS, outAvgM)
@@ -384,17 +382,17 @@ func TestNetLearn(t *testing.T) {
 				fmt.Printf("=============================\n")
 			}
 
-			hidLay.UnitValues(&hidAvgL, "AvgL")
-			hidLay.UnitValues(&hidAvgLLrn, "AvgLLrn")
-			outLay.UnitValues(&outAvgL, "AvgL")
-			outLay.UnitValues(&outAvgLLrn, "AvgLLrn")
+			hidLay.UnitValues(&hidAvgL, "AvgL", 0)
+			hidLay.UnitValues(&hidAvgLLrn, "AvgLLrn", 0)
+			outLay.UnitValues(&outAvgL, "AvgL", 0)
+			outLay.UnitValues(&outAvgLLrn, "AvgLLrn", 0)
 			_ = outAvgL
 			_ = outAvgLLrn
 
 			// fmt.Printf("hid cosdif stats: %v\nhid avgl:   %v\nhid avgllrn: %v\n", hidLay.CosDiff, hidAvgL, hidAvgLLrn)
 			// fmt.Printf("out cosdif stats: %v\nout avgl:   %v\nout avgllrn: %v\n", outLay.CosDiff, outAvgL, outAvgLLrn)
 
-			TestNet.DWt()
+			testNet.DWt()
 
 			didx := ti*4 + pi
 
@@ -405,7 +403,7 @@ func TestNetLearn(t *testing.T) {
 			hidmoment[didx] = hidLay.RecvPaths[0].SynValue("Moment", pi, pi)
 			outmoment[didx] = outLay.RecvPaths[0].SynValue("Moment", pi, pi)
 
-			TestNet.WtFmDWt()
+			testNet.WtFromDWt()
 
 			hidwt[didx] = hidLay.RecvPaths[0].SynValue("Wt", pi, pi)
 			outwt[didx] = outLay.RecvPaths[0].SynValue("Wt", pi, pi)
@@ -452,28 +450,27 @@ func TestNetLearn(t *testing.T) {
 }
 
 func TestInhibAct(t *testing.T) {
-	var InhibNet Network
-	InhibNet.InitName(&InhibNet, "InhibNet")
+	inhibNet := NewNetwork("InhibNet")
 
-	inLay := InhibNet.AddLayer("Input", []int{4, 1}, InputLayer).(*Layer)
-	hidLay := InhibNet.AddLayer("Hidden", []int{4, 1}, SuperLayer).(*Layer)
-	outLay := InhibNet.AddLayer("Output", []int{4, 1}, TargetLayer).(*Layer)
+	inLay := inhibNet.AddLayer("Input", []int{4, 1}, InputLayer)
+	hidLay := inhibNet.AddLayer("Hidden", []int{4, 1}, SuperLayer)
+	outLay := inhibNet.AddLayer("Output", []int{4, 1}, TargetLayer)
 
-	InhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
-	InhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), InhibPath)
-	InhibNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
-	InhibNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
+	inhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), ForwardPath)
+	inhibNet.ConnectLayers(inLay, hidLay, paths.NewOneToOne(), InhibPath)
+	inhibNet.ConnectLayers(hidLay, outLay, paths.NewOneToOne(), ForwardPath)
+	inhibNet.ConnectLayers(outLay, hidLay, paths.NewOneToOne(), BackPath)
 
-	InhibNet.Defaults()
-	InhibNet.ApplyParams(ParamSets[0].Sheets["Network"], false) // true) // no msg
-	InhibNet.Build()
-	InhibNet.InitWeights()
-	InhibNet.AlphaCycInit(true) // get GScale
+	inhibNet.Defaults()
+	inhibNet.ApplyParams(ParamSets["Base"], false) // true) // no msg
+	inhibNet.Build()
+	inhibNet.InitWeights()
+	inhibNet.AlphaCycInit(true) // get GScale
 
-	InhibNet.InitWeights()
-	InhibNet.InitExt()
+	inhibNet.InitWeights()
+	inhibNet.InitExt()
 
-	ctx := NewTime()
+	ctx := NewContext()
 
 	printCycs := false
 	printQtrs := false
@@ -501,45 +498,42 @@ func TestInhibAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat, err := InPats.SubSpace([]int{pi})
-		if err != nil {
-			t.Error(err)
-		}
+		inpat := InPats.SubSpace([]int{pi})
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
-		InhibNet.AlphaCycInit(true)
+		inhibNet.AlphaCycInit(true)
 		ctx.AlphaCycStart()
 		for qtr := 0; qtr < 4; qtr++ {
 			for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
-				InhibNet.Cycle(ctx)
+				inhibNet.Cycle(ctx)
 				ctx.CycleInc()
 
 				if printCycs {
-					inLay.UnitValues(&inActs, "Act")
-					hidLay.UnitValues(&hidActs, "Act")
-					hidLay.UnitValues(&hidGes, "Ge")
-					hidLay.UnitValues(&hidGis, "Gi")
-					outLay.UnitValues(&outActs, "Act")
-					outLay.UnitValues(&outGes, "Ge")
-					outLay.UnitValues(&outGis, "Gi")
+					inLay.UnitValues(&inActs, "Act", 0)
+					hidLay.UnitValues(&hidActs, "Act", 0)
+					hidLay.UnitValues(&hidGes, "Ge", 0)
+					hidLay.UnitValues(&hidGis, "Gi", 0)
+					outLay.UnitValues(&outActs, "Act", 0)
+					outLay.UnitValues(&outGes, "Ge", 0)
+					outLay.UnitValues(&outGis, "Gi", 0)
 					fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, cyc, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)
 				}
 			}
-			InhibNet.QuarterFinal(ctx)
+			inhibNet.QuarterFinal(ctx)
 			ctx.QuarterInc()
 
 			if printCycs && printQtrs {
 				fmt.Printf("=============================\n")
 			}
 
-			inLay.UnitValues(&inActs, "Act")
-			hidLay.UnitValues(&hidActs, "Act")
-			hidLay.UnitValues(&hidGes, "Ge")
-			hidLay.UnitValues(&hidGis, "Gi")
-			outLay.UnitValues(&outActs, "Act")
-			outLay.UnitValues(&outGes, "Ge")
-			outLay.UnitValues(&outGis, "Gi")
+			inLay.UnitValues(&inActs, "Act", 0)
+			hidLay.UnitValues(&hidActs, "Act", 0)
+			hidLay.UnitValues(&hidGes, "Ge", 0)
+			hidLay.UnitValues(&hidGis, "Gi", 0)
+			outLay.UnitValues(&outActs, "Act", 0)
+			outLay.UnitValues(&outGes, "Ge", 0)
+			outLay.UnitValues(&outGis, "Gi", 0)
 
 			if printQtrs {
 				fmt.Printf("pat: %v qtr: %v cyc: %v\nin acts: %v\nhid acts: %v ges: %v gis: %v\nout acts: %v ges: %v gis: %v\n", pi, qtr, ctx.Cycle, inActs, hidActs, hidGes, hidGis, outActs, outGes, outGis)

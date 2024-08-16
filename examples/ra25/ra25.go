@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// ra25 runs a simple random-associator four-layer axon network
+// ra25 runs a simple random-associator four-layer leabra network
 // that uses the standard supervised learning paradigm to learn
 // mappings between 25 random input / output patterns
 // defined over 5x5 input / output layers (i.e., 25 units)
@@ -11,6 +11,7 @@ package main
 //go:generate core generate -add-types
 
 import (
+	"embed"
 	"log"
 	"os"
 
@@ -37,6 +38,9 @@ import (
 	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/leabra/v2/leabra"
 )
+
+//go:embed *.tsv
+var patsfs embed.FS
 
 func main() {
 	sim := &Sim{}
@@ -560,7 +564,7 @@ func (ss *Sim) OpenPats() {
 	dt := ss.Pats
 	dt.SetMetaData("name", "TrainPats")
 	dt.SetMetaData("desc", "Training patterns")
-	err := dt.OpenCSV("random_5x5_25.tsv", table.Tab)
+	err := dt.OpenFS(patsfs, "random_5x5_25.tsv", table.Tab)
 	if err != nil {
 		log.Println(err)
 	}
