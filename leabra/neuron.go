@@ -16,7 +16,7 @@ import (
 // NeuronVarStart is the byte offset of fields in the Neuron structure
 // where the float32 named variables start.
 // Note: all non-float32 infrastructure variables must be at the start!
-const NeuronVarStart = 8
+const NeuronVarStart = 12
 
 // leabra.Neuron holds all of the neuron (unit) level variables -- this is the most basic version with
 // rate-code only and no optional features at all.

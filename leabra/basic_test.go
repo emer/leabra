@@ -17,9 +17,6 @@ import (
 // Note: this test project exactly reproduces the configuration and behavior of
 // C++ emergent/demo/leabra/basic_leabra_test.proj  in version 8.5.6 svn 11492
 
-var TestNet Network
-var InPats *tensor.Float32
-
 // number of distinct sets of learning parameters to test
 const NLrnPars = 4
 
@@ -115,23 +112,25 @@ func TestSynValues(t *testing.T) {
 	// fmt.Printf("SynValues: before wt: %v, lwt: %v  after wt: %v, lwt: %v\n", bfWt, bfLWt, afWt, afLWt)
 }
 
-func TestInPats(t *testing.T) {
-	InPats = tensor.NewFloat32([]int{4, 4, 1}, "pat", "Y", "X")
+func MakeInPats(t *testing.T) *tensor.Float32 {
+	inPats := tensor.NewFloat32([]int{4, 4, 1}, "pat", "Y", "X")
 	for pi := 0; pi < 4; pi++ {
-		InPats.Set([]int{pi, pi, 0}, 1)
+		inPats.Set([]int{pi, pi, 0}, 1)
 	}
+	return inPats
 }
 
-func CmprFloats(out, cor []float32, msg string, t *testing.T) {
-	for i := range out {
-		dif := math32.Abs(out[i] - cor[i])
+func CmprFloats(got, trg []float32, msg string, t *testing.T) {
+	for i := range got {
+		dif := math32.Abs(got[i] - trg[i])
 		if dif > difTol { // allow for small numerical diffs
-			t.Errorf("%v err: out: %v, cor: %v, dif: %v\n", msg, out[i], cor[i], dif)
+			t.Errorf("%v err: got: %v, trg: %v, dif: %v\n", msg, got[i], trg[i], dif)
 		}
 	}
 }
 
 func TestNetAct(t *testing.T) {
+	inPats := MakeInPats(t)
 	testNet := MakeTestNet(t)
 	testNet.InitWeights()
 	testNet.InitExt()
@@ -168,7 +167,7 @@ func TestNetAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat := InPats.SubSpace([]int{pi})
+		inpat := inPats.SubSpace([]int{pi})
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 
@@ -238,6 +237,7 @@ func TestNetAct(t *testing.T) {
 }
 
 func TestNetLearn(t *testing.T) {
+	inPats := MakeInPats(t)
 	testNet := MakeTestNet(t)
 	inLay := testNet.LayerByName("Input")
 	hidLay := testNet.LayerByName("Hidden")
@@ -325,7 +325,7 @@ func TestNetLearn(t *testing.T) {
 		ctx := NewContext()
 
 		for pi := 0; pi < 4; pi++ {
-			inpat := InPats.SubSpace([]int{pi})
+			inpat := inPats.SubSpace([]int{pi})
 			inLay.ApplyExt(inpat)
 			outLay.ApplyExt(inpat)
 
@@ -450,6 +450,7 @@ func TestNetLearn(t *testing.T) {
 }
 
 func TestInhibAct(t *testing.T) {
+	inPats := MakeInPats(t)
 	inhibNet := NewNetwork("InhibNet")
 
 	inLay := inhibNet.AddLayer("Input", []int{4, 1}, InputLayer)
@@ -498,7 +499,7 @@ func TestInhibAct(t *testing.T) {
 	outGis := []float32{}
 
 	for pi := 0; pi < 4; pi++ {
-		inpat := InPats.SubSpace([]int{pi})
+		inpat := inPats.SubSpace([]int{pi})
 		inLay.ApplyExt(inpat)
 		outLay.ApplyExt(inpat)
 

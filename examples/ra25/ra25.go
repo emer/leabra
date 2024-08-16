@@ -411,7 +411,7 @@ func (ss *Sim) ConfigLoops() {
 		AddTime(etime.Trial, trls).
 		AddTime(etime.Cycle, 100)
 
-	leabra.LooperStdPhases(man, &ss.Context, ss.Net, 150, 199)              // plus phase timing
+	leabra.LooperStdPhases(man, &ss.Context, ss.Net, 75, 99)                // plus phase timing
 	leabra.LooperSimCycleAndLearn(man, ss.Net, &ss.Context, &ss.ViewUpdate) // std algo code
 
 	for m, _ := range man.Stacks {

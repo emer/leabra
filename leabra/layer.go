@@ -654,8 +654,17 @@ func (ly *Layer) CyclePost(ctx *Context) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarter
 
-// QuarterFinal does updating after end of quarters 1, 2
+// QuarterFinal does updating after end of quarter.
+// Calls MinusPhase and PlusPhase for quarter = 2, 3.
 func (ly *Layer) QuarterFinal(ctx *Context) {
+	switch ctx.Quarter {
+	case 2:
+		ly.MinusPhase(ctx)
+		return
+	case 3:
+		ly.PlusPhase(ctx)
+		return
+	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

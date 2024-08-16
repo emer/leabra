@@ -49,6 +49,63 @@ func (i *ActNoiseType) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "ActNoiseType")
 }
 
+var _QuartersValues = []Quarters{0, 1, 2, 3}
+
+// QuartersN is the highest valid value for type Quarters, plus one.
+const QuartersN Quarters = 4
+
+var _QuartersValueMap = map[string]Quarters{`Q1`: 0, `Q2`: 1, `Q3`: 2, `Q4`: 3}
+
+var _QuartersDescMap = map[Quarters]string{0: `Q1 is the first quarter, which, due to 0-based indexing, shows up as Quarter = 0 in timer`, 1: ``, 2: ``, 3: ``}
+
+var _QuartersMap = map[Quarters]string{0: `Q1`, 1: `Q2`, 2: `Q3`, 3: `Q4`}
+
+// String returns the string representation of this Quarters value.
+func (i Quarters) String() string { return enums.BitFlagString(i, _QuartersValues) }
+
+// BitIndexString returns the string representation of this Quarters value
+// if it is a bit index value (typically an enum constant), and
+// not an actual bit flag value.
+func (i Quarters) BitIndexString() string { return enums.String(i, _QuartersMap) }
+
+// SetString sets the Quarters value from its string representation,
+// and returns an error if the string is invalid.
+func (i *Quarters) SetString(s string) error { *i = 0; return i.SetStringOr(s) }
+
+// SetStringOr sets the Quarters value from its string representation
+// while preserving any bit flags already set, and returns an
+// error if the string is invalid.
+func (i *Quarters) SetStringOr(s string) error {
+	return enums.SetStringOr(i, s, _QuartersValueMap, "Quarters")
+}
+
+// Int64 returns the Quarters value as an int64.
+func (i Quarters) Int64() int64 { return int64(i) }
+
+// SetInt64 sets the Quarters value from an int64.
+func (i *Quarters) SetInt64(in int64) { *i = Quarters(in) }
+
+// Desc returns the description of the Quarters value.
+func (i Quarters) Desc() string { return enums.Desc(i, _QuartersDescMap) }
+
+// QuartersValues returns all possible values for the type Quarters.
+func QuartersValues() []Quarters { return _QuartersValues }
+
+// Values returns all possible values for the type Quarters.
+func (i Quarters) Values() []enums.Enum { return enums.Values(_QuartersValues) }
+
+// HasFlag returns whether these bit flags have the given bit flag set.
+func (i Quarters) HasFlag(f enums.BitFlag) bool { return enums.HasFlag((*int64)(&i), f) }
+
+// SetFlag sets the value of the given flags in these flags to the given value.
+func (i *Quarters) SetFlag(on bool, f ...enums.BitFlag) { enums.SetFlag((*int64)(i), on, f...) }
+
+// MarshalText implements the [encoding.TextMarshaler] interface.
+func (i Quarters) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
+
+// UnmarshalText implements the [encoding.TextUnmarshaler] interface.
+func (i *Quarters) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "Quarters") }
+
 var _LayerTypesValues = []LayerTypes{0, 1, 2, 3, 4, 5, 6, 7, 8}
 
 // LayerTypesN is the highest valid value for type LayerTypes, plus one.
@@ -193,60 +250,3 @@ func (i PathTypes) MarshalText() ([]byte, error) { return []byte(i.String()), ni
 func (i *PathTypes) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "PathTypes")
 }
-
-var _QuartersValues = []Quarters{0, 1, 2, 3}
-
-// QuartersN is the highest valid value for type Quarters, plus one.
-const QuartersN Quarters = 4
-
-var _QuartersValueMap = map[string]Quarters{`Q1`: 0, `Q2`: 1, `Q3`: 2, `Q4`: 3}
-
-var _QuartersDescMap = map[Quarters]string{0: `Q1 is the first quarter, which, due to 0-based indexing, shows up as Quarter = 0 in timer`, 1: ``, 2: ``, 3: ``}
-
-var _QuartersMap = map[Quarters]string{0: `Q1`, 1: `Q2`, 2: `Q3`, 3: `Q4`}
-
-// String returns the string representation of this Quarters value.
-func (i Quarters) String() string { return enums.BitFlagString(i, _QuartersValues) }
-
-// BitIndexString returns the string representation of this Quarters value
-// if it is a bit index value (typically an enum constant), and
-// not an actual bit flag value.
-func (i Quarters) BitIndexString() string { return enums.String(i, _QuartersMap) }
-
-// SetString sets the Quarters value from its string representation,
-// and returns an error if the string is invalid.
-func (i *Quarters) SetString(s string) error { *i = 0; return i.SetStringOr(s) }
-
-// SetStringOr sets the Quarters value from its string representation
-// while preserving any bit flags already set, and returns an
-// error if the string is invalid.
-func (i *Quarters) SetStringOr(s string) error {
-	return enums.SetStringOr(i, s, _QuartersValueMap, "Quarters")
-}
-
-// Int64 returns the Quarters value as an int64.
-func (i Quarters) Int64() int64 { return int64(i) }
-
-// SetInt64 sets the Quarters value from an int64.
-func (i *Quarters) SetInt64(in int64) { *i = Quarters(in) }
-
-// Desc returns the description of the Quarters value.
-func (i Quarters) Desc() string { return enums.Desc(i, _QuartersDescMap) }
-
-// QuartersValues returns all possible values for the type Quarters.
-func QuartersValues() []Quarters { return _QuartersValues }
-
-// Values returns all possible values for the type Quarters.
-func (i Quarters) Values() []enums.Enum { return enums.Values(_QuartersValues) }
-
-// HasFlag returns whether these bit flags have the given bit flag set.
-func (i Quarters) HasFlag(f enums.BitFlag) bool { return enums.HasFlag((*int64)(&i), f) }
-
-// SetFlag sets the value of the given flags in these flags to the given value.
-func (i *Quarters) SetFlag(on bool, f ...enums.BitFlag) { enums.SetFlag((*int64)(i), on, f...) }
-
-// MarshalText implements the [encoding.TextMarshaler] interface.
-func (i Quarters) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
-
-// UnmarshalText implements the [encoding.TextUnmarshaler] interface.
-func (i *Quarters) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "Quarters") }
