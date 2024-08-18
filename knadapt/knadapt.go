@@ -24,19 +24,19 @@ package knadapt
 type Chan struct {
 
 	// if On, use this component of K-Na adaptation
-	On bool `desc:"if On, use this component of K-Na adaptation"`
+	On bool
 
-	// [viewif: On] Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
-	Rise float32 `viewif:"On" desc:"Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate"`
+	// Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
+	Rise float32 `viewif:"On"`
 
-	// [viewif: On] Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
-	Max float32 `viewif:"On" desc:"Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here"`
+	// Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
+	Max float32 `viewif:"On"`
 
-	// [viewif: On] time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
-	Tau float32 `viewif:"On" desc:"time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)"`
+	// time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
+	Tau float32 `viewif:"On"`
 
-	// [view: -] 1/Tau rate constant
-	Dt float32 `view:"-" desc:"1/Tau rate constant"`
+	// 1/Tau rate constant
+	Dt float32 `display:"-"`
 }
 
 func (ka *Chan) Defaults() {
@@ -51,8 +51,8 @@ func (ka *Chan) Update() {
 	ka.Dt = 1 / ka.Tau
 }
 
-// GcFmSpike updates the KNa conductance based on spike or not
-func (ka *Chan) GcFmSpike(gKNa *float32, spike bool) {
+// GcFromSpike updates the KNa conductance based on spike or not
+func (ka *Chan) GcFromSpike(gKNa *float32, spike bool) {
 	if ka.On {
 		if spike {
 			*gKNa += ka.Rise * (ka.Max - *gKNa)
@@ -64,9 +64,9 @@ func (ka *Chan) GcFmSpike(gKNa *float32, spike bool) {
 	}
 }
 
-// GcFmRate updates the KNa conductance based on rate-coded activation.
+// GcFromRate updates the KNa conductance based on rate-coded activation.
 // act should already have the compensatory rate multiplier prior to calling.
-func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
+func (ka *Chan) GcFromRate(gKNa *float32, act float32) {
 	if ka.On {
 		*gKNa += act*ka.Rise*(ka.Max-*gKNa) - (ka.Dt * *gKNa)
 	} else {
@@ -80,19 +80,19 @@ func (ka *Chan) GcFmRate(gKNa *float32, act float32) {
 type Params struct {
 
 	// if On, apply K-Na adaptation
-	On bool `desc:"if On, apply K-Na adaptation"`
+	On bool
 
-	// [def: 0.8] [viewif: On] extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
-	Rate float32 `viewif:"On" def:"0.8" desc:"extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking"`
+	// extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
+	Rate float32 `viewif:"On" def:"0.8"`
 
-	// [view: inline] fast time-scale adaptation
-	Fast Chan `view:"inline" desc:"fast time-scale adaptation"`
+	// fast time-scale adaptation
+	Fast Chan `display:"inline"`
 
-	// [view: inline] medium time-scale adaptation
-	Med Chan `view:"inline" desc:"medium time-scale adaptation"`
+	// medium time-scale adaptation
+	Med Chan `display:"inline"`
 
-	// [view: inline] slow time-scale adaptation
-	Slow Chan `view:"inline" desc:"slow time-scale adaptation"`
+	// slow time-scale adaptation
+	Slow Chan `display:"inline"`
 }
 
 func (ka *Params) Defaults() {
@@ -118,19 +118,19 @@ func (ka *Params) Update() {
 	ka.Slow.Update()
 }
 
-// GcFmSpike updates all time scales of KNa adaptation from spiking
-func (ka *Params) GcFmSpike(gKNaF, gKNaM, gKNaS *float32, spike bool) {
-	ka.Fast.GcFmSpike(gKNaF, spike)
-	ka.Med.GcFmSpike(gKNaM, spike)
-	ka.Slow.GcFmSpike(gKNaS, spike)
+// GcFromSpike updates all time scales of KNa adaptation from spiking
+func (ka *Params) GcFromSpike(gKNaF, gKNaM, gKNaS *float32, spike bool) {
+	ka.Fast.GcFromSpike(gKNaF, spike)
+	ka.Med.GcFromSpike(gKNaM, spike)
+	ka.Slow.GcFromSpike(gKNaS, spike)
 }
 
-// GcFmRate updates all time scales of KNa adaptation from rate code activation
-func (ka *Params) GcFmRate(gKNaF, gKNaM, gKNaS *float32, act float32) {
+// GcFromRate updates all time scales of KNa adaptation from rate code activation
+func (ka *Params) GcFromRate(gKNaF, gKNaM, gKNaS *float32, act float32) {
 	act *= ka.Rate
-	ka.Fast.GcFmRate(gKNaF, act)
-	ka.Med.GcFmRate(gKNaM, act)
-	ka.Slow.GcFmRate(gKNaS, act)
+	ka.Fast.GcFromRate(gKNaF, act)
+	ka.Med.GcFromRate(gKNaM, act)
+	ka.Slow.GcFromRate(gKNaS, act)
 }
 
 /*
@@ -161,7 +161,7 @@ public:
   STATE_DECO_KEY("UnitSpec");
   STATE_TA_STD_CODE_SPEC(KNaAdaptMiscSpec);
 
-  // STATE_UAE( UpdtDts(); );
+  // STATE_UAE( UpdateDts(); );
 
 private:
   void        Initialize()      { Defaults_init(); }

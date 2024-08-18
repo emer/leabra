@@ -7,9 +7,8 @@ package pcore
 import (
 	"strings"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // CaParams control the calcium dynamics in STN neurons.
@@ -22,29 +21,29 @@ import (
 // of the existing infrastructure.
 type CaParams struct {
 
-	// [def: 0.9] activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold
-	BurstThr float32 `def:"0.9" desc:"activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold"`
+	// activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold
+	BurstThr float32 `def:"0.9"`
 
-	// [def: 0.7] activation threshold for increment in activation above baseline that drives lower influx of Ca
-	ActThr float32 `def:"0.7" desc:"activation threshold for increment in activation above baseline that drives lower influx of Ca"`
+	// activation threshold for increment in activation above baseline that drives lower influx of Ca
+	ActThr float32 `def:"0.7"`
 
-	// [def: 1] Ca level for burst level activation
-	BurstCa float32 `def:"1" desc:"Ca level for burst level activation"`
+	// Ca level for burst level activation
+	BurstCa float32 `def:"1"`
 
-	// [def: 0.2] Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay
-	ActCa float32 `def:"0.2" desc:"Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay"`
+	// Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay
+	ActCa float32 `def:"0.2"`
 
-	// [def: 10] maximal KCa conductance (actual conductance is applied to KNa channels)
-	GbarKCa float32 `def:"10" desc:"maximal KCa conductance (actual conductance is applied to KNa channels)"`
+	// maximal KCa conductance (actual conductance is applied to KNa channels)
+	GbarKCa float32 `def:"10"`
 
-	// [def: 20] KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
-	KCaTau float32 `def:"20" desc:"KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
+	// KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
+	KCaTau float32 `def:"20"`
 
-	// [def: 50] Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
-	CaTau float32 `def:"50" desc:"Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc"`
+	// Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
+	CaTau float32 `def:"50"`
 
 	// initialize Ca, KCa values at start of every AlphaCycle
-	AlphaInit bool `desc:"initialize Ca, KCa values at start of every AlphaCycle"`
+	AlphaInit bool
 }
 
 func (kc *CaParams) Defaults() {
@@ -57,10 +56,10 @@ func (kc *CaParams) Defaults() {
 	kc.CaTau = 50   // 185.7
 }
 
-// KCaGFmCa returns the driving conductance for KCa channels based on given Ca level.
+// KCaGFromCa returns the driving conductance for KCa channels based on given Ca level.
 // This equation comes from Gillies & Willshaw, 2006.
-func (kc *CaParams) KCaGFmCa(ca float32) float32 {
-	return 0.81 / (1 + mat32.Exp(-(mat32.Log(ca)+0.3))/0.46)
+func (kc *CaParams) KCaGFromCa(ca float32) float32 {
+	return 0.81 / (1 + math32.Exp(-(math32.Log(ca)+0.3))/0.46)
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -77,14 +76,12 @@ func (kc *CaParams) KCaGFmCa(ca float32) float32 {
 type STNLayer struct {
 	Layer
 
-	// [view: inline] parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)
-	Ca CaParams `view:"inline" desc:"parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)"`
+	// parameters for calcium and calcium-gated potassium channels that drive the afterhyperpolarization that open the gating window in STN neurons (Hallworth et al., 2003)
+	Ca CaParams `display:"inline"`
 
 	// slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
-	STNNeurs []STNNeuron `desc:"slice of extra STNNeuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	STNNeurs []STNNeuron
 }
-
-var KiT_STNLayer = kit.Types.AddType(&STNLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "STNLayer", Desc: "defaults",
@@ -129,12 +126,12 @@ func (ly *STNLayer) Defaults() {
 	ly.Act.Dt.GTau = 3 // fastest
 	ly.Act.Init.Decay = 0
 
-	if strings.HasSuffix(ly.Nm, "STNp") {
+	if strings.HasSuffix(ly.Name, "STNp") {
 		ly.Act.Init.Act = 0.48
 	}
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		pj.Learn.Learn = false
 		pj.Learn.Norm.On = false
 		pj.Learn.Momentum.On = false
@@ -142,7 +139,7 @@ func (ly *STNLayer) Defaults() {
 		pj.WtInit.Mean = 0.9
 		pj.WtInit.Var = 0
 		pj.WtInit.Sym = false
-		if strings.HasSuffix(ly.Nm, "STNp") {
+		if strings.HasSuffix(ly.Name, "STNp") {
 			if _, ok := pj.Send.(*GPLayer); ok { // GPeInToSTNp
 				pj.WtScale.Abs = 0.1
 			}
@@ -189,17 +186,17 @@ func (ly *STNLayer) AlphaCycInit(updtActAvg bool) {
 	}
 }
 
-func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
-	for ni := range ly.Neurons { // note: copied from leabra ActFmG, not calling it..
+func (ly *STNLayer) ActFromG(ctx *leabra.Context) {
+	for ni := range ly.Neurons { // note: copied from leabra ActFromG, not calling it..
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
+		ly.Act.VmFromG(nrn)
+		ly.Act.ActFromG(nrn)
 
 		snr := &ly.STNNeurs[ni]
-		snr.KCa += (ly.Ca.KCaGFmCa(snr.Ca) - snr.KCa) / ly.Ca.KCaTau
+		snr.KCa += (ly.Ca.KCaGFromCa(snr.Ca) - snr.KCa) / ly.Ca.KCaTau
 		dCa := -snr.Ca / ly.Ca.CaTau
 		if nrn.Act >= ly.Ca.BurstThr {
 			dCa += ly.Ca.BurstCa
@@ -210,11 +207,11 @@ func (ly *STNLayer) ActFmG(ltime *leabra.Time) {
 		snr.Ca += dCa
 		nrn.Gk = ly.Ca.GbarKCa * snr.KCa
 
-		ly.Learn.AvgsFmAct(nrn)
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *STNLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -224,15 +221,15 @@ func (ly *STNLayer) Build() error {
 	return nil
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *STNLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = STNNeuronVarIdxByName(varNm)
+	vidx, err = STNNeuronVarIndexByName(varNm)
 	if err != nil {
 		return -1, err
 	}
@@ -240,27 +237,27 @@ func (ly *STNLayer) UnitVarIdx(varNm string) (int, error) {
 	return nn + vidx, err
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *STNLayer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 {
-		return mat32.NaN()
+func (ly *STNLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
+		return math32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.Layer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
-	varIdx -= nn
-	if varIdx > len(STNNeuronVars) {
-		return mat32.NaN()
+	varIndex -= nn
+	if varIndex > len(STNNeuronVars) {
+		return math32.NaN()
 	}
 	snr := &ly.STNNeurs[idx]
-	return snr.VarByIndex(varIdx)
+	return snr.VarByIndex(varIndex)
 }
 
 // UnitVarNum returns the number of Neuron-level variables

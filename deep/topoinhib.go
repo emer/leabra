@@ -5,11 +5,9 @@
 package deep
 
 import (
-	"github.com/emer/emergent/efuns"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/emergent/v2/efuns"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // TopoInhib provides for topographic gaussian inhibition integrating over neighborhood.
@@ -17,22 +15,22 @@ import (
 type TopoInhib struct {
 
 	// use topographic inhibition
-	On bool `desc:"use topographic inhibition"`
+	On bool
 
 	// half-width of topographic inhibition within layer
-	Width int `desc:"half-width of topographic inhibition within layer"`
+	Width int
 
 	// normalized gaussian sigma as proportion of Width, for gaussian weighting
-	Sigma float32 `desc:"normalized gaussian sigma as proportion of Width, for gaussian weighting"`
+	Sigma float32
 
 	// overall inhibition multiplier for topographic inhibition (generally <= 1)
-	Gi float32 `desc:"overall inhibition multiplier for topographic inhibition (generally <= 1)"`
+	Gi float32
 
 	// layer-level baseline inhibition factor for Max computation -- ensures a baseline inhib as proportion of maximum inhib within any single pool
-	LayGi float32 `desc:"layer-level baseline inhibition factor for Max computation -- ensures a baseline inhib as proportion of maximum inhib within any single pool"`
+	LayGi float32
 
 	// gaussian weights as function of distance, precomputed.  index 0 = dist 1
-	Wts []float32 `inactive:"+" desc:"gaussian weights as function of distance, precomputed.  index 0 = dist 1"`
+	Wts []float32 `edit:"-"`
 }
 
 func (ti *TopoInhib) Defaults() {
@@ -58,10 +56,8 @@ type TopoInhibLayer struct {
 	leabra.Layer // access as .Layer
 
 	// topographic inhibition parameters for pool-level inhibition (only used for layers with pools)
-	TopoInhib TopoInhib `desc:"topographic inhibition parameters for pool-level inhibition (only used for layers with pools)"`
+	TopoInhib TopoInhib
 }
-
-var KiT_TopoInhibLayer = kit.Types.AddType(&TopoInhibLayer{}, LayerProps)
 
 func (ly *TopoInhibLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -69,7 +65,7 @@ func (ly *TopoInhibLayer) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *TopoInhibLayer) UpdateParams() {
 	ly.Layer.UpdateParams()
 	ly.TopoInhib.Update()
@@ -77,8 +73,8 @@ func (ly *TopoInhibLayer) UpdateParams() {
 
 // TopoGiPos returns position-specific Gi contribution
 func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	if py < 0 || py >= pyn {
 		return 0
 	}
@@ -92,16 +88,16 @@ func (ly *TopoInhibLayer) TopoGiPos(py, px, d int) float32 {
 }
 
 // TopoGi computes topographic Gi between pools
-func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+func (ly *TopoInhibLayer) TopoGi(ctx *leabra.Context) {
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	wd := ly.TopoInhib.Width
 
 	laymax := float32(0)
 	np := len(ly.Pools)
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
-		laymax = mat32.Max(laymax, pl.Inhib.GiOrig)
+		laymax = math32.Max(laymax, pl.Inhib.GiOrig)
 	}
 
 	laymax *= ly.TopoInhib.LayGi
@@ -111,26 +107,26 @@ func (ly *TopoInhibLayer) TopoGi(ltime *leabra.Time) {
 			max := laymax
 			for iy := 1; iy <= wd; iy++ {
 				for ix := 1; ix <= wd; ix++ {
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px+ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px+ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py+iy, px-ix, ints.MinInt(iy-1, ix-1)))
-					max = mat32.Max(max, ly.TopoGiPos(py-iy, px-ix, ints.MinInt(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py+iy, px+ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py-iy, px+ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py+iy, px-ix, min(iy-1, ix-1)))
+					max = math32.Max(max, ly.TopoGiPos(py-iy, px-ix, min(iy-1, ix-1)))
 				}
 			}
 			pi := py*pxn + px
 			pl := &ly.Pools[pi+1]
-			pl.Inhib.Gi = mat32.Max(max, pl.Inhib.Gi)
+			pl.Inhib.Gi = math32.Max(max, pl.Inhib.Gi)
 		}
 	}
 }
 
-// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *TopoInhibLayer) InhibFmGeAct(ltime *leabra.Time) {
+// InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *TopoInhibLayer) InhibFromGeAct(ctx *leabra.Context) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime)
+	ly.PoolInhibFromGeAct(ctx)
 	if ly.Is4D() && ly.TopoInhib.On {
-		ly.TopoGi(ltime)
+		ly.TopoGi(ctx)
 	}
-	ly.InhibFmPool(ltime)
+	ly.InhibFromPool(ctx)
 }

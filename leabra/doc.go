@@ -43,8 +43,8 @@ The levels of structure and state are:
 * Network
 *   .Layers
 *      .Pools: pooled inhibition state -- 1 for layer plus 1 for each sub-pool (unit group) with inhibition
-*      .RecvPrjns: receiving projections from other sending layers
-*      .SendPrjns: sending projections from other receiving layers
+*      .RecvPaths: receiving pathways from other sending layers
+*      .SendPaths: sending pathways from other receiving layers
 *      .Neurons: neuron state variables
 
 There are methods on the Network that perform initialization and overall computation, by
@@ -57,15 +57,15 @@ layer has a designated thread number, so you can experiment with different ways 
 dividing up the computation.  Timing data is kept for per-thread time use -- see TimeReport()
 on the network.
 
-The Layer methods directly iterate over Neurons, Pools, and Prjns, and there is no
+The Layer methods directly iterate over Neurons, Pools, and Paths, and there is no
 finer-grained level of computation (e.g., at the individual Neuron level), except for
 the *Params methods that directly compute relevant functions.  Thus, looking directly at
 the layer.go code should provide a clear sense of exactly how everything is computed --
 you may need to the refer to act.go, learn.go etc to see the relevant details but at
 least the overall organization should be clear in layer.go.
 
-Computational methods are generally named: VarFmVar to specifically name what variable
-is being computed from what other input variables.  e.g., ActFmG computes activation from
+Computational methods are generally named: VarFromVar to specifically name what variable
+is being computed from what other input variables.  e.g., ActFromG computes activation from
 conductances G.
 
 The Pools (type Pool, in pool.go) hold state used for computing pooled inhibition, but also are
@@ -73,15 +73,15 @@ used to hold overall aggregate pooled state variables -- the first element in Po
 to the layer itself, and subsequent ones are for each sub-pool (4D layers).
 These pools play the same role as the LeabraUnGpState structures in C++ emergent.
 
-Prjns directly support all synapse-level computation, and hold the LearnSynParams and
-iterate directly over all of their synapses.  It is the exact same Prjn object that lives
-in the RecvPrjns of the receiver-side, and the SendPrjns of the sender-side, and it maintains
+Paths directly support all synapse-level computation, and hold the LearnSynParams and
+iterate directly over all of their synapses.  It is the exact same Path object that lives
+in the RecvPaths of the receiver-side, and the SendPaths of the sender-side, and it maintains
 and coordinates both sides of the state.  This clarifies and simplifies a lot of code.
 There is no separate equivalent of LeabraConSpec / LeabraConState at the level of
-connection groups per unit per projection.
+connection groups per unit per pathway.
 
-The pattern of connectivity between units is specified by the prjn.Pattern interface
-and all the different standard options are avail in that prjn package.  The Pattern
+The pattern of connectivity between units is specified by the paths.Pattern interface
+and all the different standard options are avail in that path package.  The Pattern
 code generates a full tensor bitmap of binary 1's and 0's for connected (1's) and not
 (0's) units, and can use any method to do so.  This full lookup-table approach is not the most
 memory-efficient, but it is fully general and shouldn't be too-bad memory-wise overall (fully

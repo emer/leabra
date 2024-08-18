@@ -5,7 +5,7 @@
 /*
 Package nxx1 provides the Noisy-X-over-X-plus-1 activation function that well-characterizes
 the neural response function empirically, as a saturating sigmoid-like nonlinear response
-with an initial largely-linear regime.
+with an initial largely linear regime.
 
 The basic x/(x+1) sigmoid function is convolved with a gaussian noise kernel to produce
 a better approximation of the effects of noise on neural firing -- the main effect is
@@ -19,11 +19,11 @@ overall values.
 */
 package nxx1
 
-import "github.com/goki/mat32"
+import "cogentcore.org/core/math32"
 
 // Params are the Noisy X/(X+1) rate-coded activation function parameters.
 // This function well-characterizes the neural response function empirically,
-// as a saturating sigmoid-like nonlinear response with an initial largely-linear regime.
+// as a saturating sigmoid-like nonlinear response with an initial largely linear regime.
 // The basic x/(x+1) sigmoid function is convolved with a gaussian noise kernel to produce
 // a better approximation of the effects of noise on neural firing -- the main effect is
 // to create a continuous graded early level of firing even slightly below threshold, softening
@@ -34,52 +34,52 @@ import "github.com/goki/mat32"
 // overall values.  abc.
 type Params struct {
 
-	// [def: 0.5] threshold value Theta (Q) for firing output activation (.5 is more accurate value based on AdEx biological parameters and normalization
-	Thr float32 `def:"0.5" desc:"threshold value Theta (Q) for firing output activation (.5 is more accurate value based on AdEx biological parameters and normalization"`
+	// threshold value Theta (Q) for firing output activation (.5 is more accurate value based on AdEx biological parameters and normalization
+	Thr float32 `def:"0.5"`
 
-	// [def: 80,100,40,20] [min: 0] gain (gamma) of the rate-coded activation functions -- 100 is default, 80 works better for larger models, and 20 is closer to the actual spiking behavior of the AdEx model -- use lower values for more graded signals, generally in lower input/sensory layers of the network
-	Gain float32 `def:"80,100,40,20" min:"0" desc:"gain (gamma) of the rate-coded activation functions -- 100 is default, 80 works better for larger models, and 20 is closer to the actual spiking behavior of the AdEx model -- use lower values for more graded signals, generally in lower input/sensory layers of the network"`
+	// gain (gamma) of the rate-coded activation functions -- 100 is default, 80 works better for larger models, and 20 is closer to the actual spiking behavior of the AdEx model -- use lower values for more graded signals, generally in lower input/sensory layers of the network
+	Gain float32 `def:"80,100,40,20" min:"0"`
 
-	// [def: 0.005,0.01] [min: 0] variance of the Gaussian noise kernel for convolving with XX1 in NOISY_XX1 and NOISY_LINEAR -- determines the level of curvature of the activation function near the threshold -- increase for more graded responding there -- note that this is not actual stochastic noise, just constant convolved gaussian smoothness to the activation function
-	NVar float32 `def:"0.005,0.01" min:"0" desc:"variance of the Gaussian noise kernel for convolving with XX1 in NOISY_XX1 and NOISY_LINEAR -- determines the level of curvature of the activation function near the threshold -- increase for more graded responding there -- note that this is not actual stochastic noise, just constant convolved gaussian smoothness to the activation function"`
+	// variance of the Gaussian noise kernel for convolving with XX1 in NOISY_XX1 and NOISY_LINEAR -- determines the level of curvature of the activation function near the threshold -- increase for more graded responding there -- note that this is not actual stochastic noise, just constant convolved gaussian smoothness to the activation function
+	NVar float32 `def:"0.005,0.01" min:"0"`
 
-	// [def: 0.01] threshold on activation below which the direct vm - act.thr is used -- this should be low -- once it gets active should use net - g_e_thr ge-linear dynamics (gelin)
-	VmActThr float32 `def:"0.01" desc:"threshold on activation below which the direct vm - act.thr is used -- this should be low -- once it gets active should use net - g_e_thr ge-linear dynamics (gelin)"`
+	// threshold on activation below which the direct vm - act.thr is used -- this should be low -- once it gets active should use net - g_e_thr ge-linear dynamics (gelin)
+	VmActThr float32 `def:"0.01"`
 
-	// [def: 0.33] [view: -] multiplier on sigmoid used for computing values for net < thr
-	SigMult float32 `def:"0.33" view:"-" json:"-" xml:"-" desc:"multiplier on sigmoid used for computing values for net < thr"`
+	// multiplier on sigmoid used for computing values for net < thr
+	SigMult float32 `def:"0.33" display:"-" json:"-" xml:"-"`
 
-	// [def: 0.8] [view: -] power for computing sig_mult_eff as function of gain * nvar
-	SigMultPow float32 `def:"0.8" view:"-" json:"-" xml:"-" desc:"power for computing sig_mult_eff as function of gain * nvar"`
+	// power for computing sig_mult_eff as function of gain * nvar
+	SigMultPow float32 `def:"0.8" display:"-" json:"-" xml:"-"`
 
-	// [def: 3] [view: -] gain multipler on (net - thr) for sigmoid used for computing values for net < thr
-	SigGain float32 `def:"3" view:"-" json:"-" xml:"-" desc:"gain multipler on (net - thr) for sigmoid used for computing values for net < thr"`
+	// gain multipler on (net - thr) for sigmoid used for computing values for net < thr
+	SigGain float32 `def:"3" display:"-" json:"-" xml:"-"`
 
-	// [def: 0.01] [view: -] interpolation range above zero to use interpolation
-	InterpRange float32 `def:"0.01" view:"-" json:"-" xml:"-" desc:"interpolation range above zero to use interpolation"`
+	// interpolation range above zero to use interpolation
+	InterpRange float32 `def:"0.01" display:"-" json:"-" xml:"-"`
 
-	// [def: 10] [view: -] range in units of nvar over which to apply gain correction to compensate for convolution
-	GainCorRange float32 `def:"10" view:"-" json:"-" xml:"-" desc:"range in units of nvar over which to apply gain correction to compensate for convolution"`
+	// range in units of nvar over which to apply gain correction to compensate for convolution
+	GainCorRange float32 `def:"10" display:"-" json:"-" xml:"-"`
 
-	// [def: 0.1] [view: -] gain correction multiplier -- how much to correct gains
-	GainCor float32 `def:"0.1" view:"-" json:"-" xml:"-" desc:"gain correction multiplier -- how much to correct gains"`
+	// gain correction multiplier -- how much to correct gains
+	GainCor float32 `def:"0.1" display:"-" json:"-" xml:"-"`
 
-	// [view: -] sig_gain / nvar
-	SigGainNVar float32 `view:"-" json:"-" xml:"-" desc:"sig_gain / nvar"`
+	// sig_gain / nvar
+	SigGainNVar float32 `display:"-" json:"-" xml:"-"`
 
-	// [view: -] overall multiplier on sigmoidal component for values below threshold = sig_mult * pow(gain * nvar, sig_mult_pow)
-	SigMultEff float32 `view:"-" json:"-" xml:"-" desc:"overall multiplier on sigmoidal component for values below threshold = sig_mult * pow(gain * nvar, sig_mult_pow)"`
+	// overall multiplier on sigmoidal component for values below threshold = sig_mult * pow(gain * nvar, sig_mult_pow)
+	SigMultEff float32 `display:"-" json:"-" xml:"-"`
 
-	// [view: -] 0.5 * sig_mult_eff -- used for interpolation portion
-	SigValAt0 float32 `view:"-" json:"-" xml:"-" desc:"0.5 * sig_mult_eff -- used for interpolation portion"`
+	// 0.5 * sig_mult_eff -- used for interpolation portion
+	SigValAt0 float32 `display:"-" json:"-" xml:"-"`
 
-	// [view: -] function value at interp_range - sig_val_at_0 -- for interpolation
-	InterpVal float32 `view:"-" json:"-" xml:"-" desc:"function value at interp_range - sig_val_at_0 -- for interpolation"`
+	// function value at interp_range - sig_val_at_0 -- for interpolation
+	InterpVal float32 `display:"-" json:"-" xml:"-"`
 }
 
 func (xp *Params) Update() {
 	xp.SigGainNVar = xp.SigGain / xp.NVar
-	xp.SigMultEff = xp.SigMult * mat32.Pow(xp.Gain*xp.NVar, xp.SigMultPow)
+	xp.SigMultEff = xp.SigMult * math32.Pow(xp.Gain*xp.NVar, xp.SigMultPow)
 	xp.SigValAt0 = 0.5 * xp.SigMultEff
 	xp.InterpVal = xp.XX1GainCor(xp.InterpRange) - xp.SigValAt0
 }
@@ -123,7 +123,7 @@ func (xp *Params) NoisyXX1(x float32) float32 {
 		if ex > 50 {
 			return 0
 		}
-		return xp.SigMultEff / (1 + mat32.FastExp(ex))
+		return xp.SigMultEff / (1 + math32.FastExp(ex))
 	} else if x < xp.InterpRange {
 		interp := 1 - ((xp.InterpRange - x) / xp.InterpRange)
 		return xp.SigValAt0 + interp*xp.InterpVal
@@ -150,7 +150,7 @@ func (xp *Params) XX1GainCorGain(x, gain float32) float32 {
 // but ok for lower gains).  Using external gain factor.
 func (xp *Params) NoisyXX1Gain(x, gain float32) float32 {
 	if x < xp.InterpRange {
-		sigMultEffArg := xp.SigMult * mat32.Pow(gain*xp.NVar, xp.SigMultPow)
+		sigMultEffArg := xp.SigMult * math32.Pow(gain*xp.NVar, xp.SigMultPow)
 		sigValAt0Arg := 0.5 * sigMultEffArg
 
 		if x < 0 { // sigmoidal for < 0
@@ -158,7 +158,7 @@ func (xp *Params) NoisyXX1Gain(x, gain float32) float32 {
 			if ex > 50 {
 				return 0
 			}
-			return sigMultEffArg / (1 + mat32.FastExp(ex))
+			return sigMultEffArg / (1 + math32.FastExp(ex))
 		} else { // else x < interp_range
 			interp := 1 - ((xp.InterpRange - x) / xp.InterpRange)
 			return sigValAt0Arg + interp*xp.InterpVal

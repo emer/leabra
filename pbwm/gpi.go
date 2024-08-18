@@ -8,47 +8,43 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 ////////////////////////////////////////////////////////////////////
-// GPiThalPrjn
+// GPiThalPath
 
-// GPiThalPrjn accumulates per-prjn raw conductance that is needed for separately weighting
+// GPiThalPath accumulates per-path raw conductance that is needed for separately weighting
 // NoGo vs. Go inputs
-type GPiThalPrjn struct {
-	leabra.Prjn // access as .Prjn
+type GPiThalPath struct {
+	leabra.Path // access as .Path
 
-	// per-recv, per-prjn raw excitatory input
-	GeRaw []float32 `desc:"per-recv, per-prjn raw excitatory input"`
+	// per-recv, per-path raw excitatory input
+	GeRaw []float32
 }
 
-var KiT_GPiThalPrjn = kit.Types.AddType(&GPiThalPrjn{}, leabra.PrjnProps)
-
-func (pj *GPiThalPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *GPiThalPath) Build() error {
+	err := pj.Path.Build()
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.Shape()
+	rsh := pj.Recv.Shape
 	rlen := rsh.Len()
 	pj.GeRaw = make([]float32, rlen)
 	return nil
 }
 
-func (pj *GPiThalPrjn) InitGInc() {
-	pj.Prjn.InitGInc()
+func (pj *GPiThalPath) InitGInc() {
+	pj.Path.InitGInc()
 	for ri := range pj.GeRaw {
 		pj.GeRaw[ri] = 0
 	}
 }
 
-// RecvGInc increments the receiver's GeInc or GiInc from that of all the projections.
-func (pj *GPiThalPrjn) RecvGInc() {
+// RecvGInc increments the receiver's GeInc or GiInc from that of all the pathways.
+func (pj *GPiThalPath) RecvGInc() {
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
-	if pj.Typ == emer.Inhib {
+	if pj.Type == InhibPath {
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
 			rn.GiRaw += pj.GInc[ri]
@@ -72,32 +68,32 @@ func (pj *GPiThalPrjn) RecvGInc() {
 type GPiTimingParams struct {
 
 	// Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the PFC GateQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions.
-	GateQtr leabra.Quarters `desc:"Quarter(s) when gating takes place, typically Q1 and Q3, which is the quarter prior to the PFC GateQtr when deep layer updating takes place. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions."`
+	GateQtr leabra.Quarters
 
-	// [def: 18] cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way.
-	Cycle int `def:"18" desc:"cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way."`
+	// cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way.
+	Cycle int `def:"18"`
 }
 
 func (gt *GPiTimingParams) Defaults() {
-	gt.GateQtr.Set(int(leabra.Q1))
-	gt.GateQtr.Set(int(leabra.Q3))
+	gt.GateQtr.SetFlag(true, leabra.Q1)
+	gt.GateQtr.SetFlag(true, leabra.Q3)
 	gt.Cycle = 18
 }
 
 // GPiGateParams has gating parameters for gating in GPiThal layer, including threshold
 type GPiGateParams struct {
 
-	// [def: 3] extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
-	GeGain float32 `def:"3" desc:"extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)"`
+	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
+	GeGain float32 `def:"3"`
 
-	// [def: 1,0.1] [min: 0] how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
-	NoGo float32 `min:"0" def:"1,0.1" desc:"how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction"`
+	// how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
+	NoGo float32 `min:"0" def:"1,0.1"`
 
-	// [def: 0.2] threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
-	Thr float32 `def:"0.2" desc:"threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal"`
+	// threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
+	Thr float32 `def:"0.2"`
 
-	// [def: true] Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
-	ThrAct bool `def:"true" desc:"Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation"`
+	// Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
+	ThrAct bool `def:"true"`
 }
 
 func (gp *GPiGateParams) Defaults() {
@@ -116,7 +112,7 @@ func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
 type GPiNeuron struct {
 
 	// gating activation -- the activity value when gating occurred in this pool
-	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	ActG float32
 }
 
 // GPiThalLayer represents the combined Winner-Take-All dynamic of GPi (SNr) and Thalamus.
@@ -126,20 +122,18 @@ type GPiNeuron struct {
 type GPiThalLayer struct {
 	GateLayer
 
-	// [view: inline] timing parameters determining when gating happens
-	Timing GPiTimingParams `view:"inline" desc:"timing parameters determining when gating happens"`
+	// timing parameters determining when gating happens
+	Timing GPiTimingParams `display:"inline"`
 
-	// [view: inline] gating parameters determining threshold for gating etc
-	Gate GPiGateParams `view:"inline" desc:"gating parameters determining threshold for gating etc"`
+	// gating parameters determining threshold for gating etc
+	Gate GPiGateParams `display:"inline"`
 
 	// list of layers to send GateState to
-	SendTo []string `desc:"list of layers to send GateState to"`
+	SendTo []string
 
 	// slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
-	GPiNeurs []GPiNeuron `desc:"slice of GPiNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	GPiNeurs []GPiNeuron
 }
-
-var KiT_GPiThalLayer = kit.Types.AddType(&GPiThalLayer{}, leabra.LayerProps)
 
 // Sel: "GPiThalLayer", Desc: "defaults ",
 // 	Params: params.Params{
@@ -165,11 +159,11 @@ func (ly *GPiThalLayer) GateType() GateTypes {
 	return MaintOut // always both
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *GPiThalLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *GPiThalLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	if vidx != ActG {
-		return ly.GateLayer.UnitValByIdx(vidx, idx)
+		return ly.GateLayer.UnitValueByIndex(vidx, idx)
 	}
 	gnrn := &ly.GPiNeurs[idx]
 	return gnrn.ActG
@@ -206,7 +200,7 @@ func (ly *GPiThalLayer) SendToMatrixPFC(prefix string) {
 func (ly *GPiThalLayer) SendGateShape() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
-		tly, err := ly.Network.LayerByNameTry(lnm)
+		tly, err := ly.Network.LayerByName(lnm)
 		if err != nil {
 			log.Printf("GPiThalLayer %s SendGateShape: %v\n", ly.Name(), err)
 			lasterr = err
@@ -224,32 +218,32 @@ func (ly *GPiThalLayer) SendGateShape() error {
 	return lasterr
 }
 
-// MatrixPrjns returns the recv prjns from Go and NoGo MatrixLayer pathways -- error if not
-// found or if prjns are not of the GPiThalPrjn type
-func (ly *GPiThalLayer) MatrixPrjns() (goPrjn, nogoPrjn *GPiThalPrjn, err error) {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+// MatrixPaths returns the recv paths from Go and NoGo MatrixLayer pathways -- error if not
+// found or if paths are not of the GPiThalPath type
+func (ly *GPiThalLayer) MatrixPaths() (goPath, nogoPath *GPiThalPath, err error) {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
-		gp, ok := p.(*GPiThalPrjn)
+		gp, ok := p.(*GPiThalPath)
 		if !ok {
-			err = fmt.Errorf("GPiThalLayer must have RecvPrjn's of type GPiThalPrjn")
+			err = fmt.Errorf("GPiThalLayer must have RecvPath's of type GPiThalPath")
 			return
 		}
-		slay := p.SendLay()
+		slay := p.Send
 		mlay, ok := slay.(*MatrixLayer)
 		if ok {
 			if mlay.DaR == D1R {
-				goPrjn = gp
+				goPath = gp
 			} else {
-				nogoPrjn = gp
+				nogoPath = gp
 			}
 		} else {
-			nogoPrjn = gp
+			nogoPath = gp
 		}
 	}
-	if goPrjn == nil || nogoPrjn == nil {
-		err = fmt.Errorf("GPiThalLayer must have RecvPrjn's from a MatrixLayer D1R (Go) and another NoGo layer")
+	if goPath == nil || nogoPath == nil {
+		err = fmt.Errorf("GPiThalLayer must have RecvPath's from a MatrixLayer D1R (Go) and another NoGo layer")
 	}
 	return
 }
@@ -258,7 +252,7 @@ func (ly *GPiThalLayer) MatrixPrjns() (goPrjn, nogoPrjn *GPiThalPrjn, err error)
 func (ly *GPiThalLayer) SendToCheck() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
-		tly, err := ly.Network.LayerByNameTry(lnm)
+		tly, err := ly.Network.LayerByName(lnm)
 		if err != nil {
 			log.Printf("GPiThalLayer %s SendToCheck: %v\n", ly.Name(), err)
 			lasterr = err
@@ -278,14 +272,14 @@ func (ly *GPiThalLayer) AddSendTo(laynm string) {
 	ly.SendTo = append(ly.SendTo, laynm)
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *GPiThalLayer) Build() error {
 	err := ly.GateLayer.Build()
 	if err != nil {
 		return err
 	}
 	ly.GPiNeurs = make([]GPiNeuron, len(ly.Neurons))
-	_, _, err = ly.MatrixPrjns()
+	_, _, err = ly.MatrixPaths()
 	if err != nil {
 		log.Println(err)
 	}
@@ -315,40 +309,40 @@ func (ly *GPiThalLayer) AlphaCycInit(updtActAvg bool) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *GPiThalLayer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	goPrjn, nogoPrjn, _ := ly.MatrixPrjns()
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *GPiThalLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
+	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		goRaw := goPrjn.GeRaw[ni]
-		nogoRaw := nogoPrjn.GeRaw[ni]
+		goRaw := goPath.GeRaw[ni]
+		nogoRaw := nogoPath.GeRaw[ni]
 		nrn.GeRaw = ly.Gate.GeRaw(goRaw, nogoRaw)
-		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, nrn.GeRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
 // GateSend updates gating state and sends it along to other layers
-func (ly *GPiThalLayer) GateSend(ltime *leabra.Time) {
-	ly.GateFmAct(ltime)
+func (ly *GPiThalLayer) GateSend(ctx *leabra.Context) {
+	ly.GateFromAct(ctx)
 	ly.SendGateStates()
 }
 
-// GateFmAct updates GateState from current activations, at time of gating
-func (ly *GPiThalLayer) GateFmAct(ltime *leabra.Time) {
-	gateQtr := ly.Timing.GateQtr.Has(ltime.Quarter)
-	qtrCyc := ltime.QuarterCycle()
+// GateFromAct updates GateState from current activations, at time of gating
+func (ly *GPiThalLayer) GateFromAct(ctx *leabra.Context) {
+	gateQtr := ly.Timing.GateQtr.HasFlag(ctx.Quarter)
+	qtrCyc := ctx.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		gs := ly.GateState(int(nrn.SubPool) - 1)
-		if ltime.Quarter == 0 && qtrCyc == 0 {
+		if ctx.Quarter == 0 && qtrCyc == 0 {
 			gs.Act = 0 // reset at start
 		}
 		if gateQtr && qtrCyc == ly.Timing.Cycle { // gating
@@ -384,14 +378,14 @@ func (ly *GPiThalLayer) SendGateStates() {
 
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now
-func (ly *GPiThalLayer) RecGateAct(ltime *leabra.Time) {
+func (ly *GPiThalLayer) RecGateAct(ctx *leabra.Context) {
 	for gi := range ly.GateStates {
 		gs := &ly.GateStates[gi]
 		if !gs.Now { // not gating now
 			continue
 		}
 		pl := &ly.Pools[1+gi]
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue

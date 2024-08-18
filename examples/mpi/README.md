@@ -110,7 +110,7 @@ Here we Gather the training trial-level data from all the procs, into a separate
 		trl = ss.TrnTrlLogAll
 	}
 
-	tix := etable.NewIdxView(trl)
+	tix := etable.NewIndexView(trl)
 
 	pcterr := agg.Mean(tix, "Err")[0]
 ```

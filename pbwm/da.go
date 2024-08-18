@@ -4,10 +4,6 @@
 
 package pbwm
 
-import (
-	"github.com/goki/ki/kit"
-)
-
 //////////////////////////////////////////////////////////////////////////////////////
 //  DaMod
 
@@ -17,22 +13,22 @@ import (
 type DaModParams struct {
 
 	// whether to use dopamine modulation
-	On bool `desc:"whether to use dopamine modulation"`
+	On bool
 
-	// [viewif: On] modulate gain instead of Ge excitatory synaptic input
-	ModGain bool `viewif:"On" desc:"modulate gain instead of Ge excitatory synaptic input"`
+	// modulate gain instead of Ge excitatory synaptic input
+	ModGain bool `viewif:"On"`
 
-	// [viewif: On] how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
-	Minus float32 `viewif:"On" desc:"how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+	// how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Minus float32 `viewif:"On"`
 
-	// [viewif: On] how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
-	Plus float32 `viewif:"On" desc:"how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons"`
+	// how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
+	Plus float32 `viewif:"On"`
 
-	// [viewif: On&&ModGain] for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase
-	NegGain float32 `viewif:"On&&ModGain" desc:"for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase"`
+	// for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase
+	NegGain float32 `viewif:"On&&ModGain"`
 
-	// [viewif: On&&ModGain] for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase
-	PosGain float32 `viewif:"On&&ModGain" desc:"for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase"`
+	// for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase
+	PosGain float32 `viewif:"On&&ModGain"`
 }
 
 func (dm *DaModParams) Defaults() {
@@ -79,14 +75,7 @@ func (dm *DaModParams) Gain(da, gain float32, plusPhase bool) float32 {
 // Enums
 
 // DaReceptors for D1R and D2R dopamine receptors
-type DaReceptors int
-
-//go:generate stringer -type=DaReceptors
-
-var KiT_DaReceptors = kit.Enums.AddEnum(DaReceptorsN, kit.NotBitFlag, nil)
-
-func (ev DaReceptors) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *DaReceptors) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type DaReceptors int //enums:enum
 
 const (
 	// D1R primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum
@@ -99,14 +88,7 @@ const (
 )
 
 // Valences for Appetitive and Aversive valence coding
-type Valences int
-
-//go:generate stringer -type=Valences
-
-var KiT_Valences = kit.Enums.AddEnum(ValencesN, kit.NotBitFlag, nil)
-
-func (ev Valences) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *Valences) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type Valences int //enums:enum
 
 const (
 	// Appetititve is a positive valence US (food, water, etc)

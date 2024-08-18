@@ -4,7 +4,7 @@
 
 package pbwm
 
-import "github.com/emer/leabra/leabra"
+import "github.com/emer/leabra/v2/leabra"
 
 // NeurVars are indexes into extra PBWM neuron-level variables
 type NeurVars int

@@ -7,15 +7,14 @@ package pcore
 import (
 	"fmt"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/emer/leabra/rl"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
+	"github.com/emer/leabra/v2/rl"
 )
 
 // CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
-// and sends the Max absolute value of that activity as the positively-rectified
+// and sends the Max absolute value of that activity as the positively rectified
 // non-prediction-discounted reward signal computed by CINs, and sent as
 // an acetylcholine (ACh) signal.
 // To handle positive-only reward signals, need to include both a reward prediction
@@ -24,19 +23,17 @@ type CINLayer struct {
 	leabra.Layer
 
 	// threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior
-	RewThr float32 `desc:"threshold on reward values from RewLays, to count as a significant reward event, which then drives maximal ACh -- set to 0 to disable this nonlinear behavior"`
+	RewThr float32
 
 	// Reward-representing layer(s) from which this computes ACh as Max absolute value
-	RewLays emer.LayNames `desc:"Reward-representing layer(s) from which this computes ACh as Max absolute value"`
+	RewLays emer.LayNames
 
 	// list of layers to send acetylcholine to
-	SendACh rl.SendACh `desc:"list of layers to send acetylcholine to"`
+	SendACh rl.SendACh
 
 	// acetylcholine value for this layer
-	ACh float32 `desc:"acetylcholine value for this layer"`
+	ACh float32
 }
-
-var KiT_CINLayer = kit.Types.AddType(&CINLayer{}, leabra.LayerProps)
 
 func (ly *CINLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -48,7 +45,7 @@ func (ly *CINLayer) Defaults() {
 func (ly *CINLayer) GetACh() float32    { return ly.ACh }
 func (ly *CINLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *CINLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -68,13 +65,13 @@ func (ly *CINLayer) MaxAbsRew() float32 {
 			continue
 		}
 		ly := lyi.(leabra.LeabraLayer).AsLeabra()
-		act := mat32.Abs(ly.Pools[0].Inhib.Act.Max)
-		mx = mat32.Max(mx, act)
+		act := math32.Abs(ly.Pools[0].Inhib.Act.Max)
+		mx = math32.Max(mx, act)
 	}
 	return mx
 }
 
-func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
+func (ly *CINLayer) ActFmG(ctx *leabra.Context) {
 	ract := ly.MaxAbsRew()
 	if ly.RewThr > 0 {
 		if ract > ly.RewThr {
@@ -92,17 +89,17 @@ func (ly *CINLayer) ActFmG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send ACh, which will then be active for the next cycle of processing.
-func (ly *CINLayer) CyclePost(ltime *leabra.Time) {
+func (ly *CINLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *CINLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -113,20 +110,20 @@ func (ly *CINLayer) UnitVarIdx(varNm string) (int, error) {
 	return nn, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *CINLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *CINLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < 0 || varIdx > nn { // nn = ACh
-		return mat32.NaN()
+	if varIndex < 0 || varIndex > nn { // nn = ACh
+		return math32.NaN()
 	}
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.Layer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	return ly.ACh
 }

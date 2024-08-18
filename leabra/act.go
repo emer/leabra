@@ -5,14 +5,12 @@
 package leabra
 
 import (
-	"github.com/emer/emergent/erand"
-	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/chans"
-	"github.com/emer/leabra/knadapt"
-	"github.com/emer/leabra/nxx1"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/math32"
+	"cogentcore.org/core/math32/minmax"
+	"github.com/emer/leabra/v2/chans"
+	"github.com/emer/leabra/v2/knadapt"
+	"github.com/emer/leabra/v2/nxx1"
 )
 
 ///////////////////////////////////////////////////////////////////////
@@ -23,41 +21,41 @@ import (
 // This is included in leabra.Layer to drive the computation.
 type ActParams struct {
 
-	// [view: inline] Noisy X/X+1 rate code activation function parameters
-	XX1 nxx1.Params `view:"inline" desc:"Noisy X/X+1 rate code activation function parameters"`
+	// Noisy X/X+1 rate code activation function parameters
+	XX1 nxx1.Params `display:"inline"`
 
-	// [view: inline] optimization thresholds for faster processing
-	OptThresh OptThreshParams `view:"inline" desc:"optimization thresholds for faster processing"`
+	// optimization thresholds for faster processing
+	OptThresh OptThreshParams `display:"inline"`
 
-	// [view: inline] initial values for key network state variables -- initialized at start of trial with InitActs or DecayActs
-	Init ActInitParams `view:"inline" desc:"initial values for key network state variables -- initialized at start of trial with InitActs or DecayActs"`
+	// initial values for key network state variables -- initialized at start of trial with InitActs or DecayActs
+	Init ActInitParams `display:"inline"`
 
-	// [view: inline] time and rate constants for temporal derivatives / updating of activation state
-	Dt DtParams `view:"inline" desc:"time and rate constants for temporal derivatives / updating of activation state"`
+	// time and rate constants for temporal derivatives / updating of activation state
+	Dt DtParams `display:"inline"`
 
-	// [view: inline] [Defaults: 1, .1, 1, 1] maximal conductances levels for channels
-	Gbar chans.Chans `view:"inline" desc:"[Defaults: 1, .1, 1, 1] maximal conductances levels for channels"`
+	// maximal conductances levels for channels
+	Gbar chans.Chans `display:"inline"`
 
-	// [view: inline] [Defaults: 1, .3, .25, .1] reversal potentials for each channel
-	Erev chans.Chans `view:"inline" desc:"[Defaults: 1, .3, .25, .1] reversal potentials for each channel"`
+	// reversal potentials for each channel
+	Erev chans.Chans `display:"inline"`
 
-	// [view: inline] how external inputs drive neural activations
-	Clamp ClampParams `view:"inline" desc:"how external inputs drive neural activations"`
+	// how external inputs drive neural activations
+	Clamp ClampParams `display:"inline"`
 
-	// [view: inline] how, where, when, and how much noise to add to activations
-	Noise ActNoiseParams `view:"inline" desc:"how, where, when, and how much noise to add to activations"`
+	// how, where, when, and how much noise to add to activations
+	Noise ActNoiseParams `display:"inline"`
 
-	// [view: inline] range for Vm membrane potential -- [0, 2.0] by default
-	VmRange minmax.F32 `view:"inline" desc:"range for Vm membrane potential -- [0, 2.0] by default"`
+	// range for Vm membrane potential -- by default
+	VmRange minmax.F32 `display:"inline"`
 
-	// [view: no-inline] sodium-gated potassium channel adaptation parameters -- activates an inhibitory leak-like current as a function of neural activity (firing = Na influx) at three different time-scales (M-type = fast, Slick = medium, Slack = slow)
-	KNa knadapt.Params `view:"no-inline" desc:"sodium-gated potassium channel adaptation parameters -- activates an inhibitory leak-like current as a function of neural activity (firing = Na influx) at three different time-scales (M-type = fast, Slick = medium, Slack = slow)"`
+	// sodium-gated potassium channel adaptation parameters -- activates an inhibitory leak-like current as a function of neural activity (firing = Na influx) at three different time-scales (M-type = fast, Slick = medium, Slack = slow)
+	KNa knadapt.Params `display:"no-inline"`
 
-	// [view: -] Erev - Act.Thr for each channel -- used in computing GeThrFmG among others
-	ErevSubThr chans.Chans `inactive:"+" view:"-" json:"-" xml:"-" desc:"Erev - Act.Thr for each channel -- used in computing GeThrFmG among others"`
+	// Erev - Act.Thr for each channel -- used in computing GeThrFromG among others
+	ErevSubThr chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 
-	// [view: -] Act.Thr - Erev for each channel -- used in computing GeThrFmG among others
-	ThrSubErev chans.Chans `inactive:"+" view:"-" json:"-" xml:"-" desc:"Act.Thr - Erev for each channel -- used in computing GeThrFmG among others"`
+	// Act.Thr - Erev for each channel -- used in computing GeThrFromG among others
+	ThrSubErev chans.Chans `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (ac *ActParams) Defaults() {
@@ -77,8 +75,8 @@ func (ac *ActParams) Defaults() {
 
 // Update must be called after any changes to parameters
 func (ac *ActParams) Update() {
-	ac.ErevSubThr.SetFmOtherMinus(ac.Erev, ac.XX1.Thr)
-	ac.ThrSubErev.SetFmMinusOther(ac.XX1.Thr, ac.Erev)
+	ac.ErevSubThr.SetFromOtherMinus(ac.Erev, ac.XX1.Thr)
+	ac.ThrSubErev.SetFromMinusOther(ac.XX1.Thr, ac.Erev)
 
 	ac.XX1.Update()
 	ac.OptThresh.Update()
@@ -119,7 +117,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 	nrn.Inet = 0
 }
 
-// InitActs initializes activation state in neuron -- called during InitWts but otherwise not
+// InitActs initializes activation state in neuron -- called during InitWeights but otherwise not
 // automatically called (DecayState is used instead)
 func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Act = ac.Init.Act
@@ -146,7 +144,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 }
 
 // InitActQs initializes quarter-based activation states in neuron (ActQ0-2, ActM, ActP, ActDif)
-// Called from InitActs, which is called from InitWts, but otherwise not automatically called
+// Called from InitActs, which is called from InitWeights, but otherwise not automatically called
 // (DecayState is used instead)
 func (ac *ActParams) InitActQs(nrn *Neuron) {
 	nrn.ActQ0 = 0
@@ -160,9 +158,9 @@ func (ac *ActParams) InitActQs(nrn *Neuron) {
 ///////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GeFmRaw integrates Ge excitatory conductance from GeRaw value
+// GeFromRaw integrates Ge excitatory conductance from GeRaw value
 // (can add other terms to geRaw prior to calling this)
-func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
+func (ac *ActParams) GeFromRaw(nrn *Neuron, geRaw float32) {
 	if !ac.Clamp.Hard && nrn.HasFlag(NeurHasExt) {
 		if ac.Clamp.Avg {
 			geRaw = ac.Clamp.AvgGe(nrn.Ext, geRaw)
@@ -171,58 +169,58 @@ func (ac *ActParams) GeFmRaw(nrn *Neuron, geRaw float32) {
 		}
 	}
 
-	ac.Dt.GFmRaw(geRaw, &nrn.Ge)
+	ac.Dt.GFromRaw(geRaw, &nrn.Ge)
 	// first place noise is required -- generate here!
-	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != erand.Mean {
-		nrn.Noise = float32(ac.Noise.Gen(-1))
+	if ac.Noise.Type != NoNoise && !ac.Noise.Fixed && ac.Noise.Dist != randx.Mean {
+		nrn.Noise = float32(ac.Noise.Gen())
 	}
 	if ac.Noise.Type == GeNoise {
 		nrn.Ge += nrn.Noise
 	}
 }
 
-// GiFmRaw integrates GiSyn inhibitory synaptic conductance from GiRaw value
+// GiFromRaw integrates GiSyn inhibitory synaptic conductance from GiRaw value
 // (can add other terms to geRaw prior to calling this)
-func (ac *ActParams) GiFmRaw(nrn *Neuron, giRaw float32) {
-	ac.Dt.GFmRaw(giRaw, &nrn.GiSyn)
-	nrn.GiSyn = mat32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
+func (ac *ActParams) GiFromRaw(nrn *Neuron, giRaw float32) {
+	ac.Dt.GFromRaw(giRaw, &nrn.GiSyn)
+	nrn.GiSyn = math32.Max(nrn.GiSyn, 0) // negative inhib G doesn't make any sense
 }
 
-// InetFmG computes net current from conductances and Vm
-func (ac *ActParams) InetFmG(vm, ge, gi, gk float32) float32 {
+// InetFromG computes net current from conductances and Vm
+func (ac *ActParams) InetFromG(vm, ge, gi, gk float32) float32 {
 	return ge*(ac.Erev.E-vm) + ac.Gbar.L*(ac.Erev.L-vm) + gi*(ac.Erev.I-vm) + gk*(ac.Erev.K-vm)
 }
 
-// VmFmG computes membrane potential Vm from conductances Ge, Gi, and Gk.
+// VmFromG computes membrane potential Vm from conductances Ge, Gi, and Gk.
 // The Vm value is only used in pure rate-code computation within the sub-threshold regime
 // because firing rate is a direct function of excitatory conductance Ge.
-func (ac *ActParams) VmFmG(nrn *Neuron) {
+func (ac *ActParams) VmFromG(nrn *Neuron) {
 	ge := nrn.Ge * ac.Gbar.E
 	gi := nrn.Gi * ac.Gbar.I
 	gk := nrn.Gk * ac.Gbar.K
-	nrn.Inet = ac.InetFmG(nrn.Vm, ge, gi, gk)
+	nrn.Inet = ac.InetFromG(nrn.Vm, ge, gi, gk)
 	nwVm := nrn.Vm + ac.Dt.VmDt*nrn.Inet
 
 	if ac.Noise.Type == VmNoise {
 		nwVm += nrn.Noise
 	}
-	nrn.Vm = ac.VmRange.ClipVal(nwVm)
+	nrn.Vm = ac.VmRange.ClipValue(nwVm)
 }
 
-// GeThrFmG computes the threshold for Ge based on all other conductances,
+// GeThrFromG computes the threshold for Ge based on all other conductances,
 // including Gk.  This is used for computing the adapted Act value.
-func (ac *ActParams) GeThrFmG(nrn *Neuron) float32 {
+func (ac *ActParams) GeThrFromG(nrn *Neuron) float32 {
 	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L + ac.Gbar.K*nrn.Gk*ac.ErevSubThr.K) / ac.ThrSubErev.E)
 }
 
-// GeThrFmGnoK computes the threshold for Ge based on other conductances,
+// GeThrFromGnoK computes the threshold for Ge based on other conductances,
 // excluding Gk.  This is used for computing the non-adapted ActLrn value.
-func (ac *ActParams) GeThrFmGnoK(nrn *Neuron) float32 {
+func (ac *ActParams) GeThrFromGnoK(nrn *Neuron) float32 {
 	return ((ac.Gbar.I*nrn.Gi*ac.ErevSubThr.I + ac.Gbar.L*ac.ErevSubThr.L) / ac.ThrSubErev.E)
 }
 
-// ActFmG computes rate-coded activation Act from conductances Ge, Gi, Gk
-func (ac *ActParams) ActFmG(nrn *Neuron) {
+// ActFromG computes rate-coded activation Act from conductances Ge, Gi, Gk
+func (ac *ActParams) ActFromG(nrn *Neuron) {
 	if ac.HasHardClamp(nrn) {
 		ac.HardClamp(nrn)
 		return
@@ -236,9 +234,9 @@ func (ac *ActParams) ActFmG(nrn *Neuron) {
 		nwActLrn = nwAct
 	} else {
 		ge := nrn.Ge * ac.Gbar.E
-		geThr := ac.GeThrFmG(nrn)
+		geThr := ac.GeThrFromG(nrn)
 		nwAct = ac.XX1.NoisyXX1(ge - geThr)
-		geThr = ac.GeThrFmGnoK(nrn)            // excludes K adaptation effect
+		geThr = ac.GeThrFromGnoK(nrn)          // excludes K adaptation effect
 		nwActLrn = ac.XX1.NoisyXX1(ge - geThr) // learning is non-adapted
 	}
 	curAct := nrn.Act
@@ -254,7 +252,7 @@ func (ac *ActParams) ActFmG(nrn *Neuron) {
 	nrn.ActLrn = nwActLrn
 
 	if ac.KNa.On {
-		ac.KNa.GcFmRate(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Act)
+		ac.KNa.GcFromRate(&nrn.GknaFast, &nrn.GknaMed, &nrn.GknaSlow, nrn.Act)
 		nrn.Gk = nrn.GknaFast + nrn.GknaMed + nrn.GknaSlow
 	}
 }
@@ -271,7 +269,7 @@ func (ac *ActParams) HardClamp(nrn *Neuron) {
 	if ac.Noise.Type == ActNoise {
 		ext += nrn.Noise
 	}
-	clmp := ac.Clamp.Range.ClipVal(ext)
+	clmp := ac.Clamp.Range.ClipValue(ext)
 	nrn.Act = clmp + nrn.Noise
 	nrn.ActLrn = clmp
 	nrn.Vm = ac.XX1.Thr + nrn.Act/ac.XX1.Gain
@@ -285,11 +283,11 @@ func (ac *ActParams) HardClamp(nrn *Neuron) {
 // OptThreshParams provides optimization thresholds for faster processing
 type OptThreshParams struct {
 
-	// [def: 0.1] don't send activation when act <= send -- greatly speeds processing
-	Send float32 `def:"0.1" desc:"don't send activation when act <= send -- greatly speeds processing"`
+	// don't send activation when act <= send -- greatly speeds processing
+	Send float32 `def:"0.1"`
 
-	// [def: 0.005] don't send activation changes until they exceed this threshold: only for when LeabraNetwork::send_delta is on!
-	Delta float32 `def:"0.005" desc:"don't send activation changes until they exceed this threshold: only for when LeabraNetwork::send_delta is on!"`
+	// don't send activation changes until they exceed this threshold: only for when LeabraNetwork::send_delta is on!
+	Delta float32 `def:"0.005"`
 }
 
 func (ot *OptThreshParams) Update() {
@@ -307,17 +305,17 @@ func (ot *OptThreshParams) Defaults() {
 // Initialized at start of trial with Init_Acts or DecayState.
 type ActInitParams struct {
 
-	// [def: 0,1] [min: 0] [max: 1] proportion to decay activation state toward initial values at start of every trial
-	Decay float32 `def:"0,1" max:"1" min:"0" desc:"proportion to decay activation state toward initial values at start of every trial"`
+	// proportion to decay activation state toward initial values at start of every trial
+	Decay float32 `def:"0,1" max:"1" min:"0"`
 
-	// [def: 0.4] initial membrane potential -- see e_rev.l for the resting potential (typically .3) -- often works better to have a somewhat elevated initial membrane potential relative to that
-	Vm float32 `def:"0.4" desc:"initial membrane potential -- see e_rev.l for the resting potential (typically .3) -- often works better to have a somewhat elevated initial membrane potential relative to that"`
+	// initial membrane potential -- see e_rev.l for the resting potential (typically .3) -- often works better to have a somewhat elevated initial membrane potential relative to that
+	Vm float32 `def:"0.4"`
 
-	// [def: 0] initial activation value -- typically 0
-	Act float32 `def:"0" desc:"initial activation value -- typically 0"`
+	// initial activation value -- typically 0
+	Act float32 `def:"0"`
 
-	// [def: 0] baseline level of excitatory conductance (net input) -- Ge is initialized to this value, and it is added in as a constant background level of excitatory input -- captures all the other inputs not represented in the model, and intrinsic excitability, etc
-	Ge float32 `def:"0" desc:"baseline level of excitatory conductance (net input) -- Ge is initialized to this value, and it is added in as a constant background level of excitatory input -- captures all the other inputs not represented in the model, and intrinsic excitability, etc"`
+	// baseline level of excitatory conductance (net input) -- Ge is initialized to this value, and it is added in as a constant background level of excitatory input -- captures all the other inputs not represented in the model, and intrinsic excitability, etc
+	Ge float32 `def:"0"`
 }
 
 func (ai *ActInitParams) Update() {
@@ -336,26 +334,26 @@ func (ai *ActInitParams) Defaults() {
 // DtParams are time and rate constants for temporal derivatives in Leabra (Vm, net input)
 type DtParams struct {
 
-	// [def: 1,0.5] [min: 0] overall rate constant for numerical integration, for all equations at the unit level -- all time constants are specified in millisecond units, with one cycle = 1 msec -- if you instead want to make one cycle = 2 msec, you can do this globally by setting this integ value to 2 (etc).  However, stability issues will likely arise if you go too high.  For improved numerical stability, you may even need to reduce this value to 0.5 or possibly even lower (typically however this is not necessary).  MUST also coordinate this with network.time_inc variable to ensure that global network.time reflects simulated time accurately
-	Integ float32 `def:"1,0.5" min:"0" desc:"overall rate constant for numerical integration, for all equations at the unit level -- all time constants are specified in millisecond units, with one cycle = 1 msec -- if you instead want to make one cycle = 2 msec, you can do this globally by setting this integ value to 2 (etc).  However, stability issues will likely arise if you go too high.  For improved numerical stability, you may even need to reduce this value to 0.5 or possibly even lower (typically however this is not necessary).  MUST also coordinate this with network.time_inc variable to ensure that global network.time reflects simulated time accurately"`
+	// overall rate constant for numerical integration, for all equations at the unit level -- all time constants are specified in millisecond units, with one cycle = 1 msec -- if you instead want to make one cycle = 2 msec, you can do this globally by setting this integ value to 2 (etc).  However, stability issues will likely arise if you go too high.  For improved numerical stability, you may even need to reduce this value to 0.5 or possibly even lower (typically however this is not necessary).  MUST also coordinate this with network.time_inc variable to ensure that global network.time reflects simulated time accurately
+	Integ float32 `def:"1,0.5" min:"0"`
 
-	// [def: 3.3] [min: 1] membrane potential and rate-code activation time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- reflects the capacitance of the neuron in principle -- biological default for AdEx spiking model C = 281 pF = 2.81 normalized -- for rate-code activation, this also determines how fast to integrate computed activation values over time
-	VmTau float32 `def:"3.3" min:"1" desc:"membrane potential and rate-code activation time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- reflects the capacitance of the neuron in principle -- biological default for AdEx spiking model C = 281 pF = 2.81 normalized -- for rate-code activation, this also determines how fast to integrate computed activation values over time"`
+	// membrane potential and rate-code activation time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- reflects the capacitance of the neuron in principle -- biological default for AdEx spiking model C = 281 pF = 2.81 normalized -- for rate-code activation, this also determines how fast to integrate computed activation values over time
+	VmTau float32 `def:"3.3" min:"1"`
 
-	// [def: 1.4,3,5] [min: 1] time constant for integrating synaptic conductances, in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- this is important for damping oscillations -- generally reflects time constants associated with synaptic channels which are not modeled in the most abstract rate code models (set to 1 for detailed spiking models with more realistic synaptic currents) -- larger values (e.g., 3) can be important for models with higher conductances that otherwise might be more prone to oscillation.
-	GTau float32 `def:"1.4,3,5" min:"1" desc:"time constant for integrating synaptic conductances, in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- this is important for damping oscillations -- generally reflects time constants associated with synaptic channels which are not modeled in the most abstract rate code models (set to 1 for detailed spiking models with more realistic synaptic currents) -- larger values (e.g., 3) can be important for models with higher conductances that otherwise might be more prone to oscillation."`
+	// time constant for integrating synaptic conductances, in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- this is important for damping oscillations -- generally reflects time constants associated with synaptic channels which are not modeled in the most abstract rate code models (set to 1 for detailed spiking models with more realistic synaptic currents) -- larger values (e.g., 3) can be important for models with higher conductances that otherwise might be more prone to oscillation.
+	GTau float32 `def:"1.4,3,5" min:"1"`
 
-	// [def: 200] for integrating activation average (ActAvg), time constant in trials (roughly, how long it takes for value to change significantly) -- used mostly for visualization and tracking *hog* units
-	AvgTau float32 `def:"200" desc:"for integrating activation average (ActAvg), time constant in trials (roughly, how long it takes for value to change significantly) -- used mostly for visualization and tracking *hog* units"`
+	// for integrating activation average (ActAvg), time constant in trials (roughly, how long it takes for value to change significantly) -- used mostly for visualization and tracking *hog* units
+	AvgTau float32 `def:"200"`
 
-	// [view: -] nominal rate = Integ / tau
-	VmDt float32 `view:"-" json:"-" xml:"-" desc:"nominal rate = Integ / tau"`
+	// nominal rate = Integ / tau
+	VmDt float32 `display:"-" json:"-" xml:"-"`
 
-	// [view: -] rate = Integ / tau
-	GDt float32 `view:"-" json:"-" xml:"-" desc:"rate = Integ / tau"`
+	// rate = Integ / tau
+	GDt float32 `display:"-" json:"-" xml:"-"`
 
-	// [view: -] rate = 1 / tau
-	AvgDt float32 `view:"-" json:"-" xml:"-" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	AvgDt float32 `display:"-" json:"-" xml:"-"`
 }
 
 func (dp *DtParams) Update() {
@@ -372,7 +370,7 @@ func (dp *DtParams) Defaults() {
 	dp.Update()
 }
 
-func (dp *DtParams) GFmRaw(geRaw float32, ge *float32) {
+func (dp *DtParams) GFromRaw(geRaw float32, ge *float32) {
 	*ge += dp.GDt * (geRaw - *ge)
 }
 
@@ -380,14 +378,7 @@ func (dp *DtParams) GFmRaw(geRaw float32, ge *float32) {
 //  Noise
 
 // ActNoiseType are different types / locations of random noise for activations
-type ActNoiseType int
-
-//go:generate stringer -type=ActNoiseType
-
-var KiT_ActNoiseType = kit.Enums.AddEnum(ActNoiseTypeN, kit.NotBitFlag, nil)
-
-func (ev ActNoiseType) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *ActNoiseType) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type ActNoiseType int //enums:enum
 
 // The activation noise types
 const (
@@ -408,19 +399,17 @@ const (
 
 	// GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values
 	GeMultNoise
-
-	ActNoiseTypeN
 )
 
 // ActNoiseParams contains parameters for activation-level noise
 type ActNoiseParams struct {
-	erand.RndParams
+	randx.RandParams
 
 	// where and how to add processing noise
-	Type ActNoiseType `desc:"where and how to add processing noise"`
+	Type ActNoiseType
 
 	// keep the same noise value over the entire alpha cycle -- prevents noise from being washed out and produces a stable effect that can be better used for learning -- this is strongly recommended for most learning situations
-	Fixed bool `desc:"keep the same noise value over the entire alpha cycle -- prevents noise from being washed out and produces a stable effect that can be better used for learning -- this is strongly recommended for most learning situations"`
+	Fixed bool
 }
 
 func (an *ActNoiseParams) Update() {
@@ -436,20 +425,20 @@ func (an *ActNoiseParams) Defaults() {
 // ClampParams are for specifying how external inputs are clamped onto network activation values
 type ClampParams struct {
 
-	// [def: true] whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)
-	Hard bool `def:"true" desc:"whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)"`
+	// whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)
+	Hard bool `def:"true"`
 
-	// [viewif: Hard] range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function
-	Range minmax.F32 `viewif:"Hard" desc:"range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function"`
+	// range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function
+	Range minmax.F32 `viewif:"Hard"`
 
-	// [def: 0.02:0.5] [viewif: !Hard] soft clamp gain factor (Ge += Gain * Ext)
-	Gain float32 `viewif:"!Hard" def:"0.02:0.5" desc:"soft clamp gain factor (Ge += Gain * Ext)"`
+	// soft clamp gain factor (Ge += Gain * Ext)
+	Gain float32 `viewif:"!Hard" def:"0.02:0.5"`
 
-	// [viewif: !Hard] compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs
-	Avg bool `viewif:"!Hard" desc:"compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs"`
+	// compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs
+	Avg bool `viewif:"!Hard"`
 
-	// [def: 0.2] [viewif: !Hard && Avg] gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)
-	AvgGain float32 `viewif:"!Hard && Avg" def:"0.2" desc:"gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)"`
+	// gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)
+	AvgGain float32 `viewif:"!Hard && Avg" def:"0.2"`
 }
 
 func (cp *ClampParams) Update() {
@@ -474,31 +463,31 @@ func (cp *ClampParams) AvgGe(ext, ge float32) float32 {
 // WtInitParams are weight initialization parameters -- basically the
 // random distribution parameters but also Symmetry flag
 type WtInitParams struct {
-	erand.RndParams
+	randx.RandParams
 
-	// symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections
-	Sym bool `desc:"symmetrize the weight values with those in reciprocal projection -- typically true for bidirectional excitatory connections"`
+	// symmetrize the weight values with those in reciprocal pathway -- typically true for bidirectional excitatory connections
+	Sym bool
 }
 
 func (wp *WtInitParams) Defaults() {
 	wp.Mean = 0.5
 	wp.Var = 0.25
-	wp.Dist = erand.Uniform
+	wp.Dist = randx.Uniform
 	wp.Sym = true
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  WtScaleParams
 
-// / WtScaleParams are weight scaling parameters: modulates overall strength of projection,
+// / WtScaleParams are weight scaling parameters: modulates overall strength of pathway,
 // using both absolute and relative factors
 type WtScaleParams struct {
 
-	// [def: 1] [min: 0] absolute scaling, which is not subject to normalization: directly multiplies weight values
-	Abs float32 `def:"1" min:"0" desc:"absolute scaling, which is not subject to normalization: directly multiplies weight values"`
+	// absolute scaling, which is not subject to normalization: directly multiplies weight values
+	Abs float32 `def:"1" min:"0"`
 
-	// [min: 0] [Default: 1] relative scaling that shifts balance between different projections -- this is subject to normalization across all other projections into unit
-	Rel float32 `min:"0" desc:"[Default: 1] relative scaling that shifts balance between different projections -- this is subject to normalization across all other projections into unit"`
+	// relative scaling that shifts balance between different pathways -- this is subject to normalization across all other pathways into unit
+	Rel float32 `min:"0"`
 }
 
 func (ws *WtScaleParams) Defaults() {
@@ -516,19 +505,19 @@ func (ws *WtScaleParams) Update() {
 // for purposes of computing scaling factors with partial connectivity
 // For 25% layer activity, binomial SEM = sqrt(p(1-p)) = .43, so 3x = 1.3 so 2 is a reasonable default.
 func (ws *WtScaleParams) SLayActScale(savg, snu, ncon float32) float32 {
-	ncon = mat32.Max(ncon, 1) // prjn Avg can be < 1 in some cases
+	ncon = math32.Max(ncon, 1) // path Avg can be < 1 in some cases
 	semExtra := 2
-	slayActN := int(mat32.Round(savg * snu)) // sending layer actual # active
-	slayActN = ints.MaxInt(slayActN, 1)
+	slayActN := int(math32.Round(savg * snu)) // sending layer actual # active
+	slayActN = max(slayActN, 1)
 	var sc float32
 	if ncon == snu {
 		sc = 1 / float32(slayActN)
 	} else {
-		maxActN := int(mat32.Min(ncon, float32(slayActN))) // max number we could get
-		avgActN := int(mat32.Round(savg * ncon))           // recv average actual # active if uniform
-		avgActN = ints.MaxInt(avgActN, 1)
+		maxActN := int(math32.Min(ncon, float32(slayActN))) // max number we could get
+		avgActN := int(math32.Round(savg * ncon))           // recv average actual # active if uniform
+		avgActN = max(avgActN, 1)
 		expActN := avgActN + semExtra // expected
-		expActN = ints.MinInt(expActN, maxActN)
+		expActN = min(expActN, maxActN)
 		sc = 1 / float32(expActN)
 	}
 	return sc

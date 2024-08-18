@@ -7,37 +7,34 @@ package rl
 import (
 	"log"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // TDRewPredLayer is the temporal differences reward prediction layer.
 // It represents estimated value V(t) in the minus phase, and computes
 // estimated V(t+1) based on its learned weights in plus phase.
-// Use TDRewPredPrjn for DA modulated learning.
+// Use TDRewPredPath for DA modulated learning.
 type TDRewPredLayer struct {
 	leabra.Layer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `edit:"-"`
 }
-
-var KiT_TDRewPredLayer = kit.Types.AddType(&TDRewPredLayer{}, leabra.LayerProps)
 
 // DALayer interface:
 
 func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
 func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
 
-// ActFmG computes linear activation for TDRewPred
-func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
+// ActFromG computes linear activation for TDRewPred
+func (ly *TDRewPredLayer) ActFromG(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = nrn.Ge // linear
 		} else {
 			nrn.Act = nrn.ActP // previous actP
@@ -52,10 +49,10 @@ func (ly *TDRewPredLayer) ActFmG(ltime *leabra.Time) {
 type TDRewIntegParams struct {
 
 	// discount factor -- how much to discount the future prediction from RewPred
-	Discount float32 `desc:"discount factor -- how much to discount the future prediction from RewPred"`
+	Discount float32
 
 	// name of TDRewPredLayer to get reward prediction from
-	RewPred string `desc:"name of TDRewPredLayer to get reward prediction from "`
+	RewPred string
 }
 
 func (tp *TDRewIntegParams) Defaults() {
@@ -74,13 +71,11 @@ type TDRewIntegLayer struct {
 	leabra.Layer
 
 	// parameters for reward integration
-	RewInteg TDRewIntegParams `desc:"parameters for reward integration"`
+	RewInteg TDRewIntegParams
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_TDRewIntegLayer = kit.Types.AddType(&TDRewIntegLayer{}, leabra.LayerProps)
 
 func (ly *TDRewIntegLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -93,7 +88,7 @@ func (ly *TDRewIntegLayer) GetDA() float32   { return ly.DA }
 func (ly *TDRewIntegLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewInteg.RewPred)
+	tly, err := ly.Network.LayerByName(ly.RewInteg.RewPred)
 	if err != nil {
 		log.Printf("TDRewIntegLayer %s RewPredLayer: %v\n", ly.Name(), err)
 		return nil, err
@@ -101,7 +96,7 @@ func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
 	return tly.(*TDRewPredLayer), nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *TDRewIntegLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -111,7 +106,7 @@ func (ly *TDRewIntegLayer) Build() error {
 	return err
 }
 
-func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
+func (ly *TDRewIntegLayer) ActFromG(ctx *leabra.Context) {
 	rply, _ := ly.RewPredLayer()
 	if rply == nil {
 		return
@@ -123,7 +118,7 @@ func (ly *TDRewIntegLayer) ActFmG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = nrn.Ge + ly.RewInteg.Discount*rpAct
 		} else {
 			nrn.Act = rpActP // previous actP
@@ -140,16 +135,14 @@ type TDDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// name of TDRewIntegLayer from which this computes the temporal derivative
-	RewInteg string `desc:"name of TDRewIntegLayer from which this computes the temporal derivative"`
+	RewInteg string
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_TDDaLayer = kit.Types.AddType(&TDDaLayer{}, leabra.LayerProps)
 
 func (ly *TDDaLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -165,7 +158,7 @@ func (ly *TDDaLayer) GetDA() float32   { return ly.DA }
 func (ly *TDDaLayer) SetDA(da float32) { ly.DA = da }
 
 func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.RewInteg)
+	tly, err := ly.Network.LayerByName(ly.RewInteg)
 	if err != nil {
 		log.Printf("TDDaLayer %s RewIntegLayer: %v\n", ly.Name(), err)
 		return nil, err
@@ -173,7 +166,7 @@ func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
 	return tly.(*TDRewIntegLayer), nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *TDDaLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -187,7 +180,7 @@ func (ly *TDDaLayer) Build() error {
 	return err
 }
 
-func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
+func (ly *TDDaLayer) ActFromG(ctx *leabra.Context) {
 	rily, _ := ly.RewIntegLayer()
 	if rily == nil {
 		return
@@ -200,7 +193,7 @@ func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
 		if nrn.IsOff() {
 			continue
 		}
-		if ltime.Quarter == 3 { // plus phase
+		if ctx.Quarter == 3 { // plus phase
 			nrn.Act = da
 		} else {
 			nrn.Act = 0
@@ -210,27 +203,25 @@ func (ly *TDDaLayer) ActFmG(ltime *leabra.Time) {
 
 // CyclePost is called at end of Cycle
 // We use it to send DA, which will then be active for the next cycle of processing.
-func (ly *TDDaLayer) CyclePost(ltime *leabra.Time) {
+func (ly *TDDaLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA.SendDA(ly.Network, act)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  TDRewPredPrjn
+//  TDRewPredPath
 
-// TDRewPredPrjn does dopamine-modulated learning for reward prediction:
+// TDRewPredPath does dopamine-modulated learning for reward prediction:
 // DWt = Da * Send.ActQ0 (activity on *previous* timestep)
 // Use in TDRewPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
-type TDRewPredPrjn struct {
-	leabra.Prjn
+type TDRewPredPath struct {
+	leabra.Path
 }
 
-var KiT_TDRewPredPrjn = kit.Types.AddType(&TDRewPredPrjn{}, leabra.PrjnProps)
-
-func (pj *TDRewPredPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *TDRewPredPath) Defaults() {
+	pj.Path.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
 	pj.Learn.Norm.On = false
@@ -238,8 +229,8 @@ func (pj *TDRewPredPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *TDRewPredPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *TDRewPredPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -249,9 +240,9 @@ func (pj *TDRewPredPrjn) DWt() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		// scons := pj.SConIdx[st : st+nc]
+		// scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -261,10 +252,10 @@ func (pj *TDRewPredPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -287,8 +278,8 @@ func (pj *TDRewPredPrjn) DWt() {
 	}
 }
 
-// WtFmDWt updates the synaptic weight values from delta-weight changes -- on sending projections
-func (pj *TDRewPredPrjn) WtFmDWt() {
+// WtFromDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
+func (pj *TDRewPredPath) WtFromDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

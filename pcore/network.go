@@ -5,11 +5,10 @@
 package pcore
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/emergent/v2/relpos"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // pcore.Network has methods for configuring specialized PCore network components
@@ -17,10 +16,6 @@ import (
 type Network struct {
 	leabra.Network
 }
-
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
 
 // UnitVarNames returns a list of variable names available on the units in this layer
 func (nt *Network) UnitVarNames() []string {
@@ -43,8 +38,8 @@ func (nt *Network) AddBG(prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX int, sp
 	return AddBG(&nt.Network, prefix, nPoolsY, nPoolsX, nNeurY, nNeurX, space)
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return ConnectToMatrix(&nt.Network, send, recv, pat)
 }
 
@@ -55,7 +50,7 @@ func (nt *Network) ConnectToMatrix(send, recv emer.Layer, pat prjn.Pattern) emer
 // AddCINLayer adds a CINLayer, with a single neuron.
 func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 	ly := &CINLayer{}
-	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{1, 1}, leabra.SuperLayer)
 	return ly
 }
 
@@ -64,14 +59,14 @@ func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 // da gives the DaReceptor type (D1R = Go, D2R = NoGo)
 func AddMatrixLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
 	ly := &MatrixLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	ly.DaR = da
 	return ly
 }
 
-// ConnectToMatrix adds a MatrixTracePrjn from given sending layer to a matrix layer
-func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, emer.Forward, &MatrixPrjn{})
+// ConnectToMatrix adds a MatrixTracePath from given sending layer to a matrix layer
+func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat paths.Pattern) emer.Path {
+	return nt.ConnectLayersPath(send, recv, pat, leabra.ForwardPath, &MatrixPath{})
 }
 
 // AddGPLayer adds a GPLayer of given size, with given name.
@@ -79,7 +74,7 @@ func ConnectToMatrix(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
 func AddGPeLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPLayer {
 	ly := &GPLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	ly.SetClass("GP")
 	return ly
 }
@@ -89,7 +84,7 @@ func AddGPeLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeu
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
 func AddGPiLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *GPiLayer {
 	ly := &GPiLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	ly.SetClass("GP")
 	return ly
 }
@@ -99,7 +94,7 @@ func AddGPiLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeu
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
 func AddSTNLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *STNLayer {
 	ly := &STNLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
@@ -108,7 +103,7 @@ func AddSTNLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeu
 // Typically nNeurY, nNeurX will both be 1, but could have more for noise etc.
 func AddVThalLayer(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *VThalLayer {
 	ly := &VThalLayer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
@@ -152,50 +147,50 @@ func AddBG(nt *leabra.Network, prefix string, nPoolsY, nPoolsX, nNeurY, nNeurX i
 	mtxNo.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: space})
 	cin.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxNo.Name(), YAlign: relpos.Front, Space: space})
 
-	one2one := prjn.NewPoolOneToOne()
-	full := prjn.NewFull()
+	one2one := paths.NewPoolOneToOne()
+	full := paths.NewFull()
 
-	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, emer.Inhib)
+	pj := nt.ConnectLayers(mtxGo, gpeOut, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
-	nt.ConnectLayers(mtxNo, gpeIn, one2one, emer.Inhib)
-	nt.ConnectLayers(gpeOut, gpeIn, one2one, emer.Inhib)
+	nt.ConnectLayers(mtxNo, gpeIn, one2one, InhibPath)
+	nt.ConnectLayers(gpeOut, gpeIn, one2one, InhibPath)
 
-	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, gpeTA, one2one, InhibPath)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(gpeIn, stnp, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, stnp, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
-	// note: this projection exists in bio, but does weird things with Ca dynamics in STNs..
-	// pj = nt.ConnectLayers(gpeIn, stns, one2one, emer.Inhib)
+	// note: this pathway exists in bio, but does weird things with Ca dynamics in STNs..
+	// pj = nt.ConnectLayers(gpeIn, stns, one2one, InhibPath)
 	// pj.SetClass("BgFixed")
 
-	nt.ConnectLayers(gpeIn, gpi, one2one, emer.Inhib)
-	nt.ConnectLayers(mtxGo, gpi, one2one, emer.Inhib)
+	nt.ConnectLayers(gpeIn, gpi, one2one, InhibPath)
+	nt.ConnectLayers(mtxGo, gpi, one2one, InhibPath)
 
-	pj = nt.ConnectLayers(stnp, gpeOut, one2one, emer.Forward)
-	pj.SetClass("FmSTNp")
-	pj = nt.ConnectLayers(stnp, gpeIn, one2one, emer.Forward)
-	pj.SetClass("FmSTNp")
-	pj = nt.ConnectLayers(stnp, gpeTA, full, emer.Forward)
-	pj.SetClass("FmSTNp")
-	pj = nt.ConnectLayers(stnp, gpi, one2one, emer.Forward)
-	pj.SetClass("FmSTNp")
+	pj = nt.ConnectLayers(stnp, gpeOut, one2one, leabra.ForwardPath)
+	pj.SetClass("FromSTNp")
+	pj = nt.ConnectLayers(stnp, gpeIn, one2one, leabra.ForwardPath)
+	pj.SetClass("FromSTNp")
+	pj = nt.ConnectLayers(stnp, gpeTA, full, leabra.ForwardPath)
+	pj.SetClass("FromSTNp")
+	pj = nt.ConnectLayers(stnp, gpi, one2one, leabra.ForwardPath)
+	pj.SetClass("FromSTNp")
 
-	pj = nt.ConnectLayers(stns, gpi, one2one, emer.Forward)
-	pj.SetClass("FmSTNs")
+	pj = nt.ConnectLayers(stns, gpi, one2one, leabra.ForwardPath)
+	pj.SetClass("FromSTNs")
 
-	pj = nt.ConnectLayers(gpeTA, mtxGo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxGo, full, InhibPath)
 	pj.SetClass("GPeTAToMtx")
-	pj = nt.ConnectLayers(gpeTA, mtxNo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeTA, mtxNo, full, InhibPath)
 	pj.SetClass("GPeTAToMtx")
 
-	pj = nt.ConnectLayers(gpeIn, mtxGo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxGo, full, InhibPath)
 	pj.SetClass("GPeInToMtx")
-	pj = nt.ConnectLayers(gpeIn, mtxNo, full, emer.Inhib)
+	pj = nt.ConnectLayers(gpeIn, mtxNo, full, InhibPath)
 	pj.SetClass("GPeInToMtx")
 
-	pj = nt.ConnectLayers(gpi, vthal, one2one, emer.Inhib)
+	pj = nt.ConnectLayers(gpi, vthal, one2one, InhibPath)
 	pj.SetClass("BgFixed")
 
 	return

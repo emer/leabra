@@ -7,9 +7,8 @@ package pbwm
 import (
 	"fmt"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // pbwm.Layer is the base layer type for PBWM framework -- has variables for the
@@ -19,16 +18,14 @@ type Layer struct {
 	leabra.Layer
 
 	// current dopamine level for this layer
-	DA float32 `inactive:"+" desc:"current dopamine level for this layer"`
+	DA float32 `edit:"-"`
 
 	// current acetylcholine level for this layer
-	ACh float32 `inactive:"+" desc:"current acetylcholine level for this layer"`
+	ACh float32 `edit:"-"`
 
 	// current serotonin level for this layer
-	SE float32 `inactive:"+" desc:"current serotonin level for this layer"`
+	SE float32 `edit:"-"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 
@@ -53,17 +50,17 @@ func (ly *Layer) AsGate() *GateLayer {
 
 // GateSend updates gating state and sends it along to other layers.
 // most layers don't implement -- only gating layers
-func (ly *Layer) GateSend(ltime *leabra.Time) {
+func (ly *Layer) GateSend(ctx *leabra.Context) {
 }
 
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now -- only for gating layers
-func (ly *Layer) RecGateAct(ltime *leabra.Time) {
+func (ly *Layer) RecGateAct(ctx *leabra.Context) {
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing
-func (ly *Layer) SendMods(ltime *leabra.Time) {
+func (ly *Layer) SendMods(ctx *leabra.Context) {
 }
 
 func (ly *Layer) Defaults() {
@@ -72,7 +69,7 @@ func (ly *Layer) Defaults() {
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *Layer) UpdateParams() {
 	ly.Layer.UpdateParams()
 }
@@ -85,10 +82,10 @@ func (ly *Layer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
 // This must be updated for specialized PBWM layer types to return correct variables!
-func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *Layer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	switch vidx {
 	case DA:
 		return ly.DA
@@ -99,14 +96,14 @@ func (ly *Layer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	case SE:
 		return ly.SE
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -119,23 +116,23 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	return vidx, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 {
-		return mat32.NaN()
+func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
+		return math32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.Layer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
-	varIdx -= nn
-	return ly.LeabraLay.(PBWMLayer).UnitValByIdx(NeurVars(varIdx), idx)
+	varIndex -= nn
+	return ly.LeabraLay.(PBWMLayer).UnitValueByIndex(NeurVars(varIndex), idx)
 }
 
 // UnitVarNum returns the number of Neuron-level variables
@@ -160,22 +157,22 @@ func (ly *Layer) DoQuarter2DWt() bool {
 }
 
 // QuarterFinal does updating after end of a quarter
-func (ly *Layer) QuarterFinal(ltime *leabra.Time) {
-	ly.Layer.QuarterFinal(ltime)
-	if ltime.Quarter == 1 {
+func (ly *Layer) QuarterFinal(ctx *leabra.Context) {
+	ly.Layer.QuarterFinal(ctx)
+	if ctx.Quarter == 1 {
 		ly.LeabraLay.(PBWMLayer).Quarter2DWt()
 	}
 }
 
 // Quarter2DWt is optional Q2 DWt -- define where relevant
 func (ly *Layer) Quarter2DWt() {
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+	for _, p := range ly.SendPaths {
+		if p.Off {
 			continue
 		}
-		if rly, ok := p.RecvLay().(PBWMLayer); ok {
+		if rly, ok := p.Recv.(PBWMLayer); ok {
 			if rly.DoQuarter2DWt() {
-				p.(leabra.LeabraPrjn).DWt()
+				p.(leabra.LeabraPath).DWt()
 			}
 		}
 	}

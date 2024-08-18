@@ -5,10 +5,9 @@
 package glong
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // glong.Network has methods for configuring specialized Glong network components.
@@ -16,17 +15,13 @@ type Network struct {
 	leabra.Network
 }
 
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
-
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -46,8 +41,8 @@ func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// ConnectNMDA adds a NMDAPrjn between given layers
-func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
+// ConnectNMDA adds a NMDAPath between given layers
+func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat paths.Pattern) emer.Path {
 	return ConnectNMDA(&nt.Network, send, recv, pat)
 }
 
@@ -58,18 +53,18 @@ func (nt *Network) ConnectNMDA(send, recv emer.Layer, pat prjn.Pattern) emer.Prj
 // AddGlongLayer2D adds a glong.Layer using 2D shape
 func AddGlongLayer2D(nt *leabra.Network, name string, nNeurY, nNeurX int) *Layer {
 	ly := &Layer{}
-	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
 // AddGlongLayer4D adds a glong.Layer using 4D shape with pools
 func AddGlongLayer4D(nt *leabra.Network, name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
 	ly := &Layer{}
-	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, leabra.SuperLayer)
 	return ly
 }
 
-// ConnectNMDA adds a NMDAPrjn between given layers
-func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat prjn.Pattern) emer.Prjn {
-	return nt.ConnectLayersPrjn(send, recv, pat, NMDA, &NMDAPrjn{})
+// ConnectNMDA adds a NMDAPath between given layers
+func ConnectNMDA(nt *leabra.Network, send, recv emer.Layer, pat paths.Pattern) emer.Path {
+	return nt.ConnectLayersPath(send, recv, pat, NMDA, &NMDAPath{})
 }

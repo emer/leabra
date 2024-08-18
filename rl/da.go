@@ -5,9 +5,8 @@
 package rl
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // DALayer is an interface for a layer with dopamine neuromodulator on it
@@ -57,7 +56,7 @@ func (sd *SendDA) AddAllBut(net emer.Network, excl ...string) {
 
 // Layers that use SendDA should include a Validate check in Build as follows:
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 // func (ly *DaSrcLayer) Build() error {
 // 	err := ly.Layer.Build()
 // 	if err != nil {
@@ -75,13 +74,11 @@ type ClampDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
-	SendDA SendDA `desc:"list of layers to send dopamine to"`
+	SendDA SendDA
 
 	// dopamine value for this layer
-	DA float32 `desc:"dopamine value for this layer"`
+	DA float32
 }
-
-var KiT_ClampDaLayer = kit.Types.AddType(&ClampDaLayer{}, leabra.LayerProps)
 
 func (ly *ClampDaLayer) Defaults() {
 	ly.Layer.Defaults()
@@ -93,7 +90,7 @@ func (ly *ClampDaLayer) Defaults() {
 func (ly *ClampDaLayer) GetDA() float32   { return ly.DA }
 func (ly *ClampDaLayer) SetDA(da float32) { ly.DA = da }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *ClampDaLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -105,7 +102,7 @@ func (ly *ClampDaLayer) Build() error {
 
 // CyclePost is called at end of Cycle
 // We use it to send DA, which will then be active for the next cycle of processing.
-func (ly *ClampDaLayer) CyclePost(ltime *leabra.Time) {
+func (ly *ClampDaLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA.SendDA(ly.Network, act)

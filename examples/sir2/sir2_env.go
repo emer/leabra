@@ -8,20 +8,12 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/emer/emergent/env"
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/kit"
+	"cogentcore.org/core/tensor"
+	"github.com/emer/emergent/v2/env"
 )
 
 // Actions are SIR actions
-type Actions int
-
-//go:generate stringer -type=Actions
-
-var KiT_Actions = kit.Enums.AddEnum(ActionsN, kit.NotBitFlag, nil)
-
-func (ev Actions) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *Actions) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type Actions int //enums:enum
 
 const (
 	Store1 Actions = iota
@@ -29,63 +21,59 @@ const (
 	Ignore
 	Recall1
 	Recall2
-	ActionsN
 )
 
 // SIREnv implements the store-ignore-recall task
 type SIREnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
+	Nm string
 
 	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Dsc string
 
 	// number of different stimuli that can be maintained
-	NStim int `desc:"number of different stimuli that can be maintained"`
+	NStim int
 
 	// value for reward, based on whether model output = target
-	RewVal float32 `desc:"value for reward, based on whether model output = target"`
+	RewVal float32
 
 	// value for non-reward
-	NoRewVal float32 `desc:"value for non-reward"`
+	NoRewVal float32
 
 	// current action
-	Act Actions `desc:"current action"`
+	Act Actions
 
 	// current stimulus
-	Stim int `desc:"current stimulus"`
+	Stim int
 
 	// current stimulus being maintained
-	Maint1 int `desc:"current stimulus being maintained"`
+	Maint1 int
 
 	// current stimulus being maintained
-	Maint2 int `desc:"current stimulus being maintained"`
+	Maint2 int
 
 	// stimulus input pattern
-	Input etensor.Float64 `desc:"stimulus input pattern"`
+	Input tensor.Float64
 
 	// input pattern with action
-	CtrlInput etensor.Float64 `desc:"input pattern with action"`
+	CtrlInput tensor.Float64
 
 	// output pattern of what to respond
-	Output etensor.Float64 `desc:"output pattern of what to respond"`
+	Output tensor.Float64
 
 	// reward value
-	Reward etensor.Float64 `desc:"reward value"`
+	Reward tensor.Float64
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Ctr `display:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Ctr `display:"inline"`
 
-	// [view: inline] trial is the step counter within epoch
-	Trial env.Ctr `view:"inline" desc:"trial is the step counter within epoch"`
+	// trial is the step counter within epoch
+	Trial env.Ctr `display:"inline"`
 }
-
-func (ev *SIREnv) Name() string { return ev.Nm }
-func (ev *SIREnv) Desc() string { return ev.Dsc }
 
 // SetNStim initializes env for given number of stimuli, init states
 func (ev *SIREnv) SetNStim(n int) {
@@ -101,12 +89,12 @@ func (ev *SIREnv) SetNStim(n int) {
 
 func (ev *SIREnv) Validate() error {
 	if ev.NStim <= 0 {
-		return fmt.Errorf("SIREnv: %v NStim == 0 -- must set with SetNStim call", ev.Nm)
+		return fmt.Errorf("SIREnv: %v NStim == 0 -- must set with SetNStim call", ev.Name)
 	}
 	return nil
 }
 
-func (ev *SIREnv) State(element string) etensor.Tensor {
+func (ev *SIREnv) State(element string) tensor.Tensor {
 	switch element {
 	case "Input":
 		return &ev.Input
@@ -217,7 +205,7 @@ func (ev *SIREnv) Step() bool {
 	return true
 }
 
-func (ev *SIREnv) Action(element string, input etensor.Tensor) {
+func (ev *SIREnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

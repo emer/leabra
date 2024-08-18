@@ -5,9 +5,8 @@
 package rl
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // AChLayer is an interface for a layer with acetylcholine neuromodulator on it
@@ -57,7 +56,7 @@ func (sd *SendACh) AddAllBut(net emer.Network, excl ...string) {
 
 // Layers that use SendACh should include a Validate check in Build as follows:
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 // func (ly *AChSrcLayer) Build() error {
 // 	err := ly.Layer.Build()
 // 	if err != nil {
@@ -75,20 +74,18 @@ type ClampAChLayer struct {
 	leabra.Layer
 
 	// list of layers to send acetylcholine to
-	SendACh SendACh `desc:"list of layers to send acetylcholine to"`
+	SendACh SendACh
 
 	// acetylcholine value for this layer
-	ACh float32 `desc:"acetylcholine value for this layer"`
+	ACh float32
 }
-
-var KiT_ClampAChLayer = kit.Types.AddType(&ClampAChLayer{}, leabra.LayerProps)
 
 // AChLayer interface:
 
 func (ly *ClampAChLayer) GetACh() float32    { return ly.ACh }
 func (ly *ClampAChLayer) SetACh(ach float32) { ly.ACh = ach }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *ClampAChLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -100,7 +97,7 @@ func (ly *ClampAChLayer) Build() error {
 
 // CyclePost is called at end of Cycle
 // We use it to send ACh, which will then be active for the next cycle of processing.
-func (ly *ClampAChLayer) CyclePost(ltime *leabra.Time) {
+func (ly *ClampAChLayer) CyclePost(ctx *leabra.Context) {
 	act := ly.Neurons[0].Act
 	ly.ACh = act
 	ly.SendACh.SendACh(ly.Network, act)

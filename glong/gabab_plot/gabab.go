@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// eqplot plots an equation updating over time in a etable.Table and Plot2D.
+// eqplot plots an equation updating over time in a table.Table and Plot2D.
 // This is a good starting point for any plotting to explore specific equations.
 // This example plots a double exponential (biexponential) model of synaptic currents.
 package main
@@ -11,27 +11,19 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/emer/etable/eplot"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
-	_ "github.com/emer/etable/etview" // include to get gui views
-	"github.com/goki/gi/gi"
-	"github.com/goki/gi/gimain"
-	"github.com/goki/gi/giv"
-	"github.com/goki/ki/ki"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"cogentcore.org/core/plot"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
+	"cogentcore.org/core/tree"
 )
 
 func main() {
-	TheSim.Config()
-	gimain.Main(func() { // this starts gui -- requires valid OpenGL display connection (e.g., X11)
-		guirun()
-	})
-}
-
-func guirun() {
-	win := TheSim.ConfigGui()
-	win.StartEventLoop()
+	sim := &Sim{}
+	sim.Config()
+	sim.VmRun()
+	b := sim.ConfigGUI()
+	b.RunMainWindow()
 }
 
 // LogPrec is precision for saving float values in logs
@@ -40,71 +32,71 @@ const LogPrec = 4
 // Sim holds the params, table, etc
 type Sim struct {
 
-	// [def: 0.1] multiplier on GABAb as function of voltage
-	GABAbv float64 `def:"0.1" desc:"multiplier on GABAb as function of voltage"`
+	// multiplier on GABAb as function of voltage
+	GABAbv float64 `def:"0.1"`
 
-	// [def: 10] offset of GABAb function
-	GABAbo float64 `def:"10" desc:"offset of GABAb function"`
+	// offset of GABAb function
+	GABAbo float64 `def:"10"`
 
-	// [def: -90] GABAb reversal / driving potential
-	GABAberev float64 `def:"-90" desc:"GABAb reversal / driving potential"`
+	// GABAb reversal / driving potential
+	GABAberev float64 `def:"-90"`
 
-	// [def: -90] starting voltage
-	Vstart float64 `def:"-90" desc:"starting voltage"`
+	// starting voltage
+	Vstart float64 `def:"-90"`
 
-	// [def: 0] ending voltage
-	Vend float64 `def:"0" desc:"ending voltage"`
+	// ending voltage
+	Vend float64 `def:"0"`
 
-	// [def: 1] voltage increment
-	Vstep float64 `def:"1" desc:"voltage increment"`
+	// voltage increment
+	Vstep float64 `def:"1"`
 
-	// [def: 15] max number of spikes
-	Smax int `def:"15" desc:"max number of spikes"`
+	// max number of spikes
+	Smax int `def:"15"`
 
 	// rise time constant
-	RiseTau float64 `desc:"rise time constant"`
+	RiseTau float64
 
 	// decay time constant -- must NOT be same as RiseTau
-	DecayTau float64 `desc:"decay time constant -- must NOT be same as RiseTau"`
+	DecayTau float64
 
 	// initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start
-	GsXInit float64 `desc:"initial value of GsX driving variable at point of synaptic input onset -- decays expoentially from this start"`
+	GsXInit float64
 
 	// time when peak conductance occurs, in TimeInc units
-	MaxTime float64 `inactive:"+" desc:"time when peak conductance occurs, in TimeInc units"`
+	MaxTime float64 `edit:"-"`
 
 	// time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))
-	TauFact float64 `inactive:"+" desc:"time constant factor used in integration: (Decay / Rise) ^ (Rise / (Decay - Rise))"`
+	TauFact float64 `edit:"-"`
 
 	// total number of time steps to take
-	TimeSteps int `desc:"total number of time steps to take"`
+	TimeSteps int
 
 	// time increment per step
-	TimeInc float64 `desc:"time increment per step"`
+	TimeInc float64
 
-	// [view: no-inline] table for plot
-	VGTable *etable.Table `view:"no-inline" desc:"table for plot"`
+	// table for plot
+	VGTable *table.Table `display:"no-inline"`
 
-	// [view: no-inline] table for plot
-	SGTable *etable.Table `view:"no-inline" desc:"table for plot"`
+	// table for plot
+	SGTable *table.Table `display:"no-inline"`
 
-	// [view: no-inline] table for plot
-	TimeTable *etable.Table `view:"no-inline" desc:"table for plot"`
+	// table for plot
+	TimeTable *table.Table `display:"no-inline"`
 
-	// [view: -] the plot
-	VGPlot *eplot.Plot2D `view:"-" desc:"the plot"`
+	// the plot
+	VGPlot *plot.Plot2D `display:"-"`
 
-	// [view: -] the plot
-	SGPlot *eplot.Plot2D `view:"-" desc:"the plot"`
+	// the plot
+	SGPlot *plot.Plot2D `display:"-"`
 
-	// [view: -] the plot
-	TimePlot *eplot.Plot2D `view:"-" desc:"the plot"`
+	// the plot
+	TimePlot *plot.Plot2D `display:"-"`
 
-	// [view: -] main GUI window
-	Win *gi.Window `view:"-" desc:"main GUI window"`
+	// main GUI window
+	Win *core.Window `display:"-"`
 
-	// [view: -] the master toolbar
-	ToolBar *gi.ToolBar `view:"-" desc:"the master toolbar"`
+	// the master toolbar
+	ToolBar *core.ToolBar `display:"-"`
 }
 
 // TheSim is the overall state for this simulation
@@ -126,13 +118,13 @@ func (ss *Sim) Config() {
 	ss.TimeInc = .001
 	ss.Update()
 
-	ss.VGTable = &etable.Table{}
+	ss.VGTable = &table.Table{}
 	ss.ConfigVGTable(ss.VGTable)
 
-	ss.SGTable = &etable.Table{}
+	ss.SGTable = &table.Table{}
 	ss.ConfigSGTable(ss.SGTable)
 
-	ss.TimeTable = &etable.Table{}
+	ss.TimeTable = &table.Table{}
 	ss.ConfigTimeTable(ss.TimeTable)
 }
 
@@ -161,25 +153,25 @@ func (ss *Sim) VGRun() {
 	ss.VGPlot.Update()
 }
 
-func (ss *Sim) ConfigVGTable(dt *etable.Table) {
+func (ss *Sim) ConfigVGTable(dt *table.Table) {
 	dt.SetMetaData("name", "EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"V", etensor.FLOAT64, nil, nil},
-		{"g_GABAb", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"V", tensor.FLOAT64, nil, nil},
+		{"g_GABAb", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigVGPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigVGPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "V-G Function Plot"
 	plt.Params.XAxisCol = "V"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("V", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("g_GABAb", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("V", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("g_GABAb", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -203,25 +195,25 @@ func (ss *Sim) SGRun() {
 	ss.SGPlot.Update()
 }
 
-func (ss *Sim) ConfigSGTable(dt *etable.Table) {
+func (ss *Sim) ConfigSGTable(dt *table.Table) {
 	dt.SetMetaData("name", "SG_EqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"S", etensor.FLOAT64, nil, nil},
-		{"gmax_GABAb", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"S", tensor.FLOAT64, nil, nil},
+		{"gmax_GABAb", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigSGPlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigSGPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "S-G Function Plot"
 	plt.Params.XAxisCol = "S"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("S", eplot.Off, eplot.FloatMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("gmax_GABAb", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("S", plot.Off, plot.FloatMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("gmax_GABAb", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
@@ -251,41 +243,41 @@ func (ss *Sim) TimeRun() {
 	ss.TimePlot.Update()
 }
 
-func (ss *Sim) ConfigTimeTable(dt *etable.Table) {
+func (ss *Sim) ConfigTimeTable(dt *table.Table) {
 	dt.SetMetaData("name", "TimeEqPlotTable")
 	dt.SetMetaData("read-only", "true")
 	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
 
-	sch := etable.Schema{
-		{"Time", etensor.FLOAT64, nil, nil},
-		{"Gs", etensor.FLOAT64, nil, nil},
-		{"GsX", etensor.FLOAT64, nil, nil},
+	sch := table.Schema{
+		{"Time", tensor.FLOAT64, nil, nil},
+		{"Gs", tensor.FLOAT64, nil, nil},
+		{"GsX", tensor.FLOAT64, nil, nil},
 	}
 	dt.SetFromSchema(sch, 0)
 }
 
-func (ss *Sim) ConfigTimePlot(plt *eplot.Plot2D, dt *etable.Table) *eplot.Plot2D {
+func (ss *Sim) ConfigTimePlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
 	plt.Params.Title = "G Time Function Plot"
 	plt.Params.XAxisCol = "Time"
 	plt.SetTable(dt)
 	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Time", eplot.Off, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("Gs", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
-	plt.SetColParams("GsX", eplot.On, eplot.FixMin, 0, eplot.FloatMax, 0)
+	plt.SetColParams("Time", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("Gs", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
+	plt.SetColParams("GsX", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
 	return plt
 }
 
-// ConfigGui configures the GoGi gui interface for this simulation,
-func (ss *Sim) ConfigGui() *gi.Window {
+// ConfigGUI configures the Cogent Core GUI interface for this simulation.
+func (ss *Sim) ConfigGUI() *core.Window {
 	width := 1600
 	height := 1200
 
-	// gi.WinEventTrace = true
+	// core.WinEventTrace = true
 
-	gi.SetAppName("eqplot")
-	gi.SetAppAbout(`This plots an equation. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	core.SetAppName("eqplot")
+	core.SetAppAbout(`This plots an equation. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
 
-	win := gi.NewMainWindow("eqplot", "Plotting Equations", width, height)
+	win := core.NewMainWindow("eqplot", "Plotting Equations", width, height)
 	ss.Win = win
 
 	vp := win.WinViewport2D()
@@ -293,61 +285,61 @@ func (ss *Sim) ConfigGui() *gi.Window {
 
 	mfr := win.SetMainFrame()
 
-	tbar := gi.AddNewToolBar(mfr, "tbar")
+	tbar := core.AddNewToolBar(mfr, "tbar")
 	tbar.SetStretchMaxWidth()
 	ss.ToolBar = tbar
 
-	split := gi.AddNewSplitView(mfr, "split")
-	split.Dim = mat32.X
+	split := core.AddNewSplitView(mfr, "split")
+	split.Dim = math32.X
 	split.SetStretchMax()
 
-	sv := giv.AddNewStructView(split, "sv")
+	sv := views.AddNewStructView(split, "sv")
 	sv.SetStruct(ss)
 
-	tv := gi.AddNewTabView(split, "tv")
+	tv := core.AddNewTabView(split, "tv")
 
-	plt := tv.AddNewTab(eplot.KiT_Plot2D, "VGPlot").(*eplot.Plot2D)
+	plt := tv.AddNewTab(plot.KiT_Plot2D, "VGPlot").(*plot.Plot2D)
 	ss.VGPlot = ss.ConfigVGPlot(plt, ss.VGTable)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "SGPlot").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "SGPlot").(*plot.Plot2D)
 	ss.SGPlot = ss.ConfigSGPlot(plt, ss.SGTable)
 
-	plt = tv.AddNewTab(eplot.KiT_Plot2D, "TimePlot").(*eplot.Plot2D)
+	plt = tv.AddNewTab(plot.KiT_Plot2D, "TimePlot").(*plot.Plot2D)
 	ss.TimePlot = ss.ConfigTimePlot(plt, ss.TimeTable)
 
 	split.SetSplits(.3, .7)
 
-	tbar.AddAction(gi.ActOpts{Label: "Run VG", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(core.ActOpts{Label: "Run VG", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		ss.VGRun()
 		vp.SetNeedsFullRender()
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Run SG", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(core.ActOpts{Label: "Run SG", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		ss.SGRun()
 		vp.SetNeedsFullRender()
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "Run Time", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send ki.Ki, sig int64, data interface{}) {
+	tbar.AddAction(core.ActOpts{Label: "Run Time", Icon: "update", Tooltip: "Run the equations and plot results."}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
 		ss.TimeRun()
 		vp.SetNeedsFullRender()
 	})
 
-	tbar.AddAction(gi.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
-		func(recv, send ki.Ki, sig int64, data interface{}) {
-			gi.OpenURL("https://github.com/emer/leabra/blob/master/examples/eqplot/README.md")
+	tbar.AddAction(core.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
+		func(recv, send tree.Node, sig int64, data interface{}) {
+			core.OpenURL("https://github.com/emer/leabra/blob/master/examples/eqplot/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)
 
 	// main menu
-	appnm := gi.AppName()
+	appnm := core.AppName()
 	mmen := win.MainMenu
 	mmen.ConfigMenus([]string{appnm, "File", "Edit", "Window"})
 
-	amen := win.MainMenu.ChildByName(appnm, 0).(*gi.Action)
+	amen := win.MainMenu.ChildByName(appnm, 0).(*core.Action)
 	amen.Menu.AddAppMenu(win)
 
-	emen := win.MainMenu.ChildByName("Edit", 1).(*gi.Action)
+	emen := win.MainMenu.ChildByName("Edit", 1).(*core.Action)
 	emen.Menu.AddCopyCutPaste(win)
 
 	win.MainMenuUpdated()

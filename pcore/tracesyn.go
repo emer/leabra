@@ -4,16 +4,16 @@
 
 package pcore
 
-import "github.com/goki/mat32"
+import "cogentcore.org/core/math32"
 
-// TraceSyn holds extra synaptic state for trace projections
+// TraceSyn holds extra synaptic state for trace pathways
 type TraceSyn struct {
 
 	// new trace = send * recv -- drives updates to trace value: sn.ActLrn * rn.ActLrn (subject to derivative too)
-	NTr float32 `desc:"new trace = send * recv -- drives updates to trace value: sn.ActLrn * rn.ActLrn (subject to derivative too)"`
+	NTr float32
 
 	//  current ongoing trace of activations, which drive learning -- adds ntr and clears after ACh-modulated learning on current values
-	Tr float32 `desc:" current ongoing trace of activations, which drive learning -- adds ntr and clears after ACh-modulated learning on current values"`
+	Tr float32
 }
 
 // VarByName returns synapse variable by name
@@ -24,18 +24,18 @@ func (sy *TraceSyn) VarByName(varNm string) float32 {
 	case "Tr":
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 // VarByIndex returns synapse variable by index
-func (sy *TraceSyn) VarByIndex(varIdx int) float32 {
-	switch varIdx {
+func (sy *TraceSyn) VarByIndex(varIndex int) float32 {
+	switch varIndex {
 	case 0:
 		return sy.NTr
 	case 1:
 		return sy.Tr
 	}
-	return mat32.NaN()
+	return math32.NaN()
 }
 
 var TraceSynVars = []string{"NTr", "Tr"}

@@ -7,9 +7,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/emer/emergent/env"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/etable/etensor"
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/tensor"
+	"github.com/emer/emergent/v2/env"
 )
 
 // FSAEnv generates states in a finite state automaton (FSA) which is a
@@ -18,47 +18,44 @@ import (
 type FSAEnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
+	Nm string
 
 	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Dsc string
 
-	// [view: no-inline] transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
-	TMat etensor.Float64 `view:"no-inline" desc:"transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state"`
+	// transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
+	TMat tensor.Float64 `display:"no-inline"`
 
 	// transition labels, one for each transition cell in TMat matrix
-	Labels etensor.String `desc:"transition labels, one for each transition cell in TMat matrix"`
+	Labels tensor.String
 
 	// automaton state within FSA that we're in
-	AState env.CurPrvInt `desc:"automaton state within FSA that we're in"`
+	AState env.CurPrvInt
 
 	// number of next states in current state output (scalar)
-	NNext etensor.Int `desc:"number of next states in current state output (scalar)"`
+	NNext tensor.Int
 
 	// next states that have non-zero probability, with actual randomly chosen next state at start
-	NextStates etensor.Int `desc:"next states that have non-zero probability, with actual randomly chosen next state at start"`
+	NextStates tensor.Int
 
 	// transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start
-	NextLabels etensor.String `desc:"transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start"`
+	NextLabels tensor.String
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Counter `display:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Counter `display:"inline"`
 
-	// [view: inline] sequence counter within epoch
-	Seq env.Ctr `view:"inline" desc:"sequence counter within epoch"`
+	// sequence counter within epoch
+	Seq env.Counter `display:"inline"`
 
-	// [view: inline] tick counter within sequence
-	Tick env.Ctr `view:"inline" desc:"tick counter within sequence"`
+	// tick counter within sequence
+	Tick env.Counter `display:"inline"`
 
-	// [view: inline] trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
-	Trial env.Ctr `view:"inline" desc:"trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence"`
+	// trial is the step counter within sequence - how many steps taken within current sequence -- it resets to 0 at start of each sequence
+	Trial env.Counter `display:"inline"`
 }
-
-func (ev *FSAEnv) Name() string { return ev.Nm }
-func (ev *FSAEnv) Desc() string { return ev.Dsc }
 
 // InitTMat initializes matrix and labels to given size
 func (ev *FSAEnv) InitTMat(nst int) {
@@ -97,7 +94,7 @@ func (ev *FSAEnv) TMatReber() {
 
 func (ev *FSAEnv) Validate() error {
 	if ev.TMat.Len() == 0 {
-		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", ev.Nm)
+		return fmt.Errorf("FSAEnv: %v has no transition matrix TMat set", ev.Name)
 	}
 	return nil
 }
@@ -107,7 +104,7 @@ func (ev *FSAEnv) Counters() []env.TimeScales {
 }
 
 func (ev *FSAEnv) States() env.Elements {
-	nst := ev.TMat.Dim(0)
+	nst := ev.TMat.DimSize(0)
 	if nst < 2 {
 		nst = 2 // at least usu
 	}
@@ -119,7 +116,7 @@ func (ev *FSAEnv) States() env.Elements {
 	return els
 }
 
-func (ev *FSAEnv) State(element string) etensor.Tensor {
+func (ev *FSAEnv) State(element string) tensor.Tensor {
 	switch element {
 	case "NNext":
 		return &ev.NNext
@@ -160,14 +157,14 @@ func (ev *FSAEnv) Init(run int) {
 
 // NextState sets NextStates including randomly chosen one at start
 func (ev *FSAEnv) NextState() {
-	nst := ev.TMat.Dim(0)
+	nst := ev.TMat.DimSize(0)
 	if ev.AState.Cur < 0 || ev.AState.Cur >= nst-1 {
 		ev.AState.Cur = 0
 	}
 	ri := ev.AState.Cur * nst
 	ps := ev.TMat.Values[ri : ri+nst]
 	ls := ev.Labels.Values[ri : ri+nst]
-	nxt := erand.PChoose64(ps, -1) // next state chosen at random
+	nxt := randx.PChoose64(ps, -1) // next state chosen at random
 	ev.NextStates.Set1D(0, nxt)
 	ev.NextLabels.Set1D(0, ls[nxt])
 	idx := 1
@@ -196,7 +193,7 @@ func (ev *FSAEnv) Step() bool {
 	return true
 }
 
-func (ev *FSAEnv) Action(element string, input etensor.Tensor) {
+func (ev *FSAEnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

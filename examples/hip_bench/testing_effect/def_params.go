@@ -4,112 +4,112 @@
 
 package main
 
-import "github.com/emer/emergent/params"
+import "github.com/emer/emergent/v2/params"
 
 // ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
 // selected to apply on top of that
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "keeping default params for generic prjns",
+			{Sel: "Path", Desc: "keeping default params for generic paths",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3",
+					"Path.WtScale.Rel": "0.3",
 				}},
-			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
+			{Sel: ".EcCa1Path", Desc: "encoder pathways -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.04",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true", // counteracting hogging
-					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
-					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
+					"Path.Learn.Lrate":       "0.04",
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true", // counteracting hogging
+					//"Path.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
+					//"Path.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
-			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
+			{Sel: ".HippoCHL", Desc: "hippo CHL pathways -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.01", // .01 > .05? > .1?
-					"Prjn.Learn.Lrate":       "0.2",  // .2 probably better? .4 was prev default
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.CHL.Hebb":          "0.01", // .01 > .05? > .1?
+					"Path.Learn.Lrate":       "0.2",  // .2 probably better? .4 was prev default
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
-			{Sel: ".PPath", Desc: "performant path, new Dg error-driven EcCa1Prjn prjns",
+			{Sel: ".PPath", Desc: "performant path, new Dg error-driven EcCa1Path paths",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
-					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
-					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
+					"Path.Learn.Lrate":       "0.15", // err driven: .15 > .2 > .25 > .1
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
+					//"Path.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
+					//"Path.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
+					"Path.WtScale.Abs": "4.0", // 4 > 6 > 2 (fails)
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0.0",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0.0",
 				}},
 			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails); zycyc test this
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "0.5", // .5 = .3? > .8 (fails); zycyc test this
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false", // learning here definitely does NOT work!
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
-					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+					"Path.Learn.Learn": "false", // learning here definitely does NOT work!
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "4", // err del 4: 4 > 6 > 8
+					//"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
 			//{Sel: "#ECinToCA3", Desc: "ECin Perforant Path",
 			//	Params: params.Params{
-			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//		"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons: rel=2 still the best",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "2",   // 2 > 1 > .5 = .1
-					"Prjn.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
-					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+					"Path.WtScale.Rel": "2",   // 2 > 1 > .5 = .1
+					"Path.Learn.Lrate": "0.1", // .1 > .08 (close) > .15 > .2 > .04;
+					//"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
 			{Sel: "#ECinToDG", Desc: "DG learning is surprisingly critical: maxed out fast, hebbian works best",
 				Params: params.Params{
-					"Prjn.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off.
-					"Prjn.CHL.Hebb":          "0.2",  // .2 seems good
-					"Prjn.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
-					"Prjn.CHL.MinusQ1":       "true", // dg self err slightly better
-					"Prjn.Learn.Lrate":       "0.05", // .05 > .1 > .2 > .4; .01 less interference more learning time - key tradeoff param, .05 best for list20-100
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.Learn.Learn":       "true", // absolutely essential to have on! learning slow if off.
+					"Path.CHL.Hebb":          "0.2",  // .2 seems good
+					"Path.CHL.SAvgCor":       "0.1",  // 0.01 = 0.05 = .1 > .2 > .3 > .4 (listlize 20-100)
+					"Path.CHL.MinusQ1":       "true", // dg self err slightly better
+					"Path.Learn.Lrate":       "0.05", // .05 > .1 > .2 > .4; .01 less interference more learning time - key tradeoff param, .05 best for list20-100
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.01", // .01 > .005 > .02 > .002 > .001 > .05 (crazy)
-					"Prjn.CHL.SAvgCor":       "0.4",
-					"Prjn.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse)
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
-					//"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+					"Path.CHL.Hebb":          "0.01", // .01 > .005 > .02 > .002 > .001 > .05 (crazy)
+					"Path.CHL.SAvgCor":       "0.4",
+					"Path.Learn.Lrate":       "0.1", // CHL: .1 =~ .08 > .15 > .2, .05 (sig worse)
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
+					//"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 				}},
 			//{Sel: "#ECinToCA1", Desc: "ECin Perforant Path",
 			//	Params: params.Params{
-			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//		"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
 			//{Sel: "#ECoutToCA1", Desc: "ECout Perforant Path",
 			//	Params: params.Params{
-			//		"Prjn.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
+			//		"Path.WtScale.Abs": "1.5", // zycyc, test if abs activation was not enough
 			//	}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{

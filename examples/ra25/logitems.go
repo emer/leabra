@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build not
+
 package main
 
 import (
-	"github.com/emer/emergent/elog"
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/etime"
-	"github.com/emer/etable/agg"
-	"github.com/emer/etable/etensor"
-	"github.com/emer/etable/minmax"
-	"github.com/emer/leabra/leabra"
+	"cogentcore.org/core/math32/minmax"
+	"cogentcore.org/core/tensor"
+	"github.com/emer/emergent/v2/elog"
+	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 func (ss *Sim) ConfigLogItems() {
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Run",
-		Type: etensor.INT64,
+		Type: tensor.INT64,
 		Plot: elog.DFalse,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.AllTimes): func(ctx *elog.Context) {
@@ -25,7 +25,7 @@ func (ss *Sim) ConfigLogItems() {
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Params",
-		Type: etensor.STRING,
+		Type: tensor.STRING,
 		Plot: elog.DFalse,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.AllTimes): func(ctx *elog.Context) {
@@ -33,7 +33,7 @@ func (ss *Sim) ConfigLogItems() {
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Epoch",
-		Type: etensor.INT64,
+		Type: tensor.INT64,
 		Plot: elog.DFalse,
 		Write: elog.WriteMap{
 			etime.Scopes([]etime.Modes{etime.AllModes}, []etime.Times{etime.Epoch, etime.Trial}): func(ctx *elog.Context) {
@@ -41,28 +41,28 @@ func (ss *Sim) ConfigLogItems() {
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Trial",
-		Type: etensor.INT64,
+		Type: tensor.INT64,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatInt("Trial")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "TrialName",
-		Type: etensor.STRING,
+		Type: tensor.STRING,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatString("TrialName")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Cycle",
-		Type: etensor.INT64,
+		Type: tensor.INT64,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Cycle): func(ctx *elog.Context) {
 				ctx.SetStatInt("Cycle")
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:  "FirstZero",
-		Type:  etensor.FLOAT64,
+		Type:  tensor.FLOAT64,
 		Plot:  elog.DFalse,
 		Range: minmax.F64{Min: -1},
 		Write: elog.WriteMap{
@@ -71,33 +71,33 @@ func (ss *Sim) ConfigLogItems() {
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "SSE",
-		Type: etensor.FLOAT64,
+		Type: tensor.FLOAT64,
 		Plot: elog.DFalse,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatFloat("TrlSSE")
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5)
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "AvgSSE",
-		Type: etensor.FLOAT64,
+		Type: tensor.FLOAT64,
 		Plot: elog.DTrue,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetStatFloat("TrlAvgSSE")
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5)
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "Err",
-		Type: etensor.FLOAT64,
+		Type: tensor.FLOAT64,
 		Plot: elog.DTrue,
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
@@ -105,12 +105,12 @@ func (ss *Sim) ConfigLogItems() {
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:   "PctErr",
-		Type:   etensor.FLOAT64,
+		Type:   tensor.FLOAT64,
 		FixMax: elog.DTrue,
 		Range:  minmax.F64{Max: 1},
 		Write: elog.WriteMap{
 			etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
-				pcterr := ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", agg.AggMean)
+				pcterr := ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", stats.AggMean)
 				epc := ctx.Stats.Int("Epoch")
 				if ss.Stats.Int("FirstZero") < 0 && pcterr[0] == 0 {
 					ss.Stats.SetInt("FirstZero", epc)
@@ -122,14 +122,14 @@ func (ss *Sim) ConfigLogItems() {
 					ss.Stats.SetInt("NZero", 0)
 				}
 			}, etime.Scope(etime.Test, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", agg.AggMean)
+				ctx.SetAggItem(ctx.Mode, etime.Trial, "Err", stats.AggMean)
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:   "PctCor",
-		Type:   etensor.FLOAT64,
+		Type:   tensor.FLOAT64,
 		FixMax: elog.DTrue,
 		Range:  minmax.F64{Max: 1},
 		Write: elog.WriteMap{
@@ -137,25 +137,25 @@ func (ss *Sim) ConfigLogItems() {
 				ctx.SetFloat64(1 - ctx.ItemFloatScope(ctx.Scope, "PctErr"))
 			}, etime.Scope(etime.AllModes, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(ctx.Mode, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name:   "CosDiff",
-		Type:   etensor.FLOAT64,
+		Type:   tensor.FLOAT64,
 		FixMax: elog.DTrue,
 		Range:  minmax.F64{Max: 1},
 		Write: elog.WriteMap{
 			etime.Scope(etime.AllModes, etime.Trial): func(ctx *elog.Context) {
 				ctx.SetFloat64(ss.Stats.Float("TrlCosDiff"))
 			}, etime.Scope(etime.AllModes, etime.Epoch): func(ctx *elog.Context) {
-				ctx.SetAgg(ctx.Mode, etime.Trial, agg.AggMean)
+				ctx.SetAgg(ctx.Mode, etime.Trial, stats.AggMean)
 			}, etime.Scope(etime.Train, etime.Run): func(ctx *elog.Context) {
 				ix := ctx.LastNRows(etime.Train, etime.Epoch, 5) // cached
-				ctx.SetFloat64(agg.Mean(ix, ctx.Item.Name)[0])
+				ctx.SetFloat64(stats.Mean(ix, ctx.Item.Name)[0])
 			}}})
 	ss.Logs.AddItem(&elog.Item{
 		Name: "PerTrlMSec",
-		Type: etensor.FLOAT64,
+		Type: tensor.FLOAT64,
 		Plot: elog.DFalse,
 		Write: elog.WriteMap{
 			etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
@@ -175,7 +175,7 @@ func (ss *Sim) ConfigLogItems() {
 		clnm := lnm
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActAvg",
-			Type:   etensor.FLOAT64,
+			Type:   tensor.FLOAT64,
 			Plot:   elog.DFalse,
 			FixMax: elog.DTrue,
 			Range:  minmax.F64{Max: 1},
@@ -187,7 +187,7 @@ func (ss *Sim) ConfigLogItems() {
 		// Test Cycle activity plot
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + " Ge.Avg",
-			Type:  etensor.FLOAT64,
+			Type:  tensor.FLOAT64,
 			Range: minmax.F64{Max: 1},
 			Write: elog.WriteMap{
 				etime.Scope(etime.Test, etime.Cycle): func(ctx *elog.Context) {
@@ -196,7 +196,7 @@ func (ss *Sim) ConfigLogItems() {
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name:  clnm + " Act.Avg",
-			Type:  etensor.FLOAT64,
+			Type:  tensor.FLOAT64,
 			Range: minmax.F64{Max: 1},
 			Write: elog.WriteMap{
 				etime.Scope(etime.Test, etime.Cycle): func(ctx *elog.Context) {
@@ -211,7 +211,7 @@ func (ss *Sim) ConfigLogItems() {
 		clnm := lnm
 		ss.Logs.AddItem(&elog.Item{
 			Name:   clnm + "_ActAvg",
-			Type:   etensor.FLOAT64,
+			Type:   tensor.FLOAT64,
 			Plot:   elog.DFalse,
 			FixMax: elog.DTrue,
 			Range:  minmax.F64{Max: 1},
@@ -229,19 +229,19 @@ func (ss *Sim) ConfigLogItems() {
 		cly := ss.Net.LayerByName(clnm)
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_Act",
-			Type:      etensor.FLOAT64,
-			CellShape: cly.Shape().Shp,
+			Type:      tensor.FLOAT64,
+			CellShape: cly.Shape.Sizes,
 			FixMax:    elog.DTrue,
 			Range:     minmax.F64{Max: 1},
 			Write: elog.WriteMap{
 				etime.Scope(etime.Test, etime.Trial): func(ctx *elog.Context) {
 					ctx.SetLayerTensor(clnm, "Act")
 				}}})
-		if cly.Type() == emer.Target {
+		if cly.Type() == leabra.TargetLayer {
 			ss.Logs.AddItem(&elog.Item{
 				Name:      clnm + "_ActM",
-				Type:      etensor.FLOAT64,
-				CellShape: cly.Shape().Shp,
+				Type:      tensor.FLOAT64,
+				CellShape: cly.Shape.Sizes,
 				FixMax:    elog.DTrue,
 				Range:     minmax.F64{Max: 1},
 				Write: elog.WriteMap{
@@ -258,8 +258,8 @@ func (ss *Sim) ConfigLogItems() {
 		cly := ss.Net.LayerByName(clnm)
 		ss.Logs.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",
-			Type:      etensor.FLOAT64,
-			CellShape: cly.Shape().Shp,
+			Type:      tensor.FLOAT64,
+			CellShape: cly.Shape.Sizes,
 			FixMax:    elog.DTrue,
 			Range:     minmax.F64{Max: 1},
 			Write: elog.WriteMap{
@@ -268,7 +268,7 @@ func (ss *Sim) ConfigLogItems() {
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name: clnm + "_PCA_NStrong",
-			Type: etensor.FLOAT64,
+			Type: tensor.FLOAT64,
 			Plot: elog.DFalse,
 			Write: elog.WriteMap{
 				etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
@@ -276,7 +276,7 @@ func (ss *Sim) ConfigLogItems() {
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name: clnm + "_PCA_Top5",
-			Type: etensor.FLOAT64,
+			Type: tensor.FLOAT64,
 			Plot: elog.DFalse,
 			Write: elog.WriteMap{
 				etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
@@ -284,7 +284,7 @@ func (ss *Sim) ConfigLogItems() {
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name: clnm + "_PCA_Next5",
-			Type: etensor.FLOAT64,
+			Type: tensor.FLOAT64,
 			Plot: elog.DFalse,
 			Write: elog.WriteMap{
 				etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {
@@ -292,7 +292,7 @@ func (ss *Sim) ConfigLogItems() {
 				}}})
 		ss.Logs.AddItem(&elog.Item{
 			Name: clnm + "_PCA_Rest",
-			Type: etensor.FLOAT64,
+			Type: tensor.FLOAT64,
 			Plot: elog.DFalse,
 			Write: elog.WriteMap{
 				etime.Scope(etime.Train, etime.Epoch): func(ctx *elog.Context) {

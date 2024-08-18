@@ -4,76 +4,76 @@
 
 package main
 
-import "github.com/emer/emergent/params"
+import "github.com/emer/emergent/v2/params"
 
 // OrigParamSets is the original hip model params, prior to optimization in 2/2020
 var OrigParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "keeping default params for generic prjns",
+			{Sel: "Path", Desc: "keeping default params for generic paths",
 				Params: params.Params{
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.3",
+					"Path.WtScale.Rel": "0.3",
 				}},
-			{Sel: ".EcCa1Prjn", Desc: "encoder projections -- no norm, moment",
+			{Sel: ".EcCa1Path", Desc: "encoder pathways -- no norm, moment",
 				Params: params.Params{
-					"Prjn.Learn.Lrate":       "0.04",
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true", // counteracting hogging
-					//"Prjn.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
-					//"Prjn.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
+					"Path.Learn.Lrate":       "0.04",
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true", // counteracting hogging
+					//"Path.Learn.XCal.SetLLrn": "true", // bcm now avail, comment out = default LLrn
+					//"Path.Learn.XCal.LLrn":    "0",    // 0 = turn off BCM, must with SetLLrn = true
 				}},
-			{Sel: ".HippoCHL", Desc: "hippo CHL projections -- no norm, moment, but YES wtbal = sig better",
+			{Sel: ".HippoCHL", Desc: "hippo CHL pathways -- no norm, moment, but YES wtbal = sig better",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":          "0.05",
-					"Prjn.Learn.Lrate":       "0.2", // note: 0.2 can sometimes take a really long time to learn
-					"Prjn.Learn.Momentum.On": "false",
-					"Prjn.Learn.Norm.On":     "false",
-					"Prjn.Learn.WtBal.On":    "true",
+					"Path.CHL.Hebb":          "0.05",
+					"Path.Learn.Lrate":       "0.2", // note: 0.2 can sometimes take a really long time to learn
+					"Path.Learn.Momentum.On": "false",
+					"Path.Learn.Norm.On":     "false",
+					"Path.Learn.WtBal.On":    "true",
 				}},
 			{Sel: "#CA1ToECout", Desc: "extra strong from CA1 to ECout",
 				Params: params.Params{
-					"Prjn.WtScale.Abs": "4.0",
+					"Path.WtScale.Abs": "4.0",
 				}},
 			{Sel: "#InputToECin", Desc: "one-to-one input to EC",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.8",
-					"Prjn.WtInit.Var":  "0.0",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.8",
+					"Path.WtInit.Var":  "0.0",
 				}},
 			{Sel: "#ECoutToECin", Desc: "one-to-one out to in",
 				Params: params.Params{
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "0.5",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "0.5",
 				}},
 			{Sel: "#DGToCA3", Desc: "Mossy fibers: strong, non-learning",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.001",
-					"Prjn.CHL.SAvgCor": "1",
-					"Prjn.Learn.Learn": "false",
-					"Prjn.WtInit.Mean": "0.9",
-					"Prjn.WtInit.Var":  "0.01",
-					"Prjn.WtScale.Rel": "8",
+					"Path.CHL.Hebb":    "0.001",
+					"Path.CHL.SAvgCor": "1",
+					"Path.Learn.Learn": "false",
+					"Path.WtInit.Mean": "0.9",
+					"Path.WtInit.Var":  "0.01",
+					"Path.WtScale.Rel": "8",
 				}},
 			{Sel: "#CA3ToCA3", Desc: "CA3 recurrent cons",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.01",
-					"Prjn.CHL.SAvgCor": "1",
-					"Prjn.WtScale.Rel": "2",
+					"Path.CHL.Hebb":    "0.01",
+					"Path.CHL.SAvgCor": "1",
+					"Path.WtScale.Rel": "2",
 				}},
 			{Sel: "#CA3ToCA1", Desc: "Schaffer collaterals -- slower, less hebb",
 				Params: params.Params{
-					"Prjn.CHL.Hebb":    "0.005",
-					"Prjn.CHL.SAvgCor": "0.4",
-					"Prjn.Learn.Lrate": "0.1",
+					"Path.CHL.Hebb":    "0.005",
+					"Path.CHL.SAvgCor": "0.4",
+					"Path.Learn.Lrate": "0.1",
 				}},
 			{Sel: ".EC", Desc: "all EC layers: only pools, no layer-level",
 				Params: params.Params{

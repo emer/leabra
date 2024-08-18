@@ -5,590 +5,27 @@
 package leabra
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"log"
-	"math"
 	"math/rand"
-	"strconv"
-	"strings"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/weights"
-	"github.com/emer/etable/etensor"
-	"github.com/goki/ki/bitflag"
-	"github.com/goki/ki/indent"
-	"github.com/goki/ki/ints"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/enums"
+	"cogentcore.org/core/math32"
+	"cogentcore.org/core/tensor"
 )
-
-// leabra.Layer has parameters for running a basic rate-coded Leabra layer
-type Layer struct {
-	LayerStru
-
-	// [view: add-fields] Activation parameters and methods for computing activations
-	Act ActParams `view:"add-fields" desc:"Activation parameters and methods for computing activations"`
-
-	// [view: add-fields] Inhibition parameters and methods for computing layer-level inhibition
-	Inhib InhibParams `view:"add-fields" desc:"Inhibition parameters and methods for computing layer-level inhibition"`
-
-	// [view: add-fields] Learning parameters and methods that operate at the neuron level
-	Learn LearnNeurParams `view:"add-fields" desc:"Learning parameters and methods that operate at the neuron level"`
-
-	// slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values.
-	Neurons []Neuron `desc:"slice of neurons for this layer -- flat list of len = Shp.Len(). You must iterate over index and use pointer to modify values."`
-
-	// inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values.
-	Pools []Pool `desc:"inhibition and other pooled, aggregate state variables -- flat list has at least of 1 for layer, and one for each sub-pool (unit group) if shape supports that (4D).  You must iterate over index and use pointer to modify values."`
-
-	// cosine difference between ActM, ActP stats
-	CosDiff CosDiffStats `desc:"cosine difference between ActM, ActP stats"`
-}
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, LayerProps)
-
-// AsLeabra returns this layer as a leabra.Layer -- all derived layers must redefine
-// this to return the base Layer type, so that the LeabraLayer interface does not
-// need to include accessors to all the basic stuff
-func (ly *Layer) AsLeabra() *Layer {
-	return ly
-}
-
-func (ly *Layer) Defaults() {
-	ly.Act.Defaults()
-	ly.Inhib.Defaults()
-	ly.Learn.Defaults()
-	ly.Inhib.Layer.On = true
-	for _, pj := range ly.RcvPrjns {
-		pj.Defaults()
-	}
-}
-
-// UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
-func (ly *Layer) UpdateParams() {
-	ly.Act.Update()
-	ly.Inhib.Update()
-	ly.Learn.Update()
-	for _, pj := range ly.RcvPrjns {
-		pj.UpdateParams()
-	}
-}
-
-// JsonToParams reformates json output to suitable params display output
-func JsonToParams(b []byte) string {
-	br := strings.Replace(string(b), `"`, ``, -1)
-	br = strings.Replace(br, ",\n", "", -1)
-	br = strings.Replace(br, "{\n", "{", -1)
-	br = strings.Replace(br, "} ", "}\n  ", -1)
-	br = strings.Replace(br, "\n }", " }", -1)
-	br = strings.Replace(br, "\n  }\n", " }", -1)
-	return br[1:] + "\n"
-}
-
-// AllParams returns a listing of all parameters in the Layer
-func (ly *Layer) AllParams() string {
-	str := "/////////////////////////////////////////////////\nLayer: " + ly.Nm + "\n"
-	b, _ := json.MarshalIndent(&ly.Act, "", " ")
-	str += "Act: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Inhib, "", " ")
-	str += "Inhib: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
-	str += "Learn: {\n " + JsonToParams(b)
-	for _, pj := range ly.RcvPrjns {
-		pstr := pj.AllParams()
-		str += pstr
-	}
-	return str
-}
-
-// UnitVarNames returns a list of variable names available on the units in this layer
-func (ly *Layer) UnitVarNames() []string {
-	return NeuronVars
-}
-
-// UnitVarProps returns properties for variables
-func (ly *Layer) UnitVarProps() map[string]string {
-	return NeuronVarProps
-}
-
-// UnitVarIdx returns the index of given variable within the Neuron,
-// according to *this layer's* UnitVarNames() list (using a map to lookup index),
-// or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	return NeuronVarIdxByName(varNm)
-}
-
-// UnitVarNum returns the number of Neuron-level variables
-// for this layer.  This is needed for extending indexes in derived types.
-func (ly *Layer) UnitVarNum() int {
-	return len(NeuronVars)
-}
-
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
-// returns NaN on invalid index.
-// This is the core unit var access method used by other methods,
-// so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
-	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
-	}
-	if varIdx < 0 || varIdx >= ly.UnitVarNum() {
-		return mat32.NaN()
-	}
-	nrn := &ly.Neurons[idx]
-	return nrn.VarByIndex(varIdx)
-}
-
-// UnitVals fills in values of given variable name on unit,
-// for each unit in the layer, into given float32 slice (only resized if not big enough).
-// Returns error on invalid var name.
-func (ly *Layer) UnitVals(vals *[]float32, varNm string) error {
-	nn := len(ly.Neurons)
-	if *vals == nil || cap(*vals) < nn {
-		*vals = make([]float32, nn)
-	} else if len(*vals) < nn {
-		*vals = (*vals)[0:nn]
-	}
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
-	if err != nil {
-		nan := mat32.NaN()
-		for i := range ly.Neurons {
-			(*vals)[i] = nan
-		}
-		return err
-	}
-	for i := range ly.Neurons {
-		(*vals)[i] = ly.LeabraLay.UnitVal1D(vidx, i)
-	}
-	return nil
-}
-
-// UnitValsTensor returns values of given variable name on unit
-// for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValsTensor(tsr etensor.Tensor, varNm string) error {
-	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValsTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	tsr.SetShape(ly.Shp.Shp, ly.Shp.Strd, ly.Shp.Nms)
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i := range ly.Neurons {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i := range ly.Neurons {
-		v := ly.LeabraLay.UnitVal1D(vidx, i)
-		if mat32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
-// UnitValsRepTensor fills in values of given variable name on unit
-// for a smaller subset of representative units in the layer, into given tensor.
-// This is used for computationally intensive stats or displays that work
-// much better with a smaller number of units.
-// The set of representative units are defined by SetRepIdxs -- all units
-// are used if no such subset has been defined.
-// If tensor is not already big enough to hold the values, it is
-// set to a 1D shape to hold all the values if subset is defined,
-// otherwise it calls UnitValsTensor and is identical to that.
-// Returns error on invalid var name.
-func (ly *Layer) UnitValsRepTensor(tsr etensor.Tensor, varNm string) error {
-	nu := len(ly.RepIxs)
-	if nu == 0 {
-		return ly.UnitValsTensor(tsr, varNm)
-	}
-	if tsr == nil {
-		err := fmt.Errorf("axon.UnitValsRepTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	if tsr.Len() != nu {
-		tsr.SetShape([]int{nu}, nil, []string{"Units"})
-	}
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i, _ := range ly.RepIxs {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i, ui := range ly.RepIxs {
-		v := ly.LeabraLay.UnitVal1D(vidx, ui)
-		if mat32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
-// UnitVal returns value of given variable name on given unit,
-// using shape-based dimensional index
-func (ly *Layer) UnitVal(varNm string, idx []int) float32 {
-	vidx, err := ly.LeabraLay.UnitVarIdx(varNm)
-	if err != nil {
-		return mat32.NaN()
-	}
-	fidx := ly.Shp.Offset(idx)
-	return ly.LeabraLay.UnitVal1D(vidx, fidx)
-}
-
-// RecvPrjnVals fills in values of given synapse variable name,
-// for projection into given sending layer and neuron 1D index,
-// for all receiving neurons in this layer,
-// into given float32 slice (only resized if not big enough).
-// prjnType is the string representation of the prjn type -- used if non-empty,
-// useful when there are multiple projections between two layers.
-// Returns error on invalid var name.
-// If the receiving neuron is not connected to the given sending layer or neuron
-// then the value is set to mat32.NaN().
-// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) RecvPrjnVals(vals *[]float32, varNm string, sendLay emer.Layer, sendIdx1D int, prjnType string) error {
-	var err error
-	nn := len(ly.Neurons)
-	if *vals == nil || cap(*vals) < nn {
-		*vals = make([]float32, nn)
-	} else if len(*vals) < nn {
-		*vals = (*vals)[0:nn]
-	}
-	nan := mat32.NaN()
-	for i := 0; i < nn; i++ {
-		(*vals)[i] = nan
-	}
-	if sendLay == nil {
-		return fmt.Errorf("sending layer is nil")
-	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = sendLay.RecvNameTypeTry(ly.Nm, prjnType)
-		if pj == nil {
-			pj, err = sendLay.RecvNameTry(ly.Nm)
-		}
-	} else {
-		pj, err = sendLay.RecvNameTry(ly.Nm)
-	}
-	if pj == nil {
-		return err
-	}
-	if pj.IsOff() {
-		return fmt.Errorf("projection is off")
-	}
-	for ri := 0; ri < nn; ri++ {
-		(*vals)[ri] = pj.SynVal(varNm, sendIdx1D, ri) // this will work with any variable -- slower, but necessary
-	}
-	return nil
-}
-
-// SendPrjnVals fills in values of given synapse variable name,
-// for projection into given receiving layer and neuron 1D index,
-// for all sending neurons in this layer,
-// into given float32 slice (only resized if not big enough).
-// prjnType is the string representation of the prjn type -- used if non-empty,
-// useful when there are multiple projections between two layers.
-// Returns error on invalid var name.
-// If the sending neuron is not connected to the given receiving layer or neuron
-// then the value is set to mat32.NaN().
-// Returns error on invalid var name or lack of recv prjn (vals always set to nan on prjn err).
-func (ly *Layer) SendPrjnVals(vals *[]float32, varNm string, recvLay emer.Layer, recvIdx1D int, prjnType string) error {
-	var err error
-	nn := len(ly.Neurons)
-	if *vals == nil || cap(*vals) < nn {
-		*vals = make([]float32, nn)
-	} else if len(*vals) < nn {
-		*vals = (*vals)[0:nn]
-	}
-	nan := mat32.NaN()
-	for i := 0; i < nn; i++ {
-		(*vals)[i] = nan
-	}
-	if recvLay == nil {
-		return fmt.Errorf("receiving layer is nil")
-	}
-	var pj emer.Prjn
-	if prjnType != "" {
-		pj, err = recvLay.SendNameTypeTry(ly.Nm, prjnType)
-		if pj == nil {
-			pj, err = recvLay.SendNameTry(ly.Nm)
-		}
-	} else {
-		pj, err = recvLay.SendNameTry(ly.Nm)
-	}
-	if pj == nil {
-		return err
-	}
-	if pj.IsOff() {
-		return fmt.Errorf("projection is off")
-	}
-	for si := 0; si < nn; si++ {
-		(*vals)[si] = pj.SynVal(varNm, si, recvIdx1D)
-	}
-	return nil
-}
-
-// Pool returns pool at given index
-func (ly *Layer) Pool(idx int) *Pool {
-	return &(ly.Pools[idx])
-}
-
-// PoolTry returns pool at given index, returns error if index is out of range
-func (ly *Layer) PoolTry(idx int) (*Pool, error) {
-	np := len(ly.Pools)
-	if idx < 0 || idx >= np {
-		return nil, fmt.Errorf("Layer Pool index: %v out of range, N = %v", idx, np)
-	}
-	return &(ly.Pools[idx]), nil
-}
-
-func (ly *Layer) SendNameTry(sender string) (emer.Prjn, error) {
-	return emer.SendNameTry(ly, sender)
-}
-func (ly *Layer) SendNameTypeTry(sender, typ string) (emer.Prjn, error) {
-	return emer.SendNameTypeTry(ly, sender, typ)
-}
-func (ly *Layer) RecvNameTry(receiver string) (emer.Prjn, error) {
-	return emer.RecvNameTry(ly, receiver)
-}
-func (ly *Layer) RecvNameTypeTry(receiver, typ string) (emer.Prjn, error) {
-	return emer.RecvNameTypeTry(ly, receiver, typ)
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-//  Build
-
-// BuildSubPools initializes neuron start / end indexes for sub-pools
-func (ly *Layer) BuildSubPools() {
-	if !ly.Is4D() {
-		return
-	}
-	sh := ly.Shp.Shapes()
-	spy := sh[0]
-	spx := sh[1]
-	pi := 1
-	for py := 0; py < spy; py++ {
-		for px := 0; px < spx; px++ {
-			soff := ly.Shp.Offset([]int{py, px, 0, 0})
-			eoff := ly.Shp.Offset([]int{py, px, sh[2] - 1, sh[3] - 1}) + 1
-			pl := &ly.Pools[pi]
-			pl.StIdx = soff
-			pl.EdIdx = eoff
-			for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
-				nrn := &ly.Neurons[ni]
-				nrn.SubPool = int32(pi)
-			}
-			pi++
-		}
-	}
-}
-
-// BuildPools builds the inhibitory pools structures -- nu = number of units in layer
-func (ly *Layer) BuildPools(nu int) error {
-	np := 1 + ly.NPools()
-	ly.Pools = make([]Pool, np)
-	lpl := &ly.Pools[0]
-	lpl.StIdx = 0
-	lpl.EdIdx = nu
-	if np > 1 {
-		ly.BuildSubPools()
-	}
-	return nil
-}
-
-// BuildPrjns builds the projections, recv-side
-func (ly *Layer) BuildPrjns() error {
-	emsg := ""
-	for _, pj := range ly.RcvPrjns {
-		if pj.IsOff() {
-			continue
-		}
-		err := pj.Build()
-		if err != nil {
-			emsg += err.Error() + "\n"
-		}
-	}
-	if emsg != "" {
-		return errors.New(emsg)
-	}
-	return nil
-}
-
-// Build constructs the layer state, including calling Build on the projections
-func (ly *Layer) Build() error {
-	nu := ly.Shp.Len()
-	if nu == 0 {
-		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Nm)
-	}
-	ly.Neurons = make([]Neuron, nu)
-	err := ly.BuildPools(nu)
-	if err != nil {
-		return err
-	}
-	err = ly.BuildPrjns()
-	return err
-}
-
-// WriteWtsJSON writes the weights from this layer from the receiver-side perspective
-// in a JSON text format.  We build in the indentation logic to make it much faster and
-// more efficient.
-func (ly *Layer) WriteWtsJSON(w io.Writer, depth int) {
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("{\n"))
-	depth++
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"Layer\": %q,\n", ly.Nm)))
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"MetaData\": {\n")))
-	depth++
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"ActMAvg\": \"%g\",\n", ly.Pools[0].ActAvg.ActMAvg)))
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte(fmt.Sprintf("\"ActPAvg\": \"%g\"\n", ly.Pools[0].ActAvg.ActPAvg)))
-	depth--
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("},\n"))
-	w.Write(indent.TabBytes(depth))
-	onps := make(emer.Prjns, 0, len(ly.RcvPrjns))
-	for _, pj := range ly.RcvPrjns {
-		if !pj.IsOff() {
-			onps = append(onps, pj)
-		}
-	}
-	np := len(onps)
-	if np == 0 {
-		w.Write([]byte(fmt.Sprintf("\"Prjns\": null\n")))
-	} else {
-		w.Write([]byte(fmt.Sprintf("\"Prjns\": [\n")))
-		depth++
-		for pi, pj := range onps {
-			pj.WriteWtsJSON(w, depth) // this leaves prjn unterminated
-			if pi == np-1 {
-				w.Write([]byte("\n"))
-			} else {
-				w.Write([]byte(",\n"))
-			}
-		}
-		depth--
-		w.Write(indent.TabBytes(depth))
-		w.Write([]byte("]\n"))
-	}
-	depth--
-	w.Write(indent.TabBytes(depth))
-	w.Write([]byte("}")) // note: leave unterminated as outer loop needs to add , or just \n depending
-}
-
-// ReadWtsJSON reads the weights from this layer from the receiver-side perspective
-// in a JSON text format.  This is for a set of weights that were saved *for one layer only*
-// and is not used for the network-level ReadWtsJSON, which reads into a separate
-// structure -- see SetWts method.
-func (ly *Layer) ReadWtsJSON(r io.Reader) error {
-	lw, err := weights.LayReadJSON(r)
-	if err != nil {
-		return err // note: already logged
-	}
-	return ly.SetWts(lw)
-}
-
-// SetWts sets the weights for this layer from weights.Layer decoded values
-func (ly *Layer) SetWts(lw *weights.Layer) error {
-	if ly.IsOff() {
-		return nil
-	}
-	if lw.MetaData != nil {
-		if am, ok := lw.MetaData["ActMAvg"]; ok {
-			pv, _ := strconv.ParseFloat(am, 32)
-			ly.Pools[0].ActAvg.ActMAvg = float32(pv)
-		}
-		if ap, ok := lw.MetaData["ActPAvg"]; ok {
-			pv, _ := strconv.ParseFloat(ap, 32)
-			pl := &ly.Pools[0]
-			pl.ActAvg.ActPAvg = float32(pv)
-			ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
-		}
-	}
-	var err error
-	rpjs := ly.RecvPrjns()
-	if len(lw.Prjns) == len(*rpjs) { // this is essential if multiple prjns from same layer
-		for pi := range lw.Prjns {
-			pw := &lw.Prjns[pi]
-			pj := (*rpjs)[pi]
-			er := pj.SetWts(pw)
-			if er != nil {
-				err = er
-			}
-		}
-	} else {
-		for pi := range lw.Prjns {
-			pw := &lw.Prjns[pi]
-			pj, err := ly.SendNameTry(pw.From)
-			if err == nil {
-				er := pj.SetWts(pw)
-				if er != nil {
-					err = er
-				}
-			}
-		}
-	}
-	return err
-}
-
-// VarRange returns the min / max values for given variable
-// todo: support r. s. projection values
-func (ly *Layer) VarRange(varNm string) (min, max float32, err error) {
-	sz := len(ly.Neurons)
-	if sz == 0 {
-		return
-	}
-	vidx := 0
-	vidx, err = NeuronVarIdxByName(varNm)
-	if err != nil {
-		return
-	}
-
-	v0 := ly.Neurons[0].VarByIndex(vidx)
-	min = v0
-	max = v0
-	for i := 1; i < sz; i++ {
-		vl := ly.Neurons[i].VarByIndex(vidx)
-		if vl < min {
-			min = vl
-		}
-		if vl > max {
-			max = vl
-		}
-	}
-	return
-}
-
-// note: all basic computation can be performed on layer-level and prjn level
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-// InitWts initializes the weight values in the network, i.e., resetting learning
-// Also calls InitActs
-func (ly *Layer) InitWts() {
-	ly.LeabraLay.UpdateParams()
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+// InitWeights initializes the weight values in the network,
+// i.e., resetting learning Also calls InitActs.
+func (ly *Layer) InitWeights() {
+	ly.UpdateParams()
+	for _, pt := range ly.SendPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).InitWts()
+		pt.InitWeights()
 	}
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
@@ -596,12 +33,13 @@ func (ly *Layer) InitWts() {
 		pl.ActAvg.ActPAvg = ly.Inhib.ActAvg.Init
 		pl.ActAvg.ActPAvgEff = ly.Inhib.ActAvg.EffInit()
 	}
-	ly.LeabraLay.InitActAvg()
-	ly.LeabraLay.InitActs()
+	ly.InitActAvg()
+	ly.InitActs()
 	ly.CosDiff.Init()
 }
 
-// InitActAvg initializes the running-average activation values that drive learning.
+// InitActAvg initializes the running-average activation
+// values that drive learning.
 func (ly *Layer) InitActAvg() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -609,7 +47,8 @@ func (ly *Layer) InitActAvg() {
 	}
 }
 
-// InitActs fully initializes activation state -- only called automatically during InitWts
+// InitActs fully initializes activation state.
+// only called automatically during InitWeights.
 func (ly *Layer) InitActs() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -623,71 +62,69 @@ func (ly *Layer) InitActs() {
 	}
 }
 
-// InitWtsSym initializes the weight symmetry -- higher layers copy weights from lower layers
+// InitWeightsSym initializes the weight symmetry.
+// higher layers copy weights from lower layers.
 func (ly *Layer) InitWtSym() {
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+	for _, pt := range ly.SendPaths {
+		if pt.Off {
 			continue
 		}
-		plp := p.(LeabraPrjn)
-		if !(plp.AsLeabra().WtInit.Sym) {
+		if !(pt.WtInit.Sym) {
 			continue
 		}
 		// key ordering constraint on which way weights are copied
-		if p.RecvLay().Index() < p.SendLay().Index() {
+		if pt.Recv.Index < pt.Send.Index {
 			continue
 		}
-		rpj, has := ly.RecipToSendPrjn(p)
+		rpt, has := ly.RecipToSendPath(pt)
 		if !has {
 			continue
 		}
-		rlp := rpj.(LeabraPrjn)
-		if !(rlp.AsLeabra().WtInit.Sym) {
+		if !(rpt.WtInit.Sym) {
 			continue
 		}
-		plp.InitWtSym(rlp)
+		pt.InitWtSym(rpt)
 	}
 }
 
 // InitExt initializes external input state -- called prior to apply ext
 func (ly *Layer) InitExt() {
-	msk := bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		nrn.Ext = 0
 		nrn.Targ = 0
-		nrn.ClearMask(msk)
+		nrn.SetFlag(false, NeurHasExt, NeurHasTarg, NeurHasCmpr)
 	}
 }
 
-// ApplyExtFlags gets the clear mask and set mask for updating neuron flags
+// ApplyExtFlags gets the flags that should cleared and set for updating neuron flags
 // based on layer type, and whether input should be applied to Targ (else Ext)
-func (ly *Layer) ApplyExtFlags() (clrmsk, setmsk int32, toTarg bool) {
-	clrmsk = bitflag.Mask32(int(NeurHasExt), int(NeurHasTarg), int(NeurHasCmpr))
+func (ly *Layer) ApplyExtFlags() (clear, set []enums.BitFlag, toTarg bool) {
+	clear = []enums.BitFlag{NeurHasExt, NeurHasTarg, NeurHasCmpr}
 	toTarg = false
-	if ly.Typ == emer.Target {
-		setmsk = bitflag.Mask32(int(NeurHasTarg))
+	if ly.Type == TargetLayer {
+		set = []enums.BitFlag{NeurHasTarg}
 		toTarg = true
-	} else if ly.Typ == emer.Compare {
-		setmsk = bitflag.Mask32(int(NeurHasCmpr))
+	} else if ly.Type == CompareLayer {
+		set = []enums.BitFlag{NeurHasCmpr}
 		toTarg = true
 	} else {
-		setmsk = bitflag.Mask32(int(NeurHasExt))
+		set = []enums.BitFlag{NeurHasExt}
 	}
 	return
 }
 
-// ApplyExt applies external input in the form of an etensor.Float32.  If
+// ApplyExt applies external input in the form of an tensor.Float32.  If
 // dimensionality of tensor matches that of layer, and is 2D or 4D, then each dimension
 // is iterated separately, so any mismatch preserves dimensional structure.
 // Otherwise, the flat 1D view of the tensor is used.
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
-func (ly *Layer) ApplyExt(ext etensor.Tensor) {
+func (ly *Layer) ApplyExt(ext tensor.Tensor) {
 	switch {
-	case ext.NumDims() == 2 && ly.Shp.NumDims() == 4: // special case
+	case ext.NumDims() == 2 && ly.Shape.NumDims() == 4: // special case
 		ly.ApplyExt2Dto4D(ext)
-	case ext.NumDims() != ly.Shp.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4):
+	case ext.NumDims() != ly.Shape.NumDims() || !(ext.NumDims() == 2 || ext.NumDims() == 4):
 		ly.ApplyExt1DTsr(ext)
 	case ext.NumDims() == 2:
 		ly.ApplyExt2D(ext)
@@ -697,15 +134,15 @@ func (ly *Layer) ApplyExt(ext etensor.Tensor) {
 }
 
 // ApplyExt2D applies 2D tensor external input
-func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ymx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
+func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
+	clear, set, toTarg := ly.ApplyExtFlags()
+	ymx := min(ext.DimSize(0), ly.Shape.DimSize(0))
+	xmx := min(ext.DimSize(1), ly.Shape.DimSize(1))
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatVal(idx))
-			i := ly.Shp.Offset(idx)
+			vl := float32(ext.Float(idx))
+			i := ly.Shape.Offset(idx)
 			nrn := &ly.Neurons[i]
 			if nrn.IsOff() {
 				continue
@@ -715,24 +152,24 @@ func (ly *Layer) ApplyExt2D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt2Dto4D applies 2D tensor external input to a 4D layer
-func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	lNy, lNx, _, _ := etensor.Prjn2DShape(&ly.Shp, false)
+func (ly *Layer) ApplyExt2Dto4D(ext tensor.Tensor) {
+	clear, set, toTarg := ly.ApplyExtFlags()
+	lNy, lNx, _, _ := tensor.Projection2DShape(&ly.Shape, false)
 
-	ymx := ints.MinInt(ext.Dim(0), lNy)
-	xmx := ints.MinInt(ext.Dim(1), lNx)
+	ymx := min(ext.DimSize(0), lNy)
+	xmx := min(ext.DimSize(1), lNx)
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.FloatVal(idx))
-			ui := etensor.Prjn2DIdx(&ly.Shp, false, y, x)
+			vl := float32(ext.Float(idx))
+			ui := tensor.Projection2DIndex(&ly.Shape, false, y, x)
 			nrn := &ly.Neurons[ui]
 			if nrn.IsOff() {
 				continue
@@ -742,26 +179,26 @@ func (ly *Layer) ApplyExt2Dto4D(ext etensor.Tensor) {
 			} else {
 				nrn.Ext = vl
 			}
-			nrn.ClearMask(clrmsk)
-			nrn.SetMask(setmsk)
+			nrn.SetFlag(false, clear...)
+			nrn.SetFlag(true, set...)
 		}
 	}
 }
 
 // ApplyExt4D applies 4D tensor external input
-func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	ypmx := ints.MinInt(ext.Dim(0), ly.Shp.Dim(0))
-	xpmx := ints.MinInt(ext.Dim(1), ly.Shp.Dim(1))
-	ynmx := ints.MinInt(ext.Dim(2), ly.Shp.Dim(2))
-	xnmx := ints.MinInt(ext.Dim(3), ly.Shp.Dim(3))
+func (ly *Layer) ApplyExt4D(ext tensor.Tensor) {
+	clear, set, toTarg := ly.ApplyExtFlags()
+	ypmx := min(ext.DimSize(0), ly.Shape.DimSize(0))
+	xpmx := min(ext.DimSize(1), ly.Shape.DimSize(1))
+	ynmx := min(ext.DimSize(2), ly.Shape.DimSize(2))
+	xnmx := min(ext.DimSize(3), ly.Shape.DimSize(3))
 	for yp := 0; yp < ypmx; yp++ {
 		for xp := 0; xp < xpmx; xp++ {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, xn}
-					vl := float32(ext.FloatVal(idx))
-					i := ly.Shp.Offset(idx)
+					vl := float32(ext.Float(idx))
+					i := ly.Shape.Offset(idx)
 					nrn := &ly.Neurons[i]
 					if nrn.IsOff() {
 						continue
@@ -771,8 +208,8 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 					} else {
 						nrn.Ext = vl
 					}
-					nrn.ClearMask(clrmsk)
-					nrn.SetMask(setmsk)
+					nrn.SetFlag(false, clear...)
+					nrn.SetFlag(true, set...)
 				}
 			}
 		}
@@ -782,22 +219,22 @@ func (ly *Layer) ApplyExt4D(ext etensor.Tensor) {
 // ApplyExt1DTsr applies external input using 1D flat interface into tensor.
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
-func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(ext.Len(), len(ly.Neurons))
+func (ly *Layer) ApplyExt1DTsr(ext tensor.Tensor) {
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
 			continue
 		}
-		vl := float32(ext.FloatVal1D(i))
+		vl := float32(ext.Float1D(i))
 		if toTarg {
 			nrn.Targ = vl
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -805,8 +242,8 @@ func (ly *Layer) ApplyExt1DTsr(ext etensor.Tensor) {
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D(ext []float64) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -818,17 +255,20 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
-// ApplyExt1D32 applies external input in the form of a flat 1-dimensional slice of float32s.
+// ApplyExt1D32 applies external input in the form of
+//
+//	a flat 1-dimensional slice of float32s.
+//
 // If the layer is a Target or Compare layer type, then it goes in Targ
 // otherwise it goes in Ext
 func (ly *Layer) ApplyExt1D32(ext []float32) {
-	clrmsk, setmsk, toTarg := ly.ApplyExtFlags()
-	mx := ints.MinInt(len(ext), len(ly.Neurons))
+	clear, set, toTarg := ly.ApplyExtFlags()
+	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
@@ -840,8 +280,8 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 		} else {
 			nrn.Ext = vl
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
@@ -849,33 +289,33 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 // layer Type field -- call this if the Type has changed since the last
 // ApplyExt* method call.
 func (ly *Layer) UpdateExtFlags() {
-	clrmsk, setmsk, _ := ly.ApplyExtFlags()
+	clear, set, _ := ly.ApplyExtFlags()
 	for i := range ly.Neurons {
 		nrn := &ly.Neurons[i]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.ClearMask(clrmsk)
-		nrn.SetMask(setmsk)
+		nrn.SetFlag(false, clear...)
+		nrn.SetFlag(true, set...)
 	}
 }
 
-// ActAvgFmAct updates the running average ActMAvg, ActPAvg, and ActPAvgEff
+// ActAvgFromAct updates the running average ActMAvg, ActPAvg, and ActPAvgEff
 // values from the current pool-level averages.
 // The ActPAvgEff value is used for updating the conductance scaling parameters,
 // if these are not set to Fixed, so calling this will change the scaling of
-// projections in the network!
-func (ly *Layer) ActAvgFmAct() {
+// pathways in the network!
+func (ly *Layer) ActAvgFromAct() {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
-		ly.Inhib.ActAvg.AvgFmAct(&pl.ActAvg.ActMAvg, pl.ActM.Avg)
-		ly.Inhib.ActAvg.AvgFmAct(&pl.ActAvg.ActPAvg, pl.ActP.Avg)
-		ly.Inhib.ActAvg.EffFmAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
+		ly.Inhib.ActAvg.AvgFromAct(&pl.ActAvg.ActMAvg, pl.ActM.Avg)
+		ly.Inhib.ActAvg.AvgFromAct(&pl.ActAvg.ActPAvg, pl.ActP.Avg)
+		ly.Inhib.ActAvg.EffFromAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 	}
 }
 
-// ActQ0FmActP updates the neuron ActQ0 value from prior ActP value
-func (ly *Layer) ActQ0FmActP() {
+// ActQ0FromActP updates the neuron ActQ0 value from prior ActP value
+func (ly *Layer) ActQ0FromActP() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -897,80 +337,78 @@ func (ly *Layer) ActQ0FmActP() {
 // only update during training).  This flag also affects the AvgL learning
 // threshold
 func (ly *Layer) AlphaCycInit(updtActAvg bool) {
-	ly.ActQ0FmActP()
+	ly.ActQ0FromActP()
 	if updtActAvg {
-		ly.LeabraLay.AvgLFmAvgM()
-		ly.ActAvgFmAct()
+		ly.AvgLFromAvgM()
+		ly.ActAvgFromAct()
 	}
-	ly.LeabraLay.GScaleFmAvgAct() // need to do this always, in case hasn't been done at all yet
-	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != erand.Mean {
-		ly.LeabraLay.GenNoise()
+	ly.GScaleFromAvgAct() // need to do this always, in case hasn't been done at all yet
+	if ly.Act.Noise.Type != NoNoise && ly.Act.Noise.Fixed && ly.Act.Noise.Dist != randx.Mean {
+		ly.GenNoise()
 	}
-	ly.LeabraLay.DecayState(ly.Act.Init.Decay)
-	ly.LeabraLay.InitGInc()
-	if ly.Act.Clamp.Hard && ly.Typ == emer.Input {
-		ly.LeabraLay.HardClamp()
+	ly.DecayState(ly.Act.Init.Decay)
+	ly.InitGInc()
+	if ly.Act.Clamp.Hard && ly.Type == InputLayer {
+		ly.HardClamp()
 	}
 }
 
-// AvgLFmAvgM updates AvgL long-term running average activation that drives BCM Hebbian learning
-func (ly *Layer) AvgLFmAvgM() {
+// AvgLFromAvgM updates AvgL long-term running average activation that drives BCM Hebbian learning
+func (ly *Layer) AvgLFromAvgM() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Learn.AvgLFmAvgM(nrn)
+		ly.Learn.AvgLFromAvgM(nrn)
 		if ly.Learn.AvgL.ErrMod {
 			nrn.AvgLLrn *= ly.CosDiff.ModAvgLLrn
 		}
 	}
 }
 
-// GScaleFmAvgAct computes the scaling factor for synaptic input conductances G,
+// GScaleFromAvgAct computes the scaling factor for synaptic input conductances G,
 // based on sending layer average activation.
 // This attempts to automatically adjust for overall differences in raw activity
 // coming into the units to achieve a general target of around .5 to 1
 // for the integrated Ge value.
-func (ly *Layer) GScaleFmAvgAct() {
+func (ly *Layer) GScaleFromAvgAct() {
 	totGeRel := float32(0)
 	totGiRel := float32(0)
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		pj := p.(LeabraPrjn).AsLeabra()
-		slay := p.SendLay().(LeabraLayer).AsLeabra()
+		slay := pt.Send
 		slpl := &slay.Pools[0]
 		savg := slpl.ActAvg.ActPAvgEff
 		snu := len(slay.Neurons)
-		ncon := pj.RConNAvgMax.Avg
-		pj.GScale = pj.WtScale.FullScale(savg, float32(snu), ncon)
-		// reverting this change: if you want to eliminate a prjn, set the Off flag
+		ncon := pt.RConNAvgMax.Avg
+		pt.GScale = pt.WtScale.FullScale(savg, float32(snu), ncon)
+		// reverting this change: if you want to eliminate a path, set the Off flag
 		// if you want to negate it but keep the relative factor in the denominator
 		// then set the scale to 0.
 		// if pj.GScale == 0 {
 		// 	continue
 		// }
-		if pj.Typ == emer.Inhib {
-			totGiRel += pj.WtScale.Rel
+		if pt.Type == InhibPath {
+			totGiRel += pt.WtScale.Rel
 		} else {
-			totGeRel += pj.WtScale.Rel
+			totGeRel += pt.WtScale.Rel
 		}
 	}
 
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		pj := p.(LeabraPrjn).AsLeabra()
-		if pj.Typ == emer.Inhib {
+		if pt.Type == InhibPath {
 			if totGiRel > 0 {
-				pj.GScale /= totGiRel
+				pt.GScale /= totGiRel
 			}
 		} else {
 			if totGeRel > 0 {
-				pj.GScale /= totGeRel
+				pt.GScale /= totGeRel
 			}
 		}
 	}
@@ -980,7 +418,7 @@ func (ly *Layer) GScaleFmAvgAct() {
 func (ly *Layer) GenNoise() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		nrn.Noise = float32(ly.Act.Noise.Gen(-1))
+		nrn.Noise = float32(ly.Act.Noise.Gen())
 	}
 }
 
@@ -1000,11 +438,12 @@ func (ly *Layer) DecayState(decay float32) {
 	}
 }
 
-// DecayStatePool decays activation state by given proportion in given sub-pool index (0 based)
+// DecayStatePool decays activation state by given proportion
+// in given sub-pool index (0 based).
 func (ly *Layer) DecayStatePool(pool int, decay float32) {
 	pi := int32(pool + 1) // 1 based
 	pl := &ly.Pools[pi]
-	for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
@@ -1014,7 +453,8 @@ func (ly *Layer) DecayStatePool(pool int, decay float32) {
 	pl.Inhib.Decay(decay)
 }
 
-// HardClamp hard-clamps the activations in the layer -- called during AlphaCycInit for hard-clamped Input layers
+// HardClamp hard-clamps the activations in the layer.
+// called during AlphaCycInit for hard-clamped Input layers.
 func (ly *Layer) HardClamp() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -1041,17 +481,17 @@ func (ly *Layer) InitGInc() {
 		}
 		ly.Act.InitGInc(nrn)
 	}
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).InitGInc()
+		pt.InitGInc()
 	}
 }
 
 // SendGDelta sends change in activation since last sent, to increment recv
 // synaptic conductances G, if above thresholds
-func (ly *Layer) SendGDelta(ltime *Time) {
+func (ly *Layer) SendGDelta(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -1059,86 +499,86 @@ func (ly *Layer) SendGDelta(ltime *Time) {
 		}
 		if nrn.Act > ly.Act.OptThresh.Send {
 			delta := nrn.Act - nrn.ActSent
-			if mat32.Abs(delta) > ly.Act.OptThresh.Delta {
-				for _, sp := range ly.SndPrjns {
-					if sp.IsOff() {
+			if math32.Abs(delta) > ly.Act.OptThresh.Delta {
+				for _, sp := range ly.SendPaths {
+					if sp.Off {
 						continue
 					}
-					sp.(LeabraPrjn).SendGDelta(ni, delta)
+					sp.SendGDelta(ni, delta)
 				}
 				nrn.ActSent = nrn.Act
 			}
 		} else if nrn.ActSent > ly.Act.OptThresh.Send {
 			delta := -nrn.ActSent // un-send the last above-threshold activation to get back to 0
-			for _, sp := range ly.SndPrjns {
-				if sp.IsOff() {
+			for _, sp := range ly.SendPaths {
+				if sp.Off {
 					continue
 				}
-				sp.(LeabraPrjn).SendGDelta(ni, delta)
+				sp.SendGDelta(ni, delta)
 			}
 			nrn.ActSent = 0
 		}
 	}
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *Layer) GFmInc(ltime *Time) {
-	ly.RecvGInc(ltime)
-	ly.GFmIncNeur(ltime)
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *Layer) GFromInc(ctx *Context) {
+	ly.RecvGInc(ctx)
+	ly.GFromIncNeur(ctx)
 }
 
-// RecvGInc calls RecvGInc on receiving projections to collect Neuron-level G*Inc values.
-// This is called by GFmInc overall method, but separated out for cases that need to
+// RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
+// This is called by GFromInc overall method, but separated out for cases that need to
 // do something different.
-func (ly *Layer) RecvGInc(ltime *Time) {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+func (ly *Layer) RecvGInc(ctx *Context) {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).RecvGInc()
+		pt.RecvGInc()
 	}
 }
 
-// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// GFromIncNeur is the neuron-level code for GFromInc that integrates overall Ge, Gi values
 // from their G*Raw accumulators.
-func (ly *Layer) GFmIncNeur(ltime *Time) {
+func (ly *Layer) GFromIncNeur(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		// note: each step broken out here so other variants can add extra terms to Raw
-		ly.Act.GeFmRaw(nrn, nrn.GeRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, nrn.GeRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (ly *Layer) AvgMaxGe(ltime *Time) {
+func (ly *Layer) AvgMaxGe(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Ge.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Ge.UpdateVal(nrn.Ge, int32(ni))
+			pl.Inhib.Ge.UpdateValue(nrn.Ge, int32(ni))
 		}
 		pl.Inhib.Ge.CalcAvg()
 	}
 }
 
-// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) InhibFmGeAct(ltime *Time) {
+// InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *Layer) InhibFromGeAct(ctx *Context) {
 	lpl := &ly.Pools[0]
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
-	ly.PoolInhibFmGeAct(ltime)
-	ly.InhibFmPool(ltime)
+	ly.PoolInhibFromGeAct(ctx)
+	ly.InhibFromPool(ctx)
 }
 
-// PoolInhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
-func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
+// PoolInhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+func (ly *Layer) PoolInhibFromGeAct(ctx *Context) {
 	np := len(ly.Pools)
 	if np == 1 {
 		return
@@ -1150,9 +590,9 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 		ly.Inhib.Pool.Inhib(&pl.Inhib)
 		if lyInhib {
 			pl.Inhib.LayGi = lpl.Inhib.Gi
-			pl.Inhib.Gi = mat32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
+			pl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // pool is max of layer
 		} else {
-			lpl.Inhib.Gi = mat32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
+			lpl.Inhib.Gi = math32.Max(pl.Inhib.Gi, lpl.Inhib.Gi) // update layer from pool
 		}
 	}
 	if !lyInhib {
@@ -1160,8 +600,8 @@ func (ly *Layer) PoolInhibFmGeAct(ltime *Time) {
 	}
 }
 
-// InhibFmPool computes inhibition Gi from Pool-level aggregated inhibition, including self and syn
-func (ly *Layer) InhibFmPool(ltime *Time) {
+// InhibFromPool computes inhibition Gi from Pool-level aggregated inhibition, including self and syn
+func (ly *Layer) InhibFromPool(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -1173,31 +613,31 @@ func (ly *Layer) InhibFmPool(ltime *Time) {
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act
-func (ly *Layer) ActFmG(ltime *Time) {
+func (ly *Layer) ActFromG(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.VmFmG(nrn)
-		ly.Act.ActFmG(nrn)
-		ly.Learn.AvgsFmAct(nrn)
+		ly.Act.VmFromG(nrn)
+		ly.Act.ActFromG(nrn)
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
 // AvgMaxAct computes the average and max Act stats, used in inhibition
-func (ly *Layer) AvgMaxAct(ltime *Time) {
+func (ly *Layer) AvgMaxAct(ctx *Context) {
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
 		pl.Inhib.Act.Init()
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
 			}
-			pl.Inhib.Act.UpdateVal(nrn.Act, int32(ni))
+			pl.Inhib.Act.UpdateValue(nrn.Act, int32(ni))
 		}
 		pl.Inhib.Act.CalcAvg()
 	}
@@ -1208,53 +648,77 @@ func (ly *Layer) AvgMaxAct(ltime *Time) {
 // This is reserved for any kind of special ad-hoc types that
 // need to do something special after Act is finally computed.
 // For example, sending a neuromodulatory signal such as dopamine.
-func (ly *Layer) CyclePost(ltime *Time) {
+func (ly *Layer) CyclePost(ctx *Context) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Quarter
 
-// QuarterFinal does updating after end of a quarter
-func (ly *Layer) QuarterFinal(ltime *Time) {
-	for pi := range ly.Pools {
-		pl := &ly.Pools[pi]
-		switch ltime.Quarter {
-		case 2:
-			pl.ActM = pl.Inhib.Act
-		case 3:
-			pl.ActP = pl.Inhib.Act
-		}
+// QuarterFinal does updating after end of quarter.
+// Calls MinusPhase and PlusPhase for quarter = 2, 3.
+func (ly *Layer) QuarterFinal(ctx *Context) {
+	switch ctx.Quarter {
+	case 2:
+		ly.MinusPhase(ctx)
+		return
+	case 3:
+		ly.PlusPhase(ctx)
+		return
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		switch ltime.Quarter {
+		switch ctx.Quarter {
 		case 0:
 			nrn.ActQ1 = nrn.Act
 		case 1:
 			nrn.ActQ2 = nrn.Act
-		case 2:
-			nrn.ActM = nrn.Act
-			if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
-				nrn.Ext = nrn.Targ
-				nrn.SetFlag(NeurHasExt)
-			}
-		case 3:
-			nrn.ActP = nrn.Act
-			nrn.ActDif = nrn.ActP - nrn.ActM
-			nrn.ActAvg += ly.Act.Dt.AvgDt * (nrn.Act - nrn.ActAvg)
 		}
-	}
-	if ltime.Quarter == 3 {
-		ly.LeabraLay.CosDiffFmActs()
 	}
 }
 
-// CosDiffFmActs computes the cosine difference in activation state between minus and plus phases.
+// MinusPhase is called at the end of the minus phase (quarter 3), to record state.
+func (ly *Layer) MinusPhase(ctx *Context) {
+	for pi := range ly.Pools {
+		pl := &ly.Pools[pi]
+		pl.ActM = pl.Inhib.Act
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.ActM = nrn.Act
+		if nrn.HasFlag(NeurHasTarg) { // will be clamped in plus phase
+			nrn.Ext = nrn.Targ
+			nrn.SetFlag(true, NeurHasExt)
+		}
+	}
+}
+
+// PlusPhase is called at the end of the plus phase (quarter 4), to record state.
+func (ly *Layer) PlusPhase(ctx *Context) {
+	for pi := range ly.Pools {
+		pl := &ly.Pools[pi]
+		pl.ActP = pl.Inhib.Act
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.ActP = nrn.Act
+		nrn.ActDif = nrn.ActP - nrn.ActM
+		nrn.ActAvg += ly.Act.Dt.AvgDt * (nrn.Act - nrn.ActAvg)
+	}
+	ly.CosDiffFromActs()
+}
+
+// CosDiffFromActs computes the cosine difference in activation state between minus and plus phases.
 // this is also used for modulating the amount of BCM hebbian learning
-func (ly *Layer) CosDiffFmActs() {
+func (ly *Layer) CosDiffFromActs() {
 	lpl := &ly.Pools[0]
 	avgM := lpl.ActM.Avg
 	avgP := lpl.ActP.Avg
@@ -1273,76 +737,76 @@ func (ly *Layer) CosDiffFmActs() {
 		ssp += ap * ap
 	}
 
-	dist := mat32.Sqrt(ssm * ssp)
+	dist := math32.Sqrt(ssm * ssp)
 	if dist != 0 {
 		cosv /= dist
 	}
 	ly.CosDiff.Cos = cosv
 
-	ly.Learn.CosDiff.AvgVarFmCos(&ly.CosDiff.Avg, &ly.CosDiff.Var, ly.CosDiff.Cos)
+	ly.Learn.CosDiff.AvgVarFromCos(&ly.CosDiff.Avg, &ly.CosDiff.Var, ly.CosDiff.Cos)
 
-	if ly.LeabraLay.IsTarget() {
+	if ly.IsTarget() {
 		ly.CosDiff.AvgLrn = 0 // no BCM for non-hidden layers
 		ly.CosDiff.ModAvgLLrn = 0
 	} else {
 		ly.CosDiff.AvgLrn = 1 - ly.CosDiff.Avg
-		ly.CosDiff.ModAvgLLrn = ly.Learn.AvgL.ErrModFmLayErr(ly.CosDiff.AvgLrn)
+		ly.CosDiff.ModAvgLLrn = ly.Learn.AvgL.ErrModFromLayErr(ly.CosDiff.AvgLrn)
 	}
 }
 
 // IsTarget returns true if this layer is a Target layer.
-// By default, returns true for layers of Type == emer.Target
+// By default, returns true for layers of Type == TargetLayer
 // Other Target layers include the TRCLayer in deep predictive learning.
 // This is used for turning off BCM hebbian learning,
-// in CosDiffFmActs to set the CosDiff.ModAvgLLrn value
+// in CosDiffFromActs to set the CosDiff.ModAvgLLrn value
 // for error-modulated level of hebbian learning.
 // It is also used in WtBal to not apply it to target layers.
 // In both cases, Target layers are purely error-driven.
 func (ly *Layer) IsTarget() bool {
-	return ly.Typ == emer.Target
+	return ly.Type == TargetLayer
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learning
 
-// DWt computes the weight change (learning) -- calls DWt method on sending projections
+// DWt computes the weight change (learning) -- calls DWt method on sending pathways
 func (ly *Layer) DWt() {
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+	for _, pt := range ly.SendPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).DWt()
+		pt.DWt()
 	}
 }
 
-// WtFmDWt updates the weights from delta-weight changes -- on the sending projections
-func (ly *Layer) WtFmDWt() {
-	for _, p := range ly.SndPrjns {
-		if p.IsOff() {
+// WtFromDWt updates the weights from delta-weight changes -- on the sending pathways
+func (ly *Layer) WtFromDWt() {
+	for _, pt := range ly.SendPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).WtFmDWt()
+		pt.WtFromDWt()
 	}
 }
 
-// WtBalFmWt computes the Weight Balance factors based on average recv weights
-func (ly *Layer) WtBalFmWt() {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+// WtBalFromWt computes the Weight Balance factors based on average recv weights
+func (ly *Layer) WtBalFromWt() {
+	for _, pt := range ly.RecvPaths {
+		if pt.Off {
 			continue
 		}
-		p.(LeabraPrjn).WtBalFmWt()
+		pt.WtBalFromWt()
 	}
 }
 
-// LrateMult sets the new Lrate parameter for Prjns to LrateInit * mult.
+// LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
 func (ly *Layer) LrateMult(mult float32) {
-	for _, p := range ly.RcvPrjns {
-		// if p.IsOff() { // keep all sync'd
+	for _, pt := range ly.RecvPaths {
+		// if p.Off { // keep all sync'd
 		// 	continue
 		// }
-		p.(LeabraPrjn).LrateMult(mult)
+		pt.LrateMult(mult)
 	}
 }
 
@@ -1359,9 +823,8 @@ func (ly *Layer) CostEst() (neur, syn, tot int) {
 	perNeur := 300 // cost per neuron, relative to synapse which is 1
 	neur = len(ly.Neurons) * perNeur
 	syn = 0
-	for _, pji := range ly.SndPrjns {
-		pj := pji.(LeabraPrjn).AsLeabra()
-		ns := len(pj.Syns)
+	for _, pt := range ly.SendPaths {
+		ns := len(pt.Syns)
 		syn += ns
 	}
 	tot = neur + syn
@@ -1389,12 +852,12 @@ func (ly *Layer) MSE(tol float32) (sse, mse float64) {
 			continue
 		}
 		var d float32
-		if ly.Typ == emer.Compare {
+		if ly.Type == CompareLayer {
 			d = nrn.Targ - nrn.ActM
 		} else {
 			d = nrn.ActP - nrn.ActM
 		}
-		if mat32.Abs(d) < tol {
+		if math32.Abs(d) < tol {
 			continue
 		}
 		sse += float64(d * d)
@@ -1419,7 +882,7 @@ func (ly *Layer) SSE(tol float32) float64 {
 func (ly *Layer) UnLesionNeurons() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
-		nrn.ClearFlag(NeurOff)
+		nrn.SetFlag(false, NeurOff)
 	}
 }
 
@@ -1440,7 +903,7 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 	nl := int(prop * float32(nn))
 	for i := 0; i < nl; i++ {
 		nrn := &ly.Neurons[p[i]]
-		nrn.SetFlag(NeurOff)
+		nrn.SetFlag(true, NeurOff)
 	}
 	return nl
 }
@@ -1448,33 +911,33 @@ func (ly *Layer) LesionNeurons(prop float32) int {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Layer props for gui
 
-var LayerProps = ki.Props{
-	"ToolBar": ki.PropSlice{
-		{"Defaults", ki.Props{
-			"icon": "reset",
-			"desc": "return all parameters to their intial default values",
-		}},
-		{"InitWts", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's weight values according to prjn parameters, for all *sending* projections out of this layer",
-		}},
-		{"InitActs", ki.Props{
-			"icon": "update",
-			"desc": "initialize the layer's activation values",
-		}},
-		{"sep-act", ki.BlankProp{}},
-		{"LesionNeurons", ki.Props{
-			"icon": "close",
-			"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
-			"Args": ki.PropSlice{
-				{"Proportion", ki.Props{
-					"desc": "proportion (0 -- 1) of neurons to lesion",
-				}},
-			},
-		}},
-		{"UnLesionNeurons", ki.Props{
-			"icon": "reset",
-			"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
-		}},
-	},
-}
+// var LayerProps = tree.Props{
+// "ToolBar": tree.PropSlice{
+// 	{"Defaults", tree.Props{
+// 		"icon": "reset",
+// 		"desc": "return all parameters to their intial default values",
+// 	}},
+// 	{"InitWeights", tree.Props{
+// 		"icon": "update",
+// 		"desc": "initialize the layer's weight values according to path parameters, for all *sending* pathways out of this layer",
+// 	}},
+// 	{"InitActs", tree.Props{
+// 		"icon": "update",
+// 		"desc": "initialize the layer's activation values",
+// 	}},
+// 	{"sep-act", tree.BlankProp{}},
+// 	{"LesionNeurons", tree.Props{
+// 		"icon": "close",
+// 		"desc": "Lesion (set the Off flag) for given proportion of neurons in the layer (number must be 0 -- 1, NOT percent!)",
+// 		"Args": tree.PropSlice{
+// 			{"Proportion", tree.Props{
+// 				"desc": "proportion (0 -- 1) of neurons to lesion",
+// 			}},
+// 		},
+// 	}},
+// 	{"UnLesionNeurons", tree.Props{
+// 		"icon": "reset",
+// 		"desc": "Un-Lesion (reset the Off flag) for all neurons in the layer",
+// 	}},
+// },
+// }

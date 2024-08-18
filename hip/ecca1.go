@@ -5,37 +5,37 @@
 package hip
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
-// hip.EcCa1Prjn is for EC <-> CA1 projections, to perform error-driven
+// hip.EcCa1Path is for EC <-> CA1 pathways, to perform error-driven
 // learning of this encoder pathway according to the ThetaPhase algorithm
 // uses Contrastive Hebbian Learning (CHL) on ActP - ActQ1
 // Q1: ECin -> CA1 -> ECout       : ActQ1 = minus phase for auto-encoder
 // Q2, 3: CA3 -> CA1 -> ECout     : ActM = minus phase for recall
 // Q4: ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
-type EcCa1Prjn struct {
-	leabra.Prjn // access as .Prjn
+type EcCa1Path struct {
+	leabra.Path // access as .Path
 }
 
-func (pj *EcCa1Prjn) Defaults() {
-	pj.Prjn.Defaults()
-	pj.Prjn.Learn.Norm.On = false     // off by default
-	pj.Prjn.Learn.Momentum.On = false // off by default
-	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
+func (pj *EcCa1Path) Defaults() {
+	pj.Path.Defaults()
+	pj.Path.Learn.Norm.On = false     // off by default
+	pj.Path.Learn.Momentum.On = false // off by default
+	pj.Path.Learn.WtBal.On = false    // todo: experiment
 }
 
-func (pj *EcCa1Prjn) UpdateParams() {
-	pj.Prjn.UpdateParams()
+func (pj *EcCa1Path) UpdateParams() {
+	pj.Path.UpdateParams()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) -- on sending projections
+// DWt computes the weight change (learning) -- on sending pathways
 // Delta version
-func (pj *EcCa1Prjn) DWt() {
+func (pj *EcCa1Path) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -44,9 +44,9 @@ func (pj *EcCa1Prjn) DWt() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -61,10 +61,10 @@ func (pj *EcCa1Prjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}

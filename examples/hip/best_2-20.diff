@@ -126,7 +126,7 @@ index 0e622a4..acac8c5 100644
 +	TstEpcHdrs   bool             `view:"-" desc:"headers written"`
 +	TstEpcFile   *os.File         `view:"-" desc:"log file"`
  	RunFile      *os.File         `view:"-" desc:"log file"`
- 	TmpVals      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
+ 	TmpValues      []float32        `view:"-" desc:"temp slice for holding values -- prevent mem allocs"`
  	LayStatNms   []string         `view:"-" desc:"names of layers to collect more detailed stats on (avg act, etc)"`
 @@ -232,6 +254,7 @@ type Sim struct {
  	StopNow      bool             `view:"-" desc:"flag to stop running"`
@@ -287,7 +287,7 @@ index 0e622a4..acac8c5 100644
  		dt.WriteCSVRow(ss.TrnEpcFile, row, etable.Tab)
  	}
 @@ -1291,10 +1338,20 @@ func (ss *Sim) LogTstEpc(dt *etable.Table) {
- 	tix := etable.NewIdxView(trl)
+ 	tix := etable.NewIndexView(trl)
  	epc := ss.TrainEnv.Epoch.Prv // ?
  
 +	if ss.LastEpcTime.IsZero() {
@@ -401,5 +401,5 @@ index 0e622a4..acac8c5 100644
  	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
  	ss.Train()
 +	fnm := ss.LogFileName("runs")
-+	ss.RunStats.SaveCSV(gi.FileName(fnm), etable.Tab, etable.Headers)
++	ss.RunStats.SaveCSV(core.Filename(fnm), etable.Tab, etable.Headers)
  }

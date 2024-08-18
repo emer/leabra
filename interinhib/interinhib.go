@@ -5,23 +5,23 @@
 /*
 Package interinhib provides inter-layer inhibition params,
 which can be added to Layer types.  Call at the start of the
-Layer InhibFmGeAct method like this:
+Layer InhibFromGeAct method like this:
 
-// InhibFmGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
+// InhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
 
-	func (ly *Layer) InhibFmGeAct(ltime *Time) {
+	func (ly *Layer) InhibFromGeAct(ctx *Time) {
 		lpl := &ly.Pools[0]
 		ly.Inhib.Layer.Inhib(&lpl.Inhib)
 		ly.InterInhib.Inhib(&ly.Layer) // does inter-layer inhibition
-		ly.PoolInhibFmGeAct(ltime)
+		ly.PoolInhibFromGeAct(ctx)
 	}
 */
 package interinhib
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // InterInhib specifies inhibition between layers, where
@@ -30,13 +30,13 @@ import (
 type InterInhib struct {
 
 	// layers to receive inhibition from
-	Lays emer.LayNames `desc:"layers to receive inhibition from"`
+	Lays emer.LayNames
 
 	// multiplier on Gi from other layers
-	Gi float32 `desc:"multiplier on Gi from other layers"`
+	Gi float32
 
 	// add inhibition -- otherwise Max
-	Add bool `desc:"add inhibition -- otherwise Max"`
+	Add bool
 }
 
 func (il *InterInhib) Defaults() {
@@ -50,7 +50,7 @@ func (il *InterInhib) Inhib(ly *leabra.Layer) {
 	if il.Add {
 		lpl.Inhib.Gi += ogi
 	} else {
-		lpl.Inhib.Gi = mat32.Max(ogi, lpl.Inhib.Gi)
+		lpl.Inhib.Gi = math32.Max(ogi, lpl.Inhib.Gi)
 	}
 }
 
@@ -68,7 +68,7 @@ func (il *InterInhib) OtherGi(net emer.Network) float32 {
 		if il.Add {
 			gi += ogi
 		} else {
-			gi = mat32.Max(gi, ogi)
+			gi = math32.Max(gi, ogi)
 		}
 	}
 	return gi

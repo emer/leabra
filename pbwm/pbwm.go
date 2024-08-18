@@ -5,7 +5,7 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // PBWMLayer defines the essential algorithmic API for PBWM at the layer level.
@@ -19,22 +19,22 @@ type PBWMLayer interface {
 	// AsGate returns this layer as a pbwm.GateLayer (gated layer type) -- nil if not impl
 	AsGate() *GateLayer
 
-	// UnitValByIdx returns value of given PBWM-specific variable by variable index
+	// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 	// and flat neuron index (from layer or neuron-specific one).
-	UnitValByIdx(vidx NeurVars, idx int) float32
+	UnitValueByIndex(vidx NeurVars, idx int) float32
 
 	// GateSend updates gating state and sends it along to other layers.
 	// Called after std Cycle methods.
 	// Only implemented for gating layers.
-	GateSend(ltime *leabra.Time)
+	GateSend(ctx *leabra.Context)
 
 	// RecGateAct records the gating activation from current activation, when gating occcurs
 	// based on GateState.Now
-	RecGateAct(ltime *leabra.Time)
+	RecGateAct(ctx *leabra.Context)
 
 	// SendMods is called at end of Cycle to send modulator signals (DA, etc)
 	// which will then be active for the next cycle of processing
-	SendMods(ltime *leabra.Time)
+	SendMods(ctx *leabra.Context)
 
 	// Quarter2DWt is optional Q2 DWt -- PFC and matrix layers can do this as appropriate
 	Quarter2DWt()

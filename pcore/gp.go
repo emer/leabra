@@ -5,8 +5,7 @@
 package pcore
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // GPLayer represents a globus pallidus layer, including:
@@ -16,10 +15,8 @@ type GPLayer struct {
 	Layer
 
 	// type of GP layer
-	GPLay GPLays `desc:"type of GP layer"`
+	GPLay GPLays
 }
-
-var KiT_GPLayer = kit.Types.AddType(&GPLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "GPLayer", Desc: "defaults",
@@ -72,8 +69,8 @@ func (ly *GPLayer) Defaults() {
 		ly.Act.Init.Vm = 0.50
 	}
 
-	for _, pjii := range ly.RcvPrjns {
-		pji := pjii.(leabra.LeabraPrjn)
+	for _, pjii := range ly.RecvPaths {
+		pji := pjii.(leabra.LeabraPath)
 		pj := pji.AsLeabra()
 		pj.Learn.Learn = false
 		pj.Learn.Norm.On = false
@@ -112,14 +109,7 @@ func (ly *GPLayer) Defaults() {
 //  GPLays
 
 // GPLays for GPLayer type
-type GPLays int
-
-//go:generate stringer -type=GPLays
-
-var KiT_GPLays = kit.Enums.AddEnum(GPLaysN, kit.NotBitFlag, nil)
-
-func (ev GPLays) MarshalJSON() ([]byte, error)  { return kit.EnumMarshalJSON(ev) }
-func (ev *GPLays) UnmarshalJSON(b []byte) error { return kit.EnumUnmarshalJSON(ev, b) }
+type GPLays int //enums:enum
 
 const (
 	// GPeOut is Outer layer of GPe neurons, receiving inhibition from MtxGo

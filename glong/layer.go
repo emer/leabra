@@ -4,10 +4,11 @@
 
 package glong
 
+//go:generate core generate
+
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -15,23 +16,21 @@ import (
 
 // Layer has GABA-B and NMDA channels, with longer time-constants,
 // to supports bistable activation dynamics including active maintenance
-// in frontal cortex.  NMDA requires NMDAPrjn on relevant projections.
+// in frontal cortex.  NMDA requires NMDAPath on relevant pathways.
 // It also records AlphaMax = maximum activation within an AlphaCycle,
 // which is important given the transient dynamics.
 type Layer struct {
 	leabra.Layer
 
-	// [view: inline] NMDA channel parameters plus more general params
-	NMDA NMDAParams `view:"inline" desc:"NMDA channel parameters plus more general params"`
+	// NMDA channel parameters plus more general params
+	NMDA NMDAParams `display:"inline"`
 
-	// [view: inline] GABA-B / GIRK channel parameters
-	GABAB GABABParams `view:"inline" desc:"GABA-B / GIRK channel parameters"`
+	// GABA-B / GIRK channel parameters
+	GABAB GABABParams `display:"inline"`
 
 	// slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values.
-	GlNeurs []Neuron `desc:"slice of extra glong.Neuron state for this layer -- flat list of len = Shape.Len(). You must iterate over index and use pointer to modify values."`
+	GlNeurs []Neuron
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 func (ly *Layer) Defaults() {
 	ly.Layer.Defaults()
@@ -95,38 +94,38 @@ func (ly *Layer) AlphaCycInit(updtActAvg bool) {
 	ly.InitAlphaMax()
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *Layer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	ly.RecvGnmdaPInc(ltime)
-	ly.GFmIncNeur(ltime)
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *Layer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
+	ly.RecvGnmdaPInc(ctx)
+	ly.GFromIncNeur(ctx)
 }
 
-// RecvGInc calls RecvGInc on receiving projections to collect Neuron-level G*Inc values.
-// This is called by GFmInc overall method, but separated out for cases that need to
+// RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
+// This is called by GFromInc overall method, but separated out for cases that need to
 // do something different.
-func (ly *Layer) RecvGInc(ltime *leabra.Time) {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+func (ly *Layer) RecvGInc(ctx *leabra.Context) {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
 		if p.Type() == NMDA { // skip NMDA
 			continue
 		}
-		p.(leabra.LeabraPrjn).RecvGInc()
+		p.(leabra.LeabraPath).RecvGInc()
 	}
 }
 
 // RecvGnmdaPInc increments the recurrent-specific GeInc
-func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
-	for _, p := range ly.RcvPrjns {
-		if p.IsOff() {
+func (ly *Layer) RecvGnmdaPInc(ctx *leabra.Context) {
+	for _, p := range ly.RecvPaths {
+		if p.Off {
 			continue
 		}
 		if p.Type() != NMDA { // skip non-NMDA
 			continue
 		}
-		pj := p.(leabra.LeabraPrjn).AsLeabra()
+		pj := p.(leabra.LeabraPath).AsLeabra()
 		for ri := range ly.GlNeurs {
 			rn := &ly.GlNeurs[ri]
 			rn.NMDASyn += pj.GInc[ri]
@@ -135,15 +134,15 @@ func (ly *Layer) RecvGnmdaPInc(ltime *leabra.Time) {
 	}
 }
 
-// GFmIncNeur is the neuron-level code for GFmInc that integrates overall Ge, Gi values
+// GFromIncNeur is the neuron-level code for GFromInc that integrates overall Ge, Gi values
 // from their G*Raw accumulators.
-func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
+func (ly *Layer) GFromIncNeur(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 
 		gnr := &ly.GlNeurs[ni]
 		gnr.VmEff = ly.NMDA.VmEff(nrn.Vm, nrn.Act)
@@ -151,11 +150,11 @@ func (ly *Layer) GFmIncNeur(ltime *leabra.Time) {
 		gnr.NMDA = ly.NMDA.NMDA(gnr.NMDA, gnr.NMDASyn)
 		gnr.Gnmda = ly.NMDA.Gnmda(gnr.NMDA, gnr.VmEff)
 
-		ly.Act.GeFmRaw(nrn, nrn.GeRaw+gnr.Gnmda)
+		ly.Act.GeFromRaw(nrn, nrn.GeRaw+gnr.Gnmda)
 	}
 }
 
-func (ly *Layer) GABABFmGi(ltime *leabra.Time) {
+func (ly *Layer) GABABFromGi(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -172,28 +171,28 @@ func (ly *Layer) GABABFmGi(ltime *leabra.Time) {
 	}
 }
 
-func (ly *Layer) ActFmG(ltime *leabra.Time) {
-	ly.Layer.ActFmG(ltime)
-	ly.GABABFmGi(ltime)
-	if ltime.Cycle >= ly.NMDA.AlphaMaxCyc {
-		ly.AlphaMaxFmAct(ltime)
+func (ly *Layer) ActFromG(ctx *leabra.Context) {
+	ly.Layer.ActFromG(ctx)
+	ly.GABABFromGi(ctx)
+	if ctx.Cycle >= ly.NMDA.AlphaMaxCyc {
+		ly.AlphaMaxFromAct(ctx)
 	}
 }
 
-// AlphaMaxFmAct computes AlphaMax from Activation
-func (ly *Layer) AlphaMaxFmAct(ltime *leabra.Time) {
+// AlphaMaxFromAct computes AlphaMax from Activation
+func (ly *Layer) AlphaMaxFromAct(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		gnr.AlphaMax = mat32.Max(gnr.AlphaMax, nrn.Act)
+		gnr.AlphaMax = math32.Max(gnr.AlphaMax, nrn.Act)
 	}
 }
 
-// ActLrnFmAlphaMax sets ActLrn to AlphaMax
-func (ly *Layer) ActLrnFmAlphaMax() {
+// ActLrnFromAlphaMax sets ActLrn to AlphaMax
+func (ly *Layer) ActLrnFromAlphaMax() {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -213,7 +212,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 			continue
 		}
 		gnr := &ly.GlNeurs[ni]
-		mx = mat32.Max(gnr.AlphaMax, mx)
+		mx = math32.Max(gnr.AlphaMax, mx)
 	}
 	return mx
 }
@@ -221,7 +220,7 @@ func (ly *Layer) MaxAlphaMax() float32 {
 ///////////////////////////////////////////////////////////////////////////
 // Neurons
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *Layer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
@@ -231,15 +230,15 @@ func (ly *Layer) Build() error {
 	return nil
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = NeuronVarIdxByName(varNm)
+	vidx, err = NeuronVarIndexByName(varNm)
 	if err != nil {
 		return -1, err
 	}
@@ -247,27 +246,27 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	return nn + vidx, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 {
-		return mat32.NaN()
+func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
+		return math32.NaN()
 	}
 	nn := ly.Layer.UnitVarNum()
-	if varIdx < nn {
-		return ly.Layer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.Layer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
-	varIdx -= nn
-	if varIdx > len(NeuronVars) {
-		return mat32.NaN()
+	varIndex -= nn
+	if varIndex > len(NeuronVars) {
+		return math32.NaN()
 	}
 	gnr := &ly.GlNeurs[idx]
-	return gnr.VarByIndex(varIdx)
+	return gnr.VarByIndex(varIndex)
 }
 
 // UnitVarNum returns the number of Neuron-level variables

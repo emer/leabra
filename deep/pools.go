@@ -7,8 +7,8 @@ package deep
 import (
 	"log"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/evec"
+	"cogentcore.org/core/math32/vecint"
+	"github.com/emer/emergent/v2/emer"
 )
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -18,10 +18,10 @@ import (
 type EPool struct {
 
 	// layer name
-	LayNm string `desc:"layer name"`
+	LayNm string
 
 	// general scaling factor for how much excitation from this pool
-	Wt float32 `desc:"general scaling factor for how much excitation from this pool"`
+	Wt float32
 }
 
 func (ep *EPool) Defaults() {
@@ -43,7 +43,7 @@ func (ep *EPools) Add(laynm string, wt float32) *EPool {
 func (ep *EPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
 	for _, p := range *ep {
-		_, err := net.LayerByNameTry(p.LayNm)
+		_, err := net.LayerByName(p.LayNm)
 		if err != nil {
 			log.Printf("%s EPools.Validate: %v\n", ctxt, err)
 			lasterr = err
@@ -59,19 +59,19 @@ func (ep *EPools) Validate(net emer.Network, ctxt string) error {
 type IPool struct {
 
 	// layer name
-	LayNm string `desc:"layer name"`
+	LayNm string
 
 	// general scaling factor for how much overall inhibition from this pool contributes, in a non-pool-specific manner
-	Wt float32 `desc:"general scaling factor for how much overall inhibition from this pool contributes, in a non-pool-specific manner"`
+	Wt float32
 
 	// scaling factor for how much corresponding pools contribute in a pool-spcific manner, using offsets and averaging across pools as needed to match geometry
-	PoolWt float32 `desc:"scaling factor for how much corresponding pools contribute in a pool-spcific manner, using offsets and averaging across pools as needed to match geometry"`
+	PoolWt float32
 
 	// offset into source, sending layer
-	SOff evec.Vec2i `desc:"offset into source, sending layer"`
+	SOff vecint.Vector2i
 
 	// offset into our own receiving layer
-	ROff evec.Vec2i `desc:"offset into our own receiving layer"`
+	ROff vecint.Vector2i
 }
 
 func (ip *IPool) Defaults() {
@@ -93,7 +93,7 @@ func (ip *IPools) Add(laynm string, wt float32) *IPool {
 func (ip *IPools) Validate(net emer.Network, ctxt string) error {
 	var lasterr error
 	for _, p := range *ip {
-		_, err := net.LayerByNameTry(p.LayNm)
+		_, err := net.LayerByName(p.LayNm)
 		if err != nil {
 			log.Printf("%s IPools.Validate: %v\n", ctxt, err)
 			lasterr = err

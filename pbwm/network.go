@@ -5,11 +5,10 @@
 package pbwm
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/relpos"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/emergent/v2/relpos"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // pbwm.Network has methods for configuring specialized PBWM network components
@@ -17,27 +16,23 @@ type Network struct {
 	leabra.Network
 }
 
-var KiT_Network = kit.Types.AddType(&Network{}, NetworkProps)
-
-var NetworkProps = leabra.NetworkProps
-
 // NewLayer returns new layer of default pbwm.Layer type
 func (nt *Network) NewLayer() emer.Layer {
 	return &Layer{}
 }
 
-// NewPrjn returns new prjn of default type
-func (nt *Network) NewPrjn() emer.Prjn {
-	return &leabra.Prjn{}
+// NewPath returns new path of default type
+func (nt *Network) NewPath() emer.Path {
+	return &leabra.Path{}
 }
 
-// Defaults sets all the default parameters for all layers and projections
+// Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
 	nt.Network.Defaults()
 }
 
 // UpdateParams updates all the derived parameters if any have changed, for all layers
-// and projections
+// and pathways
 func (nt *Network) UpdateParams() {
 	nt.Network.UpdateParams()
 }
@@ -68,7 +63,7 @@ func (nt *Network) SynVarNames() []string {
 func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
 	tX := nMaint + nOut
 	mtx := &MatrixLayer{}
-	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, leabra.SuperLayer)
 	mtx.DaR = da
 	mtx.GateShp.Set(nY, nMaint, nOut)
 	return mtx
@@ -134,7 +129,7 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 // AddCINLayer adds a CINLayer, with a single neuron.
 func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 	ly := &CINLayer{}
-	nt.AddLayerInit(ly, name, []int{1, 1}, emer.Hidden)
+	nt.AddLayerInit(ly, name, []int{1, 1}, leabra.SuperLayer)
 	return ly
 }
 
@@ -144,7 +139,7 @@ func AddCINLayer(nt *leabra.Network, name string) *CINLayer {
 func AddMatrixLayer(nt *leabra.Network, name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *MatrixLayer {
 	tX := nMaint + nOut
 	mtx := &MatrixLayer{}
-	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(mtx, name, []int{nY, tX, nNeurY, nNeurX}, leabra.SuperLayer)
 	mtx.DaR = da
 	mtx.GateShp.Set(nY, nMaint, nOut)
 	return mtx
@@ -156,7 +151,7 @@ func AddMatrixLayer(nt *leabra.Network, name string, nY, nMaint, nOut, nNeurY, n
 func AddGPeLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
 	gpe := &Layer{}
-	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(gpe, name, []int{nY, tX, 1, 1}, leabra.SuperLayer)
 	return gpe
 }
 
@@ -166,7 +161,7 @@ func AddGPeLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *Layer {
 func AddGPiThalLayer(nt *leabra.Network, name string, nY, nMaint, nOut int) *GPiThalLayer {
 	tX := nMaint + nOut
 	gpi := &GPiThalLayer{}
-	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, emer.Hidden)
+	nt.AddLayerInit(gpi, name, []int{nY, tX, 1, 1}, leabra.SuperLayer)
 	gpi.GateShp.Set(nY, nMaint, nOut)
 	return gpi
 }
@@ -190,11 +185,11 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 	gpi.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: mtxGo.Name(), YAlign: relpos.Front, Space: 2})
 	cin.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: gpe.Name(), XAlign: relpos.Left, Space: 2})
 
-	pj := nt.ConnectLayersPrjn(mtxGo, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj := nt.ConnectLayersPath(mtxGo, gpi, paths.NewPoolOneToOne(), leabra.ForwardPath, &GPiThalPath{})
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayers(mtxNoGo, gpe, prjn.NewPoolOneToOne(), emer.Forward)
+	pj = nt.ConnectLayers(mtxNoGo, gpe, paths.NewPoolOneToOne(), leabra.ForwardPath)
 	pj.SetClass("BgFixed")
-	pj = nt.ConnectLayersPrjn(gpe, gpi, prjn.NewPoolOneToOne(), emer.Forward, &GPiThalPrjn{})
+	pj = nt.ConnectLayersPath(gpe, gpi, paths.NewPoolOneToOne(), leabra.ForwardPath, &GPiThalPath{})
 	pj.SetClass("BgFixed")
 
 	return
@@ -206,14 +201,14 @@ func AddDorsalBG(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nN
 // else Full set of 5 dynamic maintenance types. Both have the class "PFC" set.
 // deep is positioned behind super.
 func AddPFCLayer(nt *leabra.Network, name string, nY, nX, nNeurY, nNeurX int, out, dynMaint bool) (sp, dp leabra.LeabraLayer) {
-	sp = nt.AddLayer(name, []int{nY, nX, nNeurY, nNeurX}, emer.Hidden).(leabra.LeabraLayer)
+	sp = nt.AddLayer(name, []int{nY, nX, nNeurY, nNeurX}, leabra.SuperLayer).(leabra.LeabraLayer)
 	ddp := &PFCDeepLayer{}
 	dp = ddp
 	dym := 1
 	if !dynMaint {
 		dym = 5
 	}
-	nt.AddLayerInit(ddp, name+"D", []int{nY, nX, dym * nNeurY, nNeurX}, emer.Hidden)
+	nt.AddLayerInit(ddp, name+"D", []int{nY, nX, dym * nNeurY, nNeurX}, leabra.SuperLayer)
 	sp.SetClass("PFC")
 	ddp.SetClass("PFC")
 	ddp.Gate.OutGate = out
@@ -243,11 +238,11 @@ func AddPFC(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurY, nNeurX 
 		pfcOut, pfcOutD = AddPFCLayer(nt, prefix+"out", nY, nOut, nNeurY, nNeurX, true, dynMaint)
 	}
 
-	// todo: need a Rect projection from MntD -> out if !dynMaint, or something else..
+	// todo: need a Rect pathway from MntD -> out if !dynMaint, or something else..
 
 	if pfcOut != nil && pfcMnt != nil {
 		pfcOut.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: pfcMnt.Name(), YAlign: relpos.Front, Space: 2})
-		pj := nt.ConnectLayers(pfcMntD, pfcOut, prjn.NewOneToOne(), emer.Forward)
+		pj := nt.ConnectLayers(pfcMntD, pfcOut, paths.NewOneToOne(), leabra.ForwardPath)
 		pj.SetClass("PFCMntDToOut")
 	}
 	return
@@ -309,38 +304,38 @@ func AddPBWMPy(nt *leabra.Network, prefix string, nY, nMaint, nOut, nNeurBgY, nN
 
 // CycleImpl runs one cycle of activation updating
 // PBWM calls GateSend after Cycle and before DeepBurst
-func (nt *Network) CycleImpl(ltime *leabra.Time) {
-	nt.Network.CycleImpl(ltime) // basic version from leabra.Network
-	nt.GateSend(ltime)          // GateLayer (GPiThal) computes gating, sends to other layers
-	nt.RecGateAct(ltime)        // Record activation state at time of gating (in ActG neuron var)
+func (nt *Network) CycleImpl(ctx *leabra.Context) {
+	nt.Network.CycleImpl(ctx) // basic version from leabra.Network
+	nt.GateSend(ctx)          // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ctx)        // Record activation state at time of gating (in ActG neuron var)
 
-	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ltime) // always call this after std cycle..
+	nt.EmerNet.(leabra.LeabraNetwork).CyclePostImpl(ctx) // always call this after std cycle..
 }
 
 // GateSend is called at end of Cycle, computes Gating and sends to other layers
-func (nt *Network) GateSend(ltime *leabra.Time) {
+func (nt *Network) GateSend(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.GateSend(ltime)
+			pl.GateSend(ctx)
 		}
 	}, "GateSend")
 }
 
 // RecGateAct is called after GateSend, to record gating activations at time of gating
-func (nt *Network) RecGateAct(ltime *leabra.Time) {
+func (nt *Network) RecGateAct(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.RecGateAct(ltime)
+			pl.RecGateAct(ctx)
 		}
 	}, "RecGateAct")
 }
 
 // SendMods is called at end of Cycle to send modulator signals (DA, etc)
 // which will then be active for the next cycle of processing
-func (nt *Network) SendMods(ltime *leabra.Time) {
+func (nt *Network) SendMods(ctx *leabra.Context) {
 	nt.ThrLayFun(func(ly leabra.LeabraLayer) {
 		if pl, ok := ly.(PBWMLayer); ok {
-			pl.SendMods(ltime)
+			pl.SendMods(ctx)
 		}
 	}, "SendMods")
 }

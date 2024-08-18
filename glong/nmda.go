@@ -5,28 +5,25 @@
 package glong
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // NMDAParams control the NMDA dynamics in PFC Maint neurons, based on Brunel & Wang (2001)
 // parameters.  We have to do some things to make it work for rate code neurons..
 type NMDAParams struct {
 
-	// [def: 0.4] extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good..
-	ActVm float32 `def:"0.4" desc:"extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good.."`
+	// extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good..
+	ActVm float32 `def:"0.4"`
 
 	// cycle upon which to start updating AlphaMax value
-	AlphaMaxCyc int `desc:"cycle upon which to start updating AlphaMax value"`
+	AlphaMaxCyc int
 
-	// [def: 100] decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential
-	Tau float32 `def:"100" desc:"decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential"`
+	// decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential
+	Tau float32 `def:"100"`
 
 	// strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input
-	Gbar float32 `desc:"strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input"`
+	Gbar float32
 }
 
 func (np *NMDAParams) Defaults() {
@@ -41,10 +38,10 @@ func (np *NMDAParams) VmEff(vm, act float32) float32 {
 	return vm + np.ActVm*act
 }
 
-// GFmV returns the NMDA conductance as a function of normalized membrane potential
-func (np *NMDAParams) GFmV(v float32) float32 {
-	vbio := mat32.Min(v*100-100, 0) // critical to not go past 0
-	return 1 / (1 + 0.28*mat32.FastExp(-0.062*vbio))
+// GFromV returns the NMDA conductance as a function of normalized membrane potential
+func (np *NMDAParams) GFromV(v float32) float32 {
+	vbio := math32.Min(v*100-100, 0) // critical to not go past 0
+	return 1 / (1 + 0.28*math32.FastExp(-0.062*vbio))
 }
 
 // NMDA returns the updated NMDA activation from current NMDA and NMDASyn input
@@ -54,35 +51,33 @@ func (np *NMDAParams) NMDA(nmda, nmdaSyn float32) float32 {
 
 // Gnmda returns the NMDA net conductance from nmda activation and vm
 func (np *NMDAParams) Gnmda(nmda, vm float32) float32 {
-	return np.Gbar * np.GFmV(vm) * nmda
+	return np.Gbar * np.GFromV(vm) * nmda
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// NMDAPrjn
+// NMDAPath
 
-// NMDAPrjn is a projection with NMDA maintenance channels.
-// It marks a projection for special treatment in a MaintLayer
+// NMDAPath is a pathway with NMDA maintenance channels.
+// It marks a pathway for special treatment in a MaintLayer
 // which actually does the NMDA computations.  Excitatory conductance is aggregated
-// separately for this projection.
-type NMDAPrjn struct {
-	leabra.Prjn // access as .Prjn
+// separately for this pathway.
+type NMDAPath struct {
+	leabra.Path // access as .Path
 }
 
-var KiT_NMDAPrjn = kit.Types.AddType(&NMDAPrjn{}, PrjnProps)
-
-func (pj *NMDAPrjn) UpdateParams() {
-	pj.Prjn.UpdateParams()
+func (pj *NMDAPath) UpdateParams() {
+	pj.Path.UpdateParams()
 }
 
-func (pj *NMDAPrjn) Type() emer.PrjnType {
+func (pj *NMDAPath) Type() PathTypes {
 	return NMDA
 }
 
-func (pj *NMDAPrjn) PrjnTypeName() string {
-	if pj.Typ < emer.PrjnTypeN {
+func (pj *NMDAPath) PathTypeName() string {
+	if pj.Type < PathTypesN {
 		return pj.Typ.String()
 	}
-	ptyp := PrjnType(pj.Typ)
+	ptyp := PathType(pj.Typ)
 	ts := ptyp.String()
 	sz := len(ts)
 	if sz > 0 {
@@ -92,27 +87,22 @@ func (pj *NMDAPrjn) PrjnTypeName() string {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  PrjnType
+//  PathType
 
-// PrjnType has the GLong extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType
+// PathType has the GLong extensions to the PathTypes types, for gui
+type PathType PathTypes //enums:enum
 
-//go:generate stringer -type=PrjnType
-
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
-
-// The GLong prjn types
+// The GLong path types
 const (
-	// NMDAPrjn are projections that have strong NMDA channels supporting maintenance
-	NMDA emer.PrjnType = emer.PrjnType(emer.PrjnTypeN) + iota
+	// NMDAPath are pathways that have strong NMDA channels supporting maintenance
+	NMDA PathTypes = PathTypes(PathTypesN) + iota
 )
 
 // gui versions
 const (
-	NMDA_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
-	PrjnTypeN
+	NMDA_ PathType = PathType(PathTypesN) + iota
 )
 
-var PrjnProps = ki.Props{
-	"EnumType:Typ": KiT_PrjnType,
-}
+// var PathProps = tree.Props{
+// 	"EnumType:Typ": KiT_PathType,
+// }

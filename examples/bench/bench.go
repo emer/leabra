@@ -16,31 +16,30 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/emer/emergent/emer"
-	"github.com/emer/emergent/erand"
-	"github.com/emer/emergent/params"
-	"github.com/emer/emergent/patgen"
-	"github.com/emer/emergent/prjn"
-	"github.com/emer/emergent/timer"
-	"github.com/emer/etable/etable"
-	"github.com/emer/etable/etensor"
-	"github.com/emer/leabra/leabra"
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/base/timer"
+	"cogentcore.org/core/tensor"
+	"cogentcore.org/core/tensor/table"
+	"github.com/emer/emergent/v2/params"
+	"github.com/emer/emergent/v2/patgen"
+	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 var Net *leabra.Network
-var Pats *etable.Table
-var EpcLog *etable.Table
+var Pats *table.Table
+var EpcLog *table.Table
 var Thread = false // much slower for small net
 var Silent = false // non-verbose mode -- just reports result
 
 var ParamSets = params.Sets{
 	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
 		"Network": &params.Sheet{
-			{Sel: "Prjn", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
+			{Sel: "Path", Desc: "norm and momentum on works better, but wt bal is not better for smaller nets",
 				Params: params.Params{
-					"Prjn.Learn.Norm.On":     "true",
-					"Prjn.Learn.Momentum.On": "true",
-					"Prjn.Learn.WtBal.On":    "false",
+					"Path.Learn.Norm.On":     "true",
+					"Path.Learn.Momentum.On": "true",
+					"Path.Learn.WtBal.On":    "false",
 				}},
 			{Sel: "Layer", Desc: "using default 1.8 inhib for all of network -- can explore",
 				Params: params.Params{
@@ -51,9 +50,9 @@ var ParamSets = params.Sets{
 				Params: params.Params{
 					"Layer.Inhib.Layer.Gi": "1.4",
 				}},
-			{Sel: ".Back", Desc: "top-down back-projections MUST have lower relative weight scale, otherwise network hallucinates",
+			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
 				Params: params.Params{
-					"Prjn.WtScale.Rel": "0.2",
+					"Path.WtScale.Rel": "0.2",
 				}},
 		},
 		"Sim": &params.Sheet{ // sim params apply to sim object
@@ -71,20 +70,20 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
 
-	inLay := net.AddLayer("Input", shp, emer.Input)
-	hid1Lay := net.AddLayer("Hidden1", shp, emer.Hidden)
-	hid2Lay := net.AddLayer("Hidden2", shp, emer.Hidden)
-	hid3Lay := net.AddLayer("Hidden3", shp, emer.Hidden)
-	outLay := net.AddLayer("Output", shp, emer.Target)
+	inLay := net.AddLayer("Input", shp, leabra.InputLayer)
+	hid1Lay := net.AddLayer("Hidden1", shp, leabra.SuperLayer)
+	hid2Lay := net.AddLayer("Hidden2", shp, leabra.SuperLayer)
+	hid3Lay := net.AddLayer("Hidden3", shp, leabra.SuperLayer)
+	outLay := net.AddLayer("Output", shp, leabra.TargetLayer)
 
-	net.ConnectLayers(inLay, hid1Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid1Lay, hid2Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid2Lay, hid3Lay, prjn.NewFull(), emer.Forward)
-	net.ConnectLayers(hid3Lay, outLay, prjn.NewFull(), emer.Forward)
+	net.ConnectLayers(inLay, hid1Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid1Lay, hid2Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid2Lay, hid3Lay, paths.NewFull(), leabra.ForwardPath)
+	net.ConnectLayers(hid3Lay, outLay, paths.NewFull(), leabra.ForwardPath)
 
-	net.ConnectLayers(outLay, hid3Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid3Lay, hid2Lay, prjn.NewFull(), emer.Back)
-	net.ConnectLayers(hid2Lay, hid1Lay, prjn.NewFull(), emer.Back)
+	net.ConnectLayers(outLay, hid3Lay, paths.NewFull(), BackPath)
+	net.ConnectLayers(hid3Lay, hid2Lay, paths.NewFull(), BackPath)
+	net.ConnectLayers(hid2Lay, hid1Lay, paths.NewFull(), BackPath)
 
 	switch threads {
 	case 2:
@@ -99,18 +98,18 @@ func ConfigNet(net *leabra.Network, threads, units int) {
 	net.Defaults()
 	net.ApplyParams(ParamSets[0].Sheets["Network"], false) // no msg
 	net.Build()
-	net.InitWts()
+	net.InitWeights()
 }
 
-func ConfigPats(dt *etable.Table, pats, units int) {
+func ConfigPats(dt *table.Table, pats, units int) {
 	squn := int(math.Sqrt(float64(units)))
 	shp := []int{squn, squn}
 	// fmt.Printf("shape: %v\n", shp)
 
-	dt.SetFromSchema(etable.Schema{
-		{"Name", etensor.STRING, nil, nil},
-		{"Input", etensor.FLOAT32, shp, []string{"Y", "X"}},
-		{"Output", etensor.FLOAT32, shp, []string{"Y", "X"}},
+	dt.SetFromSchema(table.Schema{
+		{"Name", tensor.STRING, nil, nil},
+		{"Input", tensor.FLOAT32, shp, []string{"Y", "X"}},
+		{"Output", tensor.FLOAT32, shp, []string{"Y", "X"}},
 	}, pats)
 
 	// note: actually can learn if activity is .15 instead of .25
@@ -121,25 +120,25 @@ func ConfigPats(dt *etable.Table, pats, units int) {
 	patgen.PermutedBinaryRows(dt.Cols[2], nOn, 1, 0)
 }
 
-func ConfigEpcLog(dt *etable.Table) {
-	dt.SetFromSchema(etable.Schema{
-		{"Epoch", etensor.INT64, nil, nil},
-		{"CosDiff", etensor.FLOAT32, nil, nil},
-		{"AvgCosDiff", etensor.FLOAT32, nil, nil},
-		{"SSE", etensor.FLOAT32, nil, nil},
-		{"Avg SSE", etensor.FLOAT32, nil, nil},
-		{"Count Err", etensor.FLOAT32, nil, nil},
-		{"Pct Err", etensor.FLOAT32, nil, nil},
-		{"Pct Cor", etensor.FLOAT32, nil, nil},
-		{"Hid1 ActAvg", etensor.FLOAT32, nil, nil},
-		{"Hid2 ActAvg", etensor.FLOAT32, nil, nil},
-		{"Out ActAvg", etensor.FLOAT32, nil, nil},
+func ConfigEpcLog(dt *table.Table) {
+	dt.SetFromSchema(table.Schema{
+		{"Epoch", tensor.INT64, nil, nil},
+		{"CosDiff", tensor.FLOAT32, nil, nil},
+		{"AvgCosDiff", tensor.FLOAT32, nil, nil},
+		{"SSE", tensor.FLOAT32, nil, nil},
+		{"Avg SSE", tensor.FLOAT32, nil, nil},
+		{"Count Err", tensor.FLOAT32, nil, nil},
+		{"Pct Err", tensor.FLOAT32, nil, nil},
+		{"Pct Cor", tensor.FLOAT32, nil, nil},
+		{"Hid1 ActAvg", tensor.FLOAT32, nil, nil},
+		{"Hid2 ActAvg", tensor.FLOAT32, nil, nil},
+		{"Out ActAvg", tensor.FLOAT32, nil, nil},
 	}, 0)
 }
 
-func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
-	ltime := leabra.NewTime()
-	net.InitWts()
+func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
+	ctx := leabra.NewTime()
+	net.InitWeights()
 	np := pats.NumRows()
 	porder := rand.Perm(np) // randomly permuted order of ints
 
@@ -153,13 +152,13 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 	_ = hid1Lay
 	_ = hid2Lay
 
-	inPats := pats.ColByName("Input").(*etensor.Float32)
-	outPats := pats.ColByName("Output").(*etensor.Float32)
+	inPats := pats.ColByName("Input").(*tensor.Float32)
+	outPats := pats.ColByName("Output").(*tensor.Float32)
 
 	tmr := timer.Time{}
 	tmr.Start()
 	for epc := 0; epc < epcs; epc++ {
-		erand.PermuteInts(porder)
+		randx.PermuteInts(porder)
 		outCosDiff := float32(0)
 		cntErr := 0
 		sse := 0.0
@@ -173,14 +172,14 @@ func TrainNet(net *leabra.Network, pats, epcLog *etable.Table, epcs int) {
 			outLay.ApplyExt(outp)
 
 			net.AlphaCycInit(true)
-			ltime.AlphaCycStart()
+			ctx.AlphaCycStart()
 			for qtr := 0; qtr < 4; qtr++ {
-				for cyc := 0; cyc < ltime.CycPerQtr; cyc++ {
-					net.Cycle(ltime)
-					ltime.CycleInc()
+				for cyc := 0; cyc < ctx.CycPerQtr; cyc++ {
+					net.Cycle(ctx)
+					ctx.CycleInc()
 				}
-				net.QuarterFinal(ltime)
-				ltime.QuarterInc()
+				net.QuarterFinal(ctx)
+				ctx.QuarterInc()
 			}
 			net.DWt()
 			net.WtFmDWt()
@@ -245,13 +244,13 @@ func main() {
 	Net = &leabra.Network{}
 	ConfigNet(Net, threads, units)
 
-	Pats = &etable.Table{}
+	Pats = &table.Table{}
 	ConfigPats(Pats, pats, units)
 
-	EpcLog = &etable.Table{}
+	EpcLog = &table.Table{}
 	ConfigEpcLog(EpcLog)
 
 	TrainNet(Net, Pats, EpcLog, epochs)
 
-	EpcLog.SaveCSV("bench_epc.dat", ',', etable.Headers)
+	EpcLog.SaveCSV("bench_epc.dat", ',', table.Headers)
 }

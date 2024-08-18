@@ -9,9 +9,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // MatrixParams has parameters for Dorsal Striatum Matrix computation
@@ -19,19 +18,19 @@ import (
 type MatrixParams struct {
 
 	// name of VThal layer -- needed to get overall gating output action
-	ThalLay string `desc:"name of VThal layer -- needed to get overall gating output action"`
+	ThalLay string
 
-	// [def: 0.25] threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior
-	ThalThr float32 `def:"0.25" desc:"threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior"`
+	// threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior
+	ThalThr float32 `def:"0.25"`
 
-	// [def: true] use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
-	Deriv bool `def:"true" desc:"use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)"`
+	// use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
+	Deriv bool `def:"true"`
 
-	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	BurstGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
+	BurstGain float32 `def:"1"`
 
-	// [def: 1] multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	DipGain float32 `def:"1" desc:"multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)"`
+	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
+	DipGain float32 `def:"1"`
 }
 
 func (mp *MatrixParams) Defaults() {
@@ -60,19 +59,17 @@ type MatrixLayer struct {
 	Layer
 
 	// dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo
-	DaR DaReceptors `desc:"dominant type of dopamine receptor -- D1R for Go pathway, D2R for NoGo"`
+	DaR DaReceptors
 
-	// [view: inline] matrix parameters
-	Matrix MatrixParams `view:"inline" desc:"matrix parameters"`
+	// matrix parameters
+	Matrix MatrixParams `display:"inline"`
 
 	// effective learning dopamine value for this layer: reflects DaR and Gains
-	DALrn float32 `inactive:"+" desc:"effective learning dopamine value for this layer: reflects DaR and Gains"`
+	DALrn float32 `edit:"-"`
 
 	// acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning
-	ACh float32 `inactive:"+" desc:"acetylcholine value from CIN cholinergic interneurons reflecting the absolute value of reward or CS predictions thereof -- used for resetting the trace of matrix learning"`
+	ACh float32 `edit:"-"`
 }
-
-var KiT_MatrixLayer = kit.Types.AddType(&MatrixLayer{}, leabra.LayerProps)
 
 // Defaults in param.Sheet format
 // Sel: "MatrixLayer", Desc: "defaults",
@@ -114,8 +111,8 @@ func (ly *MatrixLayer) Defaults() {
 	// important: user needs to adjust wt scale of some PFC inputs vs others:
 	// drivers vs. modulators
 
-	for _, pji := range ly.RcvPrjns {
-		pj := pji.(leabra.LeabraPrjn).AsLeabra()
+	for _, pji := range ly.RecvPaths {
+		pj := pji.(leabra.LeabraPath).AsLeabra()
 		if _, ok := pj.Send.(*GPLayer); ok { // From GPe TA or In
 			pj.WtScale.Abs = 3
 			pj.Learn.Learn = false
@@ -128,7 +125,7 @@ func (ly *MatrixLayer) Defaults() {
 			if strings.HasSuffix(pj.Send.Name(), "GPeIn") { // GPeInToMtx
 				pj.WtScale.Abs = 0.3 // counterbalance for GPeTA to reduce oscillations
 			} else if strings.HasSuffix(pj.Send.Name(), "GPeTA") { // GPeTAToMtx
-				if strings.HasSuffix(ly.Nm, "MtxGo") {
+				if strings.HasSuffix(ly.Name, "MtxGo") {
 					pj.WtScale.Abs = 0.8
 				} else {
 					pj.WtScale.Abs = 0.3 // GPeTAToMtxNo must be weaker to prevent oscillations, even with GPeIn offset
@@ -161,19 +158,19 @@ func (ly *MatrixLayer) InitActs() {
 	ly.ACh = 0
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
-// Matrix extends to call DALrnFmDA and updates AlphaMax -> ActLrn
-func (ly *MatrixLayer) ActFmG(ltime *leabra.Time) {
-	ly.Layer.ActFmG(ltime)
-	ly.DAActLrn(ltime)
+// Matrix extends to call DALrnFromDA and updates AlphaMax -> ActLrn
+func (ly *MatrixLayer) ActFromG(ctx *leabra.Context) {
+	ly.Layer.ActFromG(ctx)
+	ly.DAActLrn(ctx)
 }
 
 // DAActLrn sets effective learning dopamine value from given raw DA value,
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
 // Also sets ActLrn based on whether corresponding VThal stripe fired
 // above ThalThr -- flips sign of learning for stripe firing vs. not.
-func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
+func (ly *MatrixLayer) DAActLrn(ctx *leabra.Context) {
 	da := ly.DA
 	if da > 0 {
 		da *= ly.Matrix.BurstGain
@@ -184,7 +181,7 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 		da *= -1
 	}
 	ly.DALrn = da
-	if ltime.Cycle < ly.AlphaMaxCyc {
+	if ctx.Cycle < ly.AlphaMaxCyc {
 		return
 	}
 	tly, err := ly.ThalLayer()
@@ -206,11 +203,11 @@ func (ly *MatrixLayer) DAActLrn(ltime *leabra.Time) {
 	}
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.Layer.UnitVarIdx(varNm)
+func (ly *MatrixLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.Layer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -225,45 +222,45 @@ func (ly *MatrixLayer) UnitVarIdx(varNm string) (int, error) {
 	return nn + 2, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *MatrixLayer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *MatrixLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	nn := len(leabra.NeuronVars)
-	if varIdx < 0 || varIdx > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
-		return mat32.NaN()
+	if varIndex < 0 || varIndex > nn+2 { // nn = DA, nn+1 = DALrn, nn+2 = ACh
+		return math32.NaN()
 	}
-	if varIdx <= nn { //
-		return ly.Layer.UnitVal1D(varIdx, idx)
+	if varIndex <= nn { //
+		return ly.Layer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
-	if varIdx > nn+2 {
-		return mat32.NaN()
+	if varIndex > nn+2 {
+		return math32.NaN()
 	}
-	if varIdx == nn+1 { // DALrn
+	if varIndex == nn+1 { // DALrn
 		return ly.DALrn
 	}
 	return ly.ACh
 }
 
 //////////////////////////////////////////////////////////////////////
-//  MatrixPrjn
+//  MatrixPath
 
-// MatrixTraceParams for for trace-based learning in the MatrixPrjn.
+// MatrixTraceParams for for trace-based learning in the MatrixPath.
 // A trace of synaptic co-activity is formed, and then modulated by dopamine
 // whenever it occurs.  This bridges the temporal gap between gating activity
 // and subsequent activity, and is based biologically on synaptic tags.
 // Trace is reset at time of reward based on ACh level from CINs.
 type MatrixTraceParams struct {
 
-	// [def: true] if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA
-	CurTrlDA bool `def:"true" desc:"if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA"`
+	// if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA
+	CurTrlDA bool `def:"true"`
 
-	// [def: 2] [min: 0] multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome.
-	Decay float32 `def:"2" min:"0" desc:"multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome."`
+	// multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome.
+	Decay float32 `def:"2" min:"0"`
 }
 
 func (tp *MatrixTraceParams) Defaults() {
@@ -272,24 +269,22 @@ func (tp *MatrixTraceParams) Defaults() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  MatrixPrjn
+//  MatrixPath
 
-// MatrixPrjn does dopamine-modulated, gated trace learning, for Matrix learning
+// MatrixPath does dopamine-modulated, gated trace learning, for Matrix learning
 // in PBWM context
-type MatrixPrjn struct {
-	leabra.Prjn
+type MatrixPath struct {
+	leabra.Path
 
-	// [view: inline] special parameters for matrix trace learning
-	Trace MatrixTraceParams `view:"inline" desc:"special parameters for matrix trace learning"`
+	// special parameters for matrix trace learning
+	Trace MatrixTraceParams `display:"inline"`
 
-	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array
-	TrSyns []TraceSyn `desc:"trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIdx array"`
+	// trace synaptic state values, ordered by the sending layer units which owns them -- one-to-one with SConIndex array
+	TrSyns []TraceSyn
 }
 
-var KiT_MatrixPrjn = kit.Types.AddType(&MatrixPrjn{}, leabra.PrjnProps)
-
-func (pj *MatrixPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *MatrixPath) Defaults() {
+	pj.Path.Defaults()
 	pj.Trace.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
@@ -298,13 +293,13 @@ func (pj *MatrixPrjn) Defaults() {
 	pj.Learn.WtBal.On = false
 }
 
-func (pj *MatrixPrjn) Build() error {
-	err := pj.Prjn.Build()
-	pj.TrSyns = make([]TraceSyn, len(pj.SConIdx))
+func (pj *MatrixPath) Build() error {
+	err := pj.Path.Build()
+	pj.TrSyns = make([]TraceSyn, len(pj.SConIndex))
 	return err
 }
 
-func (pj *MatrixPrjn) ClearTrace() {
+func (pj *MatrixPath) ClearTrace() {
 	for si := range pj.TrSyns {
 		sy := &pj.TrSyns[si]
 		sy.NTr = 0
@@ -312,13 +307,13 @@ func (pj *MatrixPrjn) ClearTrace() {
 	}
 }
 
-func (pj *MatrixPrjn) InitWts() {
-	pj.Prjn.InitWts()
+func (pj *MatrixPath) InitWeights() {
+	pj.Path.InitWeights()
 	pj.ClearTrace()
 }
 
-// DWt computes the weight change (learning) -- on sending projections.
-func (pj *MatrixPrjn) DWt() {
+// DWt computes the weight change (learning) -- on sending pathways.
+func (pj *MatrixPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -329,15 +324,15 @@ func (pj *MatrixPrjn) DWt() {
 	daLrn := rlay.DALrn // includes d2 reversal etc
 
 	ach := rlay.ACh
-	achDk := mat32.Min(1, ach*pj.Trace.Decay)
+	achDk := math32.Min(1, ach*pj.Trace.Decay)
 
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
 		trsyns := pj.TrSyns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -367,13 +362,13 @@ func (pj *MatrixPrjn) DWt() {
 
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			} else {
 				sy.Norm = trsy.NTr // store in norm, moment!
 				sy.Moment = trsy.Tr
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -397,48 +392,48 @@ func (pj *MatrixPrjn) DWt() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SynVals
+// SynValues
 
-// SynVarIdx returns the index of given variable within the synapse,
-// according to *this prjn's* SynVarNames() list (using a map to lookup index),
+// SynVarIndex returns the index of given variable within the synapse,
+// according to *this path's* SynVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (pj *MatrixPrjn) SynVarIdx(varNm string) (int, error) {
-	vidx, err := pj.Prjn.SynVarIdx(varNm)
+func (pj *MatrixPath) SynVarIndex(varNm string) (int, error) {
+	vidx, err := pj.Path.SynVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	nn := pj.Prjn.SynVarNum()
+	nn := pj.Path.SynVarNum()
 	switch varNm {
 	case "NTr":
 		return nn, nil
 	case "Tr":
 		return nn + 1, nil
 	}
-	return -1, fmt.Errorf("MatrixPrjn SynVarIdx: variable name: %v not valid", varNm)
+	return -1, fmt.Errorf("MatrixPath SynVarIndex: variable name: %v not valid", varNm)
 }
 
-// SynVal1D returns value of given variable index (from SynVarIdx) on given SynIdx.
+// SynVal1D returns value of given variable index (from SynVarIndex) on given SynIndex.
 // Returns NaN on invalid index.
 // This is the core synapse var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (pj *MatrixPrjn) SynVal1D(varIdx int, synIdx int) float32 {
-	if varIdx < 0 || varIdx >= len(SynVarsAll) {
-		return mat32.NaN()
+func (pj *MatrixPath) SynVal1D(varIndex int, synIndex int) float32 {
+	if varIndex < 0 || varIndex >= len(SynVarsAll) {
+		return math32.NaN()
 	}
-	nn := pj.Prjn.SynVarNum()
-	if varIdx < nn {
-		return pj.Prjn.SynVal1D(varIdx, synIdx)
+	nn := pj.Path.SynVarNum()
+	if varIndex < nn {
+		return pj.Path.SynVal1D(varIndex, synIndex)
 	}
-	if synIdx < 0 || synIdx >= len(pj.TrSyns) {
-		return mat32.NaN()
+	if synIndex < 0 || synIndex >= len(pj.TrSyns) {
+		return math32.NaN()
 	}
-	varIdx -= nn
-	sy := &pj.TrSyns[synIdx]
-	return sy.VarByIndex(varIdx)
+	varIndex -= nn
+	sy := &pj.TrSyns[synIndex]
+	return sy.VarByIndex(varIndex)
 }
 
 // SynVarNum returns the number of synapse-level variables
-// for this prjn.  This is needed for extending indexes in derived types.
-func (pj *MatrixPrjn) SynVarNum() int {
-	return pj.Prjn.SynVarNum() + len(TraceSynVars)
+// for this path.  This is needed for extending indexes in derived types.
+func (pj *MatrixPath) SynVarNum() int {
+	return pj.Path.SynVarNum() + len(TraceSynVars)
 }

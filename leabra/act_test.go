@@ -7,13 +7,13 @@ package leabra
 import (
 	"testing"
 
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
 )
 
 // difTol is the numerical difference tolerance for comparing vs. target values
 const difTol = float32(1.0e-5)
 
-func TestActUpdt(t *testing.T) {
+func TestActUpdate(t *testing.T) {
 	// note: these values have been validated against emergent v8.5.6 svn 11473 in
 	// demo/leabra/basic_leabra_test.proj, TestAct program
 	geinc := []float32{.01, .02, .03, .04, .05, .1, .2, .3}
@@ -35,27 +35,27 @@ func TestActUpdt(t *testing.T) {
 
 	for i := range geinc {
 		nrn.GeRaw += geinc[i]
-		ac.GeFmRaw(nrn, nrn.GeRaw)
-		ac.GiFmRaw(nrn, nrn.GiRaw)
-		ac.VmFmG(nrn)
-		ac.ActFmG(nrn)
+		ac.GeFromRaw(nrn, nrn.GeRaw)
+		ac.GiFromRaw(nrn, nrn.GiRaw)
+		ac.VmFromG(nrn)
+		ac.ActFromG(nrn)
 		ge[i] = nrn.Ge
 		inet[i] = nrn.Inet
 		vm[i] = nrn.Vm
 		act[i] = nrn.Act
-		difge := mat32.Abs(ge[i] - corge[i])
+		difge := math32.Abs(ge[i] - corge[i])
 		if difge > difTol { // allow for small numerical diffs
 			t.Errorf("ge err: idx: %v, geinc: %v, ge: %v, corge: %v, dif: %v\n", i, geinc[i], ge[i], corge[i], difge)
 		}
-		difinet := mat32.Abs(inet[i] - corinet[i])
+		difinet := math32.Abs(inet[i] - corinet[i])
 		if difinet > difTol { // allow for small numerical diffs
 			t.Errorf("Inet err: idx: %v, geinc: %v, inet: %v, corinet: %v, dif: %v\n", i, geinc[i], inet[i], corinet[i], difinet)
 		}
-		difvm := mat32.Abs(vm[i] - corvm[i])
+		difvm := math32.Abs(vm[i] - corvm[i])
 		if difvm > difTol { // allow for small numerical diffs
 			t.Errorf("Vm err: idx: %v, geinc: %v, vm: %v, corvm: %v, dif: %v\n", i, geinc[i], vm[i], corvm[i], difvm)
 		}
-		difact := mat32.Abs(act[i] - coract[i])
+		difact := math32.Abs(act[i] - coract[i])
 		if difact > difTol { // allow for small numerical diffs
 			t.Errorf("Act err: idx: %v, geinc: %v, act: %v, coract: %v, dif: %v\n", i, geinc[i], act[i], coract[i], difact)
 		}

@@ -5,9 +5,8 @@
 package deep
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // TRNLayer copies inhibition from pools in CT and TRC layers, and from other
@@ -16,16 +15,5 @@ type TRNLayer struct {
 	leabra.Layer
 
 	// layers that we receive inhibition from
-	ILayers emer.LayNames `desc:"layers that we receive inhibition from"`
-}
-
-var KiT_TRNLayer = kit.Types.AddType(&TRNLayer{}, leabra.LayerProps)
-
-func (ly *TRNLayer) Defaults() {
-	ly.Layer.Defaults()
-}
-
-// InitActs fully initializes activation state -- only called automatically during InitWts
-func (ly *TRNLayer) InitActs() {
-	ly.Layer.InitActs()
+	ILayers emer.LayNames
 }

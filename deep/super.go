@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // BurstParams determine how the 5IB Burst activation is computed from
@@ -18,17 +17,17 @@ import (
 type BurstParams struct {
 
 	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions.
-	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines, 32 bit versions."`
+	BurstQtr leabra.Quarters
 
-	// [def: 0.1,0.2,0.5] [max: 1] Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds.
-	ThrRel float32 `max:"1" def:"0.1,0.2,0.5" desc:"Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	// Relative component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  This is the distance between the average and maximum activation values within layer (e.g., 0 = average, 1 = max).  Overall effective threshold is MAX of relative and absolute thresholds.
+	ThrRel float32 `max:"1" def:"0.1,0.2,0.5"`
 
-	// [def: 0.1,0.2,0.5] [min: 0] [max: 1] Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds.
-	ThrAbs float32 `min:"0" max:"1" def:"0.1,0.2,0.5" desc:"Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds."`
+	// Absolute component of threshold on superficial activation value, below which it does not drive Burst (and above which, Burst = Act).  Overall effective threshold is MAX of relative and absolute thresholds.
+	ThrAbs float32 `min:"0" max:"1" def:"0.1,0.2,0.5"`
 }
 
 func (db *BurstParams) Defaults() {
-	db.BurstQtr.Set(int(leabra.Q4))
+	db.BurstQtr.SetFlag(true, leabra.Q4)
 	db.ThrRel = 0.1
 	db.ThrAbs = 0.1
 }
@@ -37,13 +36,13 @@ func (db *BurstParams) Defaults() {
 type TRCAttnParams struct {
 
 	// is attentional modulation active?
-	On bool `desc:"is attentional modulation active?"`
+	On bool
 
 	// minimum act multiplier if attention is 0
-	Min float32 `desc:"minimum act multiplier if attention is 0"`
+	Min float32
 
 	// name of TRC layer -- defaults to layer name + P
-	TRCLay string `desc:"name of TRC layer -- defaults to layer name + P"`
+	TRCLay string
 }
 
 func (at *TRCAttnParams) Defaults() {
@@ -51,7 +50,7 @@ func (at *TRCAttnParams) Defaults() {
 }
 
 // ModVal returns the attn-modulated value
-func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
+func (at *TRCAttnParams) ModValue(val float32, attn float32) float32 {
 	return val * (at.Min + (1-at.Min)*attn)
 }
 
@@ -60,17 +59,15 @@ func (at *TRCAttnParams) ModVal(val float32, attn float32) float32 {
 type SuperLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
-	// [view: inline] parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)
-	Burst BurstParams `view:"inline" desc:"parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)"`
+	// parameters for computing Burst from act, in Superficial layers (but also needed in Deep layers for deep self connections)
+	Burst BurstParams `display:"inline"`
 
-	// [view: inline] determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer.
-	Attn TRCAttnParams `view:"inline" desc:"determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer."`
+	// determine how the TRCLayer activation modulates SuperLayer feedforward excitatory conductances, representing TRC effects on layer V4 inputs (not separately simulated) -- must have a valid layer.
+	Attn TRCAttnParams `display:"inline"`
 
 	// slice of super neuron values -- same size as Neurons
-	SuperNeurs []SuperNeuron `desc:"slice of super neuron values -- same size as Neurons"`
+	SuperNeurs []SuperNeuron
 }
-
-var KiT_SuperLayer = kit.Types.AddType(&SuperLayer{}, LayerProps)
 
 func (ly *SuperLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
@@ -78,12 +75,12 @@ func (ly *SuperLayer) Defaults() {
 	ly.Burst.Defaults()
 	ly.Attn.Defaults()
 	if ly.Attn.TRCLay == "" {
-		ly.Attn.TRCLay = ly.Nm + "P"
+		ly.Attn.TRCLay = ly.Name + "P"
 	}
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *SuperLayer) UpdateParams() {
 	ly.TopoInhibLayer.UpdateParams()
 }
@@ -113,7 +110,7 @@ func (ly *SuperLayer) DecayState(decay float32) {
 
 // TRCLayer returns the TRC layer for attentional modulation
 func (ly *SuperLayer) TRCLayer() (*leabra.Layer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.Attn.TRCLay)
+	tly, err := ly.Network.LayerByName(ly.Attn.TRCLay)
 	if err != nil {
 		err = fmt.Errorf("SuperLayer %s: TRC Layer: %v", ly.Name(), err)
 		log.Println(err)
@@ -128,13 +125,13 @@ func MaxPoolActAvg(ly *leabra.Layer) float32 {
 	np := len(ly.Pools)
 	for pi := 1; pi < np; pi++ {
 		pl := &ly.Pools[pi]
-		laymax = mat32.Max(laymax, pl.Inhib.Act.Avg)
+		laymax = math32.Max(laymax, pl.Inhib.Act.Avg)
 	}
 	return laymax
 }
 
-func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
-	ly.TopoInhibLayer.ActFmG(ltime)
+func (ly *SuperLayer) ActFromG(ctx *leabra.Context) {
+	ly.TopoInhibLayer.ActFromG(ctx)
 	if !ly.Attn.On {
 		return
 	}
@@ -155,7 +152,7 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 		snr := &ly.SuperNeurs[ni]
 		gpavg := trc.Pools[nrn.SubPool].Inhib.Act.Avg // note: requires same shape, validated
 		snr.Attn = gpavg / laymax
-		nrn.Act = ly.Attn.ModVal(nrn.Act, snr.Attn)
+		nrn.Act = ly.Attn.ModValue(nrn.Act, snr.Attn)
 	}
 }
 
@@ -163,9 +160,9 @@ func (ly *SuperLayer) ActFmG(ltime *leabra.Time) {
 //  Burst -- computed in CyclePost
 
 // QuarterFinal does updating after end of a quarter
-func (ly *SuperLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.TopoInhibLayer.QuarterFinal(ltime)
-	if ly.Burst.BurstQtr.HasNext(ltime.Quarter) {
+func (ly *SuperLayer) QuarterFinal(ctx *leabra.Context) {
+	ly.TopoInhibLayer.QuarterFinal(ctx)
+	if ly.Burst.BurstQtr.HasNext(ctx.Quarter) {
 		// if will be updating next quarter, save just prior
 		// this logic works for all cases, but e.g., BurstPrv doesn't update
 		// until end of minus phase for Q4 BurstQtr
@@ -181,23 +178,23 @@ func (ly *SuperLayer) BurstPrv() {
 	}
 }
 
-// CyclePost calls BurstFmAct
-func (ly *SuperLayer) CyclePost(ltime *leabra.Time) {
-	ly.TopoInhibLayer.CyclePost(ltime)
-	ly.BurstFmAct(ltime)
+// CyclePost calls BurstFromAct
+func (ly *SuperLayer) CyclePost(ctx *leabra.Context) {
+	ly.TopoInhibLayer.CyclePost(ctx)
+	ly.BurstFromAct(ctx)
 }
 
-// BurstFmAct updates Burst layer 5IB bursting value from current Act
+// BurstFromAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
-func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+func (ly *SuperLayer) BurstFromAct(ctx *leabra.Context) {
+	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	lpl := &ly.Pools[0]
 	actMax := lpl.Inhib.Act.Max
 	actAvg := lpl.Inhib.Act.Avg
 	thr := actAvg + ly.Burst.ThrRel*(actMax-actAvg)
-	thr = mat32.Max(thr, ly.Burst.ThrAbs)
+	thr = math32.Max(thr, ly.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -215,12 +212,12 @@ func (ly *SuperLayer) BurstFmAct(ltime *leabra.Time) {
 //////////////////////////////////////////////////////////////////////////////////////
 //  DeepCtxt -- once after Burst quarter
 
-// SendCtxtGe sends Burst activation over CTCtxtPrjn projections to integrate
+// SendCtxtGe sends Burst activation over CTCtxtPath pathways to integrate
 // CtxtGe excitatory conductance on CT layers.
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
-func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
-	if !ly.Burst.BurstQtr.Has(ltime.Quarter) {
+func (ly *SuperLayer) SendCtxtGe(ctx *leabra.Context) {
+	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -230,15 +227,15 @@ func (ly *SuperLayer) SendCtxtGe(ltime *leabra.Time) {
 		}
 		snr := &ly.SuperNeurs[ni]
 		if snr.Burst > ly.Act.OptThresh.Send {
-			for _, sp := range ly.SndPrjns {
-				if sp.IsOff() {
+			for _, sp := range ly.SendPaths {
+				if sp.Off {
 					continue
 				}
 				ptyp := sp.Type()
 				if ptyp != CTCtxt {
 					continue
 				}
-				pj, ok := sp.(*CTCtxtPrjn)
+				pj, ok := sp.(*CTCtxtPath)
 				if !ok {
 					continue
 				}
@@ -257,7 +254,7 @@ func (ly *SuperLayer) ValidateTRCLayer() error {
 		ly.Attn.On = false
 		return err
 	}
-	if !(trc.Shp.Dim(0) == ly.Shp.Dim(0) && trc.Shp.Dim(1) == ly.Shp.Dim(1)) {
+	if !(trc.Shp.DimSize(0) == ly.Shape.DimSize(0) && trc.Shp.DimSize(1) == ly.Shape.DimSize(1)) {
 		ly.Attn.On = false
 		err = fmt.Errorf("TRC Layer must have the same group-level shape as this layer")
 		log.Println(err)
@@ -266,7 +263,7 @@ func (ly *SuperLayer) ValidateTRCLayer() error {
 	return nil
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *SuperLayer) Build() error {
 	err := ly.TopoInhibLayer.Build()
 	if err != nil {
@@ -284,15 +281,15 @@ func (ly *SuperLayer) UnitVarNames() []string {
 	return NeuronVarsAll
 }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.TopoInhibLayer.UnitVarIdx(varNm)
+func (ly *SuperLayer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.TopoInhibLayer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
-	vidx, err = SuperNeuronVarIdxByName(varNm)
+	vidx, err = SuperNeuronVarIndexByName(varNm)
 	if err != nil {
 		return vidx, err
 	}
@@ -300,27 +297,27 @@ func (ly *SuperLayer) UnitVarIdx(varNm string) (int, error) {
 	return vidx, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *SuperLayer) UnitVal1D(varIdx int, idx int) float32 {
-	if varIdx < 0 {
-		return mat32.NaN()
+func (ly *SuperLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
+	if varIndex < 0 {
+		return math32.NaN()
 	}
 	nn := ly.TopoInhibLayer.UnitVarNum()
-	if varIdx < nn {
-		return ly.TopoInhibLayer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.TopoInhibLayer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
-	varIdx -= nn
-	if varIdx >= len(SuperNeuronVars) {
-		return mat32.NaN()
+	varIndex -= nn
+	if varIndex >= len(SuperNeuronVars) {
+		return math32.NaN()
 	}
 	snr := &ly.SuperNeurs[idx]
-	return snr.VarByIdx(varIdx)
+	return snr.VarByIndex(varIndex)
 }
 
 // UnitVarNum returns the number of Neuron-level variables

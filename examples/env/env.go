@@ -9,8 +9,8 @@ import (
 	"image"
 	"math/rand"
 
-	"github.com/emer/emergent/env"
-	"github.com/emer/etable/etensor"
+	"cogentcore.org/core/tensor"
+	"github.com/emer/emergent/v2/env"
 )
 
 // ExEnv is an example environment, that sets a single input point in a 2D
@@ -20,38 +20,34 @@ import (
 type ExEnv struct {
 
 	// name of this environment
-	Nm string `desc:"name of this environment"`
-
-	// description of this environment
-	Dsc string `desc:"description of this environment"`
+	Name string
 
 	// size of each dimension in 2D input
-	Size int `desc:"size of each dimension in 2D input"`
+	Size int
 
 	// X,Y coordinates of point
-	Point image.Point `desc:"X,Y coordinates of point"`
+	Point image.Point
 
 	// input state, 2D Size x Size
-	Input etensor.Float32 `desc:"input state, 2D Size x Size"`
+	Input tensor.Float32
 
 	// X as a one-hot state 1D Size
-	X etensor.Float32 `desc:"X as a one-hot state 1D Size"`
+	X tensor.Float32
 
 	// Y  as a one-hot state 1D Size
-	Y etensor.Float32 `desc:"Y  as a one-hot state 1D Size"`
+	Y tensor.Float32
 
-	// [view: inline] current run of model as provided during Init
-	Run env.Ctr `view:"inline" desc:"current run of model as provided during Init"`
+	// current run of model as provided during Init
+	Run env.Counter `display:"inline"`
 
-	// [view: inline] number of times through Seq.Max number of sequences
-	Epoch env.Ctr `view:"inline" desc:"number of times through Seq.Max number of sequences"`
+	// number of times through Seq.Max number of sequences
+	Epoch env.Counter `display:"inline"`
 
-	// [view: inline] trial increments over input states -- could add Event as a lower level
-	Trial env.Ctr `view:"inline" desc:"trial increments over input states -- could add Event as a lower level"`
+	// trial increments over input states -- could add Event as a lower level
+	Trial env.Counter `display:"inline"`
 }
 
-func (ev *ExEnv) Name() string { return ev.Nm }
-func (ev *ExEnv) Desc() string { return ev.Dsc }
+func (ev *ExEnv) Label() string { return ev.Name }
 
 // Config sets the size, number of trials to run per epoch, and configures the states
 func (ev *ExEnv) Config(sz int, ntrls int) {
@@ -62,14 +58,7 @@ func (ev *ExEnv) Config(sz int, ntrls int) {
 	ev.Y.SetShape([]int{sz}, nil, []string{"Y"})
 }
 
-func (ev *ExEnv) Validate() error {
-	if ev.Size == 0 {
-		return fmt.Errorf("ExEnv: %v has size == 0 -- need to Config", ev.Nm)
-	}
-	return nil
-}
-
-func (ev *ExEnv) State(element string) etensor.Tensor {
+func (ev *ExEnv) State(element string) tensor.Tensor {
 	switch element {
 	case "Input":
 		return &ev.Input
@@ -120,7 +109,7 @@ func (ev *ExEnv) Step() bool {
 	return true
 }
 
-func (ev *ExEnv) Action(element string, input etensor.Tensor) {
+func (ev *ExEnv) Action(element string, input tensor.Tensor) {
 	// nop
 }
 

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/emer/leabra/leabra"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 var (
@@ -41,10 +41,10 @@ func init() {
 type STNNeuron struct {
 
 	// intracellular Calcium concentration -- increased by bursting and elevated levels of activation, drives KCa currents that result in hyperpolarization / inhibition.
-	Ca float32 `desc:"intracellular Calcium concentration -- increased by bursting and elevated levels of activation, drives KCa currents that result in hyperpolarization / inhibition."`
+	Ca float32
 
 	// Calcium-gated potassium channel conductance level, computed using function from gillies & Willshaw 2006 as function of Ca.
-	KCa float32 `desc:"Calcium-gated potassium channel conductance level, computed using function from gillies & Willshaw 2006 as function of Ca."`
+	KCa float32
 }
 
 var (
@@ -63,8 +63,8 @@ func (nrn *STNNeuron) VarNames() []string {
 	return STNNeuronVars
 }
 
-// STNNeuronVarIdxByName returns the index of the variable in the STNNeuron, or error
-func STNNeuronVarIdxByName(varNm string) (int, error) {
+// STNNeuronVarIndexByName returns the index of the variable in the STNNeuron, or error
+func STNNeuronVarIndexByName(varNm string) (int, error) {
 	i, ok := STNNeuronVarsMap[varNm]
 	if !ok {
 		return 0, fmt.Errorf("STNNeuron VarByName: variable name: %v not valid", varNm)
@@ -80,7 +80,7 @@ func (nrn *STNNeuron) VarByIndex(idx int) float32 {
 
 // VarByName returns variable by name, or error
 func (nrn *STNNeuron) VarByName(varNm string) (float32, error) {
-	i, err := STNNeuronVarIdxByName(varNm)
+	i, err := STNNeuronVarIndexByName(varNm)
 	if err != nil {
 		return 0, err
 	}

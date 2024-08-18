@@ -5,30 +5,30 @@
 package hip
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // Contrastive Hebbian Learning (CHL) parameters
 type CHLParams struct {
 
 	// if true, use CHL learning instead of standard XCAL learning -- allows easy exploration of CHL vs. XCAL
-	On bool `desc:"if true, use CHL learning instead of standard XCAL learning -- allows easy exploration of CHL vs. XCAL"`
+	On bool
 
-	// [def: 0.001] [min: 0] [max: 1] amount of hebbian learning (should be relatively small, can be effective at .0001)
-	Hebb float32 `def:"0.001" min:"0" max:"1" desc:"amount of hebbian learning (should be relatively small, can be effective at .0001)"`
+	// amount of hebbian learning (should be relatively small, can be effective at .0001)
+	Hebb float32 `def:"0.001" min:"0" max:"1"`
 
-	// [def: 0.999] [min: 0] [max: 1] amount of error driven learning, automatically computed to be 1-Hebb
-	Err float32 `def:"0.999" min:"0" max:"1" inactive:"+" desc:"amount of error driven learning, automatically computed to be 1-Hebb"`
+	// amount of error driven learning, automatically computed to be 1-Hebb
+	Err float32 `def:"0.999" min:"0" max:"1" edit:"-"`
 
 	// if true, use ActQ1 as the minus phase -- otherwise ActM
-	MinusQ1 bool `desc:"if true, use ActQ1 as the minus phase -- otherwise ActM"`
+	MinusQ1 bool
 
-	// [def: 0.4:0.8] [min: 0] [max: 1] proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)
-	SAvgCor float32 `def:"0.4:0.8" min:"0" max:"1" desc:"proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)"`
+	// proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)
+	SAvgCor float32 `def:"0.4:0.8" min:"0" max:"1"`
 
-	// [def: 0.001] [min: 0] threshold of sending average activation below which learning does not occur (prevents learning when there is no input)
-	SAvgThr float32 `def:"0.001" min:"0" desc:"threshold of sending average activation below which learning does not occur (prevents learning when there is no input)"`
+	// threshold of sending average activation below which learning does not occur (prevents learning when there is no input)
+	SAvgThr float32 `def:"0.001" min:"0"`
 }
 
 func (ch *CHLParams) Defaults() {
@@ -76,60 +76,60 @@ func (ch *CHLParams) DWt(hebb, err float32) float32 {
 }
 
 ////////////////////////////////////////////////////////////////////
-//  CHLPrjn
+//  CHLPath
 
-// hip.CHLPrjn is a Contrastive Hebbian Learning (CHL) projection,
-// based on basic rate-coded leabra.Prjn, that implements a
+// hip.CHLPath is a Contrastive Hebbian Learning (CHL) pathway,
+// based on basic rate-coded leabra.Path, that implements a
 // pure CHL learning rule, which works better in the hippocampus.
-type CHLPrjn struct {
-	leabra.Prjn // access as .Prjn
+type CHLPath struct {
+	leabra.Path // access as .Path
 
-	// [view: inline] parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible
-	CHL CHLParams `view:"inline" desc:"parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible"`
+	// parameters for CHL learning -- if CHL is On then WtSig.SoftBound is automatically turned off -- incompatible
+	CHL CHLParams `display:"inline"`
 }
 
-func (pj *CHLPrjn) Defaults() {
-	pj.Prjn.Defaults()
+func (pj *CHLPath) Defaults() {
+	pj.Path.Defaults()
 	pj.CHL.Defaults()
-	pj.Prjn.Learn.Norm.On = false     // off by default
-	pj.Prjn.Learn.Momentum.On = false // off by default
-	pj.Prjn.Learn.WtBal.On = false    // todo: experiment
+	pj.Path.Learn.Norm.On = false     // off by default
+	pj.Path.Learn.Momentum.On = false // off by default
+	pj.Path.Learn.WtBal.On = false    // todo: experiment
 }
 
-func (pj *CHLPrjn) UpdateParams() {
+func (pj *CHLPath) UpdateParams() {
 	pj.CHL.Update()
 	if pj.CHL.On {
-		pj.Prjn.Learn.WtSig.SoftBound = false
+		pj.Path.Learn.WtSig.SoftBound = false
 	}
-	pj.Prjn.UpdateParams()
+	pj.Path.UpdateParams()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) -- on sending projections
+// DWt computes the weight change (learning) -- on sending pathways
 // CHL version supported if On
-func (pj *CHLPrjn) DWt() {
+func (pj *CHLPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
 	if pj.CHL.On {
 		pj.DWtCHL()
 	} else {
-		pj.Prjn.DWt()
+		pj.Path.DWt()
 	}
 }
 
 // SAvgCor computes the sending average activation, corrected according to the SAvgCor
 // correction factor (typically makes layer appear more sparse than it is)
-func (pj *CHLPrjn) SAvgCor(slay *leabra.Layer) float32 {
+func (pj *CHLPath) SAvgCor(slay *leabra.Layer) float32 {
 	savg := .5 + pj.CHL.SAvgCor*(slay.Pools[0].ActAvg.ActPAvgEff-0.5)
-	savg = mat32.Max(pj.CHL.SAvgThr, savg) // keep this computed value within bounds
+	savg = math32.Max(pj.CHL.SAvgThr, savg) // keep this computed value within bounds
 	return 0.5 / savg
 }
 
 // DWtCHL computes the weight change (learning) for CHL
-func (pj *CHLPrjn) DWtCHL() {
+func (pj *CHLPath) DWtCHL() {
 	slay := pj.Send.(leabra.LeabraLayer).AsLeabra()
 	rlay := pj.Recv.(leabra.LeabraLayer).AsLeabra()
 	if slay.Pools[0].ActP.Avg < pj.CHL.SAvgThr { // inactive, no learn
@@ -138,9 +138,9 @@ func (pj *CHLPrjn) DWtCHL() {
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 		snActM := pj.CHL.MinusAct(sn.ActM, sn.ActQ1)
 
 		savgCor := pj.SAvgCor(slay)
@@ -157,10 +157,10 @@ func (pj *CHLPrjn) DWtCHL() {
 			dwt := pj.CHL.DWt(hebb, err)
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}

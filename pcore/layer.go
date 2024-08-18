@@ -7,10 +7,8 @@ package pcore
 import (
 	"fmt"
 
-	"github.com/emer/leabra/glong"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/glong"
 )
 
 // Layer is the base layer type for PCore framework.
@@ -19,21 +17,19 @@ type Layer struct {
 	glong.AlphaMaxLayer
 
 	// dopamine value for this layer
-	DA float32 `inactive:"+" desc:"dopamine value for this layer"`
+	DA float32 `edit:"-"`
 }
-
-var KiT_Layer = kit.Types.AddType(&Layer{}, leabra.LayerProps)
 
 // DALayer interface:
 
 func (ly *Layer) GetDA() float32   { return ly.DA }
 func (ly *Layer) SetDA(da float32) { ly.DA = da }
 
-// UnitVarIdx returns the index of given variable within the Neuron,
+// UnitVarIndex returns the index of given variable within the Neuron,
 // according to UnitVarNames() list (using a map to lookup index),
 // or -1 and error message if not found.
-func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
-	vidx, err := ly.AlphaMaxLayer.UnitVarIdx(varNm)
+func (ly *Layer) UnitVarIndex(varNm string) (int, error) {
+	vidx, err := ly.AlphaMaxLayer.UnitVarIndex(varNm)
 	if err == nil {
 		return vidx, err
 	}
@@ -44,20 +40,20 @@ func (ly *Layer) UnitVarIdx(varNm string) (int, error) {
 	return nn, nil
 }
 
-// UnitVal1D returns value of given variable index on given unit, using 1-dimensional index.
+// UnitValue1D returns value of given variable index on given unit, using 1-dimensional index.
 // returns NaN on invalid index.
 // This is the core unit var access method used by other methods,
 // so it is the only one that needs to be updated for derived layer types.
-func (ly *Layer) UnitVal1D(varIdx int, idx int) float32 {
+func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	nn := ly.AlphaMaxLayer.UnitVarNum()
-	if varIdx < 0 || varIdx > nn { // nn = DA
-		return mat32.NaN()
+	if varIndex < 0 || varIndex > nn { // nn = DA
+		return math32.NaN()
 	}
-	if varIdx < nn {
-		return ly.AlphaMaxLayer.UnitVal1D(varIdx, idx)
+	if varIndex < nn {
+		return ly.AlphaMaxLayer.UnitValue1D(varIndex, idx, di)
 	}
 	if idx < 0 || idx >= len(ly.Neurons) {
-		return mat32.NaN()
+		return math32.NaN()
 	}
 	return ly.DA
 }

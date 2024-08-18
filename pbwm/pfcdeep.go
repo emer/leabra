@@ -5,26 +5,25 @@
 package pbwm
 
 import (
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // PFCGateParams has parameters for PFC gating
 type PFCGateParams struct {
 
 	// Quarter(s) that the effect of gating on updating Deep from Super occurs -- this is typically 1 quarter after the GPiThal GateQtr
-	GateQtr leabra.Quarters `desc:"Quarter(s) that the effect of gating on updating Deep from Super occurs -- this is typically 1 quarter after the GPiThal GateQtr"`
+	GateQtr leabra.Quarters
 
 	// if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating
-	OutGate bool `desc:"if true, this PFC layer is an output gate layer, which means that it only has transient activation during gating"`
+	OutGate bool
 
-	// [def: true] [viewif: OutGate] for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial
-	OutQ1Only bool `viewif:"OutGate" def:"true" desc:"for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial"`
+	// for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial
+	OutQ1Only bool `viewif:"OutGate" def:"true"`
 }
 
 func (gp *PFCGateParams) Defaults() {
-	gp.GateQtr.Set(int(leabra.Q2))
-	gp.GateQtr.Set(int(leabra.Q4))
+	gp.GateQtr.SetFlag(true, leabra.Q2)
+	gp.GateQtr.SetFlag(true, leabra.Q4)
 	gp.OutQ1Only = true
 }
 
@@ -32,16 +31,16 @@ func (gp *PFCGateParams) Defaults() {
 type PFCMaintParams struct {
 
 	// use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance
-	UseDyn bool `desc:"use fixed dynamics for updating deep_ctxt activations -- defined in dyn_table -- this also preserves the initial gating deep_ctxt value in Maint neuron val (view as Cust1) -- otherwise it is up to the recurrent loops between super and deep for maintenance"`
+	UseDyn bool
 
-	// [def: 0.8] [min: 0] multiplier on maint current
-	MaintGain float32 `min:"0" def:"0.8" desc:"multiplier on maint current"`
+	// multiplier on maint current
+	MaintGain float32 `min:"0" def:"0.8"`
 
-	// [def: false] on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases..
-	OutClearMaint bool `def:"false" desc:"on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases.."`
+	// on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases..
+	OutClearMaint bool `def:"false"`
 
-	// [def: 0] [min: 0] [max: 1] how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.
-	Clear    float32 `min:"0" max:"1" def:"0" desc:"how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.  "`
+	// how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.
+	Clear    float32 `min:"0" max:"1" def:"0"`
 	MaxMaint int     `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
 }
 
@@ -56,13 +55,13 @@ func (mp *PFCMaintParams) Defaults() {
 type PFCNeuron struct {
 
 	// gating activation -- the activity value when gating occurred in this pool
-	ActG float32 `desc:"gating activation -- the activity value when gating occurred in this pool"`
+	ActG float32
 
 	// maintenance value for Deep layers = sending act at time of gating
-	Maint float32 `desc:"maintenance value for Deep layers = sending act at time of gating"`
+	Maint float32
 
 	// maintenance excitatory conductance value for Deep layers
-	MaintGe float32 `desc:"maintenance excitatory conductance value for Deep layers"`
+	MaintGe float32
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -76,20 +75,18 @@ type PFCNeuron struct {
 type PFCDeepLayer struct {
 	GateLayer
 
-	// [view: inline] PFC Gating parameters
-	Gate PFCGateParams `view:"inline" desc:"PFC Gating parameters"`
+	// PFC Gating parameters
+	Gate PFCGateParams `display:"inline"`
 
-	// [view: inline] PFC Maintenance parameters
-	Maint PFCMaintParams `view:"inline" desc:"PFC Maintenance parameters"`
+	// PFC Maintenance parameters
+	Maint PFCMaintParams `display:"inline"`
 
 	// PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)
-	Dyns PFCDyns `desc:"PFC dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)"`
+	Dyns PFCDyns
 
 	// slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values.
-	PFCNeurs []PFCNeuron `desc:"slice of PFCNeuron state for this layer -- flat list of len = Shape.Len().  You must iterate over index and use pointer to modify values."`
+	PFCNeurs []PFCNeuron
 }
-
-var KiT_PFCDeepLayer = kit.Types.AddType(&PFCDeepLayer{}, leabra.LayerProps)
 
 func (ly *PFCDeepLayer) Defaults() {
 	ly.GateLayer.Defaults()
@@ -98,7 +95,7 @@ func (ly *PFCDeepLayer) Defaults() {
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
 		ly.Maint.MaxMaint = 1
 		ly.Gate.GateQtr = 0
-		ly.Gate.GateQtr.Set(int(leabra.Q1))
+		ly.Gate.GateQtr.SetFlag(true, leabra.Q1)
 	}
 	if len(ly.Dyns) > 0 {
 		ly.Maint.UseDyn = true
@@ -115,9 +112,9 @@ func (ly *PFCDeepLayer) GateType() GateTypes {
 	}
 }
 
-// UnitValByIdx returns value of given PBWM-specific variable by variable index
+// UnitValueByIndex returns value of given PBWM-specific variable by variable index
 // and flat neuron index (from layer or neuron-specific one).
-func (ly *PFCDeepLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
+func (ly *PFCDeepLayer) UnitValueByIndex(vidx NeurVars, idx int) float32 {
 	pnrn := &ly.PFCNeurs[idx]
 	switch vidx {
 	case ActG:
@@ -127,11 +124,11 @@ func (ly *PFCDeepLayer) UnitValByIdx(vidx NeurVars, idx int) float32 {
 	case MaintGe:
 		return pnrn.MaintGe
 	default:
-		return ly.GateLayer.UnitValByIdx(vidx, idx)
+		return ly.GateLayer.UnitValueByIndex(vidx, idx)
 	}
 }
 
-// Build constructs the layer state, including calling Build on the projections.
+// Build constructs the layer state, including calling Build on the pathways.
 func (ly *PFCDeepLayer) Build() error {
 	err := ly.GateLayer.Build()
 	if err != nil {
@@ -144,8 +141,8 @@ func (ly *PFCDeepLayer) Build() error {
 // MaintPFC returns corresponding PFCDeep maintenance layer with same name but outD -> mntD
 // could be nil
 func (ly *PFCDeepLayer) MaintPFC() *PFCDeepLayer {
-	sz := len(ly.Nm)
-	mnm := ly.Nm[:sz-4] + "mntD"
+	sz := len(ly.Name)
+	mnm := ly.Name[:sz-4] + "mntD"
 	li := ly.Network.LayerByName(mnm)
 	if li == nil {
 		return nil
@@ -156,7 +153,7 @@ func (ly *PFCDeepLayer) MaintPFC() *PFCDeepLayer {
 // SuperPFC returns corresponding PFC super layer with same name without D
 // should not be nil.  Super can be any layer type.
 func (ly *PFCDeepLayer) SuperPFC() leabra.LeabraLayer {
-	dnm := ly.Nm[:len(ly.Nm)-1]
+	dnm := ly.Name[:len(ly.Name)-1]
 	li := ly.Network.LayerByName(dnm)
 	if li == nil {
 		return nil
@@ -180,9 +177,9 @@ func (ly *PFCDeepLayer) InitActs() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Cycle
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *PFCDeepLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -190,23 +187,23 @@ func (ly *PFCDeepLayer) GFmInc(ltime *leabra.Time) {
 		}
 		pnr := &ly.PFCNeurs[ni]
 		geRaw := nrn.GeRaw + pnr.MaintGe
-		ly.Act.GeFmRaw(nrn, geRaw)
-		ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+		ly.Act.GeFromRaw(nrn, geRaw)
+		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
-// ActFmG computes rate-code activation from Ge, Gi, Gl conductances
+// ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act.
 // PFC extends to call Gating.
-func (ly *PFCDeepLayer) ActFmG(ltime *leabra.Time) {
-	ly.GateLayer.ActFmG(ltime)
-	ly.Gating(ltime)
+func (ly *PFCDeepLayer) ActFromG(ctx *leabra.Context) {
+	ly.GateLayer.ActFromG(ctx)
+	ly.Gating(ctx)
 }
 
 // Gating updates PFC Gating state
-func (ly *PFCDeepLayer) Gating(ltime *leabra.Time) {
+func (ly *PFCDeepLayer) Gating(ctx *leabra.Context) {
 	if ly.Gate.OutGate && ly.Gate.OutQ1Only {
-		if ltime.Quarter > 1 {
+		if ctx.Quarter > 1 {
 			return
 		}
 	}
@@ -249,15 +246,15 @@ func (ly *PFCDeepLayer) ClearMaint(pool int) {
 }
 
 // QuarterFinal does updating after end of a quarter
-func (ly *PFCDeepLayer) QuarterFinal(ltime *leabra.Time) {
-	ly.GateLayer.QuarterFinal(ltime)
-	ly.UpdtGateCnt(ltime)
-	ly.DeepMaint(ltime)
+func (ly *PFCDeepLayer) QuarterFinal(ctx *leabra.Context) {
+	ly.GateLayer.QuarterFinal(ctx)
+	ly.UpdateGateCnt(ctx)
+	ly.DeepMaint(ctx)
 }
 
 // DeepMaint updates deep maintenance activations
-func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
+func (ly *PFCDeepLayer) DeepMaint(ctx *leabra.Context) {
+	if !ly.Gate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	slyi := ly.SuperPFC()
@@ -265,13 +262,13 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 		return
 	}
 	sly := slyi.AsLeabra()
-	yN := ly.Shp.Dim(2)
-	xN := ly.Shp.Dim(3)
+	yN := ly.Shape.DimSize(2)
+	xN := ly.Shape.DimSize(3)
 
 	nn := yN * xN
 
-	syN := sly.Shp.Dim(2)
-	sxN := sly.Shp.Dim(3)
+	syN := sly.Shape.DimSize(2)
+	sxN := sly.Shape.DimSize(3)
 	snn := syN * sxN
 
 	dper := yN / syN  // dyn per sender -- should be len(Dyns)
@@ -306,9 +303,9 @@ func (ly *PFCDeepLayer) DeepMaint(ltime *leabra.Time) {
 	}
 }
 
-// UpdtGateCnt updates the gate counter
-func (ly *PFCDeepLayer) UpdtGateCnt(ltime *leabra.Time) {
-	if !ly.Gate.GateQtr.Has(ltime.Quarter) {
+// UpdateGateCnt updates the gate counter
+func (ly *PFCDeepLayer) UpdateGateCnt(ctx *leabra.Context) {
+	if !ly.Gate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for gi := range ly.GateStates {
@@ -324,14 +321,14 @@ func (ly *PFCDeepLayer) UpdtGateCnt(ltime *leabra.Time) {
 
 // RecGateAct records the gating activation from current activation,
 // when gating occcurs based on GateState.Now
-func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
+func (ly *PFCDeepLayer) RecGateAct(ctx *leabra.Context) {
 	for gi := range ly.GateStates {
 		gs := &ly.GateStates[gi]
 		if !gs.Now { // not gating now
 			continue
 		}
 		pl := &ly.Pools[1+gi]
-		for ni := pl.StIdx; ni < pl.EdIdx; ni++ {
+		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
 				continue
@@ -344,7 +341,7 @@ func (ly *PFCDeepLayer) RecGateAct(ltime *leabra.Time) {
 
 // DoQuarter2DWt indicates whether to do optional Q2 DWt
 func (ly *PFCDeepLayer) DoQuarter2DWt() bool {
-	if !ly.Gate.GateQtr.Has(1) {
+	if !ly.Gate.GateQtr.HasFlag(leabra.Q2) {
 		return false
 	}
 	return true

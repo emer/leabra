@@ -4,7 +4,7 @@
 
 package leabra
 
-import "github.com/emer/leabra/fffb"
+import "github.com/emer/leabra/v2/fffb"
 
 // leabra.InhibParams contains all the inhibition computation params and functions for basic Leabra
 // This is included in leabra.Layer to support computation.
@@ -12,17 +12,17 @@ import "github.com/emer/leabra/fffb"
 // which is used for netinput rescaling and potentially for adapting inhibition over time
 type InhibParams struct {
 
-	// [view: inline] inhibition across the entire layer
-	Layer fffb.Params `view:"inline" desc:"inhibition across the entire layer"`
+	// inhibition across the entire layer
+	Layer fffb.Params `display:"inline"`
 
-	// [view: inline] inhibition across sub-pools of units, for layers with 4D shape
-	Pool fffb.Params `view:"inline" desc:"inhibition across sub-pools of units, for layers with 4D shape"`
+	// inhibition across sub-pools of units, for layers with 4D shape
+	Pool fffb.Params `display:"inline"`
 
-	// [view: inline] neuron self-inhibition parameters -- can be beneficial for producing more graded, linear response -- not typically used in cortical networks
-	Self SelfInhibParams `view:"inline" desc:"neuron self-inhibition parameters -- can be beneficial for producing more graded, linear response -- not typically used in cortical networks"`
+	// neuron self-inhibition parameters -- can be beneficial for producing more graded, linear response -- not typically used in cortical networks
+	Self SelfInhibParams `display:"inline"`
 
-	// [view: inline] running-average activation computation values -- for overall estimates of layer activation levels, used in netinput scaling
-	ActAvg ActAvgParams `view:"inline" desc:"running-average activation computation values -- for overall estimates of layer activation levels, used in netinput scaling"`
+	// running-average activation computation values -- for overall estimates of layer activation levels, used in netinput scaling
+	ActAvg ActAvgParams `display:"inline"`
 }
 
 func (ip *InhibParams) Update() {
@@ -47,16 +47,16 @@ func (ip *InhibParams) Defaults() {
 type SelfInhibParams struct {
 
 	// enable neuron self-inhibition
-	On bool `desc:"enable neuron self-inhibition"`
+	On bool
 
-	// [def: 0.4] [viewif: On] strength of individual neuron self feedback inhibition -- can produce proportional activation behavior in individual units for specialized cases (e.g., scalar val or BG units), but not so good for typical hidden layers
-	Gi float32 `viewif:"On" def:"0.4" desc:"strength of individual neuron self feedback inhibition -- can produce proportional activation behavior in individual units for specialized cases (e.g., scalar val or BG units), but not so good for typical hidden layers"`
+	// strength of individual neuron self feedback inhibition -- can produce proportional activation behavior in individual units for specialized cases (e.g., scalar val or BG units), but not so good for typical hidden layers
+	Gi float32 `viewif:"On" def:"0.4"`
 
-	// [def: 1.4] [viewif: On] time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) for integrating unit self feedback inhibitory values -- prevents oscillations that otherwise occur -- relatively rapid 1.4 typically works, but may need to go longer if oscillations are a problem
-	Tau float32 `viewif:"On" def:"1.4" desc:"time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) for integrating unit self feedback inhibitory values -- prevents oscillations that otherwise occur -- relatively rapid 1.4 typically works, but may need to go longer if oscillations are a problem"`
+	// time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) for integrating unit self feedback inhibitory values -- prevents oscillations that otherwise occur -- relatively rapid 1.4 typically works, but may need to go longer if oscillations are a problem
+	Tau float32 `viewif:"On" def:"1.4"`
 
-	// [view: -] rate = 1 / tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (si *SelfInhibParams) Update() {
@@ -88,26 +88,26 @@ func (si *SelfInhibParams) Inhib(self *float32, act float32) {
 // and for the target value for adapting inhibition in inhib_adapt.
 type ActAvgParams struct {
 
-	// [min: 0] [typically 0.1 - 0.2] initial estimated average activity level in the layer (see also UseFirst option -- if that is off then it is used as a starting point for running average actual activity level, ActMAvg and ActPAvg) -- ActPAvg is used primarily for automatic netinput scaling, to balance out layers that have different activity levels -- thus it is important that init be relatively accurate -- good idea to update from recorded ActPAvg levels
-	Init float32 `min:"0" desc:"[typically 0.1 - 0.2] initial estimated average activity level in the layer (see also UseFirst option -- if that is off then it is used as a starting point for running average actual activity level, ActMAvg and ActPAvg) -- ActPAvg is used primarily for automatic netinput scaling, to balance out layers that have different activity levels -- thus it is important that init be relatively accurate -- good idea to update from recorded ActPAvg levels"`
+	// initial estimated average activity level in the layer (see also UseFirst option -- if that is off then it is used as a starting point for running average actual activity level, ActMAvg and ActPAvg) -- ActPAvg is used primarily for automatic netinput scaling, to balance out layers that have different activity levels -- thus it is important that init be relatively accurate -- good idea to update from recorded ActPAvg levels
+	Init float32 `min:"0"`
 
-	// [def: false] if true, then the Init value is used as a constant for ActPAvgEff (the effective value used for netinput rescaling), instead of using the actual running average activation
-	Fixed bool `def:"false" desc:"if true, then the Init value is used as a constant for ActPAvgEff (the effective value used for netinput rescaling), instead of using the actual running average activation"`
+	// if true, then the Init value is used as a constant for ActPAvgEff (the effective value used for netinput rescaling), instead of using the actual running average activation
+	Fixed bool `def:"false"`
 
-	// [def: false] if true, then use the activation level computed from the external inputs to this layer (avg of targ or ext unit vars) -- this will only be applied to layers with Input or Target / Compare layer types, and falls back on the targ_init value if external inputs are not available or have a zero average -- implies fixed behavior
-	UseExtAct bool `def:"false" desc:"if true, then use the activation level computed from the external inputs to this layer (avg of targ or ext unit vars) -- this will only be applied to layers with Input or Target / Compare layer types, and falls back on the targ_init value if external inputs are not available or have a zero average -- implies fixed behavior"`
+	// if true, then use the activation level computed from the external inputs to this layer (avg of targ or ext unit vars) -- this will only be applied to layers with Input or Target / Compare layer types, and falls back on the targ_init value if external inputs are not available or have a zero average -- implies fixed behavior
+	UseExtAct bool `def:"false"`
 
-	// [def: true] [viewif: Fixed=false] use the first actual average value to override targ_init value -- actual value is likely to be a better estimate than our guess
-	UseFirst bool `viewif:"Fixed=false" def:"true" desc:"use the first actual average value to override targ_init value -- actual value is likely to be a better estimate than our guess"`
+	// use the first actual average value to override targ_init value -- actual value is likely to be a better estimate than our guess
+	UseFirst bool `viewif:"Fixed=false" def:"true"`
 
-	// [def: 100] [viewif: Fixed=false] [min: 1] time constant in trials for integrating time-average values at the layer level -- used for computing Pool.ActAvg.ActsMAvg, ActsPAvg
-	Tau float32 `viewif:"Fixed=false" def:"100" min:"1" desc:"time constant in trials for integrating time-average values at the layer level -- used for computing Pool.ActAvg.ActsMAvg, ActsPAvg"`
+	// time constant in trials for integrating time-average values at the layer level -- used for computing Pool.ActAvg.ActsMAvg, ActsPAvg
+	Tau float32 `viewif:"Fixed=false" def:"100" min:"1"`
 
-	// [def: 1] [viewif: Fixed=false] adjustment multiplier on the computed ActPAvg value that is used to compute ActPAvgEff, which is actually used for netinput rescaling -- if based on connectivity patterns or other factors the actual running-average value is resulting in netinputs that are too high or low, then this can be used to adjust the effective average activity value -- reducing the average activity with a factor < 1 will increase netinput scaling (stronger net inputs from layers that receive from this layer), and vice-versa for increasing (decreases net inputs)
-	Adjust float32 `viewif:"Fixed=false" def:"1" desc:"adjustment multiplier on the computed ActPAvg value that is used to compute ActPAvgEff, which is actually used for netinput rescaling -- if based on connectivity patterns or other factors the actual running-average value is resulting in netinputs that are too high or low, then this can be used to adjust the effective average activity value -- reducing the average activity with a factor < 1 will increase netinput scaling (stronger net inputs from layers that receive from this layer), and vice-versa for increasing (decreases net inputs)"`
+	// adjustment multiplier on the computed ActPAvg value that is used to compute ActPAvgEff, which is actually used for netinput rescaling -- if based on connectivity patterns or other factors the actual running-average value is resulting in netinputs that are too high or low, then this can be used to adjust the effective average activity value -- reducing the average activity with a factor < 1 will increase netinput scaling (stronger net inputs from layers that receive from this layer), and vice-versa for increasing (decreases net inputs)
+	Adjust float32 `viewif:"Fixed=false" def:"1"`
 
-	// [view: -] rate = 1 / tau
-	Dt float32 `inactive:"+" view:"-" json:"-" xml:"-" desc:"rate = 1 / tau"`
+	// rate = 1 / tau
+	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
 }
 
 func (aa *ActAvgParams) Update() {
@@ -124,7 +124,7 @@ func (aa *ActAvgParams) Defaults() {
 	aa.Update()
 }
 
-// EffInit returns the initial value applied during InitWts for the AvgPAvgEff effective layer activity
+// EffInit returns the initial value applied during InitWeights for the AvgPAvgEff effective layer activity
 func (aa *ActAvgParams) EffInit() float32 {
 	if aa.Fixed {
 		return aa.Init
@@ -132,8 +132,8 @@ func (aa *ActAvgParams) EffInit() float32 {
 	return aa.Adjust * aa.Init
 }
 
-// AvgFmAct updates the running-average activation given average activity level in layer
-func (aa *ActAvgParams) AvgFmAct(avg *float32, act float32) {
+// AvgFromAct updates the running-average activation given average activity level in layer
+func (aa *ActAvgParams) AvgFromAct(avg *float32, act float32) {
 	if act < 0.0001 {
 		return
 	}
@@ -144,8 +144,8 @@ func (aa *ActAvgParams) AvgFmAct(avg *float32, act float32) {
 	}
 }
 
-// EffFmAvg updates the effective value from the running-average value
-func (aa *ActAvgParams) EffFmAvg(eff *float32, avg float32) {
+// EffFromAvg updates the effective value from the running-average value
+func (aa *ActAvgParams) EffFromAvg(eff *float32, avg float32) {
 	if aa.Fixed {
 		*eff = aa.Init
 	} else {

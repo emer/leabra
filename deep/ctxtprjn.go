@@ -5,11 +5,8 @@
 package deep
 
 import (
-	"github.com/emer/emergent/emer"
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/ki"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // CtxtSender is an interface for layers that implement the SendCtxtGe method
@@ -17,50 +14,48 @@ import (
 type CtxtSender interface {
 	leabra.LeabraLayer
 
-	// SendCtxtGe sends activation over CTCtxtPrjn projections to integrate
+	// SendCtxtGe sends activation over CTCtxtPath pathways to integrate
 	// CtxtGe excitatory conductance on CT layers.
 	// This must be called at the end of the Burst quarter for this layer.
-	SendCtxtGe(ltime *leabra.Time)
+	SendCtxtGe(ctx *leabra.Context)
 }
 
-// CTCtxtPrjn is the "context" temporally-delayed projection into CTLayer,
+// CTCtxtPath is the "context" temporally delayed pathway into CTLayer,
 // (corticothalamic deep layer 6) where the CtxtGe excitatory input
 // is integrated only at end of Burst Quarter.
-// Set FmSuper for the main projection from corresponding Super layer.
-type CTCtxtPrjn struct {
-	leabra.Prjn // access as .Prjn
+// Set FromSuper for the main pathway from corresponding Super layer.
+type CTCtxtPath struct {
+	leabra.Path // access as .Path
 
-	// if true, this is the projection from corresponding Superficial layer -- should be OneToOne prjn, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true
-	FmSuper bool `desc:"if true, this is the projection from corresponding Superficial layer -- should be OneToOne prjn, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FmSuper = true"`
+	// if true, this is the pathway from corresponding Superficial layer -- should be OneToOne path, with Learn.Learn = false, WtInit.Var = 0, Mean = 0.8 -- these defaults are set if FromSuper = true
+	FromSuper bool
 
 	// local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value
-	CtxtGeInc []float32 `desc:"local per-recv unit accumulator for Ctxt excitatory conductance from sending units -- not a delta -- the full value"`
+	CtxtGeInc []float32
 }
 
-var KiT_CTCtxtPrjn = kit.Types.AddType(&CTCtxtPrjn{}, PrjnProps)
-
-func (pj *CTCtxtPrjn) Defaults() {
-	pj.Prjn.Defaults()
-	if pj.FmSuper {
+func (pj *CTCtxtPath) Defaults() {
+	pj.Path.Defaults()
+	if pj.FromSuper {
 		pj.Learn.Learn = false
 		pj.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
 		pj.WtInit.Var = 0
 	}
 }
 
-func (pj *CTCtxtPrjn) UpdateParams() {
-	pj.Prjn.UpdateParams()
+func (pj *CTCtxtPath) UpdateParams() {
+	pj.Path.UpdateParams()
 }
 
-func (pj *CTCtxtPrjn) Type() emer.PrjnType {
+func (pj *CTCtxtPath) Type() PathTypes {
 	return CTCtxt
 }
 
-func (pj *CTCtxtPrjn) PrjnTypeName() string {
-	if pj.Typ < emer.PrjnTypeN {
+func (pj *CTCtxtPath) PathTypeName() string {
+	if pj.Type < PathTypesN {
 		return pj.Typ.String()
 	}
-	ptyp := PrjnType(pj.Typ)
+	ptyp := PathType(pj.Typ)
 	ts := ptyp.String()
 	sz := len(ts)
 	if sz > 0 {
@@ -69,12 +64,12 @@ func (pj *CTCtxtPrjn) PrjnTypeName() string {
 	return ""
 }
 
-func (pj *CTCtxtPrjn) Build() error {
-	err := pj.Prjn.Build()
+func (pj *CTCtxtPath) Build() error {
+	err := pj.Path.Build()
 	if err != nil {
 		return err
 	}
-	rsh := pj.Recv.Shape()
+	rsh := pj.Recv.Shape
 	rlen := rsh.Len()
 	pj.CtxtGeInc = make([]float32, rlen)
 	return nil
@@ -83,8 +78,8 @@ func (pj *CTCtxtPrjn) Build() error {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Init methods
 
-func (pj *CTCtxtPrjn) InitGInc() {
-	pj.Prjn.InitGInc()
+func (pj *CTCtxtPath) InitGInc() {
+	pj.Path.InitGInc()
 	for ri := range pj.CtxtGeInc {
 		pj.CtxtGeInc[ri] = 0
 	}
@@ -94,29 +89,29 @@ func (pj *CTCtxtPrjn) InitGInc() {
 //  Act methods
 
 // SendGDelta: disabled for this type
-func (pj *CTCtxtPrjn) SendGDelta(si int, delta float32) {
+func (pj *CTCtxtPath) SendGDelta(si int, delta float32) {
 }
 
 // RecvGInc: disabled for this type
-func (pj *CTCtxtPrjn) RecvGInc() {
+func (pj *CTCtxtPath) RecvGInc() {
 }
 
 // SendCtxtGe sends the full Burst activation from sending neuron index si,
 // to integrate CtxtGe excitatory conductance on receivers
-func (pj *CTCtxtPrjn) SendCtxtGe(si int, dburst float32) {
+func (pj *CTCtxtPath) SendCtxtGe(si int, dburst float32) {
 	scdb := dburst * pj.GScale
 	nc := pj.SConN[si]
-	st := pj.SConIdxSt[si]
+	st := pj.SConIndexSt[si]
 	syns := pj.Syns[st : st+nc]
-	scons := pj.SConIdx[st : st+nc]
+	scons := pj.SConIndex[st : st+nc]
 	for ci := range syns {
 		ri := scons[ci]
 		pj.CtxtGeInc[ri] += scdb * syns[ci].Wt
 	}
 }
 
-// RecvCtxtGeInc increments the receiver's CtxtGe from that of all the projections
-func (pj *CTCtxtPrjn) RecvCtxtGeInc() {
+// RecvCtxtGeInc increments the receiver's CtxtGe from that of all the pathways
+func (pj *CTCtxtPath) RecvCtxtGeInc() {
 	rlay, ok := pj.Recv.(*CTLayer)
 	if !ok {
 		return
@@ -130,8 +125,8 @@ func (pj *CTCtxtPrjn) RecvCtxtGeInc() {
 //////////////////////////////////////////////////////////////////////////////////////
 //  Learn methods
 
-// DWt computes the weight change (learning) for Ctxt projections
-func (pj *CTCtxtPrjn) DWt() {
+// DWt computes the weight change (learning) for Ctxt pathways
+func (pj *CTCtxtPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -146,9 +141,9 @@ func (pj *CTCtxtPrjn) DWt() {
 			sact = slay.Neurons[si].ActQ0
 		}
 		nc := int(pj.SConN[si])
-		st := int(pj.SConIdxSt[si])
+		st := int(pj.SConIndexSt[si])
 		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIdx[st : st+nc]
+		scons := pj.SConIndex[st : st+nc]
 		for ci := range syns {
 			sy := &syns[ci]
 			ri := scons[ci]
@@ -162,10 +157,10 @@ func (pj *CTCtxtPrjn) DWt() {
 			dwt := bcm + err
 			norm := float32(1)
 			if pj.Learn.Norm.On {
-				norm = pj.Learn.Norm.NormFmAbsDWt(&sy.Norm, mat32.Abs(dwt))
+				norm = pj.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
 			if pj.Learn.Momentum.On {
-				dwt = norm * pj.Learn.Momentum.MomentFmDWt(&sy.Moment, dwt)
+				dwt = norm * pj.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
@@ -189,31 +184,26 @@ func (pj *CTCtxtPrjn) DWt() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  PrjnType
+//  PathType
 
-// PrjnType has the DeepLeabra extensions to the emer.PrjnType types, for gui
-type PrjnType emer.PrjnType
+// PathType has the DeepLeabra extensions to the PathTypes types, for gui
+type PathType PathTypes //enums:enum
 
-//go:generate stringer -type=PrjnType
-
-var KiT_PrjnType = kit.Enums.AddEnumExt(emer.KiT_PrjnType, PrjnTypeN, kit.NotBitFlag, nil)
-
-// The DeepLeabra prjn types
+// The DeepLeabra path types
 const (
-	// CTCtxt are projections from Superficial layers to CT layers that
+	// CTCtxt are pathways from Superficial layers to CT layers that
 	// send Burst activations drive updating of CtxtGe excitatory conductance,
-	// at end of a DeepBurst quarter.  These projections also use a special learning
+	// at end of a DeepBurst quarter.  These pathways also use a special learning
 	// rule that takes into account the temporal delays in the activation states.
 	// Can also add self context from CT for deeper temporal context.
-	CTCtxt emer.PrjnType = emer.PrjnTypeN + iota
+	CTCtxt PathTypes = PathTypesN + iota
 )
 
 // gui versions
 const (
-	CTCtxt_ PrjnType = PrjnType(emer.PrjnTypeN) + iota
-	PrjnTypeN
+	CTCtxt_ PathType = PathType(PathTypesN) + iota
 )
 
-var PrjnProps = ki.Props{
-	"EnumType:Typ": KiT_PrjnType,
-}
+// var PathProps = tree.Props{
+// 	"EnumType:Typ": KiT_PathType,
+// }

@@ -9,19 +9,18 @@ import (
 	"log"
 	"math"
 
-	"github.com/emer/leabra/leabra"
-	"github.com/goki/ki/kit"
-	"github.com/goki/mat32"
+	"cogentcore.org/core/math32"
+	"github.com/emer/leabra/v2/leabra"
 )
 
 // Driver describes the source of driver inputs from cortex into TRC (pulvinar)
 type Driver struct {
 
 	// driver layer
-	Driver string `desc:"driver layer"`
+	Driver string
 
 	// offset into TRC pool
-	Off int `inactive:"-" desc:"offset into TRC pool"`
+	Off int `inactive:"-"`
 }
 
 // Drivers are a list of drivers
@@ -47,42 +46,42 @@ func (dr *Drivers) AddOne(laynm string) {
 // (e.g., Pulvinar) neurons is computed from the corresponding driver neuron Burst activation.
 type TRCParams struct {
 
-	// [def: false] Turn off the driver inputs, in which case this layer behaves like a standard layer
-	DriversOff bool `def:"false" desc:"Turn off the driver inputs, in which case this layer behaves like a standard layer"`
+	// Turn off the driver inputs, in which case this layer behaves like a standard layer
+	DriversOff bool `def:"false"`
 
 	// Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines
-	BurstQtr leabra.Quarters `desc:"Quarter(s) when bursting occurs -- typically Q4 but can also be Q2 and Q4 for beta-frequency updating.  Note: this is a bitflag and must be accessed using its Set / Has etc routines"`
+	BurstQtr leabra.Quarters
 
-	// [def: 0.3] [min: 0.0] multiplier on driver input strength, multiplies activation of driver layer
-	DriveScale float32 `def:"0.3" min:"0.0" desc:"multiplier on driver input strength, multiplies activation of driver layer"`
+	// multiplier on driver input strength, multiplies activation of driver layer
+	DriveScale float32 `def:"0.3" min:"0.0"`
 
-	// [def: 0.6] [min: 0.01] Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning.
-	MaxInhib float32 `def:"0.6" min:"0.01" desc:"Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning."`
+	// Level of Max driver layer activation at which the predictive non-burst inputs are fully inhibited.  Computationally, it is essential that driver inputs inhibit effect of predictive non-driver (CTLayer) inputs, so that the plus phase is not always just the minus phase plus something extra (the error will never go to zero then).  When max driver act input exceeds this value, predictive non-driver inputs are fully suppressed.  If there is only weak burst input however, then the predictive inputs remain and this critically prevents the network from learning to turn activation off, which is difficult and severely degrades learning.
+	MaxInhib float32 `def:"0.6" min:"0.01"`
 
 	// Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools
-	NoTopo bool `desc:"Do not treat the pools in this layer as topographically organized relative to driver inputs -- all drivers compress down to give same input to all pools"`
+	NoTopo bool
 
-	// [min: 0] [max: 1] proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo
-	AvgMix float32 `min:"0" max:"1" desc:"proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo"`
+	// proportion of average across driver pools that is combined with Max to provide some graded tie-breaker signal -- especially important for large pool downsampling, e.g., when doing NoTopo
+	AvgMix float32 `min:"0" max:"1"`
 
 	// Apply threshold to driver burst input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs.
-	Binarize bool `desc:"Apply threshold to driver burst input for computing plus-phase activations -- above BinThr, then Act = BinOn, below = BinOff.  This is beneficial for layers with weaker graded activations, such as V1 or other perceptual inputs."`
+	Binarize bool
 
-	// [viewif: Binarize] Threshold for binarizing in terms of sending Burst activation
-	BinThr float32 `viewif:"Binarize" desc:"Threshold for binarizing in terms of sending Burst activation"`
+	// Threshold for binarizing in terms of sending Burst activation
+	BinThr float32 `viewif:"Binarize"`
 
-	// [def: 0.3] [viewif: Binarize] Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that).
-	BinOn float32 `def:"0.3" viewif:"Binarize" desc:"Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that)."`
+	// Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that).
+	BinOn float32 `def:"0.3" viewif:"Binarize"`
 
-	// [def: 0] [viewif: Binarize] Resulting driver Ge value for units below threshold -- typically 0.
-	BinOff float32 `def:"0" viewif:"Binarize" desc:"Resulting driver Ge value for units below threshold -- typically 0."`
+	// Resulting driver Ge value for units below threshold -- typically 0.
+	BinOff float32 `def:"0" viewif:"Binarize"`
 }
 
 func (tp *TRCParams) Update() {
 }
 
 func (tp *TRCParams) Defaults() {
-	tp.BurstQtr.Set(int(leabra.Q4))
+	tp.BurstQtr.SetFlag(true, leabra.Q4)
 	tp.DriveScale = 0.3
 	tp.MaxInhib = 0.6
 	tp.Binarize = false
@@ -104,8 +103,8 @@ func (tp *TRCParams) DriveGe(act float32) float32 {
 	}
 }
 
-// GeFmMaxAvg returns the drive Ge value as function of max and average
-func (tp *TRCParams) GeFmMaxAvg(max, avg float32) float32 {
+// GeFromMaxAvg returns the drive Ge value as function of max and average
+func (tp *TRCParams) GeFromMaxAvg(max, avg float32) float32 {
 	deff := (1-tp.AvgMix)*max + tp.AvgMix*avg
 	return tp.DriveGe(deff)
 }
@@ -131,25 +130,23 @@ func (tp *TRCParams) GeFmMaxAvg(max, avg float32) float32 {
 type TRCLayer struct {
 	TopoInhibLayer // access as .TopoInhibLayer
 
-	// [view: inline] parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron
-	TRC TRCParams `view:"inline" desc:"parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron"`
+	// parameters for computing TRC plus-phase (outcome) activations based on Burst activation from corresponding driver neuron
+	TRC TRCParams `display:"inline"`
 
 	// name of SuperLayer that sends 5IB Burst driver inputs to this layer
-	Drivers Drivers `desc:"name of SuperLayer that sends 5IB Burst driver inputs to this layer"`
+	Drivers Drivers
 }
-
-var KiT_TRCLayer = kit.Types.AddType(&TRCLayer{}, LayerProps)
 
 func (ly *TRCLayer) Defaults() {
 	ly.TopoInhibLayer.Defaults()
 	ly.Act.Init.Decay = 0 // deep doesn't decay!
 	ly.TRC.Defaults()
 	ly.TopoInhib.Defaults()
-	ly.Typ = TRC
+	ly.Type = TRC
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving projections of this layer
+// including those in the receiving pathways of this layer
 func (ly *TRCLayer) UpdateParams() {
 	ly.TopoInhibLayer.UpdateParams()
 	ly.TRC.Update()
@@ -167,26 +164,26 @@ func (ly *TRCLayer) IsTarget() bool {
 ///////////////////////////////////////////////////////////////////////////////////////
 // Drivers
 
-func (ly *TRCLayer) InitWts() {
-	ly.TopoInhibLayer.InitWts()
+func (ly *TRCLayer) InitWeights() {
+	ly.TopoInhibLayer.InitWeights()
 	ly.SetDriverOffs()
 }
 
 // UnitsSize returns the dimension of the units, either within a pool for 4D, or layer for 2D
 func UnitsSize(ly *leabra.Layer) (x, y int) {
 	if ly.Is4D() {
-		y = ly.Shp.Dim(2)
-		x = ly.Shp.Dim(3)
+		y = ly.Shape.DimSize(2)
+		x = ly.Shape.DimSize(3)
 	} else {
-		y = ly.Shp.Dim(0)
-		x = ly.Shp.Dim(1)
+		y = ly.Shape.DimSize(0)
+		x = ly.Shape.DimSize(1)
 	}
 	return
 }
 
 // DriverLayer returns the driver layer for given Driver
 func (ly *TRCLayer) DriverLayer(drv *Driver) (*leabra.Layer, error) {
-	tly, err := ly.Network.LayerByNameTry(drv.Driver)
+	tly, err := ly.Network.LayerByName(drv.Driver)
 	if err != nil {
 		err = fmt.Errorf("TRCLayer %s: Driver Layer: %v", ly.Name(), err)
 		log.Println(err)
@@ -233,7 +230,7 @@ func DriveAct(dni int, dly *leabra.Layer, sly *SuperLayer, issuper bool) float32
 }
 
 // SetDriverNeuron sets the driver activation for given Neuron,
-// based on given Ge driving value (use DriveFmMaxAvg) from driver layer (Burst or Act)
+// based on given Ge driving value (use DriveFromMaxAvg) from driver layer (Burst or Act)
 func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 	if tni >= len(ly.Neurons) {
 		return
@@ -243,16 +240,16 @@ func (ly *TRCLayer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
-	ly.Act.GeFmRaw(nrn, geRaw)
-	ly.Act.GiFmRaw(nrn, nrn.GiRaw)
+	ly.Act.GeFromRaw(nrn, geRaw)
+	ly.Act.GiFromRaw(nrn, nrn.GiRaw)
 }
 
 // SetDriverActs sets the driver activations, integrating across all the driver layers
 func (ly *TRCLayer) SetDriverActs() {
 	nux, nuy := UnitsSize(&ly.Layer)
 	nun := nux * nuy
-	pyn := ly.Shp.Dim(0)
-	pxn := ly.Shp.Dim(1)
+	pyn := ly.Shape.DimSize(0)
+	pxn := ly.Shape.DimSize(1)
 	for _, drv := range ly.Drivers {
 		dly, err := ly.DriverLayer(drv)
 		if err != nil {
@@ -260,14 +257,14 @@ func (ly *TRCLayer) SetDriverActs() {
 		}
 		sly, issuper := dly.LeabraLay.(*SuperLayer)
 		drvMax := dly.Pools[0].Inhib.Act.Max
-		drvInhib := mat32.Min(1, drvMax/ly.TRC.MaxInhib)
+		drvInhib := math32.Min(1, drvMax/ly.TRC.MaxInhib)
 
 		if dly.Is2D() {
 			if ly.Is2D() {
 				for dni := range dly.Neurons {
 					tni := drv.Off + dni
 					drvAct := DriveAct(dni, dly, sly, issuper)
-					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 				}
 			} else { // copy flat to all pools -- not typical
 				for dni := range dly.Neurons {
@@ -276,14 +273,14 @@ func (ly *TRCLayer) SetDriverActs() {
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
 							pni := (py*pxn+px)*nun + tni
-							ly.SetDriverNeuron(pni, ly.TRC.GeFmMaxAvg(drvAct, drvAct), drvInhib)
+							ly.SetDriverNeuron(pni, ly.TRC.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 						}
 					}
 				}
 			}
 		} else { // dly is 4D
-			dpyn := dly.Shp.Dim(0)
-			dpxn := dly.Shp.Dim(1)
+			dpyn := dly.Shape.DimSize(0)
+			dpxn := dly.Shape.DimSize(1)
 			duxn, duyn := UnitsSize(dly)
 			dnun := duxn * duyn
 			if ly.Is2D() {
@@ -296,7 +293,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = mat32.Max(max, act)
+							max = math32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -308,7 +305,7 @@ func (ly *TRCLayer) SetDriverActs() {
 						avg /= float32(avgn)
 					}
 					tni := drv.Off + dni
-					ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
+					ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(max, avg), drvInhib)
 				}
 			} else if ly.TRC.NoTopo { // ly is 4D
 				for dni := 0; dni < dnun; dni++ {
@@ -320,7 +317,7 @@ func (ly *TRCLayer) SetDriverActs() {
 							pi := (py*dpxn + px)
 							pni := pi*dnun + dni
 							act := DriveAct(pni, dly, sly, issuper)
-							max = mat32.Max(max, act)
+							max = math32.Max(max, act)
 							pmax := dly.Pools[1+pi].Inhib.Act.Max
 							if pmax > 0.5 {
 								avg += act
@@ -331,7 +328,7 @@ func (ly *TRCLayer) SetDriverActs() {
 					if avgn > 0 {
 						avg /= float32(avgn)
 					}
-					drvGe := ly.TRC.GeFmMaxAvg(max, avg)
+					drvGe := ly.TRC.GeFromMaxAvg(max, avg)
 					tni := drv.Off + dni
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
@@ -359,7 +356,7 @@ func (ly *TRCLayer) SetDriverActs() {
 									pi := (dpy*dpxn + dpx)
 									dpni := pi*dnun + dni
 									act := DriveAct(dpni, dly, sly, issuper)
-									max = mat32.Max(max, act)
+									max = math32.Max(max, act)
 									pmax := dly.Pools[1+pi].Inhib.Act.Max
 									if pmax > 0.5 {
 										avg += act
@@ -371,7 +368,7 @@ func (ly *TRCLayer) SetDriverActs() {
 								avg /= float32(avgn)
 							}
 							tni := pni + drv.Off + dni
-							ly.SetDriverNeuron(tni, ly.TRC.GeFmMaxAvg(max, avg), drvInhib)
+							ly.SetDriverNeuron(tni, ly.TRC.GeFromMaxAvg(max, avg), drvInhib)
 						}
 					}
 				}
@@ -380,11 +377,11 @@ func (ly *TRCLayer) SetDriverActs() {
 	}
 }
 
-// GFmInc integrates new synaptic conductances from increments sent during last SendGDelta.
-func (ly *TRCLayer) GFmInc(ltime *leabra.Time) {
-	ly.RecvGInc(ltime)
-	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.Has(ltime.Quarter) {
-		ly.GFmIncNeur(ltime) // regular
+// GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
+func (ly *TRCLayer) GFromInc(ctx *leabra.Context) {
+	ly.RecvGInc(ctx)
+	if ly.TRC.DriversOff || !ly.TRC.BurstQtr.HasFlag(ctx.Quarter) {
+		ly.GFromIncNeur(ctx) // regular
 		return
 	}
 	ly.SetDriverActs()
