@@ -1399,7 +1399,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 	split.Dim = math32.X
 	split.SetStretchMax()
 
-	sv := views.AddNewStructView(split, "sv")
+	sv := core.NewForm(split, "sv")
 	sv.SetStruct(ss)
 
 	tv := core.AddNewTabView(split, "tv")

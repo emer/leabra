@@ -150,11 +150,11 @@ func LooperUpdatePlots(man *looper.Manager, gui *egui.GUI) {
 			if curTime == etime.Cycle {
 				curLoop.OnEnd.Add("GUI:UpdatePlot", func() {
 					cyc := curLoop.Counter.Cur
-					gui.UpdateCyclePlot(curMode, cyc)
+					gui.GoUpdateCyclePlot(curMode, cyc)
 				})
 			} else {
 				curLoop.OnEnd.Add("GUI:UpdatePlot", func() {
-					gui.UpdatePlot(curMode, curTime)
+					gui.GoUpdatePlot(curMode, curTime)
 				})
 			}
 		}

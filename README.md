@@ -5,15 +5,21 @@
 [![CI](https://github.com/emer/leabra/actions/workflows/ci.yml/badge.svg)](https://github.com/emer/leabra/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/emer/leabra/branch/main/graph/badge.svg?token=Hw5cInAxY3)](https://codecov.io/gh/emer/leabra)
 
-This is the Go implementation of the Leabra algorithm for biologically based models of cognition, based on the [Go emergent](https://github.com/emer/emergent) framework (with optional Python interface).
+This is the Go implementation of the Leabra algorithm for biologically based models of cognition, based on the [emergent](https://github.com/emer/emergent) framework.
 
-See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installation instructions, and the [Wiki Rationale](https://github.com/emer/emergent/wiki/Rationale) and [History](https://github.com/emer/emergent/wiki/History) pages for a more detailed rationale for the new version of emergent, and a history of emergent (and its predecessors).
+Leabra and emergent use the [Cogent Core](https://cogentcore.org/core) GUI framework.  See [install](https://www.cogentcore.org/core/setup/install) instructions there.  Once those prerequisites are in place, then the simplest way to run a simulation is:
 
-See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  See the [etable wiki](https://github.com/emer/etable/wiki) for docs and example code for the widely used etable data table structure, and the `family_trees` example in the CCN textbook sims which has good examples of many standard network representation analysis techniques (PCA, cluster plots, RSA).
+```sh
+$ core run [platform]
+```
 
-See [python README](https://github.com/emer/leabra/blob/main/python/README.md) and [Python Wiki](https://github.com/emer/emergent/wiki/Python) for info on using Python to run models.
+where `[platform]` is optional (defaults to your local system), and can include `android`, `ios` and `web`!
+
+See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.
 
 # Current Status / News
+
+* August 2024: Currently updating Leabra to v2 using the updated emergent toolkit for logging, looper control mechanisms, and simplified GUI management, along with updates to use the [Cogent Core](https://cogentcore.org/core) GUI framework, which allows running models directly on the web browser, and is in general much more robust, performant, and looks better too!  The [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) are being updated so they all run on the web, which should be much easier for students.  We are probably not going to update most of the special algorithm code (definitely not PVLV, probably not PBWM, etc), which is much improved in the [axon](https://github.com/emer/axon) framework.  In general, Leabra will be maintained henceforth as a simpler teaching-oriented package.  Researchers are encouraged to use axon instead.
 
 * Nov 2020: Full Python conversions of CCN sims complete, and [eTorch](https://github.com/emer/etorch) for viewing and interacting with PyTorch models.
 

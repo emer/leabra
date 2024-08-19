@@ -4,13 +4,13 @@ This example project serves as a demo and basic template for Leabra models -- yo
 
 # Running the model
 
-First, see [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installation instructions, which includes how to build the model code in this directory, which will make an executable named `ra25` that you run from a terminal command line:
+Leabra and emergent use the [Cogent Core](https://cogentcore.org/core) GUI framework.  See [install](https://www.cogentcore.org/core/setup/install) instructions there.  Once those prerequisites are in place, then the simplest way to run a simulation is:
 
-```bash
-./ra25
+```sh
+$ core run [platform]
 ```
 
-You can also run the [Python](https://github.com/emer/leabra/blob/main/python/README.md) version of the model by following those instructions.
+where `[platform]` is optional (defaults to your local system), and can include `android`, `ios` and `web`!
 
 ## Basic running and graphing
 
@@ -53,13 +53,12 @@ Most of the code is commented and should be read directly for how to do things. 
 
 * Good idea to keep all the code in one file so it is easy to share with others, although fine to split up too if it gets too big -- e.g., logging takes a lot of space and could be put in a separate file.
 
-* In Go, you can organize things however you want -- there are no constraints on order in Go code.  In Python, all the methods must be inside the main Sim class definition but otherwise order should not matter.
+* In Go, you can organize things however you want -- there are no constraints on order in Go code. 
 
 * The GUI config and elements are all optional and the -nogui startup arg, along with other args, allows the model to be run without the gui.
 
 * If there is a more complex environment associated with the model, always put it in a separate file, so it can more easily be re-used across other models.
 
 * The params editor can easily save to a file, default named "params.go" with name `SavedParamsSets` -- you can switch your project to using that as its default set of params to then easily always be using whatever params were saved last.
-
 
 
