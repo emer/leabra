@@ -1,5 +1,5 @@
 # Net configurations
-And here are the diffs to the standard `hip.go` from `leabra/examples/hip` implementing the different network configuration and `AlphaCyc` code to achieve the above changes.  The full diffs including some changes to logging are here:  https://github.com/emer/leabra/blob/master/examples/hip/best_2-20.diff
+And here are the diffs to the standard `hip.go` from `leabra/examples/hip` implementing the different network configuration and `AlphaCyc` code to achieve the above changes.  The full diffs including some changes to logging are here:  https://github.com/emer/leabra/blob/main/examples/hip/best_2-20.diff
 
 ![](fig_netconfig_diffs.png?raw=true "ConfigNet Diffs")
 

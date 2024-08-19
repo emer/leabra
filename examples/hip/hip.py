@@ -163,7 +163,7 @@ def NewRndSeedCB(recv, send, sig, data):
 
 
 def ReadmeCB(recv, send, sig, data):
-    core.OpenURL("https://github.com/emer/leabra/blob/master/examples/hip/README.md")
+    core.OpenURL("https://github.com/emer/leabra/blob/main/examples/hip/README.md")
 
 
 def FilterSSE(et, row):
@@ -1901,7 +1901,7 @@ class Sim(pyviews.ClassViewObj):
         tbar.AddAction(
             core.ActOpts(
                 Label="README",
-                Icon="file-markdown",
+                Icon=icons.FileMarkdown,
                 Tooltip="Opens your browser on the README file that contains instructions for how to run this model.",
             ),
             recv,

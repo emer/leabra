@@ -3,15 +3,15 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/emer/leabra)](https://goreportcard.com/report/github.com/emer/leabra)
 [![Go Reference](https://pkg.go.dev/badge/github.com/emer/leabra.svg)](https://pkg.go.dev/github.com/emer/leabra)
 [![CI](https://github.com/emer/leabra/actions/workflows/ci.yml/badge.svg)](https://github.com/emer/leabra/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/emer/leabra/branch/master/graph/badge.svg?token=Hw5cInAxY3)](https://codecov.io/gh/emer/leabra)
+[![Codecov](https://codecov.io/gh/emer/leabra/branch/main/graph/badge.svg?token=Hw5cInAxY3)](https://codecov.io/gh/emer/leabra)
 
 This is the Go implementation of the Leabra algorithm for biologically based models of cognition, based on the [Go emergent](https://github.com/emer/emergent) framework (with optional Python interface).
 
 See [Wiki Install](https://github.com/emer/emergent/wiki/Install) for installation instructions, and the [Wiki Rationale](https://github.com/emer/emergent/wiki/Rationale) and [History](https://github.com/emer/emergent/wiki/History) pages for a more detailed rationale for the new version of emergent, and a history of emergent (and its predecessors).
 
-See the [ra25 example](https://github.com/emer/leabra/blob/master/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  See the [etable wiki](https://github.com/emer/etable/wiki) for docs and example code for the widely used etable data table structure, and the `family_trees` example in the CCN textbook sims which has good examples of many standard network representation analysis techniques (PCA, cluster plots, RSA).
+See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  See the [etable wiki](https://github.com/emer/etable/wiki) for docs and example code for the widely used etable data table structure, and the `family_trees` example in the CCN textbook sims which has good examples of many standard network representation analysis techniques (PCA, cluster plots, RSA).
 
-See [python README](https://github.com/emer/leabra/blob/master/python/README.md) and [Python Wiki](https://github.com/emer/emergent/wiki/Python) for info on using Python to run models.
+See [python README](https://github.com/emer/leabra/blob/main/python/README.md) and [Python Wiki](https://github.com/emer/emergent/wiki/Python) for info on using Python to run models.
 
 # Current Status / News
 
@@ -21,17 +21,17 @@ See [python README](https://github.com/emer/leabra/blob/master/python/README.md)
 
 * 12/30/2019: Version 1.0.0 Released! -- [CCN textbook simulations](https://github.com/CompCogNeuro/sims) are done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.
 
-* 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/master/python/README.md) status and how to give it a try.  You can run the full `examples/ra25` code using Python, including the GUI etc.
+* 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/main/python/README.md) status and how to give it a try.  You can run the full `examples/ra25` code using Python, including the GUI etc.
 
 # Design
 
 * `leabra` sub-package provides a clean, well-organized implementation of core Leabra algorithms and Network structures. More specialized modifications such as `DeepLeabra` or `PBWM` or `PVLV` are all (going to be) implemented as additional specialized code that builds on / replaces elements of the basic version.  The goal is to make all of the code simpler, more transparent, and more easily modified by end users.  You should not have to dig through deep chains of C++ inheritance to find out what is going on.  Nevertheless, the basic tradeoffs of code re-use dictate that not everything should be in-line in one massive blob of code, so there is still some inevitable tracking down of function calls etc.  The algorithm overview below should be helpful in finding everything.
 
-* `ActParams` (in [act.go](https://github.com/emer/leabra/blob/master/leabra/act.go)), `InhibParams` (in [inhib.go](https://github.com/emer/leabra/blob/master/leabra/inhib.go)), and `LearnNeurParams` / `LearnSynParams` (in [learn.go](https://github.com/emer/leabra/blob/master/leabra/learn.go)) provide the core parameters and functions used, including the X-over-X-plus-1 activation function, FFFB inhibition, and the XCal BCM-like learning rule, etc.  This function-based organization should be clearer than the purely structural organization used in C++ emergent.
+* `ActParams` (in [act.go](https://github.com/emer/leabra/blob/main/leabra/act.go)), `InhibParams` (in [inhib.go](https://github.com/emer/leabra/blob/main/leabra/inhib.go)), and `LearnNeurParams` / `LearnSynParams` (in [learn.go](https://github.com/emer/leabra/blob/main/leabra/learn.go)) provide the core parameters and functions used, including the X-over-X-plus-1 activation function, FFFB inhibition, and the XCal BCM-like learning rule, etc.  This function-based organization should be clearer than the purely structural organization used in C++ emergent.
 
 * There are 3 main levels of structure: `Network`, `Layer` and `Prjn` (projection).  The network calls methods on its Layers, and Layers iterate over both `Neuron` data structures (which have only a minimal set of methods) and the `Prjn`s, to implement the relevant computations.  The `Prjn` fully manages everything about a projection of connectivity between two layers, including the full list of `Syanpse` elements in the connection.  There is no "ConGroup" or "ConState" level as was used in C++, which greatly simplifies many things.  The Layer also has a set of `Pool` elements, one for each level at which inhibition is computed (there is always one for the Layer, and then optionally one for each Sub-Pool of units (*Pool* is the new simpler term for "Unit Group" from C++ emergent).
 
-* The `NetworkBase` and `LayerBase` structs manage all the core structural aspects of things (data structures etc), and then the algorithm-specific versions (e.g., `leabra.Network`) use Go's anonymous embedding (akin to inheritance in C++) to transparently get all that functionality, while then directly implementing the algorithm code.  Almost every step of computation has an associated method in `leabra.Layer`, so look first in [layer.go](https://github.com/emer/leabra/blob/master/leabra/layer.go) to see how something is implemented.
+* The `NetworkBase` and `LayerBase` structs manage all the core structural aspects of things (data structures etc), and then the algorithm-specific versions (e.g., `leabra.Network`) use Go's anonymous embedding (akin to inheritance in C++) to transparently get all that functionality, while then directly implementing the algorithm code.  Almost every step of computation has an associated method in `leabra.Layer`, so look first in [layer.go](https://github.com/emer/leabra/blob/main/leabra/layer.go) to see how something is implemented.
 
 * Each structural element directly has all the parameters controlling its behavior -- e.g., the `Layer` contains an `ActParams` field (named `Act`), etc, instead of using a separate `Spec` structure as in C++ emergent.  The Spec-like ability to share parameter settings across multiple layers etc is instead achieved through a **styling**-based paradigm -- you apply parameter "styles" to relevant layers instead of assigning different specs to them.  This paradigm should be less confusing and less likely to result in accidental or poorly understood parameter applications.  We adopt the CSS (cascading-style-sheets) standard where parameters can be specifed in terms of the Name of an object (e.g., `#Hidden`), the *Class* of an object (e.g., `.TopDown` -- where the class name TopDown is manually assigned to relevant elements), and the *Type* of an object (e.g., `Layer` applies to all layers).  Multiple space-separated classes can be assigned to any given element, enabling a powerful combinatorial styling strategy to be used.
 
@@ -50,7 +50,7 @@ func (nt *Network) InitActs() {
 
 * The emer interfaces are designed to support generic access to network state, e.g., for the 3D network viewer, but specifically avoid anything algorithmic.  Thus, they should allow viewing of any kind of network, including PyTorch backprop nets.
 
-* There is also a `leabra.LeabraLayer` and `leabra.LeabraPrjn` interface, defined in [leabra.go](https://github.com/emer/leabra/blob/master/leabra/leabra.go), which provides a virtual interface for the Leabra-specific algorithm functions at the basic level.  These interfaces are used in the base leabra code, so that any more specialized version that embeds the basic leabra types will be called instead.  See `deep` sub-package for implemented example that does DeepLeabra on top of the basic `leabra` foundation.
+* There is also a `leabra.LeabraLayer` and `leabra.LeabraPrjn` interface, defined in [leabra.go](https://github.com/emer/leabra/blob/main/leabra/leabra.go), which provides a virtual interface for the Leabra-specific algorithm functions at the basic level.  These interfaces are used in the base leabra code, so that any more specialized version that embeds the basic leabra types will be called instead.  See `deep` sub-package for implemented example that does DeepLeabra on top of the basic `leabra` foundation.
 
 * Layers have a `Shape` property, using the `etensor.Shape` type, which specifies their n-dimensional (tensor) shape.  Standard layers are expected to use a 2D Y*X shape (note: dimension order is now outer-to-inner or *RowMajor* now), and a 4D shape then enables `Pools` ("unit groups") as hypercolumn-like structures within a layer that can have their own local level of inihbition, and are also used extensively for organizing patterns of connectivity.
 
@@ -87,7 +87,7 @@ There are various extensions to the algorithm that implement special neural mech
 You can copy the mediawiki source of the following section into a file, and run [pandoc](https://pandoc.org/) on it to convert to LaTeX (or other formats) for inclusion in a paper.  As this wiki page is always kept updated, it is best to regenerate from this source -- very easy:
 
 ```bash
-curl "https://raw.githubusercontent.com/emer/leabra/master/README.md" -o appendix.md
+curl "https://raw.githubusercontent.com/emer/leabra/main/README.md" -o appendix.md
 pandoc appendix.md -f gfm -t latex -o appendix.tex
 ```
 
@@ -99,15 +99,15 @@ The pseudocode for Leabra is given here, showing exactly how the pieces of the a
 
 There are also other implementations of Leabra available:
 * [leabra7](https://github.com/PrincetonUniversity/leabra7) Python implementation of the version 7 of Leabra, by Daniel Greenidge and Ken Norman at Princeton.
-* [Matlab](https://github.com/emer/cemer/blob/master/Matlab/) (link into the cemer C++ emergent source tree) -- a complete implementation of these equations in Matlab, coded by Sergio Verduzco-Flores.
+* [Matlab](https://github.com/emer/cemer/blob/main/Matlab/) (link into the cemer C++ emergent source tree) -- a complete implementation of these equations in Matlab, coded by Sergio Verduzco-Flores.
 * [Python](https://github.com/benureau/leabra) implementation by Fabien Benureau.
 * [R](https://github.com/johannes-titz/leabRa) implementation by Johannes Titz.
 
 This repository contains specialized additions to the core algorithm described here:
-* [deep](https://github.com/emer/leabra/blob/master/deep) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
-* [pbwm](https://github.com/emer/leabra/blob/master/rl) has basic reinforcement learning models such as Rescorla-Wagner and TD (temporal differences).
-* [pbwm](https://github.com/emer/leabra/blob/master/pbwm1) has the prefrontal-cortex basal ganglia working memory model (PBWM).
-* [hip](https://github.com/emer/leabra/blob/master/hip) has the hippocampus specific learning mechanisms.
+* [deep](https://github.com/emer/leabra/blob/main/deep) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
+* [pbwm](https://github.com/emer/leabra/blob/main/rl) has basic reinforcement learning models such as Rescorla-Wagner and TD (temporal differences).
+* [pbwm](https://github.com/emer/leabra/blob/main/pbwm1) has the prefrontal-cortex basal ganglia working memory model (PBWM).
+* [hip](https://github.com/emer/leabra/blob/main/hip) has the hippocampus specific learning mechanisms.
 
 ## Timing
 

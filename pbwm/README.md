@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm1?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm1)
 
-See [sir2](https://github.com/emer/leabra/blob/master/examples/sir2) example for working model.
+See [sir2](https://github.com/emer/leabra/blob/main/examples/sir2) example for working model.
 
 In the [cemer](https://github.com/emer/cemer) (C++ emergent) versioning system, this is **version 5** of PBWM, reflecting a number of intermediate unpublished versions.
 

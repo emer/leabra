@@ -68,7 +68,7 @@ Grossberg (1999) emphasized that it can be beneficial for attention to modulate 
 
 # Extensions
 
-See [pbwm](https://github.com/emer/leabra/blob/master/pbwm) for info about Prefrontal-cortex Basal-ganglia Working Memory (PBWM) model that builds on this deep framework to support gated working memory.
+See [pbwm](https://github.com/emer/leabra/blob/main/pbwm) for info about Prefrontal-cortex Basal-ganglia Working Memory (PBWM) model that builds on this deep framework to support gated working memory.
 
 # References
 

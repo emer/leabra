@@ -10,7 +10,7 @@ First, see [Wiki Install](https://github.com/emer/emergent/wiki/Install) for ins
 ./ra25
 ```
 
-You can also run the [Python](https://github.com/emer/leabra/blob/master/python/README.md) version of the model by following those instructions.
+You can also run the [Python](https://github.com/emer/leabra/blob/main/python/README.md) version of the model by following those instructions.
 
 ## Basic running and graphing
 

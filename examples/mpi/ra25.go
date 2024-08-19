@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cogentcore.org/core/base/mpi"
+	"cogentcore.org/core/icons"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/plot"
 	"cogentcore.org/core/tensor"
@@ -1553,9 +1554,9 @@ func (ss *Sim) ConfigGUI() *core.Window {
 			ss.NewRndSeed()
 		})
 
-	tbar.AddAction(core.ActOpts{Label: "README", Icon: "file-markdown", Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
+	tbar.AddAction(core.ActOpts{Label: "README", Icon: icons.FileMarkdown, Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
 		func(recv, send tree.Node, sig int64, data interface{}) {
-			core.OpenURL("https://github.com/emer/leabra/blob/master/examples/ra25/README.md")
+			core.OpenURL("https://github.com/emer/leabra/blob/main/examples/ra25/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)

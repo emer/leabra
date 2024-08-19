@@ -149,7 +149,7 @@ def NewRndSeedCB(recv, send, sig, data):
 
 
 def ReadmeCB(recv, send, sig, data):
-    core.OpenURL("https://github.com/CompCogNeuro/sims/blob/master/ch10/sir/README.md")
+    core.OpenURL("https://github.com/CompCogNeuro/sims/blob/main/ch10/sir/README.md")
 
 
 def UpdateFuncNotRunning(act):
@@ -1334,7 +1334,7 @@ class Sim(pyviews.ClassViewObj):
 
         core.SetAppName("sir")
         core.SetAppAbout(
-            'illustrates the dynamic gating of information into PFC active maintenance, by the basal ganglia (BG). It uses a simple Store-Ignore-Recall (SIR) task, where the BG system learns via phasic dopamine signals and trial-and-error exploration, discovering what needs to be stored, ignored, and recalled as a function of reinforcement of correct behavior, and learned reinforcement of useful working memory representations. See <a href="https://github.com/CompCogNeuro/sims/blob/master/ch10/sir/README.md">README.md on GitHub</a>.</p>'
+            'illustrates the dynamic gating of information into PFC active maintenance, by the basal ganglia (BG). It uses a simple Store-Ignore-Recall (SIR) task, where the BG system learns via phasic dopamine signals and trial-and-error exploration, discovering what needs to be stored, ignored, and recalled as a function of reinforcement of correct behavior, and learned reinforcement of useful working memory representations. See <a href="https://github.com/CompCogNeuro/sims/blob/main/ch10/sir/README.md">README.md on GitHub</a>.</p>'
         )
 
         win = core.NewMainWindow("sir", "SIR: PBWM", width, height)
@@ -1514,7 +1514,7 @@ class Sim(pyviews.ClassViewObj):
         tbar.AddAction(
             core.ActOpts(
                 Label="README",
-                Icon="file-markdown",
+                Icon=icons.FileMarkdown,
                 Tooltip="Opens your browser on the README file that contains instructions for how to run this model.",
             ),
             recv,
