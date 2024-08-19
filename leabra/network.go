@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unsafe"
 
+	"cogentcore.org/core/base/datasize"
 	"cogentcore.org/core/tensor"
-	"github.com/c2h5oh/datasize"
 	"github.com/emer/emergent/v2/paths"
 )
 
@@ -419,16 +419,16 @@ func (nt *Network) SizeReport() string {
 		nmem := nn * int(unsafe.Sizeof(Neuron{}))
 		neur += nn
 		neurMem += nmem
-		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.ByteSize)(nmem).HumanReadable())
+		fmt.Fprintf(&b, "%14s:\t Neurons: %d\t NeurMem: %v \t Sends To:\n", ly.Name, nn, (datasize.Size)(nmem).String())
 		for _, pt := range ly.SendPaths {
 			ns := len(pt.Syns)
 			syn += ns
 			pmem := ns*int(unsafe.Sizeof(Synapse{})) + len(pt.GInc)*4 + len(pt.WbRecv)*int(unsafe.Sizeof(WtBalRecvPath{}))
 			synMem += pmem
-			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pt.Recv.Name, ns, (datasize.ByteSize)(pmem).HumanReadable())
+			fmt.Fprintf(&b, "\t%14s:\t Syns: %d\t SynnMem: %v\n", pt.Recv.Name, ns, (datasize.Size)(pmem).String())
 		}
 	}
-	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Name, neur, (datasize.ByteSize)(neurMem).HumanReadable(), syn, (datasize.ByteSize)(synMem).HumanReadable())
+	fmt.Fprintf(&b, "\n\n%14s:\t Neurons: %d\t NeurMem: %v \t Syns: %d \t SynMem: %v\n", nt.Name, neur, (datasize.Size)(neurMem).String(), syn, (datasize.Size)(synMem).String())
 	return b.String()
 }
 

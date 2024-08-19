@@ -4,7 +4,6 @@ go 1.22
 
 require (
 	cogentcore.org/core v0.3.3-0.20240819201856-14e5d78556c3
-	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240819205648-250dd483d63c
 )
 
