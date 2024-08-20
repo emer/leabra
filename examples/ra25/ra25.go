@@ -698,6 +698,7 @@ func (ss *Sim) ConfigGUI() {
 	nv.SetNet(ss.Net)
 	ss.ViewUpdate.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdate = &ss.ViewUpdate
+	nv.Current()
 
 	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
 	nv.SceneXYZ().Camera.LookAt(math32.Vec3(0, 0, 0), math32.Vec3(0, 1, 0))
