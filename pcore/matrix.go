@@ -143,7 +143,7 @@ func (ly *MatrixLayer) GetACh() float32    { return ly.ACh }
 func (ly *MatrixLayer) SetACh(ach float32) { ly.ACh = ach }
 
 func (ly *MatrixLayer) ThalLayer() (*VThalLayer, error) {
-	tly, err := ly.Network.LayerByNameTry(ly.Matrix.ThalLay)
+	tly, err := ly.Network.LayerByName(ly.Matrix.ThalLay)
 	if err != nil {
 		log.Printf("MatrixLayer %s ThalLayer: %v\n", ly.Name(), err)
 		return nil, err

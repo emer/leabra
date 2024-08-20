@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	cogentcore.org/core v0.3.3-0.20240819201856-14e5d78556c3
-	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240819205648-250dd483d63c
+	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240820174009-40d67f5b7c88
 )
 
 require (

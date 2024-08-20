@@ -89,7 +89,7 @@ func LooperSimCycleAndLearn(man *looper.Manager, net *Network, ctx *Context, vie
 	for m, loops := range man.Stacks {
 		curMode := m // For closures.
 		for _, loop := range loops.Loops {
-			loop.OnStart.Add("SetTimeMode", func() {
+			loop.OnStart.Add("SetCtxMode", func() {
 				ctx.Mode = curMode
 			})
 		}
