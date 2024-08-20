@@ -14,13 +14,13 @@ import (
 type NMDAParams struct {
 
 	// extra contribution to Vm associated with action potentials, on average -- produces key nonlinearity associated with spiking, from backpropagating action potentials.  0.4 seems good..
-	ActVm float32 `def:"0.4"`
+	ActVm float32 `default:"0.4"`
 
 	// cycle upon which to start updating AlphaMax value
 	AlphaMaxCyc int
 
 	// decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential
-	Tau float32 `def:"100"`
+	Tau float32 `default:"100"`
 
 	// strength of NMDA current -- 0.02 is just over level sufficient to maintain in face of completely blank input
 	Gbar float32

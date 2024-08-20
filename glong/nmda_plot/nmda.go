@@ -33,25 +33,25 @@ const LogPrec = 4
 type Sim struct {
 
 	// multiplier on NMDA as function of voltage
-	NMDAv float64 `def:"0.062"`
+	NMDAv float64 `default:"0.062"`
 
 	// denominator of NMDA function
-	NMDAd float64 `def:"3.57"`
+	NMDAd float64 `default:"3.57"`
 
 	// NMDA reversal / driving potential
-	NMDAerev float64 `def:"0"`
+	NMDAerev float64 `default:"0"`
 
 	// starting voltage
-	Vstart float64 `def:"-90"`
+	Vstart float64 `default:"-90"`
 
 	// ending voltage
-	Vend float64 `def:"0"`
+	Vend float64 `default:"0"`
 
 	// voltage increment
-	Vstep float64 `def:"1"`
+	Vstep float64 `default:"1"`
 
 	// decay time constant for NMDA current -- rise time is 2 msec and not worth extra effort for biexponential
-	Tau float64 `def:"100"`
+	Tau float64 `default:"100"`
 
 	// number of time steps
 	TimeSteps int

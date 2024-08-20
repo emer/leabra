@@ -21,16 +21,16 @@ type MatrixParams struct {
 	ThalLay string
 
 	// threshold for thal max activation (in pool) to be gated -- typically .25 or so to accurately reflect PFC output gating -- may need to adjust based on actual behavior
-	ThalThr float32 `def:"0.25"`
+	ThalThr float32 `default:"0.25"`
 
 	// use the sigmoid derivative factor 2 * Act * (1-Act) for matrix (recv) activity in modulating learning -- otherwise just multiply by activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
-	Deriv bool `def:"true"`
+	Deriv bool `default:"true"`
 
 	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	BurstGain float32 `def:"1"`
+	BurstGain float32 `default:"1"`
 
 	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	DipGain float32 `def:"1"`
+	DipGain float32 `default:"1"`
 }
 
 func (mp *MatrixParams) Defaults() {
@@ -257,10 +257,10 @@ func (ly *MatrixLayer) UnitValue1D(varIndex int, idx int, di int) float32 {
 type MatrixTraceParams struct {
 
 	// if true, current trial DA dopamine can drive learning (i.e., synaptic co-activity trace is updated prior to DA-driven dWt), otherwise DA is applied to existing trace before trace is updated, meaning that at least one trial must separate gating activity and DA
-	CurTrlDA bool `def:"true"`
+	CurTrlDA bool `default:"true"`
 
 	// multiplier on CIN ACh level for decaying prior traces -- decay never exceeds 1.  larger values drive strong credit assignment for any US outcome.
-	Decay float32 `def:"2" min:"0"`
+	Decay float32 `default:"2" min:"0"`
 }
 
 func (tp *MatrixTraceParams) Defaults() {

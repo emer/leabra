@@ -49,19 +49,19 @@ var TraceSynVars = []string{"NTr", "Tr"}
 type TraceParams struct {
 
 	// learning rate for all not-gated stripes, which learn in the opposite direction to the gated stripes, and typically with a slightly lower learning rate -- although there are different learning logics associated with each of these different not-gated cases, in practice the same learning rate for all works best, and is simplest
-	NotGatedLR float32 `def:"0.7" min:"0"`
+	NotGatedLR float32 `default:"0.7" min:"0"`
 
 	// learning rate for gated, NoGo (D2), positive dopamine (weights decrease) -- this is the single most important learning parameter here -- by making this relatively small (but non-zero), an asymmetry in the role of Go vs. NoGo is established, whereby the NoGo pathway focuses largely on punishing and preventing actions associated with negative outcomes, while those assoicated with positive outcomes only very slowly get relief from this NoGo pressure -- this is critical for causing the model to explore other possible actions even when a given action SOMETIMES produces good results -- NoGo demands a very high, consistent level of good outcomes in order to have a net decrease in these avoidance weights.  Note that the gating signal applies to both Go and NoGo MSN's for gated stripes, ensuring learning is about the action that was actually selected (see not_ cases for logic for actions that were close but not taken)
-	GateNoGoPosLR float32 `def:"0.1" min:"0"`
+	GateNoGoPosLR float32 `default:"0.1" min:"0"`
 
 	// decay driven by receiving unit ACh value, sent by CIN units, for reseting the trace
-	AChDecay float32 `min:"0" def:"0"`
+	AChDecay float32 `min:"0" default:"0"`
 
 	// multiplier on trace activation for decaying prior traces -- new trace magnitude drives decay of prior trace -- if gating activation is low, then new trace can be low and decay is slow, so increasing this factor causes learning to be more targeted on recent gating changes
-	Decay float32 `min:"0" def:"1"`
+	Decay float32 `min:"0" default:"1"`
 
 	// use the sigmoid derivative factor 2 * act * (1-act) in modulating learning -- otherwise just multiply by msn activation directly -- this is generally beneficial for learning to prevent weights from continuing to increase when activations are already strong (and vice-versa for decreases)
-	Deriv bool `def:"true"`
+	Deriv bool `default:"true"`
 }
 
 func (tp *TraceParams) Defaults() {

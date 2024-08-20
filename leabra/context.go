@@ -34,10 +34,10 @@ type Context struct {
 	PlusPhase bool
 
 	// amount of time to increment per cycle.
-	TimePerCyc float32 `def:"0.001"`
+	TimePerCyc float32 `default:"0.001"`
 
 	// number of cycles per quarter to run: 25 = standard 100 msec alpha-cycle.
-	CycPerQtr int `def:"25"`
+	CycPerQtr int `default:"25"`
 
 	// current evaluation mode, e.g., Train, Test, etc
 	Mode etime.Modes

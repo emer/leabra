@@ -50,10 +50,10 @@ type SelfInhibParams struct {
 	On bool
 
 	// strength of individual neuron self feedback inhibition -- can produce proportional activation behavior in individual units for specialized cases (e.g., scalar val or BG units), but not so good for typical hidden layers
-	Gi float32 `viewif:"On" def:"0.4"`
+	Gi float32 `default:"0.4"`
 
 	// time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) for integrating unit self feedback inhibitory values -- prevents oscillations that otherwise occur -- relatively rapid 1.4 typically works, but may need to go longer if oscillations are a problem
-	Tau float32 `viewif:"On" def:"1.4"`
+	Tau float32 `default:"1.4"`
 
 	// rate = 1 / tau
 	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
@@ -68,6 +68,15 @@ func (si *SelfInhibParams) Defaults() {
 	si.Gi = 0.4
 	si.Tau = 1.4
 	si.Update()
+}
+
+func (si *SelfInhibParams) ShouldDisplay(field string) bool {
+	switch field {
+	case "Gi", "Tau":
+		return si.On
+	default:
+		return true
+	}
 }
 
 // Inhib updates the self inhibition value based on current unit activation
@@ -92,19 +101,19 @@ type ActAvgParams struct {
 	Init float32 `min:"0"`
 
 	// if true, then the Init value is used as a constant for ActPAvgEff (the effective value used for netinput rescaling), instead of using the actual running average activation
-	Fixed bool `def:"false"`
+	Fixed bool `default:"false"`
 
 	// if true, then use the activation level computed from the external inputs to this layer (avg of targ or ext unit vars) -- this will only be applied to layers with Input or Target / Compare layer types, and falls back on the targ_init value if external inputs are not available or have a zero average -- implies fixed behavior
-	UseExtAct bool `def:"false"`
+	UseExtAct bool `default:"false"`
 
 	// use the first actual average value to override targ_init value -- actual value is likely to be a better estimate than our guess
-	UseFirst bool `viewif:"Fixed=false" def:"true"`
+	UseFirst bool `default:"true"`
 
 	// time constant in trials for integrating time-average values at the layer level -- used for computing Pool.ActAvg.ActsMAvg, ActsPAvg
-	Tau float32 `viewif:"Fixed=false" def:"100" min:"1"`
+	Tau float32 `default:"100" min:"1"`
 
 	// adjustment multiplier on the computed ActPAvg value that is used to compute ActPAvgEff, which is actually used for netinput rescaling -- if based on connectivity patterns or other factors the actual running-average value is resulting in netinputs that are too high or low, then this can be used to adjust the effective average activity value -- reducing the average activity with a factor < 1 will increase netinput scaling (stronger net inputs from layers that receive from this layer), and vice-versa for increasing (decreases net inputs)
-	Adjust float32 `viewif:"Fixed=false" def:"1"`
+	Adjust float32 `default:"1"`
 
 	// rate = 1 / tau
 	Dt float32 `edit:"-" display:"-" json:"-" xml:"-"`
@@ -122,6 +131,15 @@ func (aa *ActAvgParams) Defaults() {
 	aa.Tau = 100
 	aa.Adjust = 1
 	aa.Update()
+}
+
+func (aa *ActAvgParams) ShouldDisplay(field string) bool {
+	switch field {
+	case "UseFirst", "Tau", "Adjust":
+		return !aa.Fixed
+	default:
+		return true
+	}
 }
 
 // EffInit returns the initial value applied during InitWeights for the AvgPAvgEff effective layer activity

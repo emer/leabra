@@ -19,6 +19,8 @@ This package supports both spiking and rate-coded activations.
 */
 package knadapt
 
+//go:generate core generate -add-types
+
 // Chan describes one channel type of sodium-gated adaptation, with a specific
 // set of rate constants.
 type Chan struct {
@@ -27,13 +29,13 @@ type Chan struct {
 	On bool
 
 	// Rise rate of fast time-scale adaptation as function of Na concentration -- directly multiplies -- 1/rise = tau for rise rate
-	Rise float32 `viewif:"On"`
+	Rise float32
 
 	// Maximum potential conductance of fast K channels -- divide nA biological value by 10 for the normalized units here
-	Max float32 `viewif:"On"`
+	Max float32
 
 	// time constant in cycles for decay of adaptation, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life)
-	Tau float32 `viewif:"On"`
+	Tau float32
 
 	// 1/Tau rate constant
 	Dt float32 `display:"-"`
@@ -49,6 +51,15 @@ func (ka *Chan) Defaults() {
 
 func (ka *Chan) Update() {
 	ka.Dt = 1 / ka.Tau
+}
+
+func (ka *Chan) ShouldDisplay(field string) bool {
+	switch field {
+	case "Rise", "Max", "Tau":
+		return ka.On
+	default:
+		return true
+	}
 }
 
 // GcFromSpike updates the KNa conductance based on spike or not
@@ -83,7 +94,7 @@ type Params struct {
 	On bool
 
 	// extra multiplier for rate-coded activations on rise factors -- adjust to match discrete spiking
-	Rate float32 `viewif:"On" def:"0.8"`
+	Rate float32 `default:"0.8"`
 
 	// fast time-scale adaptation
 	Fast Chan `display:"inline"`
@@ -116,6 +127,15 @@ func (ka *Params) Update() {
 	ka.Fast.Update()
 	ka.Med.Update()
 	ka.Slow.Update()
+}
+
+func (ka *Params) ShouldDisplay(field string) bool {
+	switch field {
+	case "Rate":
+		return ka.On
+	default:
+		return true
+	}
 }
 
 // GcFromSpike updates all time scales of KNa adaptation from spiking

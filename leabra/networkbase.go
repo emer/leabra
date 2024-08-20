@@ -4,7 +4,7 @@
 
 package leabra
 
-//go:generate core generate
+//go:generate core generate -add-types
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ type Network struct {
 
 	// how frequently to update the weight balance average
 	// weight factor -- relatively expensive.
-	WtBalInterval int `def:"10"`
+	WtBalInterval int `default:"10"`
 
 	// counter for how long it has been since last WtBal.
 	WtBalCtr int `edit:"-"`

@@ -71,7 +71,7 @@ type GPiTimingParams struct {
 	GateQtr leabra.Quarters
 
 	// cycle within Qtr to determine if activation over threshold for gating.  We send GateState updates on this cycle either way.
-	Cycle int `def:"18"`
+	Cycle int `default:"18"`
 }
 
 func (gt *GPiTimingParams) Defaults() {
@@ -84,16 +84,16 @@ func (gt *GPiTimingParams) Defaults() {
 type GPiGateParams struct {
 
 	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
-	GeGain float32 `def:"3"`
+	GeGain float32 `default:"3"`
 
 	// how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
-	NoGo float32 `min:"0" def:"1,0.1"`
+	NoGo float32 `min:"0" default:"1,0.1"`
 
 	// threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
-	Thr float32 `def:"0.2"`
+	Thr float32 `default:"0.2"`
 
 	// Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
-	ThrAct bool `def:"true"`
+	ThrAct bool `default:"true"`
 }
 
 func (gp *GPiGateParams) Defaults() {

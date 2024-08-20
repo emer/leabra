@@ -284,10 +284,10 @@ func (ac *ActParams) HardClamp(nrn *Neuron) {
 type OptThreshParams struct {
 
 	// don't send activation when act <= send -- greatly speeds processing
-	Send float32 `def:"0.1"`
+	Send float32 `default:"0.1"`
 
 	// don't send activation changes until they exceed this threshold: only for when LeabraNetwork::send_delta is on!
-	Delta float32 `def:"0.005"`
+	Delta float32 `default:"0.005"`
 }
 
 func (ot *OptThreshParams) Update() {
@@ -306,16 +306,16 @@ func (ot *OptThreshParams) Defaults() {
 type ActInitParams struct {
 
 	// proportion to decay activation state toward initial values at start of every trial
-	Decay float32 `def:"0,1" max:"1" min:"0"`
+	Decay float32 `default:"0,1" max:"1" min:"0"`
 
 	// initial membrane potential -- see e_rev.l for the resting potential (typically .3) -- often works better to have a somewhat elevated initial membrane potential relative to that
-	Vm float32 `def:"0.4"`
+	Vm float32 `default:"0.4"`
 
 	// initial activation value -- typically 0
-	Act float32 `def:"0"`
+	Act float32 `default:"0"`
 
 	// baseline level of excitatory conductance (net input) -- Ge is initialized to this value, and it is added in as a constant background level of excitatory input -- captures all the other inputs not represented in the model, and intrinsic excitability, etc
-	Ge float32 `def:"0"`
+	Ge float32 `default:"0"`
 }
 
 func (ai *ActInitParams) Update() {
@@ -335,16 +335,16 @@ func (ai *ActInitParams) Defaults() {
 type DtParams struct {
 
 	// overall rate constant for numerical integration, for all equations at the unit level -- all time constants are specified in millisecond units, with one cycle = 1 msec -- if you instead want to make one cycle = 2 msec, you can do this globally by setting this integ value to 2 (etc).  However, stability issues will likely arise if you go too high.  For improved numerical stability, you may even need to reduce this value to 0.5 or possibly even lower (typically however this is not necessary).  MUST also coordinate this with network.time_inc variable to ensure that global network.time reflects simulated time accurately
-	Integ float32 `def:"1,0.5" min:"0"`
+	Integ float32 `default:"1,0.5" min:"0"`
 
 	// membrane potential and rate-code activation time constant in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- reflects the capacitance of the neuron in principle -- biological default for AdEx spiking model C = 281 pF = 2.81 normalized -- for rate-code activation, this also determines how fast to integrate computed activation values over time
-	VmTau float32 `def:"3.3" min:"1"`
+	VmTau float32 `default:"3.3" min:"1"`
 
 	// time constant for integrating synaptic conductances, in cycles, which should be milliseconds typically (roughly, how long it takes for value to change significantly -- 1.4x the half-life) -- this is important for damping oscillations -- generally reflects time constants associated with synaptic channels which are not modeled in the most abstract rate code models (set to 1 for detailed spiking models with more realistic synaptic currents) -- larger values (e.g., 3) can be important for models with higher conductances that otherwise might be more prone to oscillation.
-	GTau float32 `def:"1.4,3,5" min:"1"`
+	GTau float32 `default:"1.4,3,5" min:"1"`
 
 	// for integrating activation average (ActAvg), time constant in trials (roughly, how long it takes for value to change significantly) -- used mostly for visualization and tracking *hog* units
-	AvgTau float32 `def:"200"`
+	AvgTau float32 `default:"200"`
 
 	// nominal rate = Integ / tau
 	VmDt float32 `display:"-" json:"-" xml:"-"`
@@ -426,19 +426,19 @@ func (an *ActNoiseParams) Defaults() {
 type ClampParams struct {
 
 	// whether to hard clamp inputs where activation is directly set to external input value (Act = Ext) or do soft clamping where Ext is added into Ge excitatory current (Ge += Gain * Ext)
-	Hard bool `def:"true"`
+	Hard bool `default:"true"`
 
 	// range of external input activation values allowed -- Max is .95 by default due to saturating nature of rate code activation function
-	Range minmax.F32 `viewif:"Hard"`
+	Range minmax.F32
 
 	// soft clamp gain factor (Ge += Gain * Ext)
-	Gain float32 `viewif:"!Hard" def:"0.02:0.5"`
+	Gain float32 `default:"0.02:0.5"`
 
 	// compute soft clamp as the average of current and target netins, not the sum -- prevents some of the main effect problems associated with adding external inputs
-	Avg bool `viewif:"!Hard"`
+	Avg bool
 
 	// gain factor for averaging the Ge -- clamp value Ext contributes with AvgGain and current Ge as (1-AvgGain)
-	AvgGain float32 `viewif:"!Hard && Avg" def:"0.2"`
+	AvgGain float32 `default:"0.2"`
 }
 
 func (cp *ClampParams) Update() {
@@ -450,6 +450,19 @@ func (cp *ClampParams) Defaults() {
 	cp.Gain = 0.2
 	cp.Avg = false
 	cp.AvgGain = 0.2
+}
+
+func (cp *ClampParams) ShouldDisplay(field string) bool {
+	switch field {
+	case "Range":
+		return cp.Hard
+	case "Gain", "Avg":
+		return !cp.Hard
+	case "AvgGain":
+		return !cp.Hard && cp.Avg
+	default:
+		return true
+	}
 }
 
 // AvgGe computes Avg-based Ge clamping value if using that option.
@@ -484,7 +497,7 @@ func (wp *WtInitParams) Defaults() {
 type WtScaleParams struct {
 
 	// absolute scaling, which is not subject to normalization: directly multiplies weight values
-	Abs float32 `def:"1" min:"0"`
+	Abs float32 `default:"1" min:"0"`
 
 	// relative scaling that shifts balance between different pathways -- this is subject to normalization across all other pathways into unit
 	Rel float32 `min:"0"`

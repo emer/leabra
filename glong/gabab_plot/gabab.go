@@ -34,25 +34,25 @@ const LogPrec = 4
 type Sim struct {
 
 	// multiplier on GABAb as function of voltage
-	GABAbv float64 `def:"0.1"`
+	GABAbv float64 `default:"0.1"`
 
 	// offset of GABAb function
-	GABAbo float64 `def:"10"`
+	GABAbo float64 `default:"10"`
 
 	// GABAb reversal / driving potential
-	GABAberev float64 `def:"-90"`
+	GABAberev float64 `default:"-90"`
 
 	// starting voltage
-	Vstart float64 `def:"-90"`
+	Vstart float64 `default:"-90"`
 
 	// ending voltage
-	Vend float64 `def:"0"`
+	Vend float64 `default:"0"`
 
 	// voltage increment
-	Vstep float64 `def:"1"`
+	Vstep float64 `default:"1"`
 
 	// max number of spikes
-	Smax int `def:"15"`
+	Smax int `default:"15"`
 
 	// rise time constant
 	RiseTau float64

@@ -13,19 +13,19 @@ import (
 type GABABParams struct {
 
 	// rise time for bi-exponential time dynamics of GABA-B
-	RiseTau float32 `def:"45"`
+	RiseTau float32 `default:"45"`
 
 	// decay time for bi-exponential time dynamics of GABA-B
-	DecayTau float32 `def:"50"`
+	DecayTau float32 `default:"50"`
 
 	// overall strength multiplier of GABA-B current
-	Gbar float32 `def:"0.2"`
+	Gbar float32 `default:"0.2"`
 
 	// baseline level of GABA-B channels open independent of inhibitory input (is added to spiking-produced conductance)
-	Gbase float32 `def:"0.2"`
+	Gbase float32 `default:"0.2"`
 
 	// multiplier for converting Gi from FFFB to GABA spikes
-	Smult float32 `def:"15"`
+	Smult float32 `default:"15"`
 
 	// time offset when peak conductance occurs, in msec, computed from RiseTau and DecayTau
 	MaxTime float32 `edit:"-"`

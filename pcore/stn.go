@@ -22,25 +22,25 @@ import (
 type CaParams struct {
 
 	// activation threshold for bursting that drives strong influx of Ca to turn on KCa channels -- there is a complex de-inactivation dynamic involving the volley of excitation and inhibition from GPe, but we can just use a threshold
-	BurstThr float32 `def:"0.9"`
+	BurstThr float32 `default:"0.9"`
 
 	// activation threshold for increment in activation above baseline that drives lower influx of Ca
-	ActThr float32 `def:"0.7"`
+	ActThr float32 `default:"0.7"`
 
 	// Ca level for burst level activation
-	BurstCa float32 `def:"1"`
+	BurstCa float32 `default:"1"`
 
 	// Ca increment from regular sub-burst activation -- drives slower inhibition of firing over time -- for stop-type STN dynamics that initially put hold on GPi and then decay
-	ActCa float32 `def:"0.2"`
+	ActCa float32 `default:"0.2"`
 
 	// maximal KCa conductance (actual conductance is applied to KNa channels)
-	GbarKCa float32 `def:"10"`
+	GbarKCa float32 `default:"10"`
 
 	// KCa conductance time constant -- 40 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
-	KCaTau float32 `def:"20"`
+	KCaTau float32 `default:"20"`
 
 	// Ca time constant of decay to baseline -- 185.7 from Gillies & Willshaw, 2006, but sped up here to fit in AlphaCyc
-	CaTau float32 `def:"50"`
+	CaTau float32 `default:"50"`
 
 	// initialize Ca, KCa values at start of every AlphaCycle
 	AlphaInit bool

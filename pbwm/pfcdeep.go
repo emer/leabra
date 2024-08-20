@@ -18,7 +18,7 @@ type PFCGateParams struct {
 	OutGate bool
 
 	// for output gating, only compute gating in first quarter -- do not compute in 3rd quarter -- this is typically true, and GateQtr is typically set to only Q1 as well -- does Burst updating immediately after first quarter gating signal -- allows gating signals time to influence performance within a single trial
-	OutQ1Only bool `viewif:"OutGate" def:"true"`
+	OutQ1Only bool `viewif:"OutGate" default:"true"`
 }
 
 func (gp *PFCGateParams) Defaults() {
@@ -34,14 +34,14 @@ type PFCMaintParams struct {
 	UseDyn bool
 
 	// multiplier on maint current
-	MaintGain float32 `min:"0" def:"0.8"`
+	MaintGain float32 `min:"0" default:"0.8"`
 
 	// on output gating, clear corresponding maint pool.  theoretically this should be on, but actually it works better off in most cases..
-	OutClearMaint bool `def:"false"`
+	OutClearMaint bool `default:"false"`
 
 	// how much to clear out (decay) super activations when the stripe itself gates and was previously maintaining something, or for maint pfc stripes, when output go fires and clears.
-	Clear    float32 `min:"0" max:"1" def:"0"`
-	MaxMaint int     `"min:"1" def:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
+	Clear    float32 `min:"0" max:"1" default:"0"`
+	MaxMaint int     `"min:"1" default:"1:100" maximum duration of maintenance for any stripe -- beyond this limit, the maintenance is just automatically cleared -- typically 1 for output gating and 100 for maintenance gating"`
 }
 
 func (mp *PFCMaintParams) Defaults() {

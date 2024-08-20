@@ -18,6 +18,8 @@ Layer InhibFromGeAct method like this:
 */
 package interinhib
 
+//go:generate core generate -add-types
+
 import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"

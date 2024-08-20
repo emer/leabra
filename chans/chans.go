@@ -10,6 +10,8 @@ Includes excitatory, leak, inhibition, and dynamic potassium channels.
 */
 package chans
 
+//go:generate core generate -add-types
+
 // Chans are ion channels used in computing point-neuron activation function
 type Chans struct {
 

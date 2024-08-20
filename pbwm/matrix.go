@@ -16,19 +16,19 @@ type MatrixParams struct {
 	LearnQtr leabra.Quarters
 
 	// how much the patch shunt activation multiplies the dopamine values -- 0 = complete shunting, 1 = no shunting -- should be a factor < 1.0
-	PatchShunt float32 `def:"0.2,0.5" min:"0" max:"1"`
+	PatchShunt float32 `default:"0.2,0.5" min:"0" max:"1"`
 
 	// also shunt the ACh value driven from CIN units -- this prevents clearing of MSNConSpec traces -- more plausibly the patch units directly interfere with the effects of CIN's rather than through ach, but it is easier to implement with ach shunting here.
-	ShuntACh bool `def:"true"`
+	ShuntACh bool `default:"true"`
 
 	// how much does the LACK of ACh from the CIN units drive extra inhibition to output-gating Matrix units -- gi += out_ach_inhib * (1-ach) -- provides a bias for output gating on reward trials -- do NOT apply to NoGo, only Go -- this is a key param -- between 0.1-0.3 usu good -- see how much output gating happening and change accordingly
-	OutAChInhib float32 `def:"0,0.3"`
+	OutAChInhib float32 `default:"0,0.3"`
 
 	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	BurstGain float32 `def:"1"`
+	BurstGain float32 `default:"1"`
 
 	// multiplicative gain factor applied to positive (burst) dopamine signals in computing DALrn effect learning dopamine value based on raw DA that we receive (D2R reversal occurs *after* applying Burst based on sign of raw DA)
-	DipGain float32 `def:"1"`
+	DipGain float32 `default:"1"`
 }
 
 func (mp *MatrixParams) Defaults() {

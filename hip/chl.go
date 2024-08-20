@@ -16,19 +16,19 @@ type CHLParams struct {
 	On bool
 
 	// amount of hebbian learning (should be relatively small, can be effective at .0001)
-	Hebb float32 `def:"0.001" min:"0" max:"1"`
+	Hebb float32 `default:"0.001" min:"0" max:"1"`
 
 	// amount of error driven learning, automatically computed to be 1-Hebb
-	Err float32 `def:"0.999" min:"0" max:"1" edit:"-"`
+	Err float32 `default:"0.999" min:"0" max:"1" edit:"-"`
 
 	// if true, use ActQ1 as the minus phase -- otherwise ActM
 	MinusQ1 bool
 
 	// proportion of correction to apply to sending average activation for hebbian learning component (0=none, 1=all, .5=half, etc)
-	SAvgCor float32 `def:"0.4:0.8" min:"0" max:"1"`
+	SAvgCor float32 `default:"0.4:0.8" min:"0" max:"1"`
 
 	// threshold of sending average activation below which learning does not occur (prevents learning when there is no input)
-	SAvgThr float32 `def:"0.001" min:"0"`
+	SAvgThr float32 `default:"0.001" min:"0"`
 }
 
 func (ch *CHLParams) Defaults() {
