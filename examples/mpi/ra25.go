@@ -122,7 +122,7 @@ var ParamSets = params.Sets{
 type Sim struct {
 
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *leabra.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
 	// the training patterns to use
 	Pats *table.Table `display:"no-inline"`

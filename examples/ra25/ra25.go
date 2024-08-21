@@ -229,34 +229,34 @@ func (cfg *Config) IncludesPtr() *[]string { return &cfg.Includes }
 type Sim struct {
 
 	// simulation configuration parameters -- set by .toml config file and / or args
-	Config Config
+	Config Config `new-window:"+"`
 
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *leabra.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
 	// network parameter management
-	Params emer.NetParams `display:"inline"`
+	Params emer.NetParams `display:"add-fields"`
 
 	// contains looper control loops for running sim
-	Loops *looper.Manager `display:"no-inline"`
+	Loops *looper.Manager `new-window:"+" display:"no-inline"`
 
 	// contains computed statistic values
-	Stats estats.Stats
+	Stats estats.Stats `new-window:"+"`
 
 	// Contains all the logs and information about the logs.'
-	Logs elog.Logs
+	Logs elog.Logs `new-window:"+"`
 
 	// the training patterns to use
-	Pats *table.Table `display:"no-inline"`
+	Patterns *table.Table `new-window:"+" display:"no-inline"`
 
 	// Environments
-	Envs env.Envs `display:"no-inline"`
+	Envs env.Envs `new-window:"+" display:"no-inline"`
 
 	// leabra timing parameters and state
-	Context leabra.Context
+	Context leabra.Context `new-window:"+"`
 
 	// netview update parameters
-	ViewUpdate netview.ViewUpdate `display:"inline"`
+	ViewUpdate netview.ViewUpdate `display:"add-fields"`
 
 	// manages all the gui elements
 	GUI egui.GUI `display:"-"`
@@ -271,7 +271,7 @@ func (ss *Sim) New() {
 	ss.Net = leabra.NewNetwork("RA25")
 	ss.Params.Config(ParamSets, ss.Config.Params.Sheet, ss.Config.Params.Tag, ss.Net)
 	ss.Stats.Init()
-	ss.Pats = &table.Table{}
+	ss.Patterns = &table.Table{}
 	ss.RandSeeds.Init(100) // max 100 runs
 	ss.InitRandSeed(0)
 	ss.Context.Defaults()
@@ -282,8 +282,8 @@ func (ss *Sim) New() {
 
 // ConfigAll configures all the elements using the standard functions
 func (ss *Sim) ConfigAll() {
-	// ss.ConfigPats()
-	ss.OpenPats()
+	// ss.ConfigPatterns()
+	ss.OpenPatterns()
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
 	ss.ConfigLogs()
@@ -308,16 +308,16 @@ func (ss *Sim) ConfigEnv() {
 
 	// note: names must be standard here!
 	trn.Name = etime.Train.String()
-	trn.Config(table.NewIndexView(ss.Pats))
+	trn.Config(table.NewIndexView(ss.Patterns))
 	trn.Validate()
 
 	tst.Name = etime.Test.String()
-	tst.Config(table.NewIndexView(ss.Pats))
+	tst.Config(table.NewIndexView(ss.Patterns))
 	tst.Sequential = true
 	tst.Validate()
 
 	// note: to create a train / test split of pats, do this:
-	// all := table.NewIndexView(ss.Pats)
+	// all := table.NewIndexView(ss.Patterns)
 	// splits, _ := split.Permuted(all, []float64{.8, .2}, []string{"Train", "Test"})
 	// trn.Table = splits.Splits[0]
 	// tst.Table = splits.Splits[1]
@@ -544,11 +544,11 @@ func (ss *Sim) TestAll() {
 }
 
 /////////////////////////////////////////////////////////////////////////
-//   Pats
+//   Patterns
 
-func (ss *Sim) ConfigPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
+func (ss *Sim) ConfigPatterns() {
+	dt := ss.Patterns
+	dt.SetMetaData("name", "TrainPatterns")
 	dt.SetMetaData("desc", "Training patterns")
 	dt.AddStringColumn("Name")
 	dt.AddFloat32TensorColumn("Input", []int{5, 5}, "Y", "X")
@@ -560,9 +560,9 @@ func (ss *Sim) ConfigPats() {
 	dt.SaveCSV("random_5x5_25_gen.tsv", table.Tab, table.Headers)
 }
 
-func (ss *Sim) OpenPats() {
-	dt := ss.Pats
-	dt.SetMetaData("name", "TrainPats")
+func (ss *Sim) OpenPatterns() {
+	dt := ss.Patterns
+	dt.SetMetaData("name", "TrainPatterns")
 	dt.SetMetaData("desc", "Training patterns")
 	err := dt.OpenFS(patsfs, "random_5x5_25.tsv", table.Tab)
 	if err != nil {

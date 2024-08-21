@@ -134,7 +134,7 @@ type TEParams struct {
 type Sim struct {
 
 	//
-	Net *leabra.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
 	// hippocampus sizing parameters
 	Hip HipParams

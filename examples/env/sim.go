@@ -82,7 +82,7 @@ type Sim struct {
 	Size int
 
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *leabra.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
 	// training epoch-level log data
 	TrnEpcLog *table.Table `display:"no-inline"`

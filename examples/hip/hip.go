@@ -168,7 +168,7 @@ var ParamSets = params.Sets{
 type Sim struct {
 
 	//
-	Net *leabra.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
 	// AB training patterns to use
 	TrainAB *table.Table `display:"no-inline"`
