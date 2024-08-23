@@ -3,8 +3,8 @@ module github.com/emer/leabra/v2
 go 1.22
 
 require (
-	cogentcore.org/core v0.3.3-0.20240821175244-e58d15222272
-	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240821185300-2fdedc8771da
+	cogentcore.org/core v0.3.3-0.20240823053213-f975eb9c487c
+	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240823054321-fa1ced2f310e
 )
 
 require (

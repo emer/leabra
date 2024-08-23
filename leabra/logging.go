@@ -118,7 +118,7 @@ func LogAddPCAItems(lg *elog.Logs, net *Network, mode etime.Modes, times ...etim
 		lg.AddItem(&elog.Item{
 			Name:      clnm + "_ActM",
 			Type:      reflect.Float64,
-			CellShape: cly.SampleShape.Sizes,
+			CellShape: cly.GetSampleShape().Sizes,
 			FixMax:    true,
 			Range:     minmax.F32{Max: 1},
 			Write: elog.WriteMap{
