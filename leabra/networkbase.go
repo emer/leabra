@@ -212,6 +212,10 @@ func (nt *Network) UnitVarProps() map[string]string {
 	return NeuronVarProps
 }
 
+func (nt *Network) VarCategories() []emer.VarCategory {
+	return VarCategories
+}
+
 // SynVarNames returns the names of all the variables on the synapses in this network.
 // Not all pathways need to support all variables, but must safely return 0's for
 // unsupported ones.  The order of this list determines NetView variable display order.
