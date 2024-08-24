@@ -140,9 +140,47 @@ var NeuronVars = []string{"Act", "ActLrn", "Ge", "Gi", "Gk", "Inet", "Vm", "Targ
 var NeuronVarsMap map[string]int
 
 var NeuronVarProps = map[string]string{
-	"Vm":     `min:"0" max:"1"`,
-	"ActDel": `auto-scale:"+"`,
-	"ActDif": `auto-scale:"+"`,
+	"Act":    `desc:rate-coded activation value reflecting final output of neuron communicated to other neurons, typically in range 0-1.  This value includes adaptation and synaptic depression / facilitation effects which produce temporal contrast (see ActLrn for version without this).  For rate-code activation, this is noisy-x-over-x-plus-one (NXX1) function; for discrete spiking it is computed from the inverse of the inter-spike interval (ISI), and Spike reflects the discrete spikes."`,
+	"ActLrn": `desc:"learning activation value, reflecting *dendritic* activity that is not affected by synaptic depression or adapdation channels which are located near the axon hillock.  This is the what drives the Avg* values that drive learning. Computationally, neurons strongly discount the signals sent to other neurons to provide temporal contrast, but need to learn based on a more stable reflection of their overall inputs in the dendrites."`,
+	"Ge":     `desc:"total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E"`,
+	"Gi":     `desc:"total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I"`,
+	"Gk":     `desc:"total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K"`,
+
+	"Inet": `desc:"net current produced by all channels -- drives update of Vm"`,
+	"Vm":   `min:"0" max:"1" desc:"membrane potential -- integrates Inet current over time"`,
+	"Targ": `desc:"target value: drives learning to produce this activation value"`,
+	"Ext":  `desc:"external input: drives activation of unit from outside influences (e.g., sensory input)"`,
+
+	"AvgSS":   `desc:"super-short time-scale average of ActLrn activation -- provides the lowest-level time integration -- for spiking this integrates over spikes before subsequent averaging, and it is also useful for rate-code to provide a longer time integral overall"`,
+	"AvgS":    `desc:"short time-scale average of ActLrn activation -- tracks the most recent activation states (integrates over AvgSS values), and represents the plus phase for learning in XCAL algorithms"`,
+	"AvgM":    `desc:"medium time-scale average of ActLrn activation -- integrates over AvgS values, and represents the minus phase for learning in XCAL algorithms"`,
+	"AvgL":    `desc:"long time-scale average of medium-time scale (trial level) activation, used for the BCM-style floating threshold in XCAL"`,
+	"AvgLLrn": `desc:"how much to learn based on the long-term floating threshold (AvgL) for BCM-style Hebbian learning -- is modulated by level of AvgL itself (stronger Hebbian as average activation goes higher) and optionally the average amount of error experienced in the layer (to retain a common proportionality with the level of error-driven learning across layers)"`,
+	"AvgSLrn": `desc:"short time-scale activation average that is actually used for learning -- typically includes a small contribution from AvgM in addition to mostly AvgS, as determined by LrnActAvgParams.LrnM -- important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place"`,
+
+	"AvgQ0": `desc:"the activation state at start of current alpha cycle (same as the state at end of previous cycle)"`,
+	"AvgQ1": `desc:"the activation state at end of first quarter of current alpha cycle"`,
+	"AvgQ2": `desc:"the activation state at end of second quarter of current alpha cycle"`,
+	"ActM":  `desc:"the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation"`,
+	"ActP":  `desc:"the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation"`,
+
+	"ActDif": `auto-scale:"+" desc:"ActP - ActM -- difference between plus and minus phase acts -- reflects the individual error gradient for this neuron in standard error-driven learning terms"`,
+	"ActDel": `auto-scale:"+" desc:"delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place"`,
+	"ActAvg": `desc:"average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation"`,
+	"Noise":  `desc:"noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)"`,
+
+	"GiSyn":    `desc:"aggregated synaptic inhibition (from Inhib pathways) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`,
+	"GiSelf":   `desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`,
+	"ActSent":  `desc:"last activation value sent (only send when diff is over threshold)"`,
+	"GeRaw":    `desc:"raw excitatory conductance (net input) received from sending units (send delta's are added to this value)"`,
+	"GiRaw":    `desc:"raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)"`,
+	"GknaFast": `desc:"conductance of sodium-gated potassium channel (KNa) fast dynamics (M-type) -- produces accommodation / adaptation of firing"`,
+	"GknaMed":  `desc:"conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing"`,
+	"GknaSlow": `desc:"conductance of sodium-gated potassium channel (KNa) slow dynamics (Slack) -- produces accommodation / adaptation of firing"`,
+
+	"Spike":  `desc:"whether neuron has spiked or not (0 or 1), for discrete spiking neurons."`,
+	"ISI":    `desc:"current inter-spike-interval -- counts up since last spike.  Starts at -1 when initialized."`,
+	"ISIAvg": `desc:"average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization."`,
 }
 
 func init() {

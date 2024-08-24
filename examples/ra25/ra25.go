@@ -333,9 +333,13 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.SetRandSeed(ss.RandSeeds[0]) // init new separate random seed, using run = 0
 
 	inp := net.AddLayer2D("Input", 5, 5, leabra.InputLayer)
+	inp.Info = "Input represents sensory input, coming into the cortex via tha thalamus"
 	hid1 := net.AddLayer2D("Hidden1", ss.Config.Params.Hidden1Size.Y, ss.Config.Params.Hidden1Size.X, leabra.SuperLayer)
+	hid1.Info = "First hidden layer performs initial internal processing of sensory inputs, transforming in preparation for producing appropriate responses"
 	hid2 := net.AddLayer2D("Hidden2", ss.Config.Params.Hidden2Size.Y, ss.Config.Params.Hidden2Size.X, leabra.SuperLayer)
+	hid2.Info = "Another 'deep' layer of internal processing to prepare directly for Output response"
 	out := net.AddLayer2D("Output", 5, 5, leabra.TargetLayer)
+	out.Info = "Output represents motor output response, via deep layer 5 neurons projecting supcortically, in motor cortex"
 
 	// use this to position layers relative to each other
 	// hid2.PlaceRightOf(hid1, 2)
