@@ -285,12 +285,12 @@ func LayerActsLogRecReset(lg *elog.Logs) {
 
 // LayerActsLogConfigGUI configures GUI for LayerActsLog Plot and LayerActs Avg Plot
 func LayerActsLogConfigGUI(lg *elog.Logs, gui *egui.GUI) {
-	pt := gui.Tabs.NewTab("LayerActs Plot")
+	pt, _ := gui.Tabs.NewTab("LayerActs Plot")
 	plt := plotcore.NewPlotEditor(pt)
 	gui.Plots["LayerActs"] = plt
 	plt.SetTable(lg.MiscTables["LayerActs"])
 
-	pt = gui.Tabs.NewTab("LayerActs Avg Plot")
+	pt, _ = gui.Tabs.NewTab("LayerActs Avg Plot")
 	plt = plotcore.NewPlotEditor(pt)
 	gui.Plots["LayerActsAvg"] = plt
 	plt.SetTable(lg.MiscTables["LayerActsAvg"])
