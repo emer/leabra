@@ -6,8 +6,10 @@ package leabra
 
 import (
 	"fmt"
-	"reflect"
+	"strings"
 	"unsafe"
+
+	"cogentcore.org/core/types"
 )
 
 // leabra.Synapse holds state for the synaptic connection between neurons
@@ -54,28 +56,25 @@ func (sy *Synapse) VarNames() []string {
 var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale"}
 
 var SynapseVarProps = map[string]string{
-	"Wt":     `cat:"Wts" desc:"synaptic weight value, sigmoid contrast-enhanced version of the linear weight LWt"`,
-	"LWt":    `cat:"Wts" desc:"linear (underlying) weight value, which learns according to the lrate specified in the connection spec. this is converted into the effective weight value, Wt, via sigmoidal contrast enhancement (see WtSigParams)"`,
-	"DWt":    `cat:"Wts" auto-scale:"+" desc:"change in synaptic weight, driven by learning algorithm"`,
-	"Norm":   `cat:"Wts" desc:"DWt normalization factor, reset to max of abs value of DWt, decays slowly down over time. Serves as an estimate of variance in weight changes over time"`,
-	"Moment": `cat:"Wts" auto-scale:"+" desc:"momentum, as time-integrated DWt changes, to accumulate a consistent direction of weight change and cancel out dithering contradictory changes"`,
-	"Scale":  `cat:"Wts" desc:"scaling parameter for this connection: effective weight value is scaled by this factor in computing G conductance.  This is useful for topographic connectivity patterns e.g., to enforce more distant connections to always be lower in magnitude than closer connections.  Value defaults to 1 (cannot be exactly 0, otherwise is automatically reset to 1; use a very small number to approximate 0). Typically set by using the paths.Pattern Weights() values where appropriate"`,
+	"Wt":     `cat:"Wts"`,
+	"LWt":    `cat:"Wts"`,
+	"DWt":    `cat:"Wts" auto-scale:"+"`,
+	"Norm":   `cat:"Wts"`,
+	"Moment": `cat:"Wts" auto-scale:"+"`,
+	"Scale":  `cat:"Wts"`,
 }
 
 var SynapseVarsMap map[string]int
 
 func init() {
 	SynapseVarsMap = make(map[string]int, len(SynapseVars))
-	typ := reflect.TypeOf((*Synapse)(nil)).Elem()
 	for i, v := range SynapseVars {
 		SynapseVarsMap[v] = i
-		pstr := SynapseVarProps[v]
-		if fld, has := typ.FieldByName(v); has {
-			if desc, ok := fld.Tag.Lookup("desc"); ok {
-				pstr += ` desc:"` + desc + `"`
-				SynapseVarProps[v] = pstr
-			}
-		}
+	}
+	styp := types.For[Synapse]()
+	for _, fld := range styp.Fields {
+		tag := SynapseVarProps[fld.Name]
+		SynapseVarProps[fld.Name] = tag + ` doc:"` + strings.ReplaceAll(fld.Doc, "\n", " ") + `"`
 	}
 }
 

@@ -111,6 +111,7 @@ func (pt *Path) StyleObject() any      { return pt }
 func (pt *Path) RecvLayer() emer.Layer { return pt.Recv }
 func (pt *Path) SendLayer() emer.Layer { return pt.Send }
 func (pt *Path) TypeName() string      { return pt.Type.String() }
+func (pt *Path) TypeNumber() int       { return int(pt.Type) }
 
 func (pt *Path) Defaults() {
 	pt.WtInit.Defaults()

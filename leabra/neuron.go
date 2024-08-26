@@ -6,10 +6,12 @@ package leabra
 
 import (
 	"fmt"
+	"strings"
 	"unsafe"
 
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/math32"
+	"cogentcore.org/core/types"
 	"github.com/emer/emergent/v2/emer"
 )
 
@@ -165,53 +167,58 @@ var VarCategories = []emer.VarCategory{
 
 var NeuronVarProps = map[string]string{
 	// Act vars
-	"Act":   `cat:"Act" desc:rate-coded activation value reflecting final output of neuron communicated to other neurons, typically in range 0-1.  This value includes adaptation and synaptic depression / facilitation effects which produce temporal contrast (see ActLrn for version without this).  For rate-code activation, this is noisy-x-over-x-plus-one (NXX1) function; for discrete spiking it is computed from the inverse of the inter-spike interval (ISI), and Spike reflects the discrete spikes."`,
-	"Ge":    `cat:"Act" desc:"total excitatory synaptic conductance -- the net excitatory input to the neuron -- does *not* include Gbar.E"`,
-	"Gi":    `cat:"Act" desc:"total inhibitory synaptic conductance -- the net inhibitory input to the neuron -- does *not* include Gbar.I"`,
-	"Gk":    `cat:"Act" desc:"total potassium conductance, typically reflecting sodium-gated potassium currents involved in adaptation effects -- does *not* include Gbar.K"`,
-	"Inet":  `cat:"Act" desc:"net current produced by all channels -- drives update of Vm"`,
-	"Vm":    `cat:"Act" min:"0" max:"1" desc:"membrane potential -- integrates Inet current over time"`,
-	"Noise": `cat:"Act" desc:"noise value added to unit (ActNoiseParams determines distribution, and when / where it is added)"`,
-	"Spike": `cat:"Act" desc:"whether neuron has spiked or not (0 or 1), for discrete spiking neurons."`,
-	"Targ":  `cat:"Act" desc:"target value: drives learning to produce this activation value"`,
-	"Ext":   `cat:"Act" desc:"external input: drives activation of unit from outside influences (e.g., sensory input)"`,
+	"Act":   `cat:"Act"`,
+	"Ge":    `cat:"Act"`,
+	"Gi":    `cat:"Act"`,
+	"Gk":    `cat:"Act"`,
+	"Inet":  `cat:"Act"`,
+	"Vm":    `cat:"Act" min:"0" max:"1"`,
+	"Noise": `cat:"Act"`,
+	"Spike": `cat:"Act"`,
+	"Targ":  `cat:"Act"`,
+	"Ext":   `cat:"Act"`,
 
 	// Learn vars
-	"AvgSS":   `cat:"Learn" desc:"super-short time-scale average of ActLrn activation -- provides the lowest-level time integration -- for spiking this integrates over spikes before subsequent averaging, and it is also useful for rate-code to provide a longer time integral overall"`,
-	"AvgS":    `cat:"Learn" desc:"short time-scale average of ActLrn activation -- tracks the most recent activation states (integrates over AvgSS values), and represents the plus phase for learning in XCAL algorithms"`,
-	"AvgM":    `cat:"Learn" desc:"medium time-scale average of ActLrn activation -- integrates over AvgS values, and represents the minus phase for learning in XCAL algorithms"`,
-	"AvgL":    `cat:"Learn" desc:"long time-scale average of medium-time scale (trial level) activation, used for the BCM-style floating threshold in XCAL"`,
-	"AvgLLrn": `cat:"Learn" desc:"how much to learn based on the long-term floating threshold (AvgL) for BCM-style Hebbian learning -- is modulated by level of AvgL itself (stronger Hebbian as average activation goes higher) and optionally the average amount of error experienced in the layer (to retain a common proportionality with the level of error-driven learning across layers)"`,
-	"AvgSLrn": `cat:"Learn" desc:"short time-scale activation average that is actually used for learning -- typically includes a small contribution from AvgM in addition to mostly AvgS, as determined by LrnActAvgParams.LrnM -- important to ensure that when unit turns off in plus phase (short time scale), enough medium-phase trace remains so that learning signal doesn't just go all the way to 0, at which point no learning would take place"`,
-	"ActLrn":  `cat:"Learn" desc:"learning activation value, reflecting *dendritic* activity that is not affected by synaptic depression or adapdation channels which are located near the axon hillock.  This is the what drives the Avg* values that drive learning. Computationally, neurons strongly discount the signals sent to other neurons to provide temporal contrast, but need to learn based on a more stable reflection of their overall inputs in the dendrites."`,
+	"AvgSS":   `cat:"Learn"`,
+	"AvgS":    `cat:"Learn"`,
+	"AvgM":    `cat:"Learn"`,
+	"AvgL":    `cat:"Learn"`,
+	"AvgLLrn": `cat:"Learn"`,
+	"AvgSLrn": `cat:"Learn"`,
+	"ActLrn":  `cat:"Learn"`,
 
 	// Phase vars
-	"ActM":   `cat:"Phase" desc:"the activation state at end of third quarter, which is the traditional posterior-cortical minus phase activation"`,
-	"ActP":   `cat:"Phase" desc:"the activation state at end of fourth quarter, which is the traditional posterior-cortical plus_phase activation"`,
-	"ActDif": `cat:"Phase" auto-scale:"+" desc:"ActP - ActM -- difference between plus and minus phase acts -- reflects the individual error gradient for this neuron in standard error-driven learning terms"`,
-	"ActDel": `cat:"Phase" auto-scale:"+" desc:"delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place"`,
-	"ActQ0":  `cat:"Phase" desc:"the activation state at start of current alpha cycle (same as the state at end of previous cycle)"`,
-	"ActQ1":  `cat:"Phase" desc:"the activation state at end of first quarter of current alpha cycle"`,
-	"ActQ2":  `cat:"Phase" desc:"the activation state at end of second quarter of current alpha cycle"`,
-	"ActAvg": `cat:"Phase" desc:"average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation"`,
+	"ActM":   `cat:"Phase"`,
+	"ActP":   `cat:"Phase"`,
+	"ActDif": `cat:"Phase" auto-scale:"+"`,
+	"ActDel": `cat:"Phase" auto-scale:"+"`,
+	"ActQ0":  `cat:"Phase"`,
+	"ActQ1":  `cat:"Phase"`,
+	"ActQ2":  `cat:"Phase"`,
+	"ActAvg": `cat:"Phase"`,
 
 	// Gmisc vars
-	"GiSyn":    `cat:"Gmisc" desc:"aggregated synaptic inhibition (from Inhib pathways) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi"`,
-	"GiSelf":   `cat:"Gmisc" desc:"total amount of self-inhibition -- time-integrated to avoid oscillations"`,
-	"ActSent":  `cat:"Gmisc" desc:"last activation value sent (only send when diff is over threshold)"`,
-	"GeRaw":    `cat:"Gmisc" desc:"raw excitatory conductance (net input) received from sending units (send delta's are added to this value)"`,
-	"GiRaw":    `cat:"Gmisc" desc:"raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)"`,
-	"GknaFast": `cat:"Gmisc" desc:"conductance of sodium-gated potassium channel (KNa) fast dynamics (M-type) -- produces accommodation / adaptation of firing"`,
-	"GknaMed":  `cat:"Gmisc" desc:"conductance of sodium-gated potassium channel (KNa) medium dynamics (Slick) -- produces accommodation / adaptation of firing"`,
-	"GknaSlow": `cat:"Gmisc" desc:"conductance of sodium-gated potassium channel (KNa) slow dynamics (Slack) -- produces accommodation / adaptation of firing"`,
-	"ISI":      `cat:"Gmisc" desc:"current inter-spike-interval -- counts up since last spike.  Starts at -1 when initialized."`,
-	"ISIAvg":   `cat:"Gmisc" desc:"average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization."`,
+	"GiSyn":    `cat:"Gmisc"`,
+	"GiSelf":   `cat:"Gmisc"`,
+	"ActSent":  `cat:"Gmisc"`,
+	"GeRaw":    `cat:"Gmisc"`,
+	"GiRaw":    `cat:"Gmisc"`,
+	"GknaFast": `cat:"Gmisc"`,
+	"GknaMed":  `cat:"Gmisc"`,
+	"GknaSlow": `cat:"Gmisc"`,
+	"ISI":      `cat:"Gmisc"`,
+	"ISIAvg":   `cat:"Gmisc"`,
 }
 
 func init() {
 	NeuronVarsMap = make(map[string]int, len(NeuronVars))
 	for i, v := range NeuronVars {
 		NeuronVarsMap[v] = i
+	}
+	ntyp := types.For[Neuron]()
+	for _, fld := range ntyp.Fields {
+		tag := NeuronVarProps[fld.Name]
+		NeuronVarProps[fld.Name] = tag + ` doc:"` + strings.ReplaceAll(fld.Doc, "\n", " ") + `"`
 	}
 }
 
