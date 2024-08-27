@@ -2751,7 +2751,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
 	nv.Var = "Act"
-	// nv.Params.ColorMap = "Jet" // default is ColdHot
+	// nv.Options.ColorMap = "Jet" // default is ColdHot
 	// which fares pretty well in terms of discussion here:
 	// https://matplotlib.org/tutorials/colors/colormaps.html
 	nv.SetNet(ss.Net)
