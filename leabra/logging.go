@@ -259,7 +259,7 @@ func LayerActsLogAvg(net *Network, lg *elog.Logs, gui *egui.GUI, recReset bool) 
 	}
 	ix := table.NewIndexView(dtRec)
 	spl := split.GroupBy(ix, "Layer")
-	split.AggAllNumericCols(spl, stats.Mean)
+	split.AggAllNumericColumns(spl, stats.Mean)
 	ags := spl.AggsToTable(table.ColumnNameOnly)
 	cols := []string{"Nominal", "ActM", "ActP", "MaxGeM", "MaxGeP"}
 	for li, ly := range net.Layers {
