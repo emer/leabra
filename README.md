@@ -15,7 +15,7 @@ $ core run [platform]
 
 where `[platform]` is optional (defaults to your local system), and can include `android`, `ios` and `web`!
 
-See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.
+See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  The [emergent wiki install](https://github.com/emer/emergent/wiki/Install) page has a tutorial for how to create your own simulation starting from the ra25 example.
 
 # Current Status / News
 

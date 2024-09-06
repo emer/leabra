@@ -297,12 +297,12 @@ func (al *AvgLParams) AvgLFromAvgM(avgM float32, avgL, lrn *float32) {
 
 // ErrModFromLayErr computes AvgLLrn multiplier from layer cosine diff avg statistic
 func (al *AvgLParams) ErrModFromLayErr(layCosDiffAvg float32) float32 {
-	mod := float32(1)
+	lmod := float32(1)
 	if !al.ErrMod {
-		return mod
+		return lmod
 	}
-	mod *= math32.Max(layCosDiffAvg, al.ModMin)
-	return mod
+	lmod *= math32.Max(layCosDiffAvg, al.ModMin)
+	return lmod
 }
 
 func (al *AvgLParams) Update() {
