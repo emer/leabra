@@ -3,8 +3,8 @@ module github.com/emer/leabra/v2
 go 1.22
 
 require (
-	cogentcore.org/core v0.3.3-0.20240902213628-48df10901467
-	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240902221812-7068c809e099
+	cogentcore.org/core v0.3.4-0.20240930192154-b607f64b05fc
+	github.com/emer/emergent/v2 v2.0.0-dev0.1.0.0.20240930192458-dcf6b6c609e1
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/anthonynsimon/bild v0.13.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/chewxy/math32 v1.10.1 // indirect
-	github.com/cogentcore/webgpu v0.0.0-20240812054109-ca2e8adebe15 // indirect
+	github.com/cogentcore/webgpu v0.0.0-20240906154609-e35089e9a725 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
