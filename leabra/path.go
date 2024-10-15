@@ -258,6 +258,18 @@ func (pt *Path) DWt() {
 	if !pt.Learn.Learn {
 		return
 	}
+	switch {
+	case pt.Type == CHLPath && pt.CHL.On:
+		pt.DWtCHL()
+	case pt.Type == EcCa1Path:
+		pt.DWtEcCa1()
+	default:
+		pt.DWtStd()
+	}
+}
+
+// DWt computes the weight change (learning) -- on sending pathways
+func (pt *Path) DWtStd() {
 	slay := pt.Send
 	rlay := pt.Recv
 	for si := range slay.Neurons {

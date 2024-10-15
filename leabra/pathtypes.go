@@ -35,4 +35,16 @@ const (
 	// takes into account the temporal delays in the activation states.
 	// Can also add self context from CT for deeper temporal context.
 	CTCtxtPath
+
+	//	CHLPath implements Contrastive Hebbian Learning.
+	CHLPath
+
+	//	EcCa1Path implements special learning for EC <-> CA1 pathways
+	// in the hippocampus to perform error-driven learning of this
+	// encoder pathway according to the ThetaPhase algorithm.
+	// uses Contrastive Hebbian Learning (CHL) on ActP - ActQ1
+	// Q1: ECin -> CA1 -> ECout       : ActQ1 = minus phase for auto-encoder
+	// Q2, 3: CA3 -> CA1 -> ECout     : ActM = minus phase for recall
+	// Q4: ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
+	EcCa1Path
 )

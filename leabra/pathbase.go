@@ -48,6 +48,10 @@ type Path struct {
 	// synaptic-level learning parameters
 	Learn LearnSynParams `display:"add-fields"`
 
+	// CHL are the parameters for CHL learning. if CHL is On then
+	// WtSig.SoftBound is automatically turned off, as it is incompatible.
+	CHL CHLParams `display:"inline"`
+
 	// synaptic state values, ordered by the sending layer
 	// units which owns them -- one-to-one with SConIndex array.
 	Syns []Synapse
@@ -117,6 +121,14 @@ func (pt *Path) Defaults() {
 	pt.WtInit.Defaults()
 	pt.WtScale.Defaults()
 	pt.Learn.Defaults()
+	pt.CHL.Defaults()
+	switch pt.Type {
+	case CHLPath:
+		pt.CHLDefaults()
+	case EcCa1Path:
+		pt.EcCa1Defaults()
+	default:
+	}
 	pt.GScale = 1
 }
 
@@ -125,6 +137,10 @@ func (pt *Path) UpdateParams() {
 	pt.WtScale.Update()
 	pt.Learn.Update()
 	pt.Learn.LrateInit = pt.Learn.Lrate
+	if pt.CHL.On {
+		pt.Learn.WtSig.SoftBound = false
+	}
+	pt.CHL.Update()
 }
 
 // AllParams returns a listing of all parameters in the Layer
