@@ -5,8 +5,6 @@
 package leabra
 
 import (
-	"fmt"
-
 	"cogentcore.org/core/base/errors"
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/etime"
@@ -239,10 +237,8 @@ func (net *Network) ConfigLoopsHip(ctx *Context, man *looper.Manager) {
 		ca1FromCa3.WtScale.Abs = 1
 		if ctx.Mode == etime.Test {
 			ca3FromDg.WtScale.Rel = 1 // weaker
-			fmt.Println("test:, rel = 1")
 		} else {
 			ca3FromDg.WtScale.Rel = dgPjScale
-			fmt.Println("train, rel:", dgPjScale)
 		}
 		net.GScaleFromAvgAct()
 		net.InitGInc()
