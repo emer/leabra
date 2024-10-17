@@ -48,14 +48,18 @@ type Layer struct {
 	// Learning parameters and methods that operate at the neuron level.
 	Learn LearnNeurParams `display:"add-fields"`
 
-	// DaMod is Dopamine modulation, for specific layer types that use it.
-	DaMod DaModParams `display:"inline"`
+	// RW are Rescorla-Wagner RL learning parameters.
+	RW RWParams `display:"inline"`
 
-	// matrix parameters
+	// TD are Temporal Differences RL learning parameters.
+	TD TDParams `display:"inline"`
+
+	// Matrix BG gating parameters
 	Matrix MatrixParams `display:"inline"`
 
-	// GateTiming parameters determining when gating happens.
-	GateTiming GPiTimingParams `display:"inline"`
+	// PBWM has general PBWM parameters, including the shape
+	// of overall Maint + Out gating system that this layer is part of.
+	PBWM PBWMParams `display:"inline"`
 
 	// GPiGate are gating parameters determining threshold for gating etc.
 	GPiGate GPiGateParams `display:"inline"`
@@ -91,10 +95,6 @@ type Layer struct {
 	// current serotonin level for this layer
 	SE float32 `read-only:"+"`
 
-	// GateShape (PBWM) is the shape of overall Maint + Out gating system
-	// that this layer is part of.
-	GateShape GateShape `display:"inline"`
-
 	// GateStates (PBWM) is a slice of gating state values for this layer,
 	// one for each separate gating pool, according to its GateType.
 	// For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out.
@@ -119,15 +119,33 @@ func (ly *Layer) Defaults() {
 	ly.Act.Defaults()
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
-	ly.DaMod.Defaults()
+	ly.RW.Defaults()
+	ly.TD.Defaults()
 	ly.Matrix.Defaults()
-	ly.GateTiming.Defaults()
+	ly.PBWM.Defaults()
 	ly.GPiGate.Defaults()
 	ly.PFCGate.Defaults()
 	ly.PFCMaint.Defaults()
 	ly.Inhib.Layer.On = true
 	for _, pt := range ly.RecvPaths {
 		pt.Defaults()
+	}
+	ly.DefaultsForType()
+}
+
+// DefaultsForType sets the default parameter values for a given layer type.
+func (ly *Layer) DefaultsForType() {
+	switch ly.Type {
+	case ClampDaLayer:
+		ly.ClampDaDefaults()
+	case MatrixLayer:
+		ly.MatrixDefaults()
+	case GPiThalLayer:
+		ly.GPiThalDefaults()
+	case CINLayer:
+	case PFCLayer:
+	case PFCDeepLayer:
+		ly.PFCDeepDefaults()
 	}
 }
 
@@ -137,9 +155,10 @@ func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
-	ly.DaMod.Update()
+	ly.RW.Update()
+	ly.TD.Update()
 	ly.Matrix.Update()
-	ly.GateTiming.Update()
+	ly.PBWM.Update()
 	ly.GPiGate.Update()
 	ly.PFCGate.Update()
 	ly.PFCMaint.Update()
@@ -149,15 +168,19 @@ func (ly *Layer) UpdateParams() {
 }
 
 func (ly *Layer) ShouldDisplay(field string) bool {
+	isPBWM := ly.Type == MatrixLayer || ly.Type == GPiThalLayer || ly.Type == CINLayer || ly.Type == PFCLayer || ly.Type == PFCDeepLayer
 	switch field {
-	case "GateShape", "GateStates":
-		return ly.Type == GPiThalLayer
+	case "RW":
+		return ly.Type == RWPredLayer || ly.Type == RWDaLayer
+	case "TD":
+		return ly.Type == TDRewIntegLayer || ly.Type == TDDaLayer
+	case "PBWM", "GateStates":
+		return isPBWM
 	case "SendTo":
-		return ly.Type == GPiThalLayer
-	case "DaMod":
+		return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer
 	case "Matrix":
 		return ly.Type == MatrixLayer
-	case "GateTiming", "GPiGate":
+	case "GPiGate":
 		return ly.Type == GPiThalLayer
 	case "PFCGate", "PFCMaint":
 		return ly.Type == PFCLayer || ly.Type == PFCDeepLayer

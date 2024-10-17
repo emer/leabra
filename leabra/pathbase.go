@@ -129,14 +129,24 @@ func (pt *Path) Defaults() {
 	pt.Learn.Defaults()
 	pt.CHL.Defaults()
 	pt.Trace.Defaults()
+	pt.GScale = 1
+	pt.DefaultsForType()
+}
+
+func (pt *Path) DefaultsForType() {
 	switch pt.Type {
 	case CHLPath:
 		pt.CHLDefaults()
 	case EcCa1Path:
 		pt.EcCa1Defaults()
-	default:
+	case TDRewPredPath:
+		pt.TDRewPredDefaults()
+	case RWPath:
+		pt.RWDefaults()
+	case MatrixPath:
+		pt.MatrixDefaults()
+	case GPiThalPath:
 	}
-	pt.GScale = 1
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values

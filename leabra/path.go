@@ -276,6 +276,10 @@ func (pt *Path) DWt() {
 		pt.DWtEcCa1()
 	case pt.Type == MatrixPath:
 		pt.DWtMatrix()
+	case pt.Type == RWPath:
+		pt.DWtRW()
+	case pt.Type == TDRewPredPath:
+		pt.DWtTDRewPred()
 	default:
 		pt.DWtStd()
 	}
@@ -336,6 +340,11 @@ func (pt *Path) WtFromDWt() {
 	if !pt.Learn.Learn {
 		return
 	}
+	switch pt.Type {
+	case RWPath, TDRewPredPath:
+		pt.WtFromDWtLinear()
+		return
+	}
 	if pt.Learn.WtBal.On {
 		for si := range pt.Syns {
 			sy := &pt.Syns[si]
@@ -347,6 +356,19 @@ func (pt *Path) WtFromDWt() {
 		for si := range pt.Syns {
 			sy := &pt.Syns[si]
 			pt.Learn.WtFromDWt(1, 1, &sy.DWt, &sy.Wt, &sy.LWt, sy.Scale)
+		}
+	}
+}
+
+// WtFromDWtLinear updates the synaptic weight values from delta-weight
+// changes, with no constraints or limits
+func (pt *Path) WtFromDWtLinear() {
+	for si := range pt.Syns {
+		sy := &pt.Syns[si]
+		if sy.DWt != 0 {
+			sy.Wt += sy.DWt // straight update, no limits or anything
+			sy.LWt = sy.Wt
+			sy.DWt = 0
 		}
 	}
 }

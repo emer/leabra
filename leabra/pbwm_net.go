@@ -47,8 +47,8 @@ func (nt *Network) SendMods(ctx *Context) {
 func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *Layer {
 	tX := nMaint + nOut
 	mtx := nt.AddLayer4D(name, nY, tX, nNeurY, nNeurX, MatrixLayer)
-	mtx.GateShape.DaR = da
-	mtx.GateShape.Set(nY, nMaint, nOut)
+	mtx.PBWM.DaR = da
+	mtx.PBWM.Set(nY, nMaint, nOut)
 	return mtx
 }
 
@@ -67,7 +67,7 @@ func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
 	gpi := nt.AddLayer4D(name, nY, tX, 1, 1, GPiThalLayer)
-	gpi.GateShape.Set(nY, nMaint, nOut)
+	gpi.PBWM.Set(nY, nMaint, nOut)
 	return gpi
 }
 
@@ -165,6 +165,6 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 		pfcMnt.PlaceAbove(mtxGo)
 	}
 	gpi.SendToMatrixPFC(prefix) // sends gating to all these layers
-	gpi.SendGateShape()
+	gpi.SendPBWMParams()
 	return
 }

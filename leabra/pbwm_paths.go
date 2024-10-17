@@ -78,7 +78,7 @@ func (pt *Path) ClearTrace() {
 func (pt *Path) DWtMatrix() {
 	slay := pt.Send
 	rlay := pt.Recv
-	d2r := (rlay.GateShape.DaR == D2R)
+	d2r := (rlay.PBWM.DaR == D2R)
 	da := rlay.DA
 	ach := rlay.ACh
 	gateActIdx, _ := NeuronVarIndexByName("GateAct")

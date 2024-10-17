@@ -26,13 +26,17 @@ func (ly *Layer) SendACh(ach float32) {
 
 ////////  ClampDaLayer
 
+// AddClampDaLayer adds a ClampDaLayer of given name
+func (nt *Network) AddClampDaLayer(name string) *Layer {
+	return nt.AddLayer2D(name, 1, 1, ClampDaLayer)
+}
+
 func (ly *Layer) ClampDaDefaults() {
 	ly.Act.Clamp.Range.Set(-1, 1)
 }
 
-// ClampDaSendMods is called at end of Cycle, to Send DA
-// which will then be active for the next cycle of processing.
-func (ly *Layer) ClampDaSendMods(ctx *Context) {
+// SendDaFromAct is called in SendMods to send activity as DA.
+func (ly *Layer) SendDaFromAct(ctx *Context) {
 	act := ly.Neurons[0].Act
 	ly.DA = act
 	ly.SendDA(act)

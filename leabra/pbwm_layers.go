@@ -8,8 +8,8 @@ import (
 	"fmt"
 )
 
-// MatrixParams has parameters for Dorsal Striatum Matrix computation
-// These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM
+// MatrixParams has parameters for Dorsal Striatum Matrix computation.
+// These are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM.
 type MatrixParams struct {
 
 	// Quarter(s) when learning takes place, typically Q2 and Q4, corresponding to the PFC GateQtr. Note: this is a bitflag and must be accessed using bitflag.Set / Has etc routines, 32 bit versions.
@@ -46,7 +46,7 @@ func (mp *MatrixParams) Update() {
 
 func (ly *Layer) MatrixDefaults() {
 	// special inhib params
-	ly.GateShape.Type = MaintOut
+	ly.PBWM.Type = MaintOut
 	ly.Inhib.Layer.Gi = 1.9
 	ly.Inhib.Layer.FB = 0.5
 	ly.Inhib.Pool.On = true
@@ -66,7 +66,7 @@ func (ly *Layer) DALrnFromDA(da float32) float32 {
 	} else {
 		da *= ly.Matrix.DipGain
 	}
-	if ly.GateShape.DaR == D2R {
+	if ly.PBWM.DaR == D2R {
 		da *= -1
 	}
 	return da
@@ -82,7 +82,7 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 	xpN := ly.Shape.DimSize(1)
 	ynN := ly.Shape.DimSize(2)
 	xnN := ly.Shape.DimSize(3)
-	maintN := ly.GateShape.MaintX
+	maintN := ly.PBWM.MaintX
 	ach := ly.ACh // ACh comes from CIN neurons, represents reward time
 	for yp := 0; yp < ypN; yp++ {
 		for xp := maintN; xp < xpN; xp++ {
@@ -139,9 +139,8 @@ func (ly *Layer) RecGateAct(ctx *Context) {
 	}
 }
 
-// GPiTimingParams has timing parameters for gating in the GPiThal layer
-type GPiTimingParams struct {
-
+// GPiGateParams has gating parameters for gating in GPiThal layer, including threshold.
+type GPiGateParams struct {
 	// GateQtr is the Quarter(s) when gating takes place, typically Q1 and Q3,
 	// which is the quarter prior to the PFC GateQtr when deep layer updating
 	// takes place. Note: this is a bitflag and must be accessed using bitflag.
@@ -151,19 +150,6 @@ type GPiTimingParams struct {
 	// Cycle within Qtr to determine if activation over threshold for gating.
 	// We send GateState updates on this cycle either way.
 	Cycle int `default:"18"`
-}
-
-func (gt *GPiTimingParams) Defaults() {
-	gt.GateQtr.SetFlag(true, Q1)
-	gt.GateQtr.SetFlag(true, Q3)
-	gt.Cycle = 18
-}
-
-func (gt *GPiTimingParams) Update() {
-}
-
-// GPiGateParams has gating parameters for gating in GPiThal layer, including threshold.
-type GPiGateParams struct {
 
 	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
 	GeGain float32 `default:"3"`
@@ -179,13 +165,16 @@ type GPiGateParams struct {
 }
 
 func (gp *GPiGateParams) Defaults() {
+	gp.GateQtr.SetFlag(true, Q1)
+	gp.GateQtr.SetFlag(true, Q3)
+	gp.Cycle = 18
 	gp.GeGain = 3
 	gp.NoGo = 1
 	gp.Thr = 0.2
 	gp.ThrAct = true
 }
 
-func (gt *GPiGateParams) Update() {
+func (gp *GPiGateParams) Update() {
 }
 
 // GeRaw returns the net GeRaw from go, nogo specific values
@@ -194,7 +183,7 @@ func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
 }
 
 func (ly *Layer) GPiThalDefaults() {
-	ly.GateShape.Type = MaintOut
+	ly.PBWM.Type = MaintOut
 	ly.Inhib.Layer.Gi = 1.8
 	ly.Inhib.Layer.FB = 0.2
 	ly.Inhib.Pool.On = false
@@ -231,24 +220,24 @@ func (ly *Layer) SendToMatrixPFC(prefix string) {
 		case i < 2:
 			ly.SendTo[i] = nm
 		case i == 2:
-			if ly.GateShape.MaintX > 0 {
+			if ly.PBWM.MaintX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
 			}
 		case i == 3:
-			if ly.GateShape.OutX > 0 {
+			if ly.PBWM.OutX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
 			}
 		}
 	}
 }
 
-// SendGateShape send GateShape info to all SendTo layers -- convenient config-time
+// SendPBWMParams send PBWMParams info to all SendTo layers -- convenient config-time
 // way to ensure all are consistent -- also checks validity of SendTo's
-func (ly *Layer) SendGateShape() error {
+func (ly *Layer) SendPBWMParams() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
 		tly := ly.Network.LayerByName(lnm)
-		tly.GateShape = ly.GateShape
+		tly.PBWM = ly.PBWM
 	}
 	return lasterr
 }
@@ -262,7 +251,7 @@ func (ly *Layer) MatrixPaths() (goPath, nogoPath *Path, err error) {
 		}
 		slay := p.Send
 		if slay.Type == MatrixLayer {
-			if ly.GateShape.DaR == D1R {
+			if ly.PBWM.DaR == D1R {
 				goPath = p
 			} else {
 				nogoPath = p
@@ -277,7 +266,7 @@ func (ly *Layer) MatrixPaths() (goPath, nogoPath *Path, err error) {
 	return
 }
 
-// GateShape defines the shape of the outer pool dimensions of gating layers,
+// PBWMParams defines the shape of the outer pool dimensions of gating layers,
 // organized into Maint and Out subsets which are arrayed along the X axis
 // with Maint first (to the left) then Out.  Individual layers may only
 // represent Maint or Out subsets of this overall shape, but all need
@@ -285,7 +274,7 @@ func (ly *Layer) MatrixPaths() (goPath, nogoPath *Path, err error) {
 // state information.  Each layer represents gate state information in
 // their native geometry -- FullIndex1D provides access from a subset
 // to full set.
-type GateShape struct {
+type PBWMParams struct {
 	// Type of gating layer
 	Type GateTypes
 
@@ -303,59 +292,67 @@ type GateShape struct {
 	OutX int
 }
 
+func (pp *PBWMParams) Defaults() {
+
+}
+
+func (pp *PBWMParams) Update() {
+
+}
+
 // Set sets the shape parameters: number of Y dimension pools, and
 // numbers of maint and out pools along X axis
-func (gs *GateShape) Set(nY, maintX, outX int) {
-	gs.Y = nY
-	gs.MaintX = maintX
-	gs.OutX = outX
+func (pp *PBWMParams) Set(nY, maintX, outX int) {
+	pp.Y = nY
+	pp.MaintX = maintX
+	pp.OutX = outX
 }
 
 // TotX returns the total number of X-axis pools (Maint + Out)
-func (gs *GateShape) TotX() int {
-	return gs.MaintX + gs.OutX
+func (pp *PBWMParams) TotX() int {
+	return pp.MaintX + pp.OutX
 }
 
 // Index returns the index into GateStates for given 2D pool coords
 // for given GateType.  Each type stores gate info in its "native" 2D format.
-func (gs *GateShape) Index(pY, pX int, typ GateTypes) int {
+func (pp *PBWMParams) Index(pY, pX int, typ GateTypes) int {
 	switch typ {
 	case Maint:
-		if gs.MaintX == 0 {
+		if pp.MaintX == 0 {
 			return 0
 		}
-		return pY*gs.MaintX + pX
+		return pY*pp.MaintX + pX
 	case Out:
-		if gs.OutX == 0 {
+		if pp.OutX == 0 {
 			return 0
 		}
-		return pY*gs.OutX + pX
+		return pY*pp.OutX + pX
 	case MaintOut:
-		return pY*gs.TotX() + pX
+		return pY*pp.TotX() + pX
 	}
 	return 0
 }
 
 // FullIndex1D returns the index into full MaintOut GateStates
 // for given 1D pool idx (0-based) *from given GateType*.
-func (gs *GateShape) FullIndex1D(idx int, fmTyp GateTypes) int {
+func (pp *PBWMParams) FullIndex1D(idx int, fmTyp GateTypes) int {
 	switch fmTyp {
 	case Maint:
-		if gs.MaintX == 0 {
+		if pp.MaintX == 0 {
 			return 0
 		}
 		// convert to 2D and use that
-		pY := idx / gs.MaintX
-		pX := idx % gs.MaintX
-		return gs.Index(pY, pX, MaintOut)
+		pY := idx / pp.MaintX
+		pX := idx % pp.MaintX
+		return pp.Index(pY, pX, MaintOut)
 	case Out:
-		if gs.OutX == 0 {
+		if pp.OutX == 0 {
 			return 0
 		}
 		// convert to 2D and use that
-		pY := idx / gs.OutX
-		pX := idx%gs.OutX + gs.MaintX
-		return gs.Index(pY, pX, MaintOut)
+		pY := idx / pp.OutX
+		pX := idx%pp.OutX + pp.MaintX
+		return pp.Index(pY, pX, MaintOut)
 	case MaintOut:
 		return idx
 	}
@@ -399,7 +396,7 @@ func (ly *Layer) SetGateState(poolIndex int, state *GateState) {
 
 // SetGateStates sets the GateStates from given source states, of given gating type
 func (ly *Layer) SetGateStates(states []GateState, typ GateTypes) {
-	myt := ly.GateShape.Type
+	myt := ly.PBWM.Type
 	if myt < MaintOut && typ < MaintOut && myt != typ { // mismatch
 		return
 	}
@@ -413,7 +410,7 @@ func (ly *Layer) SetGateStates(states []GateState, typ GateTypes) {
 		mx := len(ly.GateStates)
 		for i := 0; i < mx; i++ {
 			gs := &ly.GateStates[i]
-			si := ly.GateShape.FullIndex1D(i, myt)
+			si := ly.PBWM.FullIndex1D(i, myt)
 			src := &states[si]
 			gs.CopyFrom(src)
 		}
@@ -447,7 +444,7 @@ func (ly *Layer) GPiGateSend(ctx *Context) {
 
 // GPiGateFromAct updates GateState from current activations, at time of gating
 func (ly *Layer) GPiGateFromAct(ctx *Context) {
-	gateQtr := ly.GateTiming.GateQtr.HasFlag(ctx.Quarter)
+	gateQtr := ly.GPiGate.GateQtr.HasFlag(ctx.Quarter)
 	qtrCyc := ctx.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -458,7 +455,7 @@ func (ly *Layer) GPiGateFromAct(ctx *Context) {
 		if ctx.Quarter == 0 && qtrCyc == 0 {
 			gs.Act = 0 // reset at start
 		}
-		if gateQtr && qtrCyc == ly.GateTiming.Cycle { // gating
+		if gateQtr && qtrCyc == ly.GPiGate.Cycle { // gating
 			gs.Now = true
 			if nrn.Act < ly.GPiGate.Thr { // didn't gate
 				gs.Act = 0 // not over thr

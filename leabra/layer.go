@@ -669,8 +669,8 @@ func (ly *Layer) AvgMaxAct(ctx *Context) {
 // network layer loop, to send neuromodulatory signals.
 func (ly *Layer) SendMods(ctx *Context) {
 	switch ly.Type {
-	case ClampDaLayer:
-		ly.ClampDaSendMods(ctx)
+	case ClampDaLayer, RWDaLayer, TDDaLayer:
+		ly.SendDaFromAct(ctx)
 	}
 }
 

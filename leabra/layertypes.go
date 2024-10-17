@@ -60,33 +60,43 @@ const (
 	// within the thalamus.
 	TRNLayer
 
-	// PTMaintLayer implements the subset of pyramidal tract (PT)
-	// layer 5 intrinsic bursting (5IB) deep neurons that exhibit
-	// robust, stable maintenance of activity over the duration of a
-	// goal engaged window, modulated by basal ganglia (BG) disinhibitory
-	// gating, supported by strong MaintNMDA channels and recurrent excitation.
-	// The lateral PTSelfMaint pathway uses MaintG to drive GMaintRaw input
-	// that feeds into the stronger, longer MaintNMDA channels,
-	// and the ThalToPT ModulatoryG pathway from BGThalamus multiplicatively
-	// modulates the strength of other inputs, such that only at the time of
-	// BG gating are these strong enough to drive sustained active maintenance.
-	// Use Act.Dend.ModGain to parameterize.
-	PTMaintLayer
-
-	// PTPredLayer implements the subset of pyramidal tract (PT)
-	// layer 5 intrinsic bursting (5IB) deep neurons that combine
-	// modulatory input from PTMaintLayer sustained maintenance and
-	// CTLayer dynamic predictive learning that helps to predict
-	// state changes during the period of active goal maintenance.
-	// This layer provides the primary input to VSPatch US-timing
-	// prediction layers, and other layers that require predictive dynamic
-	PTPredLayer
-
 	///////// Neuromodulation & RL
 
 	// ClampDaLayer is an Input layer that just sends its activity
 	// as the dopamine signal.
 	ClampDaLayer
+
+	// RWPredLayer computes reward prediction for a simple Rescorla-Wagner
+	// learning dynamic (i.e., PV learning in the PVLV framework).
+	// Activity is computed as linear function of excitatory conductance
+	// (which can be negative -- there are no constraints).
+	// Use with [RWPath] which does simple delta-rule learning on minus-plus.
+	RWPredLayer
+
+	// RWDaLayer computes a dopamine (DA) signal based on a simple Rescorla-Wagner
+	// learning dynamic (i.e., PV learning in the PVLV framework).
+	// It computes difference between r(t) and [RWPredLayer] values.
+	// r(t) is accessed directly from a Rew layer -- if no external input then no
+	// DA is computed -- critical for effective use of RW only for PV cases.
+	// RWPred prediction is also accessed directly from Rew layer to avoid any issues.
+	RWDaLayer
+
+	// TDRewPredLayer is the temporal differences reward prediction layer.
+	// It represents estimated value V(t) in the minus phase, and computes
+	// estimated V(t+1) based on its learned weights in plus phase.
+	// Use [TDRewPredPath] for DA modulated learning.
+	TDRewPredLayer
+
+	// TDRewIntegLayer is the temporal differences reward integration layer.
+	// It represents estimated value V(t) in the minus phase, and
+	// estimated V(t+1) + r(t) in the plus phase.
+	// It computes r(t) from (typically fixed) weights from a reward layer,
+	// and directly accesses values from [TDRewPredLayer].
+	TDRewIntegLayer
+
+	// TDDaLayer computes a dopamine (DA) signal as the temporal difference (TD)
+	// between the [TDRewIntegLayer[] activations in the minus and plus phase.
+	TDDaLayer
 
 	///////// BG Basal Ganglia
 
@@ -116,7 +126,10 @@ const (
 
 	///////// PFC Prefrontal Cortex
 
+	// PFCLayer is a prefrontal cortex layer, either superficial or output.
+	// See [PFCDeepLayer] for the deep maintenance layer.
 	PFCLayer
 
+	// PFCDeepLayer is a prefrontal cortex deep maintenance layer.
 	PFCDeepLayer
 )

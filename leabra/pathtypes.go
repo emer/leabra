@@ -48,6 +48,19 @@ const (
 	// Q4: ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
 	EcCa1Path
 
+	//////// RL
+
+	// RWPath does dopamine-modulated learning for reward prediction: Da * Send.Act
+	// Use in RWPredLayer typically to generate reward predictions.
+	// Has no weight bounds or limits on sign etc.
+	RWPath
+
+	// TDRewPredPath does dopamine-modulated learning for reward prediction:
+	// DWt = Da * Send.ActQ0 (activity on *previous* timestep)
+	// Use in TDRewPredLayer typically to generate reward predictions.
+	// Has no weight bounds or limits on sign etc.
+	TDRewPredPath
+
 	//////// PBWM
 
 	// MatrixPath does dopamine-modulated, gated trace learning,

@@ -39,7 +39,7 @@ func LogTestErrors(lg *elog.Logs) {
 // PCAStats computes PCA statistics on recorded hidden activation patterns
 // from Analyze, Trial log data
 func PCAStats(net *Network, lg *elog.Logs, stats *estats.Stats) {
-	stats.PCAStats(lg.IndexView(etime.Analyze, etime.Trial), "ActM", net.LayersByType(SuperLayer, TargetLayer, CTLayer, PTPredLayer))
+	stats.PCAStats(lg.IndexView(etime.Analyze, etime.Trial), "ActM", net.LayersByType(SuperLayer, TargetLayer, CTLayer))
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ func LogInputLayer(lg *elog.Logs, net *Network, mode etime.Modes) {
 // These are useful for diagnosing the behavior of the network.
 func LogAddPCAItems(lg *elog.Logs, net *Network, mode etime.Modes, times ...etime.Times) {
 	ntimes := len(times)
-	layers := net.LayersByType(SuperLayer, TargetLayer, CTLayer, PTPredLayer)
+	layers := net.LayersByType(SuperLayer, TargetLayer, CTLayer)
 	for _, lnm := range layers {
 		clnm := lnm
 		cly := net.LayerByName(clnm)

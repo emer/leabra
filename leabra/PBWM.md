@@ -1,12 +1,10 @@
 # PBWM
 
-[![GoDoc](https://godoc.org/github.com/emer/leabra/pbwm1?status.svg)](https://godoc.org/github.com/emer/leabra/pbwm1)
-
 See [sir2](examples/sir2) example for working model.
 
 In the [cemer](https://github.com/emer/cemer) (C++ emergent) versioning system, this is **version 5** of PBWM, reflecting a number of intermediate unpublished versions.
 
-As of 9/2020, this implementation has been separated from the `deep` code, and there is just a `PFCDeepLayer` that manages all of the PFC-specific functionality, grabbing values from corresponding neurons in the Super layer, which can be of any type.  Also, the `rl` dopamine component is now independent and any source of dopamine can be used.  Current development in this space of ideas is taking place in `agate` and `pcore` packages, so this `pbwm` package represents its own separate stable branch going forward.
+As of 9/2020, this implementation has been separated from the `deep` code, and there is just a `PFCDeepLayer` that manages all of the PFC-specific functionality, grabbing values from corresponding neurons in the Super layer, which can be of any type.  Also, the `rl` dopamine component is now independent and any source of dopamine can be used.  Current development in this space of ideas is taking place in the [axon](https://github.com/emer/axon) framework, so this `pbwm` package represents its own separate stable branch going forward.
 
 PBWM is the *prefrontal-cortex basal-ganglia working memory* model [O'Reilly & Frank, 2006](#references), where the basal ganglia (BG) drives *gating* of PFC working memory maintenance, switching it dynamically between *updating* of new information vs. *maintenance* of existing information.  It was originally inspired by existing data, biology, and theory about the role of the BG in motor action selection, and the LSTM (long short-term-memory) computational model of [Hochreiter & Schmidhuber](#references), which solved limitations in existing recurrent backpropagation networks by adding dynamic input and output gates.  These LSTM models have experienced a significant resurgence along with the backpropagation neural networks in general.
 
