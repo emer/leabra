@@ -123,12 +123,11 @@ func (ly *Layer) DaAChFromLay(ctx *Context) {
 // RecGateAct records the gating activation from current activation, when gating occcurs
 // based on GateState.Now
 func (ly *Layer) RecGateAct(ctx *Context) {
-	for gi := range ly.GateStates {
-		gs := &ly.GateStates[gi]
-		if !gs.Now { // not gating now
+	for pi := range ly.Pools {
+		pl := &ly.Pools[pi]
+		if !pl.Gate.Now { // not gating now
 			continue
 		}
-		pl := &ly.Pools[1+gi]
 		for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 			nrn := &ly.Neurons[ni]
 			if nrn.IsOff() {
@@ -388,31 +387,25 @@ func (gs *GateState) CopyFrom(fm *GateState) {
 	gs.Now = fm.Now
 }
 
-// SetGateState sets the GateState for given pool index (individual pools start at 1) on this layer
-func (ly *Layer) SetGateState(poolIndex int, state *GateState) {
-	gs := &ly.GateStates[poolIndex]
-	gs.CopyFrom(state)
-}
-
 // SetGateStates sets the GateStates from given source states, of given gating type
-func (ly *Layer) SetGateStates(states []GateState, typ GateTypes) {
+func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
 	myt := ly.PBWM.Type
 	if myt < MaintOut && typ < MaintOut && myt != typ { // mismatch
 		return
 	}
 	switch {
 	case myt == typ:
-		mx := min(len(states), len(ly.GateStates))
-		for i := 0; i < mx; i++ {
-			ly.SetGateState(i, &states[i])
+		mx := min(len(src.Pools), len(ly.Pools))
+		for i := 1; i < mx; i++ {
+			ly.Pool(i).Gate.CopyFrom(&src.Pool(i).Gate)
 		}
 	default: // typ == MaintOut, myt = Maint or Out
-		mx := len(ly.GateStates)
-		for i := 0; i < mx; i++ {
-			gs := &ly.GateStates[i]
+		mx := len(ly.Pools)
+		for i := 1; i < mx; i++ {
+			gs := &ly.Pool(i).Gate
 			si := ly.PBWM.FullIndex1D(i, myt)
-			src := &states[si]
-			gs.CopyFrom(src)
+			sgs := &src.Pool(si).Gate
+			gs.CopyFrom(sgs)
 		}
 	}
 }
@@ -451,7 +444,7 @@ func (ly *Layer) GPiGateFromAct(ctx *Context) {
 		if nrn.IsOff() {
 			continue
 		}
-		gs := ly.GateStates[int(nrn.SubPool)-1]
+		gs := &ly.Pool(int(nrn.SubPool)).Gate
 		if ctx.Quarter == 0 && qtrCyc == 0 {
 			gs.Act = 0 // reset at start
 		}
@@ -482,7 +475,7 @@ func (ly *Layer) GPiSendGateStates() {
 	myt := MaintOut
 	for _, lnm := range ly.SendTo {
 		gl := ly.Network.LayerByName(lnm)
-		gl.SetGateStates(ly.GateStates, myt)
+		gl.SetGateStates(ly, myt)
 	}
 }
 
@@ -690,8 +683,8 @@ func (ly *Layer) PFCDeepGating(ctx *Context) {
 		}
 	}
 
-	for gi := range ly.GateStates {
-		gs := &ly.GateStates[gi]
+	for pi := range ly.Pools {
+		gs := &ly.Pools[pi].Gate
 		if !gs.Now { // not gating now
 			continue
 		}
@@ -699,11 +692,11 @@ func (ly *Layer) PFCDeepGating(ctx *Context) {
 			gs.Cnt = 0              // this is the "just gated" signal
 			if ly.PFCGate.OutGate { // time to clear out maint
 				if ly.PFCMaint.OutClearMaint {
-					ly.ClearMaint(gi)
+					ly.ClearMaint(pi)
 				}
 			} else {
 				pfcs := ly.SuperPFC()
-				pfcs.DecayStatePool(gi, ly.PFCMaint.Clear)
+				pfcs.DecayStatePool(pi, ly.PFCMaint.Clear)
 			}
 		}
 		// test for over-duration maintenance -- allow for active gating to override
@@ -719,8 +712,8 @@ func (ly *Layer) ClearMaint(pool int) {
 	if pfcm == nil {
 		return
 	}
-	gs := &pfcm.GateStates[pool] // 0 based
-	if gs.Cnt >= 1 {             // important: only for established maint, not just gated..
+	gs := &pfcm.Pools[pool].Gate
+	if gs.Cnt >= 1 { // important: only for established maint, not just gated..
 		gs.Cnt = -1 // reset
 		pfcs := pfcm.SuperPFC()
 		pfcs.DecayStatePool(pool, pfcm.PFCMaint.Clear)
@@ -758,7 +751,7 @@ func (ly *Layer) DeepMaint(ctx *Context) {
 		uy := ui / xN
 		ux := ui % xN
 
-		gs := &ly.GateStates[nrn.SubPool-1]
+		gs := &ly.Pool(int(nrn.SubPool)).Gate
 		if gs.Cnt < 0 {
 			nrn.Maint = 0
 			nrn.MaintGe = 0
@@ -781,8 +774,11 @@ func (ly *Layer) UpdateGateCnt(ctx *Context) {
 	if !ly.PFCGate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
-	for gi := range ly.GateStates {
-		gs := &ly.GateStates[gi]
+	for pi := range ly.Pools {
+		if pi == 0 {
+			continue
+		}
+		gs := &ly.Pools[pi].Gate
 		if gs.Cnt < 0 {
 			// ly.ClearCtxtPool(gi)
 			gs.Cnt--

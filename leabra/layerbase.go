@@ -95,11 +95,6 @@ type Layer struct {
 	// current serotonin level for this layer
 	SE float32 `read-only:"+"`
 
-	// GateStates (PBWM) is a slice of gating state values for this layer,
-	// one for each separate gating pool, according to its GateType.
-	// For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out.
-	GateStates []GateState
-
 	// SendTo is a list of layers that this layer sends special signals to,
 	// which could be dopamine, gating signals, depending on the layer type.
 	SendTo []string
@@ -174,7 +169,7 @@ func (ly *Layer) ShouldDisplay(field string) bool {
 		return ly.Type == RWPredLayer || ly.Type == RWDaLayer
 	case "TD":
 		return ly.Type == TDRewIntegLayer || ly.Type == TDDaLayer
-	case "PBWM", "GateStates":
+	case "PBWM":
 		return isPBWM
 	case "SendTo":
 		return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer
@@ -184,6 +179,8 @@ func (ly *Layer) ShouldDisplay(field string) bool {
 		return ly.Type == GPiThalLayer
 	case "PFCGate", "PFCMaint":
 		return ly.Type == PFCLayer || ly.Type == PFCDeepLayer
+	case "PFCDyns":
+		return ly.Type == PFCDeepLayer
 	default:
 		return true
 	}
@@ -269,7 +266,6 @@ func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	nrn := &ly.Neurons[idx]
 	da := NeuronVarsMap["DA"]
 	if varIndex >= da {
-		gs := ly.GateStates[int(nrn.SubPool)-1] // 0-based
 		switch varIndex - da {
 		case 0:
 			return ly.DA
@@ -278,11 +274,11 @@ func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 		case 2:
 			return ly.SE
 		case 3:
-			return gs.Act
+			return ly.Pools[nrn.SubPool].Gate.Act
 		case 4:
-			return num.FromBool[float32](gs.Now)
+			return num.FromBool[float32](ly.Pools[nrn.SubPool].Gate.Now)
 		case 5:
-			return float32(gs.Cnt)
+			return float32(ly.Pools[nrn.SubPool].Gate.Cnt)
 		}
 	}
 	return nrn.VarByIndex(varIndex)

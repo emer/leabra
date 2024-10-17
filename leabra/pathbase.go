@@ -145,7 +145,8 @@ func (pt *Path) DefaultsForType() {
 		pt.RWDefaults()
 	case MatrixPath:
 		pt.MatrixDefaults()
-	case GPiThalPath:
+	case DaHebbPath:
+		pt.DaHebbDefaults()
 	}
 }
 

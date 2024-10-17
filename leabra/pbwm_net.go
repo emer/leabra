@@ -165,6 +165,5 @@ func (nt *Network) AddPBWM(prefix string, nY, nMaint, nOut, nNeurBgY, nNeurBgX, 
 		pfcMnt.PlaceAbove(mtxGo)
 	}
 	gpi.SendToMatrixPFC(prefix) // sends gating to all these layers
-	gpi.SendPBWMParams()
 	return
 }

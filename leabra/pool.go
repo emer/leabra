@@ -29,10 +29,14 @@ type Pool struct {
 
 	// running-average activation levels used for netinput scaling and adaptive inhibition
 	ActAvg ActAvg
+
+	//	Gate is gating state for PBWM layers
+	Gate GateState
 }
 
 func (pl *Pool) Init() {
 	pl.Inhib.Init()
+	pl.Gate.Init()
 }
 
 // ActAvg are running-average activation levels used for netinput scaling and adaptive inhibition

@@ -280,6 +280,8 @@ func (pt *Path) DWt() {
 		pt.DWtRW()
 	case pt.Type == TDRewPredPath:
 		pt.DWtTDRewPred()
+	case pt.Type == DaHebbPath:
+		pt.DWtDaHebb()
 	default:
 		pt.DWtStd()
 	}

@@ -56,17 +56,13 @@ func (ly *Layer) InitActs() {
 	}
 	for pi := range ly.Pools {
 		pl := &ly.Pools[pi]
-		pl.Inhib.Init()
+		pl.Init()
 		pl.ActM.Init()
 		pl.ActP.Init()
 	}
 	ly.DA = 0
 	ly.ACh = 0
 	ly.SE = 0
-	for si := range ly.GateStates {
-		gs := &ly.GateStates[si]
-		gs.Init()
-	}
 }
 
 // InitWeightsSym initializes the weight symmetry.
@@ -446,10 +442,9 @@ func (ly *Layer) DecayState(decay float32) {
 }
 
 // DecayStatePool decays activation state by given proportion
-// in given sub-pool index (0 based).
+// in given pool index (sub pools start at 1).
 func (ly *Layer) DecayStatePool(pool int, decay float32) {
-	pi := int32(pool + 1) // 1 based
-	pl := &ly.Pools[pi]
+	pl := &ly.Pools[pool]
 	for ni := pl.StIndex; ni < pl.EdIndex; ni++ {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

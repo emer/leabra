@@ -70,4 +70,8 @@ const (
 	// GPiThalPath accumulates per-path raw conductance that is needed for
 	// separately weighting NoGo vs. Go inputs.
 	GPiThalPath
+
+	// DaHebbPath does dopamine-modulated Hebbian learning -- i.e., the 3-factor
+	// learning rule: Da * Recv.Act * Send.Act
+	DaHebbPath
 )

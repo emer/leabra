@@ -368,6 +368,7 @@ func (nt *Network) Build() error {
 	var errs []error
 	for li, ly := range nt.Layers {
 		ly.Index = li
+		ly.Network = nt
 		if ly.Off {
 			continue
 		}
