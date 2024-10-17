@@ -6,16 +6,16 @@ import (
 	"cogentcore.org/core/enums"
 )
 
-var _ActNoiseTypeValues = []ActNoiseType{0, 1, 2, 3, 4, 8}
+var _ActNoiseTypeValues = []ActNoiseType{0, 1, 2, 3, 4, 9}
 
 // ActNoiseTypeN is the highest valid value for type ActNoiseType, plus one.
-const ActNoiseTypeN ActNoiseType = 9
+const ActNoiseTypeN ActNoiseType = 10
 
-var _ActNoiseTypeValueMap = map[string]ActNoiseType{`NoNoise`: 0, `VmNoise`: 1, `GeNoise`: 2, `ActNoise`: 3, `GeMultNoise`: 4, `ActNoiseTypeN`: 8}
+var _ActNoiseTypeValueMap = map[string]ActNoiseType{`NoNoise`: 0, `VmNoise`: 1, `GeNoise`: 2, `ActNoise`: 3, `GeMultNoise`: 4, `ActNoiseTypeN`: 9}
 
-var _ActNoiseTypeDescMap = map[ActNoiseType]string{0: `NoNoise means no noise added`, 1: `VmNoise means noise is added to the membrane potential. IMPORTANT: this should NOT be used for rate-code (NXX1) activations, because they do not depend directly on the vm -- this then has no effect`, 2: `GeNoise means noise is added to the excitatory conductance (Ge). This should be used for rate coded activations (NXX1)`, 3: `ActNoise means noise is added to the final rate code activation`, 4: `GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values`, 8: ``}
+var _ActNoiseTypeDescMap = map[ActNoiseType]string{0: `NoNoise means no noise added`, 1: `VmNoise means noise is added to the membrane potential. IMPORTANT: this should NOT be used for rate-code (NXX1) activations, because they do not depend directly on the vm -- this then has no effect`, 2: `GeNoise means noise is added to the excitatory conductance (Ge). This should be used for rate coded activations (NXX1)`, 3: `ActNoise means noise is added to the final rate code activation`, 4: `GeMultNoise means that noise is multiplicative on the Ge excitatory conductance values`, 9: ``}
 
-var _ActNoiseTypeMap = map[ActNoiseType]string{0: `NoNoise`, 1: `VmNoise`, 2: `GeNoise`, 3: `ActNoise`, 4: `GeMultNoise`, 8: `ActNoiseTypeN`}
+var _ActNoiseTypeMap = map[ActNoiseType]string{0: `NoNoise`, 1: `VmNoise`, 2: `GeNoise`, 3: `ActNoise`, 4: `GeMultNoise`, 9: `ActNoiseTypeN`}
 
 // String returns the string representation of this ActNoiseType value.
 func (i ActNoiseType) String() string { return enums.String(i, _ActNoiseTypeMap) }
@@ -49,16 +49,16 @@ func (i *ActNoiseType) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "ActNoiseType")
 }
 
-var _QuartersValues = []Quarters{0, 1, 2, 3, 7}
+var _QuartersValues = []Quarters{0, 1, 2, 3, 8}
 
 // QuartersN is the highest valid value for type Quarters, plus one.
-const QuartersN Quarters = 8
+const QuartersN Quarters = 9
 
-var _QuartersValueMap = map[string]Quarters{`Q1`: 0, `Q2`: 1, `Q3`: 2, `Q4`: 3, `QuartersN`: 7}
+var _QuartersValueMap = map[string]Quarters{`Q1`: 0, `Q2`: 1, `Q3`: 2, `Q4`: 3, `QuartersN`: 8}
 
-var _QuartersDescMap = map[Quarters]string{0: `Q1 is the first quarter, which, due to 0-based indexing, shows up as Quarter = 0 in timer`, 1: ``, 2: ``, 3: ``, 7: ``}
+var _QuartersDescMap = map[Quarters]string{0: `Q1 is the first quarter, which, due to 0-based indexing, shows up as Quarter = 0 in timer`, 1: ``, 2: ``, 3: ``, 8: ``}
 
-var _QuartersMap = map[Quarters]string{0: `Q1`, 1: `Q2`, 2: `Q3`, 3: `Q4`, 7: `QuartersN`}
+var _QuartersMap = map[Quarters]string{0: `Q1`, 1: `Q2`, 2: `Q3`, 3: `Q4`, 8: `QuartersN`}
 
 // String returns the string representation of this Quarters value.
 func (i Quarters) String() string { return enums.BitFlagString(i, _QuartersValues) }
@@ -106,16 +106,16 @@ func (i Quarters) MarshalText() ([]byte, error) { return []byte(i.String()), nil
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 func (i *Quarters) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "Quarters") }
 
-var _LayerTypesValues = []LayerTypes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+var _LayerTypesValues = []LayerTypes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 
 // LayerTypesN is the highest valid value for type LayerTypes, plus one.
-const LayerTypesN LayerTypes = 16
+const LayerTypesN LayerTypes = 17
 
-var _LayerTypesValueMap = map[string]LayerTypes{`SuperLayer`: 0, `InputLayer`: 1, `TargetLayer`: 2, `CompareLayer`: 3, `CTLayer`: 4, `PulvinarLayer`: 5, `TRNLayer`: 6, `PTMaintLayer`: 7, `PTPredLayer`: 8, `MatrixLayer`: 9, `GPeLayer`: 10, `GPiThalLayer`: 11, `CINLayer`: 12, `PFCLayer`: 13, `PFCDeepLayer`: 14, `LayerTypesN`: 15}
+var _LayerTypesValueMap = map[string]LayerTypes{`SuperLayer`: 0, `InputLayer`: 1, `TargetLayer`: 2, `CompareLayer`: 3, `CTLayer`: 4, `PulvinarLayer`: 5, `TRNLayer`: 6, `PTMaintLayer`: 7, `PTPredLayer`: 8, `ClampDaLayer`: 9, `MatrixLayer`: 10, `GPeLayer`: 11, `GPiThalLayer`: 12, `CINLayer`: 13, `PFCLayer`: 14, `PFCDeepLayer`: 15, `LayerTypesN`: 16}
 
-var _LayerTypesDescMap = map[LayerTypes]string{0: `Super is a superficial cortical layer (lamina 2-3-4) which does not receive direct input or targets. In more generic models, it should be used as a Hidden layer, and maps onto the Hidden type in LayerTypes.`, 1: `Input is a layer that receives direct external input in its Ext inputs. Biologically, it can be a primary sensory layer, or a thalamic layer.`, 2: `Target is a layer that receives direct external target inputs used for driving plus-phase learning. Simple target layers are generally not used in more biological models, which instead use predictive learning via Pulvinar or related mechanisms.`, 3: `Compare is a layer that receives external comparison inputs, which drive statistics but do NOT drive activation or learning directly. It is rarely used in axon.`, 4: `CT are layer 6 corticothalamic projecting neurons, which drive &#34;top down&#34; predictions in Pulvinar layers. They maintain information over time via stronger NMDA channels and use maintained prior state information to generate predictions about current states forming on Super layers that then drive PT (5IB) bursting activity, which are the plus-phase drivers of Pulvinar activity.`, 5: `Pulvinar are thalamic relay cell neurons in the higher-order Pulvinar nucleus of the thalamus, and functionally isomorphic neurons in the MD thalamus, and potentially other areas. These cells alternately reflect predictions driven by CT pathways, and actual outcomes driven by 5IB Burst activity from corresponding PT or Super layer neurons that provide strong driving inputs.`, 6: `TRNLayer is thalamic reticular nucleus layer for inhibitory competition within the thalamus.`, 7: `PTMaintLayer implements the subset of pyramidal tract (PT) layer 5 intrinsic bursting (5IB) deep neurons that exhibit robust, stable maintenance of activity over the duration of a goal engaged window, modulated by basal ganglia (BG) disinhibitory gating, supported by strong MaintNMDA channels and recurrent excitation. The lateral PTSelfMaint pathway uses MaintG to drive GMaintRaw input that feeds into the stronger, longer MaintNMDA channels, and the ThalToPT ModulatoryG pathway from BGThalamus multiplicatively modulates the strength of other inputs, such that only at the time of BG gating are these strong enough to drive sustained active maintenance. Use Act.Dend.ModGain to parameterize.`, 8: `PTPredLayer implements the subset of pyramidal tract (PT) layer 5 intrinsic bursting (5IB) deep neurons that combine modulatory input from PTMaintLayer sustained maintenance and CTLayer dynamic predictive learning that helps to predict state changes during the period of active goal maintenance. This layer provides the primary input to VSPatch US-timing prediction layers, and other layers that require predictive dynamic`, 9: `MatrixLayer represents the dorsal matrisome MSN&#39;s that are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM. D1R = Go, D2R = NoGo, and outer 4D Pool X dimension determines GateTypes per MaintN (Maint on the left up to MaintN, Out on the right after)`, 10: `GPeLayer is a Globus pallidus external layer, a key region of the basal ganglia. It does not require any additional mechanisms beyond the SuperLayer.`, 11: `GPiThalLayer represents the combined Winner-Take-All dynamic of GPi (SNr) and Thalamus. It is the final arbiter of gating in the BG, weighing Go (direct) and NoGo (indirect) inputs from MatrixLayers (indirectly via GPe layer in case of NoGo). Use 4D structure for this so it matches 4D structure in Matrix layers`, 12: `CINLayer (cholinergic interneuron) reads reward signals from named source layer(s) and sends the Max absolute value of that activity as the positively rectified non-prediction-discounted reward signal computed by CINs, and sent as an acetylcholine (ACh) signal. To handle positive-only reward signals, need to include both a reward prediction and reward outcome layer.`, 13: ``, 14: ``, 15: ``}
+var _LayerTypesDescMap = map[LayerTypes]string{0: `Super is a superficial cortical layer (lamina 2-3-4) which does not receive direct input or targets. In more generic models, it should be used as a Hidden layer, and maps onto the Hidden type in LayerTypes.`, 1: `Input is a layer that receives direct external input in its Ext inputs. Biologically, it can be a primary sensory layer, or a thalamic layer.`, 2: `Target is a layer that receives direct external target inputs used for driving plus-phase learning. Simple target layers are generally not used in more biological models, which instead use predictive learning via Pulvinar or related mechanisms.`, 3: `Compare is a layer that receives external comparison inputs, which drive statistics but do NOT drive activation or learning directly. It is rarely used in axon.`, 4: `CT are layer 6 corticothalamic projecting neurons, which drive &#34;top down&#34; predictions in Pulvinar layers. They maintain information over time via stronger NMDA channels and use maintained prior state information to generate predictions about current states forming on Super layers that then drive PT (5IB) bursting activity, which are the plus-phase drivers of Pulvinar activity.`, 5: `Pulvinar are thalamic relay cell neurons in the higher-order Pulvinar nucleus of the thalamus, and functionally isomorphic neurons in the MD thalamus, and potentially other areas. These cells alternately reflect predictions driven by CT pathways, and actual outcomes driven by 5IB Burst activity from corresponding PT or Super layer neurons that provide strong driving inputs.`, 6: `TRNLayer is thalamic reticular nucleus layer for inhibitory competition within the thalamus.`, 7: `PTMaintLayer implements the subset of pyramidal tract (PT) layer 5 intrinsic bursting (5IB) deep neurons that exhibit robust, stable maintenance of activity over the duration of a goal engaged window, modulated by basal ganglia (BG) disinhibitory gating, supported by strong MaintNMDA channels and recurrent excitation. The lateral PTSelfMaint pathway uses MaintG to drive GMaintRaw input that feeds into the stronger, longer MaintNMDA channels, and the ThalToPT ModulatoryG pathway from BGThalamus multiplicatively modulates the strength of other inputs, such that only at the time of BG gating are these strong enough to drive sustained active maintenance. Use Act.Dend.ModGain to parameterize.`, 8: `PTPredLayer implements the subset of pyramidal tract (PT) layer 5 intrinsic bursting (5IB) deep neurons that combine modulatory input from PTMaintLayer sustained maintenance and CTLayer dynamic predictive learning that helps to predict state changes during the period of active goal maintenance. This layer provides the primary input to VSPatch US-timing prediction layers, and other layers that require predictive dynamic`, 9: `ClampDaLayer is an Input layer that just sends its activity as the dopamine signal.`, 10: `MatrixLayer represents the dorsal matrisome MSN&#39;s that are the main Go / NoGo gating units in BG driving updating of PFC WM in PBWM. D1R = Go, D2R = NoGo, and outer 4D Pool X dimension determines GateTypes per MaintN (Maint on the left up to MaintN, Out on the right after)`, 11: `GPeLayer is a Globus pallidus external layer, a key region of the basal ganglia. It does not require any additional mechanisms beyond the SuperLayer.`, 12: `GPiThalLayer represents the combined Winner-Take-All dynamic of GPi (SNr) and Thalamus. It is the final arbiter of gating in the BG, weighing Go (direct) and NoGo (indirect) inputs from MatrixLayers (indirectly via GPe layer in case of NoGo). Use 4D structure for this so it matches 4D structure in Matrix layers`, 13: `CINLayer (cholinergic interneuron) reads reward signals from named source layer(s) and sends the Max absolute value of that activity as the positively rectified non-prediction-discounted reward signal computed by CINs, and sent as an acetylcholine (ACh) signal. To handle positive-only reward signals, need to include both a reward prediction and reward outcome layer.`, 14: ``, 15: ``, 16: ``}
 
-var _LayerTypesMap = map[LayerTypes]string{0: `SuperLayer`, 1: `InputLayer`, 2: `TargetLayer`, 3: `CompareLayer`, 4: `CTLayer`, 5: `PulvinarLayer`, 6: `TRNLayer`, 7: `PTMaintLayer`, 8: `PTPredLayer`, 9: `MatrixLayer`, 10: `GPeLayer`, 11: `GPiThalLayer`, 12: `CINLayer`, 13: `PFCLayer`, 14: `PFCDeepLayer`, 15: `LayerTypesN`}
+var _LayerTypesMap = map[LayerTypes]string{0: `SuperLayer`, 1: `InputLayer`, 2: `TargetLayer`, 3: `CompareLayer`, 4: `CTLayer`, 5: `PulvinarLayer`, 6: `TRNLayer`, 7: `PTMaintLayer`, 8: `PTPredLayer`, 9: `ClampDaLayer`, 10: `MatrixLayer`, 11: `GPeLayer`, 12: `GPiThalLayer`, 13: `CINLayer`, 14: `PFCLayer`, 15: `PFCDeepLayer`, 16: `LayerTypesN`}
 
 // String returns the string representation of this LayerTypes value.
 func (i LayerTypes) String() string { return enums.String(i, _LayerTypesMap) }
@@ -149,16 +149,16 @@ func (i *LayerTypes) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "LayerTypes")
 }
 
-var _DaReceptorsValues = []DaReceptors{0, 1, 2}
+var _DaReceptorsValues = []DaReceptors{0, 1, 3}
 
 // DaReceptorsN is the highest valid value for type DaReceptors, plus one.
-const DaReceptorsN DaReceptors = 3
+const DaReceptorsN DaReceptors = 4
 
-var _DaReceptorsValueMap = map[string]DaReceptors{`D1R`: 0, `D2R`: 1, `DaReceptorsN`: 2}
+var _DaReceptorsValueMap = map[string]DaReceptors{`D1R`: 0, `D2R`: 1, `DaReceptorsN`: 3}
 
-var _DaReceptorsDescMap = map[DaReceptors]string{0: `D1R primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum`, 1: `D2R primarily expresses Dopamine D2 Receptors -- dopamine is inhibitory and bursts of dopamine lead to decreases in synaptic weight, while dips lead to increases -- indirect pathway in dorsal striatum`, 2: ``}
+var _DaReceptorsDescMap = map[DaReceptors]string{0: `D1R primarily expresses Dopamine D1 Receptors -- dopamine is excitatory and bursts of dopamine lead to increases in synaptic weight, while dips lead to decreases -- direct pathway in dorsal striatum`, 1: `D2R primarily expresses Dopamine D2 Receptors -- dopamine is inhibitory and bursts of dopamine lead to decreases in synaptic weight, while dips lead to increases -- indirect pathway in dorsal striatum`, 3: ``}
 
-var _DaReceptorsMap = map[DaReceptors]string{0: `D1R`, 1: `D2R`, 2: `DaReceptorsN`}
+var _DaReceptorsMap = map[DaReceptors]string{0: `D1R`, 1: `D2R`, 3: `DaReceptorsN`}
 
 // String returns the string representation of this DaReceptors value.
 func (i DaReceptors) String() string { return enums.String(i, _DaReceptorsMap) }
@@ -192,16 +192,16 @@ func (i *DaReceptors) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "DaReceptors")
 }
 
-var _ValencesValues = []Valences{0, 1, 2}
+var _ValencesValues = []Valences{0, 1, 3}
 
 // ValencesN is the highest valid value for type Valences, plus one.
-const ValencesN Valences = 3
+const ValencesN Valences = 4
 
-var _ValencesValueMap = map[string]Valences{`Appetitive`: 0, `Aversive`: 1, `ValencesN`: 2}
+var _ValencesValueMap = map[string]Valences{`Appetitive`: 0, `Aversive`: 1, `ValencesN`: 3}
 
-var _ValencesDescMap = map[Valences]string{0: `Appetititve is a positive valence US (food, water, etc)`, 1: `Aversive is a negative valence US (shock, threat etc)`, 2: ``}
+var _ValencesDescMap = map[Valences]string{0: `Appetititve is a positive valence US (food, water, etc)`, 1: `Aversive is a negative valence US (shock, threat etc)`, 3: ``}
 
-var _ValencesMap = map[Valences]string{0: `Appetitive`, 1: `Aversive`, 2: `ValencesN`}
+var _ValencesMap = map[Valences]string{0: `Appetitive`, 1: `Aversive`, 3: `ValencesN`}
 
 // String returns the string representation of this Valences value.
 func (i Valences) String() string { return enums.String(i, _ValencesMap) }
@@ -233,16 +233,16 @@ func (i Valences) MarshalText() ([]byte, error) { return []byte(i.String()), nil
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 func (i *Valences) UnmarshalText(text []byte) error { return enums.UnmarshalText(i, text, "Valences") }
 
-var _NeurFlagsValues = []NeurFlags{0, 1, 2, 3, 7}
+var _NeurFlagsValues = []NeurFlags{0, 1, 2, 3, 8}
 
 // NeurFlagsN is the highest valid value for type NeurFlags, plus one.
-const NeurFlagsN NeurFlags = 8
+const NeurFlagsN NeurFlags = 9
 
-var _NeurFlagsValueMap = map[string]NeurFlags{`NeurOff`: 0, `NeurHasExt`: 1, `NeurHasTarg`: 2, `NeurHasCmpr`: 3, `NeurFlagsN`: 7}
+var _NeurFlagsValueMap = map[string]NeurFlags{`NeurOff`: 0, `NeurHasExt`: 1, `NeurHasTarg`: 2, `NeurHasCmpr`: 3, `NeurFlagsN`: 8}
 
-var _NeurFlagsDescMap = map[NeurFlags]string{0: `NeurOff flag indicates that this neuron has been turned off (i.e., lesioned)`, 1: `NeurHasExt means the neuron has external input in its Ext field`, 2: `NeurHasTarg means the neuron has external target input in its Targ field`, 3: `NeurHasCmpr means the neuron has external comparison input in its Targ field -- used for computing comparison statistics but does not drive neural activity ever`, 7: ``}
+var _NeurFlagsDescMap = map[NeurFlags]string{0: `NeurOff flag indicates that this neuron has been turned off (i.e., lesioned)`, 1: `NeurHasExt means the neuron has external input in its Ext field`, 2: `NeurHasTarg means the neuron has external target input in its Targ field`, 3: `NeurHasCmpr means the neuron has external comparison input in its Targ field -- used for computing comparison statistics but does not drive neural activity ever`, 8: ``}
 
-var _NeurFlagsMap = map[NeurFlags]string{0: `NeurOff`, 1: `NeurHasExt`, 2: `NeurHasTarg`, 3: `NeurHasCmpr`, 7: `NeurFlagsN`}
+var _NeurFlagsMap = map[NeurFlags]string{0: `NeurOff`, 1: `NeurHasExt`, 2: `NeurHasTarg`, 3: `NeurHasCmpr`, 8: `NeurFlagsN`}
 
 // String returns the string representation of this NeurFlags value.
 func (i NeurFlags) String() string { return enums.BitFlagString(i, _NeurFlagsValues) }
@@ -292,16 +292,16 @@ func (i *NeurFlags) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "NeurFlags")
 }
 
-var _PathTypesValues = []PathTypes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+var _PathTypesValues = []PathTypes{0, 1, 2, 3, 4, 5, 6, 7, 8, 10}
 
 // PathTypesN is the highest valid value for type PathTypes, plus one.
-const PathTypesN PathTypes = 10
+const PathTypesN PathTypes = 11
 
-var _PathTypesValueMap = map[string]PathTypes{`ForwardPath`: 0, `BackPath`: 1, `LateralPath`: 2, `InhibPath`: 3, `CTCtxtPath`: 4, `CHLPath`: 5, `EcCa1Path`: 6, `MatrixPath`: 7, `GPiThalPath`: 8, `PathTypesN`: 9}
+var _PathTypesValueMap = map[string]PathTypes{`ForwardPath`: 0, `BackPath`: 1, `LateralPath`: 2, `InhibPath`: 3, `CTCtxtPath`: 4, `CHLPath`: 5, `EcCa1Path`: 6, `MatrixPath`: 7, `GPiThalPath`: 8, `PathTypesN`: 10}
 
-var _PathTypesDescMap = map[PathTypes]string{0: `Forward is a feedforward, bottom-up pathway from sensory inputs to higher layers`, 1: `Back is a feedback, top-down pathway from higher layers back to lower layers`, 2: `Lateral is a lateral pathway within the same layer / area`, 3: `Inhib is an inhibitory pathway that drives inhibitory synaptic conductances instead of the default excitatory ones.`, 4: `CTCtxt are pathways from Superficial layers to CT layers that send Burst activations drive updating of CtxtGe excitatory conductance, at end of plus (51B Bursting) phase. Biologically, this pathway comes from the PT layer 5IB neurons, but it is simpler to use the Super neurons directly, and PT are optional for most network types. These pathways also use a special learning rule that takes into account the temporal delays in the activation states. Can also add self context from CT for deeper temporal context.`, 5: `CHLPath implements Contrastive Hebbian Learning.`, 6: `EcCa1Path implements special learning for EC &lt;-&gt; CA1 pathways in the hippocampus to perform error-driven learning of this encoder pathway according to the ThetaPhase algorithm. uses Contrastive Hebbian Learning (CHL) on ActP - ActQ1 Q1: ECin -&gt; CA1 -&gt; ECout : ActQ1 = minus phase for auto-encoder Q2, 3: CA3 -&gt; CA1 -&gt; ECout : ActM = minus phase for recall Q4: ECin -&gt; CA1, ECin -&gt; ECout : ActP = plus phase for everything`, 7: `MatrixPath does dopamine-modulated, gated trace learning, for Matrix learning in PBWM context.`, 8: `GPiThalPath accumulates per-path raw conductance that is needed for separately weighting NoGo vs. Go inputs.`, 9: ``}
+var _PathTypesDescMap = map[PathTypes]string{0: `Forward is a feedforward, bottom-up pathway from sensory inputs to higher layers`, 1: `Back is a feedback, top-down pathway from higher layers back to lower layers`, 2: `Lateral is a lateral pathway within the same layer / area`, 3: `Inhib is an inhibitory pathway that drives inhibitory synaptic conductances instead of the default excitatory ones.`, 4: `CTCtxt are pathways from Superficial layers to CT layers that send Burst activations drive updating of CtxtGe excitatory conductance, at end of plus (51B Bursting) phase. Biologically, this pathway comes from the PT layer 5IB neurons, but it is simpler to use the Super neurons directly, and PT are optional for most network types. These pathways also use a special learning rule that takes into account the temporal delays in the activation states. Can also add self context from CT for deeper temporal context.`, 5: `CHLPath implements Contrastive Hebbian Learning.`, 6: `EcCa1Path implements special learning for EC &lt;-&gt; CA1 pathways in the hippocampus to perform error-driven learning of this encoder pathway according to the ThetaPhase algorithm. uses Contrastive Hebbian Learning (CHL) on ActP - ActQ1 Q1: ECin -&gt; CA1 -&gt; ECout : ActQ1 = minus phase for auto-encoder Q2, 3: CA3 -&gt; CA1 -&gt; ECout : ActM = minus phase for recall Q4: ECin -&gt; CA1, ECin -&gt; ECout : ActP = plus phase for everything`, 7: `MatrixPath does dopamine-modulated, gated trace learning, for Matrix learning in PBWM context.`, 8: `GPiThalPath accumulates per-path raw conductance that is needed for separately weighting NoGo vs. Go inputs.`, 10: ``}
 
-var _PathTypesMap = map[PathTypes]string{0: `ForwardPath`, 1: `BackPath`, 2: `LateralPath`, 3: `InhibPath`, 4: `CTCtxtPath`, 5: `CHLPath`, 6: `EcCa1Path`, 7: `MatrixPath`, 8: `GPiThalPath`, 9: `PathTypesN`}
+var _PathTypesMap = map[PathTypes]string{0: `ForwardPath`, 1: `BackPath`, 2: `LateralPath`, 3: `InhibPath`, 4: `CTCtxtPath`, 5: `CHLPath`, 6: `EcCa1Path`, 7: `MatrixPath`, 8: `GPiThalPath`, 10: `PathTypesN`}
 
 // String returns the string representation of this PathTypes value.
 func (i PathTypes) String() string { return enums.String(i, _PathTypesMap) }
@@ -335,16 +335,16 @@ func (i *PathTypes) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "PathTypes")
 }
 
-var _GateTypesValues = []GateTypes{0, 1, 2}
+var _GateTypesValues = []GateTypes{0, 1, 2, 3}
 
 // GateTypesN is the highest valid value for type GateTypes, plus one.
-const GateTypesN GateTypes = 3
+const GateTypesN GateTypes = 4
 
-var _GateTypesValueMap = map[string]GateTypes{`Maint`: 0, `Out`: 1, `MaintOut`: 2}
+var _GateTypesValueMap = map[string]GateTypes{`Maint`: 0, `Out`: 1, `MaintOut`: 2, `GateTypesN`: 3}
 
-var _GateTypesDescMap = map[GateTypes]string{0: `Maint is maintenance gating -- toggles active maintenance in PFC.`, 1: `Out is output gating -- drives deep layer activation.`, 2: `MaintOut for maint and output gating.`}
+var _GateTypesDescMap = map[GateTypes]string{0: `Maint is maintenance gating -- toggles active maintenance in PFC.`, 1: `Out is output gating -- drives deep layer activation.`, 2: `MaintOut for maint and output gating.`, 3: ``}
 
-var _GateTypesMap = map[GateTypes]string{0: `Maint`, 1: `Out`, 2: `MaintOut`}
+var _GateTypesMap = map[GateTypes]string{0: `Maint`, 1: `Out`, 2: `MaintOut`, 3: `GateTypesN`}
 
 // String returns the string representation of this GateTypes value.
 func (i GateTypes) String() string { return enums.String(i, _GateTypesMap) }
