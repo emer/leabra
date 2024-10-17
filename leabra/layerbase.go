@@ -6,7 +6,6 @@ package leabra
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 
+	"cogentcore.org/core/base/errors"
+	"cogentcore.org/core/base/num"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/emer"
@@ -47,6 +48,27 @@ type Layer struct {
 	// Learning parameters and methods that operate at the neuron level.
 	Learn LearnNeurParams `display:"add-fields"`
 
+	// DaMod is Dopamine modulation, for specific layer types that use it.
+	DaMod DaModParams `display:"inline"`
+
+	// matrix parameters
+	Matrix MatrixParams `display:"inline"`
+
+	// GateTiming parameters determining when gating happens.
+	GateTiming GPiTimingParams `display:"inline"`
+
+	// GPiGate are gating parameters determining threshold for gating etc.
+	GPiGate GPiGateParams `display:"inline"`
+
+	// PFC Gating parameters
+	PFCGate PFCGateParams `display:"inline"`
+
+	// PFC Maintenance parameters
+	PFCMaint PFCMaintParams `display:"inline"`
+
+	// PFCDyns dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)
+	PFCDyns PFCDyns
+
 	// slice of neurons for this layer, as a flat list of len = Shape.Len().
 	// Must iterate over index and use pointer to modify values.
 	Neurons []Neuron
@@ -59,6 +81,28 @@ type Layer struct {
 
 	// cosine difference between ActM, ActP stats.
 	CosDiff CosDiffStats
+
+	// current dopamine level for this layer
+	DA float32 `read-only:"+"`
+
+	// current acetylcholine level for this layer
+	ACh float32 `read-only:"+"`
+
+	// current serotonin level for this layer
+	SE float32 `read-only:"+"`
+
+	// GateShape (PBWM) is the shape of overall Maint + Out gating system
+	// that this layer is part of.
+	GateShape GateShape `display:"inline"`
+
+	// GateStates (PBWM) is a slice of gating state values for this layer,
+	// one for each separate gating pool, according to its GateType.
+	// For MaintOut, it is ordered such that 0:MaintN are Maint and MaintN:n are Out.
+	GateStates []GateState
+
+	// SendTo is a list of layers that this layer sends special signals to,
+	// which could be dopamine, gating signals, depending on the layer type.
+	SendTo []string
 }
 
 // emer.Layer interface methods
@@ -75,6 +119,12 @@ func (ly *Layer) Defaults() {
 	ly.Act.Defaults()
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
+	ly.DaMod.Defaults()
+	ly.Matrix.Defaults()
+	ly.GateTiming.Defaults()
+	ly.GPiGate.Defaults()
+	ly.PFCGate.Defaults()
+	ly.PFCMaint.Defaults()
 	ly.Inhib.Layer.On = true
 	for _, pt := range ly.RecvPaths {
 		pt.Defaults()
@@ -87,9 +137,34 @@ func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
+	ly.DaMod.Update()
+	ly.Matrix.Update()
+	ly.GateTiming.Update()
+	ly.GPiGate.Update()
+	ly.PFCGate.Update()
+	ly.PFCMaint.Update()
 	for _, pt := range ly.RecvPaths {
 		pt.UpdateParams()
 	}
+}
+
+func (ly *Layer) ShouldDisplay(field string) bool {
+	switch field {
+	case "GateShape", "GateStates":
+		return ly.Type == GPiThalLayer
+	case "SendTo":
+		return ly.Type == GPiThalLayer
+	case "DaMod":
+	case "Matrix":
+		return ly.Type == MatrixLayer
+	case "GateTiming", "GPiGate":
+		return ly.Type == GPiThalLayer
+	case "PFCGate", "PFCMaint":
+		return ly.Type == PFCLayer || ly.Type == PFCDeepLayer
+	default:
+		return true
+	}
+	return true
 }
 
 // JsonToParams reformates json output to suitable params display output
@@ -169,6 +244,24 @@ func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 		return math32.NaN()
 	}
 	nrn := &ly.Neurons[idx]
+	da := NeuronVarsMap["DA"]
+	if varIndex >= da {
+		gs := ly.GateStates[int(nrn.SubPool)-1] // 0-based
+		switch varIndex - da {
+		case 0:
+			return ly.DA
+		case 1:
+			return ly.ACh
+		case 2:
+			return ly.SE
+		case 3:
+			return gs.Act
+		case 4:
+			return num.FromBool[float32](gs.Now)
+		case 5:
+			return float32(gs.Cnt)
+		}
+	}
 	return nrn.VarByIndex(varIndex)
 }
 
@@ -378,6 +471,44 @@ func (ly *Layer) Pool(idx int) *Pool {
 	return &(ly.Pools[idx])
 }
 
+// AddSendTo adds given layer name(s) to list of those to send to.
+func (ly *Layer) AddSendTo(laynm ...string) {
+	ly.SendTo = append(ly.SendTo, laynm...)
+}
+
+// AddAllSendToBut adds all layers in network except those in exclude list.
+func (ly *Layer) AddAllSendToBut(excl ...string) {
+	ly.SendTo = nil
+	net := ly.Network
+	for _, l := range net.Layers {
+		lnm := l.Name
+		exl := false
+		for _, ex := range excl {
+			if lnm == ex {
+				exl = true
+				break
+			}
+		}
+		if exl {
+			continue
+		}
+		ly.AddSendTo(lnm)
+	}
+}
+
+// ValidateSendTo ensures that SendTo layer names are valid.
+func (ly *Layer) ValidateSendTo() error {
+	var errs []error
+	for _, lnm := range ly.SendTo {
+		tly := ly.Network.LayerByName(lnm)
+		if tly == nil {
+			err := fmt.Errorf("%s SendTo Validate: Layer name found %s", ly.Name, lnm)
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //  Build
 
@@ -446,10 +577,17 @@ func (ly *Layer) Build() error {
 	ly.Neurons = make([]Neuron, nu)
 	err := ly.BuildPools(nu)
 	if err != nil {
-		return err
+		return errors.Log(err)
 	}
 	err = ly.BuildPaths()
-	return err
+	if err != nil {
+		return errors.Log(err)
+	}
+	err = ly.ValidateSendTo()
+	if err != nil {
+		return errors.Log(err)
+	}
+	return nil
 }
 
 // WriteWeightsJSON writes the weights from this layer from the receiver-side perspective

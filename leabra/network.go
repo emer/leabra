@@ -54,12 +54,9 @@ func (nt *Network) Cycle(ctx *Context) {
 	nt.InhibFromGeAct(ctx)
 	nt.ActFromG(ctx)
 	nt.AvgMaxAct(ctx)
-	for _, ly := range nt.Layers {
-		if ly.Off {
-			continue
-		}
-		ly.CyclePost(ctx)
-	}
+	nt.GateSend(ctx)   // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.RecGateAct(ctx) // Record activation state at time of gating (in ActG neuron var)
+	nt.SendMods(ctx)   // send neuromod
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

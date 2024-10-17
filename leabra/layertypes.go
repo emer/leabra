@@ -37,8 +37,7 @@ const (
 	// or learning directly.  It is rarely used in axon.
 	CompareLayer
 
-	/////////////
-	// Deep
+	//////// Deep
 
 	// CT are layer 6 corticothalamic projecting neurons,
 	// which drive "top down" predictions in Pulvinar layers.
@@ -82,4 +81,42 @@ const (
 	// This layer provides the primary input to VSPatch US-timing
 	// prediction layers, and other layers that require predictive dynamic
 	PTPredLayer
+
+	///////// Neuromodulation & RL
+
+	// ClampDaLayer is an Input layer that just sends its activity
+	// as the dopamine signal.
+	ClampDaLayer
+
+	///////// BG Basal Ganglia
+
+	// MatrixLayer represents the dorsal matrisome MSN's that are the main
+	// Go / NoGo gating units in BG driving updating of PFC WM in PBWM.
+	// D1R = Go, D2R = NoGo, and outer 4D Pool X dimension determines GateTypes per MaintN
+	// (Maint on the left up to MaintN, Out on the right after)
+	MatrixLayer
+
+	// GPeLayer is a Globus pallidus external layer, a key region of the basal ganglia.
+	// It does not require any additional mechanisms beyond the SuperLayer.
+	GPeLayer
+
+	// GPiThalLayer represents the combined Winner-Take-All dynamic of GPi (SNr) and Thalamus.
+	// It is the final arbiter of gating in the BG, weighing Go (direct) and NoGo (indirect)
+	// inputs from MatrixLayers (indirectly via GPe layer in case of NoGo).
+	// Use 4D structure for this so it matches 4D structure in Matrix layers
+	GPiThalLayer
+
+	// CINLayer (cholinergic interneuron) reads reward signals from named source layer(s)
+	// and sends the Max absolute value of that activity as the positively rectified
+	// non-prediction-discounted reward signal computed by CINs, and sent as
+	// an acetylcholine (ACh) signal.
+	// To handle positive-only reward signals, need to include both a reward prediction
+	// and reward outcome layer.
+	CINLayer
+
+	///////// PFC Prefrontal Cortex
+
+	PFCLayer
+
+	PFCDeepLayer
 )

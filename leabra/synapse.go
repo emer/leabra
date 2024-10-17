@@ -47,13 +47,22 @@ type Synapse struct {
 	// approximate 0). Typically set by using the paths.Pattern Weights()
 	// values where appropriate.
 	Scale float32
+
+	// NTr is the new trace, which drives updates to trace value.
+	// su * (1-ru_msn) for gated, or su * ru_msn for not-gated (or for non-thalamic cases).
+	NTr float32
+
+	// Tr is the current ongoing trace of activations, which drive learning.
+	// Adds NTr and clears after learning on current values, and includes both
+	// thal gated (+ and other nongated, - inputs).
+	Tr float32
 }
 
 func (sy *Synapse) VarNames() []string {
 	return SynapseVars
 }
 
-var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale"}
+var SynapseVars = []string{"Wt", "LWt", "DWt", "Norm", "Moment", "Scale", "NTr", "Tr"}
 
 var SynapseVarProps = map[string]string{
 	"Wt":     `cat:"Wts"`,
@@ -62,6 +71,8 @@ var SynapseVarProps = map[string]string{
 	"Norm":   `cat:"Wts"`,
 	"Moment": `cat:"Wts" auto-scale:"+"`,
 	"Scale":  `cat:"Wts"`,
+	"NTr":    `cat:"Wts"`,
+	"Tr":     `cat:"Wts"`,
 }
 
 var SynapseVarsMap map[string]int

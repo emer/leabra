@@ -60,6 +60,13 @@ func (ly *Layer) InitActs() {
 		pl.ActM.Init()
 		pl.ActP.Init()
 	}
+	ly.DA = 0
+	ly.ACh = 0
+	ly.SE = 0
+	for si := range ly.GateStates {
+		gs := &ly.GateStates[si]
+		gs.Init()
+	}
 }
 
 // InitWeightsSym initializes the weight symmetry.
@@ -537,6 +544,12 @@ func (ly *Layer) RecvGInc(ctx *Context) {
 		}
 		pt.RecvGInc()
 	}
+	switch ly.Type {
+	case GPiThalLayer:
+		ly.GPiGFromInc(ctx)
+	case PFCDeepLayer:
+		ly.MaintGInc(ctx)
+	}
 }
 
 // GFromIncNeur is the neuron-level code for GFromInc that integrates overall Ge, Gi values
@@ -575,6 +588,9 @@ func (ly *Layer) InhibFromGeAct(ctx *Context) {
 	ly.Inhib.Layer.Inhib(&lpl.Inhib)
 	ly.PoolInhibFromGeAct(ctx)
 	ly.InhibFromPool(ctx)
+	if ly.Type == MatrixLayer {
+		ly.MatrixOutAChInhib(ctx)
+	}
 }
 
 // PoolInhibFromGeAct computes inhibition Gi from Ge and Act averages within relevant Pools
@@ -625,6 +641,12 @@ func (ly *Layer) ActFromG(ctx *Context) {
 		ly.Act.ActFromG(nrn)
 		ly.Learn.AvgsFromAct(nrn)
 	}
+	switch ly.Type {
+	case MatrixLayer:
+		ly.DaAChFromLay(ctx)
+	case PFCDeepLayer:
+		ly.PFCDeepGating(ctx)
+	}
 }
 
 // AvgMaxAct computes the average and max Act stats, used in inhibition
@@ -643,12 +665,13 @@ func (ly *Layer) AvgMaxAct(ctx *Context) {
 	}
 }
 
-// CyclePost is called after the standard Cycle update, as a separate
-// network layer loop.
-// This is reserved for any kind of special ad-hoc types that
-// need to do something special after Act is finally computed.
-// For example, sending a neuromodulatory signal such as dopamine.
-func (ly *Layer) CyclePost(ctx *Context) {
+// SendMods is called after the standard Cycle update, as a separate
+// network layer loop, to send neuromodulatory signals.
+func (ly *Layer) SendMods(ctx *Context) {
+	switch ly.Type {
+	case ClampDaLayer:
+		ly.ClampDaSendMods(ctx)
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -676,6 +699,10 @@ func (ly *Layer) QuarterFinal(ctx *Context) {
 		case 1:
 			nrn.ActQ2 = nrn.Act
 		}
+	}
+	if ly.Type == PFCDeepLayer {
+		ly.UpdateGateCnt(ctx)
+		ly.DeepMaint(ctx)
 	}
 }
 

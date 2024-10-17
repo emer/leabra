@@ -133,6 +133,7 @@ func (pt *Path) InitWeights() {
 		wb.Init()
 	}
 	pt.InitGInc()
+	pt.ClearTrace()
 }
 
 // InitWtSym initializes weight symmetry -- is given the reciprocal pathway where
@@ -212,6 +213,7 @@ func (pt *Path) InitWtSym(rpt *Path) {
 func (pt *Path) InitGInc() {
 	for ri := range pt.GInc {
 		pt.GInc[ri] = 0
+		pt.GeRaw[ri] = 0
 	}
 }
 
@@ -235,13 +237,22 @@ func (pt *Path) SendGDelta(si int, delta float32) {
 // RecvGInc increments the receiver's GeRaw or GiRaw from that of all the pathways.
 func (pt *Path) RecvGInc() {
 	rlay := pt.Recv
-	if pt.Type == InhibPath {
+	switch pt.Type {
+	case InhibPath:
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
 			rn.GiRaw += pt.GInc[ri]
 			pt.GInc[ri] = 0
 		}
-	} else {
+	case GPiThalPath:
+		for ri := range rlay.Neurons {
+			rn := &rlay.Neurons[ri]
+			ginc := pt.GInc[ri]
+			pt.GeRaw[ri] += ginc
+			rn.GeRaw += ginc
+			pt.GInc[ri] = 0
+		}
+	default:
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
 			rn.GeRaw += pt.GInc[ri]
@@ -263,6 +274,8 @@ func (pt *Path) DWt() {
 		pt.DWtCHL()
 	case pt.Type == EcCa1Path:
 		pt.DWtEcCa1()
+	case pt.Type == MatrixPath:
+		pt.DWtMatrix()
 	default:
 		pt.DWtStd()
 	}

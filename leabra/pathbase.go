@@ -52,6 +52,9 @@ type Path struct {
 	// WtSig.SoftBound is automatically turned off, as it is incompatible.
 	CHL CHLParams `display:"inline"`
 
+	// special parameters for matrix trace learning
+	Trace TraceParams `display:"inline"`
+
 	// synaptic state values, ordered by the sending layer
 	// units which owns them -- one-to-one with SConIndex array.
 	Syns []Synapse
@@ -64,6 +67,9 @@ type Path struct {
 	// conductance from sending units. goes to either GeRaw or GiRaw
 	// on neuron depending on pathway type.
 	GInc []float32
+
+	// per-recv, per-path raw excitatory input, for GPiThalPath
+	GeRaw []float32
 
 	// weight balance state variables for this pathway, one per recv neuron.
 	WbRecv []WtBalRecvPath
@@ -122,6 +128,7 @@ func (pt *Path) Defaults() {
 	pt.WtScale.Defaults()
 	pt.Learn.Defaults()
 	pt.CHL.Defaults()
+	pt.Trace.Defaults()
 	switch pt.Type {
 	case CHLPath:
 		pt.CHLDefaults()
@@ -141,6 +148,19 @@ func (pt *Path) UpdateParams() {
 		pt.Learn.WtSig.SoftBound = false
 	}
 	pt.CHL.Update()
+	pt.Trace.Update()
+}
+
+func (pt *Path) ShouldDisplay(field string) bool {
+	switch field {
+	case "CHL":
+		return pt.Type == CHLPath
+	case "Trace":
+		return pt.Type == MatrixPath
+	default:
+		return true
+	}
+	return true
 }
 
 // AllParams returns a listing of all parameters in the Layer
@@ -458,6 +478,7 @@ func (pt *Path) Build() error {
 	}
 	pt.Syns = make([]Synapse, len(pt.SConIndex))
 	pt.GInc = make([]float32, rlen)
+	pt.GeRaw = make([]float32, rlen)
 	pt.WbRecv = make([]WtBalRecvPath, rlen)
 	return nil
 }

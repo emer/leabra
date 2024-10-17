@@ -147,13 +147,28 @@ type Neuron struct {
 
 	// average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization.
 	ISIAvg float32
+
+	// gating activation -- the activity value when gating occurred in this pool.
+	ActG float32
+
+	// per-neuron effective learning dopamine value -- gain modulated and sign reversed for D2R
+	DALrn float32
+
+	// shunting input received from Patch neurons (in reality flows through SNc DA pathways)
+	Shunt float32
+
+	// maintenance value for Deep layers = sending act at time of gating
+	Maint float32
+
+	// maintenance excitatory conductance value for Deep layers
+	MaintGe float32
 }
 
 var NeuronVars = []string{
 	"Act", "Ge", "Gi", "Gk", "Inet", "Vm", "Noise", "Spike", "Targ", "Ext",
 	"AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActLrn",
 	"ActM", "ActP", "ActDif", "ActDel", "ActQ0", "ActQ1", "ActQ2", "ActAvg",
-	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg"}
+	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg", "ActG", "DALrn", "Shunt", "Maint", "MaintGe", "DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt"}
 
 var NeuronVarsMap map[string]int
 
@@ -162,6 +177,7 @@ var VarCategories = []emer.VarCategory{
 	{"Learn", "calcium-based learning variables"},
 	{"Phase", "phase-based activation state"},
 	{"Gmisc", "more detailed conductance (G) variables, for specific channels and computational values"},
+	{"PBWM", "prefrontal cortex basal ganglia working memory model variables, including neuromodulation"},
 	{"Wts", "weights and other synaptic-level variables"},
 }
 
@@ -208,6 +224,18 @@ var NeuronVarProps = map[string]string{
 	"GknaSlow": `cat:"Gmisc"`,
 	"ISI":      `cat:"Gmisc"`,
 	"ISIAvg":   `cat:"Gmisc"`,
+
+	"ActG":    `cat:"PBWM"`,
+	"DALrn":   `cat:"PBWM"`,
+	"Shunt":   `cat:"PBWM"`,
+	"Maint":   `cat:"PBWM"`,
+	"MaintGe": `cat:"PBWM"`,
+	"DA":      `cat:"PBWM"`,
+	"ACh":     `cat:"PBWM"`,
+	"SE":      `cat:"PBWM"`,
+	"GateAct": `cat:"PBWM"`,
+	"GateNow": `cat:"PBWM"`,
+	"GateCnt": `cat:"PBWM"`,
 }
 
 func init() {

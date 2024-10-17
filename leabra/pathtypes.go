@@ -47,4 +47,14 @@ const (
 	// Q2, 3: CA3 -> CA1 -> ECout     : ActM = minus phase for recall
 	// Q4: ECin -> CA1, ECin -> ECout : ActP = plus phase for everything
 	EcCa1Path
+
+	//////// PBWM
+
+	// MatrixPath does dopamine-modulated, gated trace learning,
+	// for Matrix learning in PBWM context.
+	MatrixPath
+
+	// GPiThalPath accumulates per-path raw conductance that is needed for
+	// separately weighting NoGo vs. Go inputs.
+	GPiThalPath
 )

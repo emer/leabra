@@ -138,6 +138,11 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Spike = 0
 	nrn.ISI = -1
 	nrn.ISIAvg = -1
+	nrn.ActG = 0
+	nrn.DALrn = 0
+	nrn.Shunt = 0
+	nrn.Maint = 0
+	nrn.MaintGe = 0
 
 	ac.InitActQs(nrn)
 	ac.InitGInc(nrn)
