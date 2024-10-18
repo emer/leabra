@@ -6,6 +6,8 @@ package leabra
 
 import (
 	"fmt"
+
+	"cogentcore.org/core/math32"
 )
 
 // MatrixParams has parameters for Dorsal Striatum Matrix computation.
@@ -82,8 +84,8 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 	xpN := ly.Shape.DimSize(1)
 	ynN := ly.Shape.DimSize(2)
 	xnN := ly.Shape.DimSize(3)
-	maintN := ly.PBWM.MaintX
-	ach := ly.ACh // ACh comes from CIN neurons, represents reward time
+	maintN := ly.PBWM.MaintN
+	layAch := ly.NeuroMod.ACh // ACh comes from CIN neurons, represents reward time
 	for yp := 0; yp < ypN; yp++ {
 		for xp := maintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
@@ -92,6 +94,10 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 					nrn := &ly.Neurons[ni]
 					if nrn.IsOff() {
 						continue
+					}
+					ach := layAch
+					if ly.Matrix.ShuntACh && nrn.Shunt > 0 {
+						ach *= ly.Matrix.PatchShunt
 					}
 					achI := ly.Matrix.OutAChInhib * (1 - ach)
 					nrn.Gi += achI
@@ -108,7 +114,7 @@ func (ly *Layer) DaAChFromLay(ctx *Context) {
 		if nrn.IsOff() {
 			continue
 		}
-		da := ly.DA
+		da := ly.NeuroMod.DA
 		if nrn.Shunt > 0 { // note: treating Shunt as binary variable -- could multiply
 			da *= ly.Matrix.PatchShunt
 		}
@@ -120,6 +126,9 @@ func (ly *Layer) DaAChFromLay(ctx *Context) {
 // based on GateState.Now
 func (ly *Layer) RecGateAct(ctx *Context) {
 	for pi := range ly.Pools {
+		if pi == 0 {
+			continue
+		}
 		pl := &ly.Pools[pi]
 		if !pl.Gate.Now { // not gating now
 			continue
@@ -132,58 +141,6 @@ func (ly *Layer) RecGateAct(ctx *Context) {
 			nrn.ActG = nrn.Act
 		}
 	}
-}
-
-// GPiGateParams has gating parameters for gating in GPiThal layer, including threshold.
-type GPiGateParams struct {
-	// GateQtr is the Quarter(s) when gating takes place, typically Q1 and Q3,
-	// which is the quarter prior to the PFC GateQtr when deep layer updating
-	// takes place. Note: this is a bitflag and must be accessed using bitflag.
-	// Set / Has etc routines, 32 bit versions.
-	GateQtr Quarters
-
-	// Cycle within Qtr to determine if activation over threshold for gating.
-	// We send GateState updates on this cycle either way.
-	Cycle int `default:"18"`
-
-	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
-	GeGain float32 `default:"3"`
-
-	// how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
-	NoGo float32 `min:"0" default:"1,0.1"`
-
-	// threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
-	Thr float32 `default:"0.2"`
-
-	// Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
-	ThrAct bool `default:"true"`
-}
-
-func (gp *GPiGateParams) Defaults() {
-	gp.GateQtr.SetFlag(true, Q1)
-	gp.GateQtr.SetFlag(true, Q3)
-	gp.Cycle = 18
-	gp.GeGain = 3
-	gp.NoGo = 1
-	gp.Thr = 0.2
-	gp.ThrAct = true
-}
-
-func (gp *GPiGateParams) Update() {
-}
-
-// GeRaw returns the net GeRaw from go, nogo specific values
-func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
-	return (gp.GeGain + gp.NoGo) * (goRaw - gp.NoGo*nogoRaw)
-}
-
-func (ly *Layer) GPiThalDefaults() {
-	ly.PBWM.Type = MaintOut
-	ly.Inhib.Layer.Gi = 1.8
-	ly.Inhib.Layer.FB = 0.2
-	ly.Inhib.Pool.On = false
-	ly.Inhib.ActAvg.Fixed = true
-	ly.Inhib.ActAvg.Init = 1
 }
 
 // GateTypes for region of striatum
@@ -232,7 +189,7 @@ func (ly *Layer) SendPBWMParams() error {
 	var lasterr error
 	for _, lnm := range ly.SendTo {
 		tly := ly.Network.LayerByName(lnm)
-		tly.PBWM = ly.PBWM
+		tly.PBWM.CopyGeomFrom(&ly.PBWM)
 	}
 	return lasterr
 }
@@ -285,6 +242,11 @@ type PBWMParams struct {
 
 	// how many pools in the X dimension are Out gating pools -- comes after Maint
 	OutX int
+
+	// For the Matrix layers, this is the number of Maint Pools in X outer
+	// dimension of 4D shape -- Out gating after that. Note: it is unclear
+	// how this relates to MaintX, but it is different in SIR model.
+	MaintN int
 }
 
 func (pp *PBWMParams) Defaults() {
@@ -306,6 +268,11 @@ func (pp *PBWMParams) Set(nY, maintX, outX int) {
 // TotX returns the total number of X-axis pools (Maint + Out)
 func (pp *PBWMParams) TotX() int {
 	return pp.MaintX + pp.OutX
+}
+
+func (pp *PBWMParams) CopyGeomFrom(src *PBWMParams) {
+	pp.Set(src.Y, src.MaintX, src.OutX)
+	pp.Type = src.Type
 }
 
 // Index returns the index into GateStates for given 2D pool coords
@@ -383,9 +350,23 @@ func (gs *GateState) CopyFrom(fm *GateState) {
 	gs.Now = fm.Now
 }
 
+// GateType returns type of gating for this layer
+func (ly *Layer) GateType() GateTypes {
+	switch ly.Type {
+	case GPiThalLayer, MatrixLayer:
+		return MaintOut
+	case PFCDeepLayer:
+		if ly.PFCGate.OutGate {
+			return Out
+		}
+		return Maint
+	}
+	return MaintOut
+}
+
 // SetGateStates sets the GateStates from given source states, of given gating type
 func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
-	myt := ly.PBWM.Type
+	myt := ly.GateType()
 	if myt < MaintOut && typ < MaintOut && myt != typ { // mismatch
 		return
 	}
@@ -399,7 +380,7 @@ func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
 		mx := len(ly.Pools)
 		for i := 1; i < mx; i++ {
 			gs := &ly.Pool(i).Gate
-			si := ly.PBWM.FullIndex1D(i, myt)
+			si := 1 + ly.PBWM.FullIndex1D(i-1, myt)
 			sgs := &src.Pool(si).Gate
 			gs.CopyFrom(sgs)
 		}
@@ -407,6 +388,58 @@ func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
 }
 
 //////// GPiThalLayer
+
+// GPiGateParams has gating parameters for gating in GPiThal layer, including threshold.
+type GPiGateParams struct {
+	// GateQtr is the Quarter(s) when gating takes place, typically Q1 and Q3,
+	// which is the quarter prior to the PFC GateQtr when deep layer updating
+	// takes place. Note: this is a bitflag and must be accessed using bitflag.
+	// Set / Has etc routines, 32 bit versions.
+	GateQtr Quarters
+
+	// Cycle within Qtr to determine if activation over threshold for gating.
+	// We send GateState updates on this cycle either way.
+	Cycle int `default:"18"`
+
+	// extra netinput gain factor to compensate for reduction in Ge from subtracting away NoGo -- this is *IN ADDITION* to adding the NoGo factor as an extra gain: Ge = (GeGain + NoGo) * (GoIn - NoGo * NoGoIn)
+	GeGain float32 `default:"3"`
+
+	// how much to weight NoGo inputs relative to Go inputs (which have an implied weight of 1 -- this also up-scales overall Ge to compensate for subtraction
+	NoGo float32 `min:"0" default:"1,0.1"`
+
+	// threshold for gating, applied to activation -- when any GPiThal unit activation gets above this threshold, it counts as having gated, driving updating of GateState which is broadcast to other layers that use the gating signal
+	Thr float32 `default:"0.2"`
+
+	// Act value of GPiThal unit reflects gating threshold: if below threshold, it is zeroed -- see ActLrn for underlying non-thresholded activation
+	ThrAct bool `default:"true"`
+}
+
+func (gp *GPiGateParams) Defaults() {
+	gp.GateQtr.SetFlag(true, Q1)
+	gp.GateQtr.SetFlag(true, Q3)
+	gp.Cycle = 18
+	gp.GeGain = 3
+	gp.NoGo = 1
+	gp.Thr = 0.2
+	gp.ThrAct = true
+}
+
+func (gp *GPiGateParams) Update() {
+}
+
+// GeRaw returns the net GeRaw from go, nogo specific values
+func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
+	return (gp.GeGain + gp.NoGo) * (goRaw - gp.NoGo*nogoRaw)
+}
+
+func (ly *Layer) GPiThalDefaults() {
+	ly.PBWM.Type = MaintOut
+	ly.Inhib.Layer.Gi = 1.8
+	ly.Inhib.Layer.FB = 0.2
+	ly.Inhib.Pool.On = false
+	ly.Inhib.ActAvg.Fixed = true
+	ly.Inhib.ActAvg.Init = 1
+}
 
 // GPiGFromInc integrates new synaptic conductances from increments
 // sent during last SendGDelta.
@@ -468,11 +501,74 @@ func (ly *Layer) GPiGateFromAct(ctx *Context) {
 
 // GPiSendGateStates sends GateStates to other layers
 func (ly *Layer) GPiSendGateStates() {
-	myt := MaintOut
+	myt := MaintOut // always
 	for _, lnm := range ly.SendTo {
 		gl := ly.Network.LayerByName(lnm)
 		gl.SetGateStates(ly, myt)
 	}
+}
+
+//////// CINLayer
+
+// CINParams (cholinergic interneuron) reads reward signals from named source layer(s)
+// and sends the Max absolute value of that activity as the positively rectified
+// non-prediction-discounted reward signal computed by CINs, and sent as
+// an acetylcholine (ACh) signal.
+// To handle positive-only reward signals, need to include both a reward prediction
+// and reward outcome layer.
+type CINParams struct {
+	// RewThr is the threshold on reward values from RewLays,
+	// to count as a significant reward event, which then drives maximal ACh.
+	// Set to 0 to disable this nonlinear behavior.
+	RewThr float32 `default:"0.1"`
+
+	// Reward-representing layer(s) from which this computes ACh as Max absolute value
+	RewLays LayerNames
+}
+
+func (ly *CINParams) Defaults() {
+	ly.RewThr = 0.1
+}
+
+func (ly *CINParams) Update() {
+}
+
+// CINMaxAbsRew returns the maximum absolute value of reward layer activations.
+func (ly *Layer) CINMaxAbsRew() float32 {
+	mx := float32(0)
+	for _, nm := range ly.CIN.RewLays {
+		ly := ly.Network.LayerByName(nm)
+		if ly == nil {
+			continue
+		}
+		act := math32.Abs(ly.Pools[0].Inhib.Act.Max)
+		mx = math32.Max(mx, act)
+	}
+	return mx
+}
+
+func (ly *Layer) ActFromGCIN(ctx *Context) {
+	ract := ly.CINMaxAbsRew()
+	if ly.CIN.RewThr > 0 {
+		if ract > ly.CIN.RewThr {
+			ract = 1
+		}
+	}
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		nrn.Act = ract
+		ly.Learn.AvgsFromAct(nrn)
+	}
+}
+
+// SendAChFromAct sends ACh from neural activity in first unit.
+func (ly *Layer) SendAChFromAct(ctx *Context) {
+	act := ly.Neurons[0].Act
+	ly.NeuroMod.ACh = act
+	ly.SendACh(act)
 }
 
 //////// PFC
@@ -680,6 +776,9 @@ func (ly *Layer) PFCDeepGating(ctx *Context) {
 	}
 
 	for pi := range ly.Pools {
+		if pi == 0 {
+			continue
+		}
 		gs := &ly.Pools[pi].Gate
 		if !gs.Now { // not gating now
 			continue
@@ -688,6 +787,7 @@ func (ly *Layer) PFCDeepGating(ctx *Context) {
 			gs.Cnt = 0              // this is the "just gated" signal
 			if ly.PFCGate.OutGate { // time to clear out maint
 				if ly.PFCMaint.OutClearMaint {
+					fmt.Println("clear maint")
 					ly.ClearMaint(pi)
 				}
 			} else {

@@ -14,7 +14,8 @@ package pbwm
 // to full set.
 type GateShape struct {
 
-	// overall shape dimensions for the full set of gating pools, e.g., as present in the Matrix and GPiThal levels
+	// overall shape dimensions for the full set of gating pools,
+	// e.g., as present in the Matrix and GPiThal levels.
 	Y int
 
 	// how many pools in the X dimension are Maint gating pools -- rest are Out

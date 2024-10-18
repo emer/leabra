@@ -155,7 +155,7 @@ func (pt *Path) UpdateParams() {
 	pt.WtScale.Update()
 	pt.Learn.Update()
 	pt.Learn.LrateInit = pt.Learn.Lrate
-	if pt.CHL.On {
+	if pt.Type == CHLPath && pt.CHL.On {
 		pt.Learn.WtSig.SoftBound = false
 	}
 	pt.CHL.Update()

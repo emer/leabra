@@ -79,8 +79,8 @@ func (pt *Path) DWtMatrix() {
 	slay := pt.Send
 	rlay := pt.Recv
 	d2r := (rlay.PBWM.DaR == D2R)
-	da := rlay.DA
-	ach := rlay.ACh
+	da := rlay.NeuroMod.DA
+	ach := rlay.NeuroMod.ACh
 	gateActIdx, _ := NeuronVarIndexByName("GateAct")
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
@@ -126,33 +126,7 @@ func (pt *Path) DWtMatrix() {
 			sy.Tr = tr
 			sy.NTr = ntr
 
-			norm := float32(1)
-			if pt.Learn.Norm.On {
-				norm = pt.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
-			} else {
-				sy.Norm = sy.NTr // store in norm, moment!
-				sy.Moment = sy.Tr
-			}
-			if pt.Learn.Momentum.On {
-				dwt = norm * pt.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
-			} else {
-				dwt *= norm
-			}
 			sy.DWt += pt.Learn.Lrate * dwt
-		}
-		// aggregate max DWtNorm over sending synapses
-		if pt.Learn.Norm.On {
-			maxNorm := float32(0)
-			for ci := range syns {
-				sy := &syns[ci]
-				if sy.Norm > maxNorm {
-					maxNorm = sy.Norm
-				}
-			}
-			for ci := range syns {
-				sy := &syns[ci]
-				sy.Norm = maxNorm
-			}
 		}
 	}
 }

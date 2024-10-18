@@ -60,9 +60,7 @@ func (ly *Layer) InitActs() {
 		pl.ActM.Init()
 		pl.ActP.Init()
 	}
-	ly.DA = 0
-	ly.ACh = 0
-	ly.SE = 0
+	ly.NeuroMod.Init()
 }
 
 // InitWeightsSym initializes the weight symmetry.
@@ -526,7 +524,14 @@ func (ly *Layer) SendGDelta(ctx *Context) {
 // GFromInc integrates new synaptic conductances from increments sent during last SendGDelta.
 func (ly *Layer) GFromInc(ctx *Context) {
 	ly.RecvGInc(ctx)
-	ly.GFromIncNeur(ctx)
+	switch ly.Type {
+	case GPiThalLayer:
+		ly.GPiGFromInc(ctx)
+	case PFCDeepLayer:
+		ly.MaintGInc(ctx)
+	default:
+		ly.GFromIncNeur(ctx)
+	}
 }
 
 // RecvGInc calls RecvGInc on receiving pathways to collect Neuron-level G*Inc values.
@@ -538,12 +543,6 @@ func (ly *Layer) RecvGInc(ctx *Context) {
 			continue
 		}
 		pt.RecvGInc()
-	}
-	switch ly.Type {
-	case GPiThalLayer:
-		ly.GPiGFromInc(ctx)
-	case PFCDeepLayer:
-		ly.MaintGInc(ctx)
 	}
 }
 
@@ -643,6 +642,9 @@ func (ly *Layer) ActFromG(ctx *Context) {
 	case TDDaLayer:
 		ly.ActFromGTDDa(ctx)
 		return
+	case CINLayer:
+		ly.ActFromGCIN(ctx)
+		return
 	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -683,6 +685,8 @@ func (ly *Layer) SendMods(ctx *Context) {
 	switch ly.Type {
 	case ClampDaLayer, RWDaLayer, TDDaLayer:
 		ly.SendDaFromAct(ctx)
+	case CINLayer:
+		ly.SendAChFromAct(ctx)
 	}
 }
 
@@ -716,6 +720,9 @@ func (ly *Layer) QuarterFinal(ctx *Context) {
 		ly.UpdateGateCnt(ctx)
 		ly.DeepMaint(ctx)
 	}
+	if ctx.Quarter == 1 {
+		ly.Quarter2DWt()
+	}
 }
 
 // MinusPhase is called at the end of the minus phase (quarter 3), to record state.
@@ -735,6 +742,10 @@ func (ly *Layer) MinusPhase(ctx *Context) {
 			nrn.SetFlag(true, NeurHasExt)
 		}
 	}
+	if ly.Type == PFCDeepLayer {
+		ly.UpdateGateCnt(ctx)
+		ly.DeepMaint(ctx)
+	}
 }
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
@@ -753,6 +764,10 @@ func (ly *Layer) PlusPhase(ctx *Context) {
 		nrn.ActAvg += ly.Act.Dt.AvgDt * (nrn.Act - nrn.ActAvg)
 	}
 	ly.CosDiffFromActs()
+	if ly.Type == PFCDeepLayer {
+		ly.UpdateGateCnt(ctx)
+		ly.DeepMaint(ctx)
+	}
 }
 
 // CosDiffFromActs computes the cosine difference in activation state between minus and plus phases.
@@ -816,6 +831,29 @@ func (ly *Layer) DWt() {
 		}
 		pt.DWt()
 	}
+}
+
+// Quarter2DWt computes the weight change (learning), for layers that learn in Quarter 2.
+func (ly *Layer) Quarter2DWt() {
+	for _, pt := range ly.SendPaths {
+		if pt.Off {
+			continue
+		}
+		rlay := pt.Recv
+		if rlay.DoQuarter2DWt() {
+			pt.DWt()
+		}
+	}
+}
+
+func (ly *Layer) DoQuarter2DWt() bool {
+	switch ly.Type {
+	case MatrixLayer:
+		return ly.Matrix.LearnQtr.HasFlag(Q2)
+	case PFCDeepLayer:
+		return ly.PFCGate.GateQtr.HasFlag(Q2)
+	}
+	return false
 }
 
 // WtFromDWt updates the weights from delta-weight changes -- on the sending pathways

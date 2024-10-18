@@ -116,7 +116,7 @@ func (pt *Path) RWDefaults() {
 func (pt *Path) DWtRW() {
 	slay := pt.Send
 	rlay := pt.Recv
-	lda := pt.Recv.DA
+	lda := rlay.NeuroMod.DA
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pt.SConN[si])
@@ -258,7 +258,7 @@ func (pt *Path) TDPredDefaults() {
 func (pt *Path) DWtTDPred() {
 	slay := pt.Send
 	rlay := pt.Recv
-	da := rlay.DA
+	da := rlay.NeuroMod.DA
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
 		nc := int(pt.SConN[si])

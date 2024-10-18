@@ -64,6 +64,9 @@ type Layer struct {
 	// GPiGate are gating parameters determining threshold for gating etc.
 	GPiGate GPiGateParams `display:"inline"`
 
+	// CIN cholinergic interneuron parameters.
+	CIN CINParams `display:"inline"`
+
 	// PFC Gating parameters
 	PFCGate PFCGateParams `display:"inline"`
 
@@ -86,18 +89,12 @@ type Layer struct {
 	// cosine difference between ActM, ActP stats.
 	CosDiff CosDiffStats
 
-	// current dopamine level for this layer
-	DA float32 `read-only:"+"`
-
-	// current acetylcholine level for this layer
-	ACh float32 `read-only:"+"`
-
-	// current serotonin level for this layer
-	SE float32 `read-only:"+"`
+	// NeuroMod is the neuromodulatory neurotransmitter state for this layer.
+	NeuroMod NeuroMod `read-only:"+" display:"inline"`
 
 	// SendTo is a list of layers that this layer sends special signals to,
 	// which could be dopamine, gating signals, depending on the layer type.
-	SendTo []string
+	SendTo LayerNames
 }
 
 // emer.Layer interface methods
@@ -119,6 +116,7 @@ func (ly *Layer) Defaults() {
 	ly.Matrix.Defaults()
 	ly.PBWM.Defaults()
 	ly.GPiGate.Defaults()
+	ly.CIN.Defaults()
 	ly.PFCGate.Defaults()
 	ly.PFCMaint.Defaults()
 	ly.Inhib.Layer.On = true
@@ -155,6 +153,7 @@ func (ly *Layer) UpdateParams() {
 	ly.Matrix.Update()
 	ly.PBWM.Update()
 	ly.GPiGate.Update()
+	ly.CIN.Update()
 	ly.PFCGate.Update()
 	ly.PFCMaint.Update()
 	for _, pt := range ly.RecvPaths {
@@ -172,11 +171,13 @@ func (ly *Layer) ShouldDisplay(field string) bool {
 	case "PBWM":
 		return isPBWM
 	case "SendTo":
-		return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer
+		return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer || ly.Type == CINLayer
 	case "Matrix":
 		return ly.Type == MatrixLayer
 	case "GPiGate":
 		return ly.Type == GPiThalLayer
+	case "CIN":
+		return ly.Type == CINLayer
 	case "PFCGate", "PFCMaint":
 		return ly.Type == PFCLayer || ly.Type == PFCDeepLayer
 	case "PFCDyns":
@@ -268,11 +269,11 @@ func (ly *Layer) UnitValue1D(varIndex int, idx int, di int) float32 {
 	if varIndex >= da {
 		switch varIndex - da {
 		case 0:
-			return ly.DA
+			return ly.NeuroMod.DA
 		case 1:
-			return ly.ACh
+			return ly.NeuroMod.ACh
 		case 2:
-			return ly.SE
+			return ly.NeuroMod.SE
 		case 3:
 			return ly.Pools[nrn.SubPool].Gate.Act
 		case 4:
@@ -492,40 +493,17 @@ func (ly *Layer) Pool(idx int) *Pool {
 
 // AddSendTo adds given layer name(s) to list of those to send to.
 func (ly *Layer) AddSendTo(laynm ...string) {
-	ly.SendTo = append(ly.SendTo, laynm...)
+	ly.SendTo.Add(laynm...)
 }
 
 // AddAllSendToBut adds all layers in network except those in exclude list.
 func (ly *Layer) AddAllSendToBut(excl ...string) {
-	ly.SendTo = nil
-	net := ly.Network
-	for _, l := range net.Layers {
-		lnm := l.Name
-		exl := false
-		for _, ex := range excl {
-			if lnm == ex {
-				exl = true
-				break
-			}
-		}
-		if exl {
-			continue
-		}
-		ly.AddSendTo(lnm)
-	}
+	ly.SendTo.AddAllBut(ly.Network, excl...)
 }
 
 // ValidateSendTo ensures that SendTo layer names are valid.
 func (ly *Layer) ValidateSendTo() error {
-	var errs []error
-	for _, lnm := range ly.SendTo {
-		tly := ly.Network.LayerByName(lnm)
-		if tly == nil {
-			err := fmt.Errorf("%s SendTo Validate: Layer name found %s", ly.Name, lnm)
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
+	return ly.SendTo.Validate(ly.Network)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -603,6 +581,10 @@ func (ly *Layer) Build() error {
 		return errors.Log(err)
 	}
 	err = ly.ValidateSendTo()
+	if err != nil {
+		return errors.Log(err)
+	}
+	err = ly.CIN.RewLays.Validate(ly.Network)
 	if err != nil {
 		return errors.Log(err)
 	}

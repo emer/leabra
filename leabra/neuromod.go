@@ -4,12 +4,57 @@
 
 package leabra
 
+import (
+	"errors"
+	"fmt"
+)
+
+// LayerNames is a list of layer names, with methods to add and validate.
+type LayerNames []string
+
+// Add adds given layer name(s) to list.
+func (ln *LayerNames) Add(laynm ...string) {
+	*ln = append(*ln, laynm...)
+}
+
+// AddAllBut adds all layers in network except those in exclude list.
+func (ln *LayerNames) AddAllBut(net *Network, excl ...string) {
+	*ln = nil
+	for _, l := range net.Layers {
+		lnm := l.Name
+		exl := false
+		for _, ex := range excl {
+			if lnm == ex {
+				exl = true
+				break
+			}
+		}
+		if exl {
+			continue
+		}
+		ln.Add(lnm)
+	}
+}
+
+// Validate ensures that layer names are valid.
+func (ln *LayerNames) Validate(net *Network) error {
+	var errs []error
+	for _, lnm := range *ln {
+		tly := net.LayerByName(lnm)
+		if tly == nil {
+			err := fmt.Errorf("Validate: Layer name found %s", lnm)
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // SendDA sends dopamine to SendTo list of layers.
 func (ly *Layer) SendDA(da float32) {
 	for _, lnm := range ly.SendTo {
 		tly := ly.Network.LayerByName(lnm)
 		if tly != nil {
-			tly.DA = da
+			tly.NeuroMod.DA = da
 		}
 	}
 }
@@ -19,7 +64,7 @@ func (ly *Layer) SendACh(ach float32) {
 	for _, lnm := range ly.SendTo {
 		tly := ly.Network.LayerByName(lnm)
 		if tly != nil {
-			tly.ACh = ach
+			tly.NeuroMod.ACh = ach
 		}
 	}
 }
@@ -38,86 +83,31 @@ func (ly *Layer) ClampDaDefaults() {
 // SendDaFromAct is called in SendMods to send activity as DA.
 func (ly *Layer) SendDaFromAct(ctx *Context) {
 	act := ly.Neurons[0].Act
-	ly.DA = act
+	ly.NeuroMod.DA = act
 	ly.SendDA(act)
 }
 
-// Params for effects of dopamine (Da) based modulation, typically adding
-// a Da-based term to the Ge excitatory synaptic input.
-// Plus-phase = learning effects relative to minus-phase "performance" dopamine effects
-type DaModParams struct {
+// NeuroMod are the neuromodulatory neurotransmitters, at the layer level.
+type NeuroMod struct {
 
-	// whether to use dopamine modulation
-	On bool
+	// DA is dopamine, which primarily modulates learning, and also excitability,
+	// and reflects the reward prediction error (RPE).
+	DA float32
 
-	// modulate gain instead of Ge excitatory synaptic input
-	ModGain bool
+	// ACh is acetylcholine, which modulates excitability and also learning,
+	// and reflects salience, i.e., reward (without discount by prediction) and
+	// learned CS onset.
+	ACh float32
 
-	// how much to multiply Da in the minus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
-	Minus float32
-
-	// how much to multiply Da in the plus phase to add to Ge input -- use negative values for NoGo/indirect pathway/D2 type neurons
-	Plus float32
-
-	// for negative dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * NegNain) -- da is multiplied by minus or plus depending on phase
-	NegGain float32
-
-	// for positive dopamine, how much to change the default gain value as a function of dopamine: gain = gain * (1 + da * PosGain) -- da is multiplied by minus or plus depending on phase
-	PosGain float32
+	// SE is serotonin, which is a longer timescale neuromodulator with many
+	// different effects. Currently not implemented, but here for future expansion.
+	SE float32
 }
 
-func (dm *DaModParams) Defaults() {
-	dm.Minus = 0
-	dm.Plus = 0.01
-	dm.NegGain = 0.1
-	dm.PosGain = 0.1
-}
-
-func (dm *DaModParams) Update() {
-}
-
-func (dm *DaModParams) ShouldDisplay(field string) bool {
-	switch field {
-	case "On":
-		return true
-	case "NegGain", "PosGain":
-		return dm.On && dm.ModGain
-	default:
-		return dm.On
-	}
-}
-
-// GeModOn returns true if modulating Ge
-func (dm *DaModParams) GeModOn() bool {
-	return dm.On && !dm.ModGain
-}
-
-// GainModOn returns true if modulating Gain
-func (dm *DaModParams) GainModOn() bool {
-	return dm.On && dm.ModGain
-}
-
-// Ge returns da-modulated ge value
-func (dm *DaModParams) Ge(da, ge float32, plusPhase bool) float32 {
-	if plusPhase {
-		return dm.Plus * da * ge
-	} else {
-		return dm.Minus * da * ge
-	}
-}
-
-// Gain returns da-modulated gain value
-func (dm *DaModParams) Gain(da, gain float32, plusPhase bool) float32 {
-	if plusPhase {
-		da *= dm.Plus
-	} else {
-		da *= dm.Minus
-	}
-	if da < 0 {
-		return gain * (1 + da*dm.NegGain)
-	} else {
-		return gain * (1 + da*dm.PosGain)
-	}
+func (nm *NeuroMod) Init() {
+	nm.DA = 0
+	nm.ACh = 0
+	nm.SE = 0
 }
 
 //////// Enums
