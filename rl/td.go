@@ -11,11 +11,11 @@ import (
 	"github.com/emer/leabra/v2/leabra"
 )
 
-// TDRewPredLayer is the temporal differences reward prediction layer.
+// TDPredLayer is the temporal differences reward prediction layer.
 // It represents estimated value V(t) in the minus phase, and computes
 // estimated V(t+1) based on its learned weights in plus phase.
-// Use TDRewPredPath for DA modulated learning.
-type TDRewPredLayer struct {
+// Use TDPredPath for DA modulated learning.
+type TDPredLayer struct {
 	leabra.Layer
 
 	// dopamine value for this layer
@@ -24,11 +24,11 @@ type TDRewPredLayer struct {
 
 // DALayer interface:
 
-func (ly *TDRewPredLayer) GetDA() float32   { return ly.DA }
-func (ly *TDRewPredLayer) SetDA(da float32) { ly.DA = da }
+func (ly *TDPredLayer) GetDA() float32   { return ly.DA }
+func (ly *TDPredLayer) SetDA(da float32) { ly.DA = da }
 
-// ActFromG computes linear activation for TDRewPred
-func (ly *TDRewPredLayer) ActFromG(ctx *leabra.Context) {
+// ActFromG computes linear activation for TDPred
+func (ly *TDPredLayer) ActFromG(ctx *leabra.Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -43,61 +43,61 @@ func (ly *TDRewPredLayer) ActFromG(ctx *leabra.Context) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  TDRewIntegLayer
+//  TDIntegLayer
 
-// TDRewIntegParams are params for reward integrator layer
-type TDRewIntegParams struct {
+// TDIntegParams are params for reward integrator layer
+type TDIntegParams struct {
 
 	// discount factor -- how much to discount the future prediction from RewPred
 	Discount float32
 
-	// name of TDRewPredLayer to get reward prediction from
+	// name of TDPredLayer to get reward prediction from
 	RewPred string
 }
 
-func (tp *TDRewIntegParams) Defaults() {
+func (tp *TDIntegParams) Defaults() {
 	tp.Discount = 0.9
 	if tp.RewPred == "" {
 		tp.RewPred = "RewPred"
 	}
 }
 
-// TDRewIntegLayer is the temporal differences reward integration layer.
+// TDIntegLayer is the temporal differences reward integration layer.
 // It represents estimated value V(t) in the minus phase, and
 // estimated V(t+1) + r(t) in the plus phase.
 // It computes r(t) from (typically fixed) weights from a reward layer,
 // and directly accesses values from RewPred layer.
-type TDRewIntegLayer struct {
+type TDIntegLayer struct {
 	leabra.Layer
 
 	// parameters for reward integration
-	RewInteg TDRewIntegParams
+	RewInteg TDIntegParams
 
 	// dopamine value for this layer
 	DA float32
 }
 
-func (ly *TDRewIntegLayer) Defaults() {
+func (ly *TDIntegLayer) Defaults() {
 	ly.Layer.Defaults()
 	ly.RewInteg.Defaults()
 }
 
 // DALayer interface:
 
-func (ly *TDRewIntegLayer) GetDA() float32   { return ly.DA }
-func (ly *TDRewIntegLayer) SetDA(da float32) { ly.DA = da }
+func (ly *TDIntegLayer) GetDA() float32   { return ly.DA }
+func (ly *TDIntegLayer) SetDA(da float32) { ly.DA = da }
 
-func (ly *TDRewIntegLayer) RewPredLayer() (*TDRewPredLayer, error) {
+func (ly *TDIntegLayer) RewPredLayer() (*TDPredLayer, error) {
 	tly, err := ly.Network.LayerByName(ly.RewInteg.RewPred)
 	if err != nil {
-		log.Printf("TDRewIntegLayer %s RewPredLayer: %v\n", ly.Name(), err)
+		log.Printf("TDIntegLayer %s RewPredLayer: %v\n", ly.Name(), err)
 		return nil, err
 	}
-	return tly.(*TDRewPredLayer), nil
+	return tly.(*TDPredLayer), nil
 }
 
 // Build constructs the layer state, including calling Build on the pathways.
-func (ly *TDRewIntegLayer) Build() error {
+func (ly *TDIntegLayer) Build() error {
 	err := ly.Layer.Build()
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (ly *TDRewIntegLayer) Build() error {
 	return err
 }
 
-func (ly *TDRewIntegLayer) ActFromG(ctx *leabra.Context) {
+func (ly *TDIntegLayer) ActFromG(ctx *leabra.Context) {
 	rply, _ := ly.RewPredLayer()
 	if rply == nil {
 		return
@@ -130,14 +130,14 @@ func (ly *TDRewIntegLayer) ActFromG(ctx *leabra.Context) {
 //  TDDaLayer
 
 // TDDaLayer computes a dopamine (DA) signal as the temporal difference (TD)
-// between the TDRewIntegLayer activations in the minus and plus phase.
+// between the TDIntegLayer activations in the minus and plus phase.
 type TDDaLayer struct {
 	leabra.Layer
 
 	// list of layers to send dopamine to
 	SendDA SendDA
 
-	// name of TDRewIntegLayer from which this computes the temporal derivative
+	// name of TDIntegLayer from which this computes the temporal derivative
 	RewInteg string
 
 	// dopamine value for this layer
@@ -157,13 +157,13 @@ func (ly *TDDaLayer) Defaults() {
 func (ly *TDDaLayer) GetDA() float32   { return ly.DA }
 func (ly *TDDaLayer) SetDA(da float32) { ly.DA = da }
 
-func (ly *TDDaLayer) RewIntegLayer() (*TDRewIntegLayer, error) {
+func (ly *TDDaLayer) RewIntegLayer() (*TDIntegLayer, error) {
 	tly, err := ly.Network.LayerByName(ly.RewInteg)
 	if err != nil {
 		log.Printf("TDDaLayer %s RewIntegLayer: %v\n", ly.Name(), err)
 		return nil, err
 	}
-	return tly.(*TDRewIntegLayer), nil
+	return tly.(*TDIntegLayer), nil
 }
 
 // Build constructs the layer state, including calling Build on the pathways.
@@ -210,17 +210,17 @@ func (ly *TDDaLayer) CyclePost(ctx *leabra.Context) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-//  TDRewPredPath
+//  TDPredPath
 
-// TDRewPredPath does dopamine-modulated learning for reward prediction:
+// TDPredPath does dopamine-modulated learning for reward prediction:
 // DWt = Da * Send.ActQ0 (activity on *previous* timestep)
-// Use in TDRewPredLayer typically to generate reward predictions.
+// Use in TDPredLayer typically to generate reward predictions.
 // Has no weight bounds or limits on sign etc.
-type TDRewPredPath struct {
+type TDPredPath struct {
 	leabra.Path
 }
 
-func (pj *TDRewPredPath) Defaults() {
+func (pj *TDPredPath) Defaults() {
 	pj.Path.Defaults()
 	// no additional factors
 	pj.Learn.WtSig.Gain = 1
@@ -230,7 +230,7 @@ func (pj *TDRewPredPath) Defaults() {
 }
 
 // DWt computes the weight change (learning) -- on sending pathways.
-func (pj *TDRewPredPath) DWt() {
+func (pj *TDPredPath) DWt() {
 	if !pj.Learn.Learn {
 		return
 	}
@@ -279,7 +279,7 @@ func (pj *TDRewPredPath) DWt() {
 }
 
 // WtFromDWt updates the synaptic weight values from delta-weight changes -- on sending pathways
-func (pj *TDRewPredPath) WtFromDWt() {
+func (pj *TDPredPath) WtFromDWt() {
 	if !pj.Learn.Learn {
 		return
 	}

@@ -46,6 +46,7 @@ func (ly *Layer) ActFromGRWPred(ctx *Context) {
 			continue
 		}
 		nrn.Act = ly.RW.PredRange.ClipValue(nrn.Ge) // clipped linear
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
@@ -64,7 +65,7 @@ func (ly *Layer) RWLayers() (*Layer, *Layer, error) {
 	return tly, ply, nil
 }
 
-func (ly *Layer) RWDaActFromG(ctx *Context) {
+func (ly *Layer) ActFromGRWDa(ctx *Context) {
 	rly, ply, _ := ly.RWLayers()
 	if rly == nil || ply == nil {
 		return
@@ -87,6 +88,7 @@ func (ly *Layer) RWDaActFromG(ctx *Context) {
 		} else {
 			nrn.Act = 0 // nothing
 		}
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
@@ -149,23 +151,24 @@ type TDParams struct {
 	// discount factor -- how much to discount the future prediction from RewPred.
 	Discount float32
 
-	// name of [TDRewPredLayer] to get reward prediction from.
+	// name of [TDPredLayer] to get reward prediction from.
 	PredLay string
 
-	// name of [TDRewIntegLayer] from which this computes the temporal derivative.
+	// name of [TDIntegLayer] from which this computes the temporal derivative.
 	IntegLay string
 }
 
 func (tp *TDParams) Defaults() {
 	tp.Discount = 0.9
-	tp.PredLay = "RewPred"
+	tp.PredLay = "Pred"
+	tp.IntegLay = "Integ"
 }
 
 func (tp *TDParams) Update() {
 }
 
-// ActFromGTDRewPred computes linear activation for [TDRewPredLayer].
-func (ly *Layer) ActFromGTDRewPred(ctx *Context) {
+// ActFromGTDPred computes linear activation for [TDPredLayer].
+func (ly *Layer) ActFromGTDPred(ctx *Context) {
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -176,20 +179,21 @@ func (ly *Layer) ActFromGTDRewPred(ctx *Context) {
 		} else {
 			nrn.Act = nrn.ActP // previous actP
 		}
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
-func (ly *Layer) TDRewPredLayer() (*Layer, error) {
+func (ly *Layer) TDPredLayer() (*Layer, error) {
 	tly := ly.Network.LayerByName(ly.TD.PredLay)
 	if tly == nil {
-		err := fmt.Errorf("TDRewIntegLayer %s RewPredLayer: %q not found", ly.Name, ly.TD.PredLay)
+		err := fmt.Errorf("TDIntegLayer %s RewPredLayer: %q not found", ly.Name, ly.TD.PredLay)
 		return nil, errors.Log(err)
 	}
 	return tly, nil
 }
 
-func (ly *Layer) ActFromGTDRewInteg(ctx *Context) {
-	rply, _ := ly.TDRewPredLayer()
+func (ly *Layer) ActFromGTDInteg(ctx *Context) {
+	rply, _ := ly.TDPredLayer()
 	if rply == nil {
 		return
 	}
@@ -205,13 +209,14 @@ func (ly *Layer) ActFromGTDRewInteg(ctx *Context) {
 		} else {
 			nrn.Act = rpActP // previous actP
 		}
+		ly.Learn.AvgsFromAct(nrn)
 	}
 }
 
-func (ly *Layer) TDRewIntegLayer() (*Layer, error) {
+func (ly *Layer) TDIntegLayer() (*Layer, error) {
 	tly := ly.Network.LayerByName(ly.TD.IntegLay)
 	if tly == nil {
-		err := fmt.Errorf("TDRewIntegLayer %s RewIntegLayer: %q not found", ly.Name, ly.TD.IntegLay)
+		err := fmt.Errorf("TDIntegLayer %s RewIntegLayer: %q not found", ly.Name, ly.TD.IntegLay)
 		return nil, errors.Log(err)
 	}
 	return tly, nil
@@ -222,7 +227,7 @@ func (ly *Layer) TDDaDefaults() {
 }
 
 func (ly *Layer) ActFromGTDDa(ctx *Context) {
-	rily, _ := ly.TDRewIntegLayer()
+	rily, _ := ly.TDIntegLayer()
 	if rily == nil {
 		return
 	}
@@ -242,15 +247,15 @@ func (ly *Layer) ActFromGTDDa(ctx *Context) {
 	}
 }
 
-func (pt *Path) TDRewPredDefaults() {
+func (pt *Path) TDPredDefaults() {
 	pt.Learn.WtSig.Gain = 1
 	pt.Learn.Norm.On = false
 	pt.Learn.Momentum.On = false
 	pt.Learn.WtBal.On = false
 }
 
-// DWtTDRewPred computes the weight change (learning) for [TDRewPredPath].
-func (pt *Path) DWtTDRewPred() {
+// DWtTDPred computes the weight change (learning) for [TDPredPath].
+func (pt *Path) DWtTDPred() {
 	slay := pt.Send
 	rlay := pt.Recv
 	da := rlay.DA
@@ -271,12 +276,12 @@ func (pt *Path) DWtTDRewPred() {
 }
 
 // AddTDLayers adds the standard TD temporal differences layers, generating a DA signal.
-// Pathway from Rew to RewInteg is given class TDRewToInteg -- should
+// Pathway from Rew to RewInteg is given class TDToInteg -- should
 // have no learning and 1 weight.
 func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *Layer) {
 	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, InputLayer)
-	rp = nt.AddLayer2D(prefix+"RewPred", 1, 1, SuperLayer)
-	ri = nt.AddLayer2D(prefix+"RewInteg", 1, 1, TDRewIntegLayer)
+	rp = nt.AddLayer2D(prefix+"Pred", 1, 1, TDPredLayer)
+	ri = nt.AddLayer2D(prefix+"Integ", 1, 1, TDIntegLayer)
 	td = nt.AddLayer2D(prefix+"TD", 1, 1, TDDaLayer)
 	ri.TD.PredLay = rp.Name
 	td.TD.IntegLay = ri.Name
@@ -285,12 +290,12 @@ func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *L
 	td.PlaceBehind(ri, space)
 
 	pt := nt.ConnectLayers(rew, ri, paths.NewFull(), ForwardPath)
-	pt.AddClass("TDRewToInteg")
+	pt.AddClass("TDToInteg")
 	pt.Learn.Learn = false
 	pt.WtInit.Mean = 1
 	pt.WtInit.Var = 0
 	pt.WtInit.Sym = false
-	// {Sel: ".TDRewToInteg", Desc: "rew to integ",
+	// {Sel: ".TDToInteg", Desc: "rew to integ",
 	// 	Params: params.Params{
 	// 		"Path.Learn.Learn": "false",
 	// 		"Path.WtInit.Mean": "1",

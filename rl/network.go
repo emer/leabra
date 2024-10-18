@@ -21,29 +21,29 @@ func AddClampDaLayer(nt *leabra.Network, name string) *ClampDaLayer {
 }
 
 // AddTDLayers adds the standard TD temporal differences layers, generating a DA signal.
-// Pathway from Rew to RewInteg is given class TDRewToInteg -- should
+// Pathway from Rew to RewInteg is given class TDToInteg -- should
 // have no learning and 1 weight.
 func AddTDLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space float32) (rew, rp, ri, td leabra.LeabraLayer) {
 	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, leabra.InputLayer).(leabra.LeabraLayer)
-	rp = &TDRewPredLayer{}
+	rp = &TDPredLayer{}
 	nt.AddLayerInit(rp, prefix+"RewPred", []int{1, 1}, leabra.SuperLayer)
-	ri = &TDRewIntegLayer{}
+	ri = &TDIntegLayer{}
 	nt.AddLayerInit(ri, prefix+"RewInteg", []int{1, 1}, leabra.SuperLayer)
 	td = &TDDaLayer{}
 	nt.AddLayerInit(td, prefix+"TD", []int{1, 1}, leabra.SuperLayer)
-	ri.(*TDRewIntegLayer).RewInteg.RewPred = rp.Name()
+	ri.(*TDIntegLayer).RewInteg.RewPred = rp.Name()
 	td.(*TDDaLayer).RewInteg = ri.Name()
 	rp.SetRelPos(relpos.Rel{Rel: rel, Other: rew.Name(), YAlign: relpos.Front, Space: space})
 	ri.SetRelPos(relpos.Rel{Rel: rel, Other: rp.Name(), YAlign: relpos.Front, Space: space})
 	td.SetRelPos(relpos.Rel{Rel: rel, Other: ri.Name(), YAlign: relpos.Front, Space: space})
 
 	pj := nt.ConnectLayers(rew, ri, paths.NewFull(), leabra.ForwardPath).(leabra.LeabraPath).AsLeabra()
-	pj.SetClass("TDRewToInteg")
+	pj.SetClass("TDToInteg")
 	pj.Learn.Learn = false
 	pj.WtInit.Mean = 1
 	pj.WtInit.Var = 0
 	pj.WtInit.Sym = false
-	// {Sel: ".TDRewToInteg", Desc: "rew to integ",
+	// {Sel: ".TDToInteg", Desc: "rew to integ",
 	// 	Params: params.Params{
 	// 		"Path.Learn.Learn": "false",
 	// 		"Path.WtInit.Mean": "1",
@@ -71,7 +71,7 @@ func AddRWLayers(nt *leabra.Network, prefix string, rel relpos.Relations, space 
 }
 
 // AddTDLayersPy adds the standard TD temporal differences layers, generating a DA signal.
-// Pathway from Rew to RewInteg is given class TDRewToInteg -- should
+// Pathway from Rew to RewInteg is given class TDToInteg -- should
 // have no learning and 1 weight.
 // Py is Python version, returns layers as a slice
 func AddTDLayersPy(nt *leabra.Network, prefix string, rel relpos.Relations, space float32) []leabra.LeabraLayer {

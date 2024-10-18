@@ -55,11 +55,11 @@ const (
 	// Has no weight bounds or limits on sign etc.
 	RWPath
 
-	// TDRewPredPath does dopamine-modulated learning for reward prediction:
+	// TDPredPath does dopamine-modulated learning for reward prediction:
 	// DWt = Da * Send.ActQ0 (activity on *previous* timestep)
-	// Use in TDRewPredLayer typically to generate reward predictions.
+	// Use in TDPredLayer typically to generate reward predictions.
 	// Has no weight bounds or limits on sign etc.
-	TDRewPredPath
+	TDPredPath
 
 	//////// PBWM
 

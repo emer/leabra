@@ -109,12 +109,8 @@ func (ly *Layer) DaAChFromLay(ctx *Context) {
 			continue
 		}
 		da := ly.DA
-		// ach := ly.ACh
 		if nrn.Shunt > 0 { // note: treating Shunt as binary variable -- could multiply
 			da *= ly.Matrix.PatchShunt
-			// if ly.Matrix.ShuntACh {
-			// 	ach *= ly.Matrix.PatchShunt
-			// }
 		}
 		nrn.DALrn = ly.DALrnFromDA(da)
 	}

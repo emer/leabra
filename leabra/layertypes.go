@@ -81,21 +81,21 @@ const (
 	// RWPred prediction is also accessed directly from Rew layer to avoid any issues.
 	RWDaLayer
 
-	// TDRewPredLayer is the temporal differences reward prediction layer.
+	// TDPredLayer is the temporal differences reward prediction layer.
 	// It represents estimated value V(t) in the minus phase, and computes
 	// estimated V(t+1) based on its learned weights in plus phase.
-	// Use [TDRewPredPath] for DA modulated learning.
-	TDRewPredLayer
+	// Use [TDPredPath] for DA modulated learning.
+	TDPredLayer
 
-	// TDRewIntegLayer is the temporal differences reward integration layer.
+	// TDIntegLayer is the temporal differences reward integration layer.
 	// It represents estimated value V(t) in the minus phase, and
 	// estimated V(t+1) + r(t) in the plus phase.
 	// It computes r(t) from (typically fixed) weights from a reward layer,
-	// and directly accesses values from [TDRewPredLayer].
-	TDRewIntegLayer
+	// and directly accesses values from [TDPredLayer].
+	TDIntegLayer
 
 	// TDDaLayer computes a dopamine (DA) signal as the temporal difference (TD)
-	// between the [TDRewIntegLayer[] activations in the minus and plus phase.
+	// between the [TDIntegLayer[] activations in the minus and plus phase.
 	TDDaLayer
 
 	///////// BG Basal Ganglia

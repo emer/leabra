@@ -278,8 +278,8 @@ func (pt *Path) DWt() {
 		pt.DWtMatrix()
 	case pt.Type == RWPath:
 		pt.DWtRW()
-	case pt.Type == TDRewPredPath:
-		pt.DWtTDRewPred()
+	case pt.Type == TDPredPath:
+		pt.DWtTDPred()
 	case pt.Type == DaHebbPath:
 		pt.DWtDaHebb()
 	default:
@@ -343,7 +343,7 @@ func (pt *Path) WtFromDWt() {
 		return
 	}
 	switch pt.Type {
-	case RWPath, TDRewPredPath:
+	case RWPath, TDPredPath:
 		pt.WtFromDWtLinear()
 		return
 	}

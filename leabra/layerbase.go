@@ -168,7 +168,7 @@ func (ly *Layer) ShouldDisplay(field string) bool {
 	case "RW":
 		return ly.Type == RWPredLayer || ly.Type == RWDaLayer
 	case "TD":
-		return ly.Type == TDRewIntegLayer || ly.Type == TDDaLayer
+		return ly.Type == TDPredLayer || ly.Type == TDIntegLayer || ly.Type == TDDaLayer
 	case "PBWM":
 		return isPBWM
 	case "SendTo":

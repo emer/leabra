@@ -139,8 +139,8 @@ func (pt *Path) DefaultsForType() {
 		pt.CHLDefaults()
 	case EcCa1Path:
 		pt.EcCa1Defaults()
-	case TDRewPredPath:
-		pt.TDRewPredDefaults()
+	case TDPredPath:
+		pt.TDPredDefaults()
 	case RWPath:
 		pt.RWDefaults()
 	case MatrixPath:

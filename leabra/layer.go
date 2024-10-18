@@ -627,6 +627,23 @@ func (ly *Layer) InhibFromPool(ctx *Context) {
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 // and updates learning running-average activations from that Act
 func (ly *Layer) ActFromG(ctx *Context) {
+	switch ly.Type {
+	case RWDaLayer:
+		ly.ActFromGRWDa(ctx)
+		return
+	case RWPredLayer:
+		ly.ActFromGRWPred(ctx)
+		return
+	case TDPredLayer:
+		ly.ActFromGTDPred(ctx)
+		return
+	case TDIntegLayer:
+		ly.ActFromGTDInteg(ctx)
+		return
+	case TDDaLayer:
+		ly.ActFromGTDDa(ctx)
+		return
+	}
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {

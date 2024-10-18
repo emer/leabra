@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build not
+
 // hip_bench runs a hippocampus model for testing parameters and new learning ideas
 package main
 
