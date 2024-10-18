@@ -10,27 +10,22 @@ import (
 
 	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/etime"
 )
 
 // Actions are SIR actions
-type Actions int //enums:enum
+type Actions int32 //enums:enum
 
 const (
-	Store1 Actions = iota
-	Store2
+	Store Actions = iota
 	Ignore
-	Recall1
-	Recall2
+	Recall
 )
 
 // SIREnv implements the store-ignore-recall task
 type SIREnv struct {
-
 	// name of this environment
-	Nm string
-
-	// description of this environment
-	Dsc string
+	Name string
 
 	// number of different stimuli that can be maintained
 	NStim int
@@ -48,12 +43,9 @@ type SIREnv struct {
 	Stim int
 
 	// current stimulus being maintained
-	Maint1 int
+	Maint int
 
-	// current stimulus being maintained
-	Maint2 int
-
-	// stimulus input pattern
+	// input pattern with stim
 	Input tensor.Float64
 
 	// input pattern with action
@@ -65,33 +57,22 @@ type SIREnv struct {
 	// reward value
 	Reward tensor.Float64
 
-	// current run of model as provided during Init
-	Run env.Ctr `display:"inline"`
-
-	// number of times through Seq.Max number of sequences
-	Epoch env.Ctr `display:"inline"`
-
 	// trial is the step counter within epoch
-	Trial env.Ctr `display:"inline"`
+	Trial env.Counter `view:"inline"`
 }
+
+func (ev *SIREnv) Label() string { return ev.Name }
 
 // SetNStim initializes env for given number of stimuli, init states
 func (ev *SIREnv) SetNStim(n int) {
 	ev.NStim = n
-	ev.Input.SetShape([]int{n}, nil, []string{"N"})
-	ev.CtrlInput.SetShape([]int{int(ActionsN)}, nil, []string{"N"})
-	ev.Output.SetShape([]int{n}, nil, []string{"N"})
-	ev.Reward.SetShape([]int{1}, nil, []string{"1"})
+	ev.Input.SetShape([]int{n})
+	ev.CtrlInput.SetShape([]int{int(ActionsN)})
+	ev.Output.SetShape([]int{n})
+	ev.Reward.SetShape([]int{1})
 	if ev.RewVal == 0 {
 		ev.RewVal = 1
 	}
-}
-
-func (ev *SIREnv) Validate() error {
-	if ev.NStim <= 0 {
-		return fmt.Errorf("SIREnv: %v NStim == 0 -- must set with SetNStim call", ev.Name)
-	}
-	return nil
 }
 
 func (ev *SIREnv) State(element string) tensor.Tensor {
@@ -102,13 +83,9 @@ func (ev *SIREnv) State(element string) tensor.Tensor {
 		return &ev.CtrlInput
 	case "Output":
 		return &ev.Output
-	case "Reward":
+	case "Rew":
 		return &ev.Reward
 	}
-	return nil
-}
-
-func (ev *SIREnv) Actions() env.Elements {
 	return nil
 }
 
@@ -119,20 +96,14 @@ func (ev *SIREnv) StimStr(stim int) string {
 
 // String returns the current state as a string
 func (ev *SIREnv) String() string {
-	return fmt.Sprintf("%s_%s_mnt1_%s_mnt2_%s_rew_%g", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint1), ev.StimStr(ev.Maint2), ev.Reward.Values[0])
+	return fmt.Sprintf("%s_%s_mnt_%s_rew_%g", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint), ev.Reward.Values[0])
 }
 
 func (ev *SIREnv) Init(run int) {
-	ev.Run.Scale = env.Run
-	ev.Epoch.Scale = env.Epoch
-	ev.Trial.Scale = env.Trial
-	ev.Run.Init()
-	ev.Epoch.Init()
+	ev.Trial.Scale = etime.Trial
 	ev.Trial.Init()
-	ev.Run.Cur = run
 	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
-	ev.Maint1 = -1
-	ev.Maint2 = -1
+	ev.Maint = -1
 }
 
 // SetState sets the input, output states
@@ -140,7 +111,7 @@ func (ev *SIREnv) SetState() {
 	ev.CtrlInput.SetZeros()
 	ev.CtrlInput.Values[ev.Act] = 1
 	ev.Input.SetZeros()
-	if ev.Act != Recall1 && ev.Act != Recall2 {
+	if ev.Act != Recall {
 		ev.Input.Values[ev.Stim] = 1
 	}
 	ev.Output.SetZeros()
@@ -163,62 +134,34 @@ func (ev *SIREnv) SetReward(netout int) bool {
 func (ev *SIREnv) StepSIR() {
 	for {
 		ev.Act = Actions(rand.Intn(int(ActionsN)))
-		if ev.Act == Store1 && ev.Maint1 >= 0 { // already full
+		if ev.Act == Store && ev.Maint >= 0 { // already full
 			continue
 		}
-		if ev.Act == Recall1 && ev.Maint1 < 0 { // nothing
-			continue
-		}
-		if ev.Act == Store2 && ev.Maint2 >= 0 { // already full
-			continue
-		}
-		if ev.Act == Recall2 && ev.Maint2 < 0 { // nothing
+		if ev.Act == Recall && ev.Maint < 0 { // nothign
 			continue
 		}
 		break
 	}
 	ev.Stim = rand.Intn(ev.NStim)
 	switch ev.Act {
-	case Store1:
-		ev.Maint1 = ev.Stim
-	case Store2:
-		ev.Maint2 = ev.Stim
+	case Store:
+		ev.Maint = ev.Stim
 	case Ignore:
-	case Recall1:
-		ev.Stim = ev.Maint1
-		ev.Maint1 = -1
-	case Recall2:
-		ev.Stim = ev.Maint2
-		ev.Maint2 = -1
+	case Recall:
+		ev.Stim = ev.Maint
+		ev.Maint = -1
 	}
 	ev.SetState()
 }
 
 func (ev *SIREnv) Step() bool {
-	ev.Epoch.Same() // good idea to just reset all non-inner-most counters at start
-
 	ev.StepSIR()
-
-	if ev.Trial.Incr() {
-		ev.Epoch.Incr()
-	}
+	ev.Trial.Incr()
 	return true
 }
 
 func (ev *SIREnv) Action(element string, input tensor.Tensor) {
 	// nop
-}
-
-func (ev *SIREnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
-	switch scale {
-	case env.Run:
-		return ev.Run.Query()
-	case env.Epoch:
-		return ev.Epoch.Query()
-	case env.Trial:
-		return ev.Trial.Query()
-	}
-	return -1, -1, false
 }
 
 // Compile-time check that implements Env interface
