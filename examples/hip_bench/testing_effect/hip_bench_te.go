@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build not
+
 // hip_bench runs a hippocampus model for testing parameters and new learning ideas
 package main
 
@@ -32,7 +34,6 @@ import (
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
 	"github.com/emer/emergent/v2/relpos"
-	"github.com/emer/leabra/v2/hip"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -578,11 +579,11 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	net.ConnectLayers(ecout, ecin, onetoone, BackPath)
 
 	// EC <-> CA1 encoder pathways
-	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, leabra.ForwardPath, &hip.EcCa1Path{})
+	pj := net.ConnectLayersPath(ecin, ca1, pool1to1, leabra.ForwardPath, &leabra.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
-	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, leabra.ForwardPath, &hip.EcCa1Path{})
+	pj = net.ConnectLayersPath(ca1, ecout, pool1to1, leabra.ForwardPath, &leabra.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
-	pj = net.ConnectLayersPath(ecout, ca1, pool1to1, BackPath, &hip.EcCa1Path{})
+	pj = net.ConnectLayersPath(ecout, ca1, pool1to1, BackPath, &leabra.EcCa1Path{})
 	pj.SetClass("EcCa1Path")
 
 	// Perforant pathway
@@ -591,25 +592,25 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	ppathCA3 := paths.NewUnifRnd()
 	ppathCA3.PCon = hp.CA3PCon
 
-	pj = net.ConnectLayersPath(ecin, dg, ppathDG, leabra.ForwardPath, &hip.CHLPath{})
+	pj = net.ConnectLayersPath(ecin, dg, ppathDG, leabra.ForwardPath, &leabra.CHLPath{})
 	pj.SetClass("HippoCHL")
 
 	if true { // toggle for bcm vs. ppath, zycyc: must use false for orig_param, true for def_param
-		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, leabra.ForwardPath, &hip.EcCa1Path{})
+		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, leabra.ForwardPath, &leabra.EcCa1Path{})
 		pj.SetClass("PPath")
-		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.EcCa1Path{})
+		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &leabra.EcCa1Path{})
 		pj.SetClass("PPath")
 	} else {
 		// so far, this is sig worse, even with error-driven MinusQ1 case (which is better than off)
-		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, leabra.ForwardPath, &hip.CHLPath{})
+		pj = net.ConnectLayersPath(ecin, ca3, ppathCA3, leabra.ForwardPath, &leabra.CHLPath{})
 		pj.SetClass("HippoCHL")
-		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &hip.CHLPath{})
+		pj = net.ConnectLayersPath(ca3, ca3, full, emer.Lateral, &leabra.CHLPath{})
 		pj.SetClass("HippoCHL")
 	}
 
 	// always use this for now:
 	if true {
-		pj = net.ConnectLayersPath(ca3, ca1, full, leabra.ForwardPath, &hip.CHLPath{})
+		pj = net.ConnectLayersPath(ca3, ca1, full, leabra.ForwardPath, &leabra.CHLPath{})
 		pj.SetClass("HippoCHL")
 	} else {
 		// note: this requires lrate = 1.0 or maybe 1.2, doesn't work *nearly* as well
@@ -620,7 +621,7 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	// Mossy fibers
 	mossy := paths.NewUnifRnd()
 	mossy.PCon = hp.MossyPCon
-	pj = net.ConnectLayersPath(dg, ca3, mossy, leabra.ForwardPath, &hip.CHLPath{}) // no learning
+	pj = net.ConnectLayersPath(dg, ca3, mossy, leabra.ForwardPath, &leabra.CHLPath{}) // no learning
 	pj.SetClass("HippoCHL")
 
 	// using 4 threads total (rest on 0)
