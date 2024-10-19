@@ -102,6 +102,11 @@ func (nt *Network) AddRWLayers(prefix string, space float32) (rew, rp, da *Layer
 	da.RW.RewLay = rew.Name
 	rp.PlaceBehind(rew, space)
 	da.PlaceBehind(rp, space)
+
+	rew.Doc = "Reward input, activated by external rewards, e.g., the US = unconditioned stimulus"
+	rp.Doc = "Reward Prediction according to Rescorla-Wagner (RW) model, representing learned estimate of Rew layer activity on each trial, using linear activation function"
+	da.Doc = "Dopamine (DA)-like signal reflecting the difference Rew - RWPred, or reward prediction error (RPE), on each trial"
+
 	return
 }
 
@@ -285,6 +290,7 @@ func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *L
 	td = nt.AddLayer2D(prefix+"TD", 1, 1, TDDaLayer)
 	ri.TD.PredLay = rp.Name
 	td.TD.IntegLay = ri.Name
+
 	rp.PlaceBehind(rew, space)
 	ri.PlaceBehind(rp, space)
 	td.PlaceBehind(ri, space)
@@ -295,12 +301,11 @@ func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *L
 	pt.WtInit.Mean = 1
 	pt.WtInit.Var = 0
 	pt.WtInit.Sym = false
-	// {Sel: ".TDToInteg", Desc: "rew to integ",
-	// 	Params: params.Params{
-	// 		"Path.Learn.Learn": "false",
-	// 		"Path.WtInit.Mean": "1",
-	// 		"Path.WtInit.Var":  "0",
-	// 		"Path.WtInit.Sym":  "false",
-	// 	}},
+
+	rew.Doc = "Reward input, activated by external rewards, e.g., the US = unconditioned stimulus"
+	rp.Doc = "Reward Prediction, representing estimated value V(t) in the minus phase, and in plus phase computes estimated V(t+1) based on learned weights"
+	ri.Doc = "Integration of Pred + Rew, representing estimated value V(t) in the minus phase, and estimated V(t+1) + r(t) in the plus phase"
+	td.Doc = "Temporal Difference (TD) computes a dopamine (DA)-like signal as difference between the Integ activations across plus - minus phases: [V(t+1) + r(t)] - V(t), where V are estimated cumulative discounted future reward values"
+
 	return
 }

@@ -102,6 +102,12 @@ func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX i
 	pt.AddClass("BgFixed")
 	pt = nt.ConnectLayers(gpe, gpi, one2one, GPiThalPath)
 	pt.AddClass("BgFixed")
+
+	mtxGo.Doc = "Matrisome (Matrix) striatum medium spiny neuron (MSN), which is the input layer of the basal ganglia (BG), with more D1 than D2 dopamine receptors, that drives the direct pathway to disinhibit BG outputs, favoring a 'Go' response"
+	mtxNoGo.Doc = "Matrisome (Matrix) striatum medium spiny neuron (MSN), which is the input layer of the basal ganglia (BG), with more D2 than D1 dopamine receptors, that drives the indirect pathway through the globus pallidus external segment (GPe) net inhibit BG outputs, favoring a 'NoGo' response"
+	gpe.Doc = "Globus pallidus external segment (GPe) of the BG that is tonically active and inhibited by the Matrix NoGo pathway, causing disinhibition of the GPi, and net inhibition of overall BG output responding."
+	gpi.Doc = "Globus pallidus internal segment (GPi) of the BG that is tonically active and inhibited by the Matrix Go pathway (and disinhibited by the GPe via NoGo), which then inhibits the thalamus (Thal), with the net effect of disinhibiting cortical areas on BG Go pathway activation. This layer summarizes both GPi and Thal in a net excitatory, activity-positive manner."
+	cin.Doc = "Cholinergic interneurons (CIN) that represent a positively rectified, non-prediction-discounted reward and overall sensory salience signal, that modulates overall BG activity and learning around salient events."
 	return
 }
 
@@ -141,9 +147,13 @@ func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int, d
 	}
 	if nMaint > 0 {
 		pfcMnt, pfcMntD = nt.AddPFCLayer(prefix+"mnt", nY, nMaint, nNeurY, nNeurX, false, dynMaint)
+		pfcMnt.Doc = "Prefrontal Cortex (PFC) maintenance (mnt) superficial layer, which receives inputs from other brain areas and drives BG (basal ganglia) gated input into the robust maintenance deep layers"
+		pfcMntD.Doc = "Prefrontal Cortex (PFC) maintenance (mnt) deep layer, which has special intrinsic circuits and channels supporting robust active firing even in the absence of other inputs, and holds on to information relevant for behavioral responses, but does not directly drive those outputs"
 	}
 	if nOut > 0 {
 		pfcOut, pfcOutD = nt.AddPFCLayer(prefix+"out", nY, nOut, nNeurY, nNeurX, true, dynMaint)
+		pfcOut.Doc = "Prefrontal Cortex (PFC) output (out) superficial layer, which receives inputs from PFC maintenance and other brain areas and drives BG (basal ganglia) gated input into the output deep layers"
+		pfcOutD.Doc = "Prefrontal Cortex (PFC) output (out) deep layer, which drives behavioral output pathways, either as direct motor outputs, or top-down modulation of pathways that then drive outputs"
 	}
 
 	// todo: need a Rect pathway from MntD -> out if !dynMaint, or something else..
@@ -153,6 +163,7 @@ func (nt *Network) AddPFC(prefix string, nY, nMaint, nOut, nNeurY, nNeurX int, d
 		pt := nt.ConnectLayers(pfcMntD, pfcOut, paths.NewOneToOne(), ForwardPath)
 		pt.AddClass("PFCMntDToOut")
 	}
+
 	return
 }
 
