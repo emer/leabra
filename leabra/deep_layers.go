@@ -202,13 +202,13 @@ type PulvinarParams struct {
 	Binarize bool
 
 	// Threshold for binarizing in terms of sending Burst activation
-	BinThr float32 `viewif:"Binarize"`
+	BinThr float32
 
 	// Resulting driver Ge value for units above threshold -- lower value around 0.3 or so seems best (DriveScale is NOT applied -- generally same range as that).
-	BinOn float32 `default:"0.3" viewif:"Binarize"`
+	BinOn float32 `default:"0.3"`
 
 	// Resulting driver Ge value for units below threshold -- typically 0.
-	BinOff float32 `default:"0" viewif:"Binarize"`
+	BinOff float32 `default:"0"`
 }
 
 func (tp *PulvinarParams) Update() {
@@ -222,6 +222,14 @@ func (tp *PulvinarParams) Defaults() {
 	tp.BinThr = 0.4
 	tp.BinOn = 0.3
 	tp.BinOff = 0
+}
+
+func (tp *PulvinarParams) ShouldDisplay(field string) bool {
+	switch field {
+	case "BinThr", "BinOn", "BinOff":
+		return tp.Binarize
+	}
+	return true
 }
 
 // DriveGe returns effective excitatory conductance to use for given driver

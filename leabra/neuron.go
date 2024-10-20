@@ -179,7 +179,7 @@ var NeuronVars = []string{
 	"Act", "Ge", "Gi", "Gk", "Inet", "Vm", "Noise", "Spike", "Targ", "Ext",
 	"AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActLrn",
 	"ActM", "ActP", "ActDif", "ActDel", "ActQ0", "ActQ1", "ActQ2", "ActAvg", "Burst", "BurstPrv",
-	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg",
+	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg", "CtxtGe",
 	"ActG", "DALrn", "Shunt", "Maint", "MaintGe", "DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt"}
 
 var NeuronVarsMap map[string]int
@@ -238,6 +238,7 @@ var NeuronVarProps = map[string]string{
 	"GknaSlow": `cat:"Gmisc"`,
 	"ISI":      `cat:"Gmisc"`,
 	"ISIAvg":   `cat:"Gmisc"`,
+	"CtxtGe":   `cat:"Gmisc"`,
 
 	"ActG":    `cat:"PBWM"`,
 	"DALrn":   `cat:"PBWM"`,

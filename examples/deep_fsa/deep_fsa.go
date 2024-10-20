@@ -16,7 +16,6 @@ import (
 	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/core"
 	"cogentcore.org/core/icons"
-	"cogentcore.org/core/math32"
 	"cogentcore.org/core/math32/vecint"
 	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tree"
@@ -707,8 +706,8 @@ func (ss *Sim) ConfigGUI() {
 	ss.ViewUpdate.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
 	ss.GUI.ViewUpdate = &ss.ViewUpdate
 
-	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
-	nv.SceneXYZ().Camera.LookAt(math32.Vec3(0, 0, 0), math32.Vec3(0, 1, 0))
+	// nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
+	// nv.SceneXYZ().Camera.LookAt(math32.Vec3(0, 0, 0), math32.Vec3(0, 1, 0))
 
 	ss.GUI.AddPlots(title, &ss.Logs)
 

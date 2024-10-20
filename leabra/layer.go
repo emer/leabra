@@ -674,22 +674,10 @@ func (ly *Layer) QuarterFinal(ctx *Context) {
 	switch ctx.Quarter {
 	case 2:
 		ly.MinusPhase(ctx)
-		return
 	case 3:
 		ly.PlusPhase(ctx)
-		return
-	}
-	for ni := range ly.Neurons {
-		nrn := &ly.Neurons[ni]
-		if nrn.IsOff() {
-			continue
-		}
-		switch ctx.Quarter {
-		case 0:
-			nrn.ActQ1 = nrn.Act
-		case 1:
-			nrn.ActQ2 = nrn.Act
-		}
+	default:
+		ly.SaveQuarterState(ctx)
 	}
 	switch ly.Type {
 	case SuperLayer:
@@ -703,6 +691,22 @@ func (ly *Layer) QuarterFinal(ctx *Context) {
 	}
 	if ctx.Quarter == 1 {
 		ly.Quarter2DWt()
+	}
+}
+
+// SaveQuarterState saves Q1, Q2 quarter states.
+func (ly *Layer) SaveQuarterState(ctx *Context) {
+	for ni := range ly.Neurons {
+		nrn := &ly.Neurons[ni]
+		if nrn.IsOff() {
+			continue
+		}
+		switch ctx.Quarter {
+		case 0:
+			nrn.ActQ1 = nrn.Act
+		case 1:
+			nrn.ActQ2 = nrn.Act
+		}
 	}
 }
 
@@ -723,10 +727,6 @@ func (ly *Layer) MinusPhase(ctx *Context) {
 			nrn.SetFlag(true, NeurHasExt)
 		}
 	}
-	if ly.Type == PFCDeepLayer {
-		ly.UpdateGateCnt(ctx)
-		ly.DeepMaint(ctx)
-	}
 }
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
@@ -745,10 +745,6 @@ func (ly *Layer) PlusPhase(ctx *Context) {
 		nrn.ActAvg += ly.Act.Dt.AvgDt * (nrn.Act - nrn.ActAvg)
 	}
 	ly.CosDiffFromActs()
-	if ly.Type == PFCDeepLayer {
-		ly.UpdateGateCnt(ctx)
-		ly.DeepMaint(ctx)
-	}
 }
 
 // CosDiffFromActs computes the cosine difference in activation state between minus and plus phases.

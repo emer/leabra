@@ -37,7 +37,7 @@ func LooperStdPhases(man *looper.Manager, ctx *Context, net *Network, plusStart,
 	})
 	plusPhase := &looper.Event{Name: "PlusPhase", AtCounter: plusStart}
 	plusPhase.OnEvent.Add("MinusPhase:End", func() {
-		net.MinusPhase(ctx)
+		net.QuarterFinal(ctx)
 		ctx.QuarterInc()
 	})
 	plusPhase.OnEvent.Add("PlusPhase:Start", func() {
@@ -53,7 +53,7 @@ func LooperStdPhases(man *looper.Manager, ctx *Context, net *Network, plusStart,
 			ctx.AlphaCycStart()
 		})
 		stack.Loops[trl].OnEnd.Add("PlusPhase:End", func() {
-			net.PlusPhase(ctx)
+			net.QuarterFinal(ctx)
 		})
 	}
 }
