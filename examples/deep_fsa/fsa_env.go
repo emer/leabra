@@ -10,6 +10,7 @@ import (
 	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/etime"
 )
 
 // FSAEnv generates states in a finite state automaton (FSA) which is a
@@ -18,10 +19,7 @@ import (
 type FSAEnv struct {
 
 	// name of this environment
-	Nm string
-
-	// description of this environment
-	Dsc string
+	Name string
 
 	// transition matrix, which is a square NxN tensor with outer dim being current state and inner dim having probability of transitioning to that state
 	TMat tensor.Float64 `display:"no-inline"`
@@ -41,12 +39,6 @@ type FSAEnv struct {
 	// transition labels for next states that have non-zero probability, with actual randomly chosen one for next state at start
 	NextLabels tensor.String
 
-	// current run of model as provided during Init
-	Run env.Counter `display:"inline"`
-
-	// number of times through Seq.Max number of sequences
-	Epoch env.Counter `display:"inline"`
-
 	// sequence counter within epoch
 	Seq env.Counter `display:"inline"`
 
@@ -57,15 +49,17 @@ type FSAEnv struct {
 	Trial env.Counter `display:"inline"`
 }
 
+func (ev *FSAEnv) Label() string { return ev.Name }
+
 // InitTMat initializes matrix and labels to given size
 func (ev *FSAEnv) InitTMat(nst int) {
-	ev.TMat.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
-	ev.Labels.SetShape([]int{nst, nst}, nil, []string{"cur", "next"})
+	ev.TMat.SetShape([]int{nst, nst})
+	ev.Labels.SetShape([]int{nst, nst})
 	ev.TMat.SetZeros()
 	ev.Labels.SetZeros()
-	ev.NNext.SetShape([]int{1}, nil, nil)
-	ev.NextStates.SetShape([]int{nst}, nil, nil)
-	ev.NextLabels.SetShape([]int{nst}, nil, nil)
+	ev.NNext.SetShape([]int{1})
+	ev.NextStates.SetShape([]int{nst})
+	ev.NextLabels.SetShape([]int{nst})
 }
 
 // SetTMat sets given transition matrix probability and label
@@ -99,23 +93,6 @@ func (ev *FSAEnv) Validate() error {
 	return nil
 }
 
-func (ev *FSAEnv) Counters() []env.TimeScales {
-	return []env.TimeScales{env.Run, env.Epoch, env.Sequence, env.Tick, env.Trial}
-}
-
-func (ev *FSAEnv) States() env.Elements {
-	nst := ev.TMat.DimSize(0)
-	if nst < 2 {
-		nst = 2 // at least usu
-	}
-	els := env.Elements{
-		{"NNext", []int{1}, nil},
-		{"NextStates", []int{nst}, []string{"nstates"}},
-		{"NextLabels", []int{nst}, []string{"nstates"}},
-	}
-	return els
-}
-
 func (ev *FSAEnv) State(element string) tensor.Tensor {
 	switch element {
 	case "NNext":
@@ -128,10 +105,6 @@ func (ev *FSAEnv) State(element string) tensor.Tensor {
 	return nil
 }
 
-func (ev *FSAEnv) Actions() env.Elements {
-	return nil
-}
-
 // String returns the current state as a string
 func (ev *FSAEnv) String() string {
 	nn := ev.NNext.Values[0]
@@ -140,16 +113,11 @@ func (ev *FSAEnv) String() string {
 }
 
 func (ev *FSAEnv) Init(run int) {
-	ev.Run.Scale = env.Run
-	ev.Epoch.Scale = env.Epoch
-	ev.Tick.Scale = env.Tick
-	ev.Trial.Scale = env.Trial
-	ev.Run.Init()
-	ev.Epoch.Init()
+	ev.Tick.Scale = etime.Tick
+	ev.Trial.Scale = etime.Trial
 	ev.Seq.Init()
 	ev.Tick.Init()
 	ev.Trial.Init()
-	ev.Run.Cur = run
 	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
 	ev.AState.Cur = 0
 	ev.AState.Prv = -1
@@ -164,7 +132,7 @@ func (ev *FSAEnv) NextState() {
 	ri := ev.AState.Cur * nst
 	ps := ev.TMat.Values[ri : ri+nst]
 	ls := ev.Labels.Values[ri : ri+nst]
-	nxt := randx.PChoose64(ps, -1) // next state chosen at random
+	nxt := randx.PChoose64(ps) // next state chosen at random
 	ev.NextStates.Set1D(0, nxt)
 	ev.NextLabels.Set1D(0, ls[nxt])
 	idx := 1
@@ -180,37 +148,18 @@ func (ev *FSAEnv) NextState() {
 }
 
 func (ev *FSAEnv) Step() bool {
-	ev.Epoch.Same() // good idea to just reset all non-inner-most counters at start
 	ev.NextState()
 	ev.Trial.Incr()
 	ev.Tick.Incr()
 	if ev.AState.Prv == 0 {
 		ev.Tick.Init()
-		if ev.Seq.Incr() {
-			ev.Epoch.Incr()
-		}
+		ev.Seq.Incr()
 	}
 	return true
 }
 
 func (ev *FSAEnv) Action(element string, input tensor.Tensor) {
 	// nop
-}
-
-func (ev *FSAEnv) Counter(scale env.TimeScales) (cur, prv int, chg bool) {
-	switch scale {
-	case env.Run:
-		return ev.Run.Query()
-	case env.Epoch:
-		return ev.Epoch.Query()
-	case env.Sequence:
-		return ev.Seq.Query()
-	case env.Tick:
-		return ev.Tick.Query()
-	case env.Trial:
-		return ev.Trial.Query()
-	}
-	return -1, -1, false
 }
 
 // Compile-time check that implements Env interface

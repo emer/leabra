@@ -36,6 +36,7 @@ func (ly *Layer) InitWeights() {
 	ly.InitActAvg()
 	ly.InitActs()
 	ly.CosDiff.Init()
+	ly.SetDriverOffs()
 }
 
 // InitActAvg initializes the running-average activation
@@ -525,6 +526,14 @@ func (ly *Layer) SendGDelta(ctx *Context) {
 func (ly *Layer) GFromInc(ctx *Context) {
 	ly.RecvGInc(ctx)
 	switch ly.Type {
+	case CTLayer:
+		ly.CTGFromInc(ctx)
+	case PulvinarLayer:
+		if ly.Pulvinar.DriversOff || !ly.Pulvinar.BurstQtr.HasFlag(ctx.Quarter) {
+			ly.GFromIncNeur(ctx)
+		} else {
+			ly.SetDriverActs()
+		}
 	case GPiThalLayer:
 		ly.GPiGFromInc(ctx)
 	case PFCDeepLayer:
@@ -679,10 +688,19 @@ func (ly *Layer) AvgMaxAct(ctx *Context) {
 	}
 }
 
-// SendMods is called after the standard Cycle update, as a separate
-// network layer loop, to send neuromodulatory signals.
-func (ly *Layer) SendMods(ctx *Context) {
+// CyclePost is called at end of Cycle, for misc updates after new Act
+// value has been computed.
+// SuperLayer computes Burst activity.
+// GateLayer (GPiThal) computes gating, sends to other layers.
+// DA, ACh neuromodulation is sent.
+func (ly *Layer) CyclePost(ctx *Context) {
 	switch ly.Type {
+	case SuperLayer:
+		ly.BurstFromAct(ctx)
+	case CTLayer:
+		ly.BurstAsAct(ctx)
+	case GPiThalLayer:
+		ly.GPiGateSend(ctx)
 	case ClampDaLayer, RWDaLayer, TDDaLayer:
 		ly.SendDaFromAct(ctx)
 	case CINLayer:
@@ -716,7 +734,13 @@ func (ly *Layer) QuarterFinal(ctx *Context) {
 			nrn.ActQ2 = nrn.Act
 		}
 	}
-	if ly.Type == PFCDeepLayer {
+	switch ly.Type {
+	case SuperLayer:
+		ly.BurstPrv(ctx)
+		ly.SendCtxtGe(ctx)
+	case CTLayer:
+		ly.SendCtxtGe(ctx)
+	case PFCDeepLayer:
 		ly.UpdateGateCnt(ctx)
 		ly.DeepMaint(ctx)
 	}
@@ -810,14 +834,14 @@ func (ly *Layer) CosDiffFromActs() {
 
 // IsTarget returns true if this layer is a Target layer.
 // By default, returns true for layers of Type == TargetLayer
-// Other Target layers include the TRCLayer in deep predictive learning.
+// Other Target layers include the PulvinarLayer in deep predictive learning.
 // This is used for turning off BCM hebbian learning,
 // in CosDiffFromActs to set the CosDiff.ModAvgLLrn value
 // for error-modulated level of hebbian learning.
 // It is also used in WtBal to not apply it to target layers.
 // In both cases, Target layers are purely error-driven.
 func (ly *Layer) IsTarget() bool {
-	return ly.Type == TargetLayer
+	return ly.Type == TargetLayer || ly.Type == PulvinarLayer
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

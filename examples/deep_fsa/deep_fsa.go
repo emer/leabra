@@ -6,28 +6,30 @@
 // finite state automaton problem.
 package main
 
-import (
-	"flag"
-	"fmt"
-	"log"
-	"math/rand"
-	"os"
-	"strconv"
-	"time"
+//go:generate core generate -add-types
 
+import (
+	"os"
+
+	"cogentcore.org/core/base/mpi"
+	"cogentcore.org/core/base/randx"
+	"cogentcore.org/core/core"
 	"cogentcore.org/core/icons"
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/plot"
-	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/stats/split"
+	"cogentcore.org/core/math32/vecint"
 	"cogentcore.org/core/tensor/table"
+	"cogentcore.org/core/tree"
+	"github.com/emer/emergent/v2/econfig"
+	"github.com/emer/emergent/v2/egui"
+	"github.com/emer/emergent/v2/elog"
+	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/env"
+	"github.com/emer/emergent/v2/estats"
 	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/emergent/v2/looper"
 	"github.com/emer/emergent/v2/netview"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
-	"github.com/emer/emergent/v2/relpos"
-	"github.com/emer/leabra/v2/deep"
 	"github.com/emer/leabra/v2/leabra"
 )
 
@@ -42,95 +44,180 @@ func main() {
 	}
 }
 
-// LogPrec is precision for saving float values in logs
-const LogPrec = 4
-
-// ParamSets is the default set of parameters -- Base is always applied, and others can be optionally
-// selected to apply on top of that
+// ParamSets is the default set of parameters.
+// Base is always applied, and others can be optionally
+// selected to apply on top of that.
 var ParamSets = params.Sets{
-	{Name: "Base", Desc: "these are the best params", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "Path", Desc: "norm and momentum on is critical, wt bal not as much but fine",
-				Params: params.Params{
-					"Path.Learn.Norm.On":     "true",
-					"Path.Learn.Momentum.On": "true",
-					"Path.Learn.WtBal.On":    "true",
-				}},
-			{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
-				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":     "1.8",
-					"Layer.Learn.AvgL.Gain":    "1.5",  // key to lower relative to 2.5
-					"Layer.Act.Gbar.L":         "0.1",  // lower leak = better
-					"Layer.Inhib.ActAvg.Fixed": "true", // simpler to have everything fixed, for replicability
-					"Layer.Act.Init.Decay":     "0",    // essential to have all layers no decay
-				}},
-			{Sel: ".Hidden", Desc: "fix avg act",
-				Params: params.Params{
-					"Layer.Inhib.ActAvg.Fixed": "true",
-				}},
-			{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
-				Params: params.Params{
-					"Path.WtScale.Rel": "0.2",
-				}},
-			{Sel: "TRCLayer", Desc: "standard weight is .3 here for larger distributed reps. no learn",
-				Params: params.Params{
-					"Layer.TRC.DriveScale": "0.8", // using .8 for localist layer
-				}},
-			{Sel: "CTCtxtPath", Desc: "no weight balance on CT context paths -- makes a diff!",
-				Params: params.Params{
-					"Path.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
-				}},
-			{Sel: ".CTFromSuper", Desc: "initial weight = 0.5 much better than 0.8",
-				Params: params.Params{
-					"Path.WtInit.Mean": "0.5",
-				}},
-			{Sel: ".Input", Desc: "input layers need more inhibition",
-				Params: params.Params{
-					"Layer.Inhib.Layer.Gi":    "2.0",
-					"Layer.Inhib.ActAvg.Init": "0.15",
-				}},
-			{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
-				Params: params.Params{
-					"Path.WtScale.Rel": "0.05",
-				}},
-			{Sel: "#HiddenCTToHiddenCT", Desc: "testing",
-				Params: params.Params{
-					"Path.Learn.WtBal.On": "false",
-				}},
-		},
-	}},
-	{Name: "DefaultInhib", Desc: "output uses default inhib instead of lower", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "#Output", Desc: "go back to default",
-				Params: params.Params{
-					"Layer.Inhib.Layer.Gi": "1.8",
-				}},
-		},
-	}},
-	{Name: "NoMomentum", Desc: "no momentum or normalization", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "Path", Desc: "no norm or momentum",
-				Params: params.Params{
-					"Path.Learn.Norm.On":     "false",
-					"Path.Learn.Momentum.On": "false",
-				}},
-		},
-	}},
-	{Name: "WtBalOn", Desc: "try with weight bal on", Sheets: params.Sheets{
-		"Network": &params.Sheet{
-			{Sel: "Path", Desc: "weight bal on",
-				Params: params.Params{
-					"Path.Learn.WtBal.On": "true",
-				}},
-		},
-	}},
+	"Base": {
+		{Sel: "Path", Desc: "norm and momentum on is critical, wt bal not as much but fine",
+			Params: params.Params{
+				"Path.Learn.Norm.On":     "true",
+				"Path.Learn.Momentum.On": "true",
+				"Path.Learn.WtBal.On":    "true",
+			}},
+		{Sel: "Layer", Desc: "using default 1.8 inhib for hidden layers",
+			Params: params.Params{
+				"Layer.Inhib.Layer.Gi":     "1.8",
+				"Layer.Learn.AvgL.Gain":    "1.5",  // key to lower relative to 2.5
+				"Layer.Act.Gbar.L":         "0.1",  // lower leak = better
+				"Layer.Inhib.ActAvg.Fixed": "true", // simpler to have everything fixed, for replicability
+				"Layer.Act.Init.Decay":     "0",    // essential to have all layers no decay
+			}},
+		{Sel: ".Hidden", Desc: "fix avg act",
+			Params: params.Params{
+				"Layer.Inhib.ActAvg.Fixed": "true",
+			}},
+		{Sel: ".Back", Desc: "top-down back-pathways MUST have lower relative weight scale, otherwise network hallucinates",
+			Params: params.Params{
+				"Path.WtScale.Rel": "0.2",
+			}},
+		{Sel: "TRCLayer", Desc: "standard weight is .3 here for larger distributed reps. no learn",
+			Params: params.Params{
+				"Layer.TRC.DriveScale": "0.8", // using .8 for localist layer
+			}},
+		{Sel: "CTCtxtPath", Desc: "no weight balance on CT context paths -- makes a diff!",
+			Params: params.Params{
+				"Path.Learn.WtBal.On": "false", // this should be true for larger DeepLeabra models -- e.g., sg..
+			}},
+		{Sel: ".CTFromSuper", Desc: "initial weight = 0.5 much better than 0.8",
+			Params: params.Params{
+				"Path.WtInit.Mean": "0.5",
+			}},
+		{Sel: ".Input", Desc: "input layers need more inhibition",
+			Params: params.Params{
+				"Layer.Inhib.Layer.Gi":    "2.0",
+				"Layer.Inhib.ActAvg.Init": "0.15",
+			}},
+		{Sel: "#HiddenPToHiddenCT", Desc: "critical to make this small so deep context dominates",
+			Params: params.Params{
+				"Path.WtScale.Rel": "0.05",
+			}},
+		{Sel: "#HiddenCTToHiddenCT", Desc: "testing",
+			Params: params.Params{
+				"Path.Learn.WtBal.On": "false",
+			}},
+	},
 }
 
-// InputNames are names of input letters
-var InputNames = []string{"B", "T", "S", "X", "V", "P", "E"}
+// ParamConfig has config parameters related to sim params
+type ParamConfig struct {
 
-// InputNameMap has indexes of InputNames
-var InputNameMap map[string]int
+	// network parameters
+	Network map[string]any
+
+	// size of hidden layer -- can use emer.LaySize for 4D layers
+	Hidden1Size vecint.Vector2i `default:"{'X':7,'Y':7}" nest:"+"`
+
+	// size of hidden layer -- can use emer.LaySize for 4D layers
+	Hidden2Size vecint.Vector2i `default:"{'X':7,'Y':7}" nest:"+"`
+
+	// Extra Param Sheet name(s) to use (space separated if multiple).
+	// must be valid name as listed in compiled-in params or loaded params
+	Sheet string
+
+	// extra tag to add to file names and logs saved from this run
+	Tag string
+
+	// user note -- describe the run params etc -- like a git commit message for the run
+	Note string
+
+	// Name of the JSON file to input saved parameters from.
+	File string `nest:"+"`
+
+	// Save a snapshot of all current param and config settings
+	// in a directory named params_<datestamp> (or _good if Good is true), then quit.
+	// Useful for comparing to later changes and seeing multiple views of current params.
+	SaveAll bool `nest:"+"`
+
+	// For SaveAll, save to params_good for a known good params state.
+	// This can be done prior to making a new release after all tests are passing.
+	// add results to git to provide a full diff record of all params over time.
+	Good bool `nest:"+"`
+}
+
+// RunConfig has config parameters related to running the sim
+type RunConfig struct {
+	// starting run number, which determines the random seed.
+	// runs counts from there, can do all runs in parallel by launching
+	// separate jobs with each run, runs = 1.
+	Run int `default:"0"`
+
+	// total number of runs to do when running Train
+	NRuns int `default:"5" min:"1"`
+
+	// total number of epochs per run
+	NEpochs int `default:"100"`
+
+	// stop run after this number of perfect, zero-error epochs.
+	NZero int `default:"2"`
+
+	// total number of trials per epoch.  Should be an even multiple of NData.
+	NTrials int `default:"32"`
+
+	// how often to run through all the test patterns, in terms of training epochs.
+	// can use 0 or -1 for no testing.
+	TestInterval int `default:"5"`
+
+	// how frequently (in epochs) to compute PCA on hidden representations
+	// to measure variance?
+	PCAInterval int `default:"5"`
+
+	// if non-empty, is the name of weights file to load at start
+	// of first run, for testing.
+	StartWts string
+}
+
+// LogConfig has config parameters related to logging data
+type LogConfig struct {
+
+	// if true, save final weights after each run
+	SaveWeights bool
+
+	// if true, save train epoch log to file, as .epc.tsv typically
+	Epoch bool `default:"true" nest:"+"`
+
+	// if true, save run log to file, as .run.tsv typically
+	Run bool `default:"true" nest:"+"`
+
+	// if true, save train trial log to file, as .trl.tsv typically. May be large.
+	Trial bool `default:"false" nest:"+"`
+
+	// if true, save testing epoch log to file, as .tst_epc.tsv typically.  In general it is better to copy testing items over to the training epoch log and record there.
+	TestEpoch bool `default:"false" nest:"+"`
+
+	// if true, save testing trial log to file, as .tst_trl.tsv typically. May be large.
+	TestTrial bool `default:"false" nest:"+"`
+
+	// if true, save network activation etc data from testing trials,
+	// for later viewing in netview.
+	NetData bool
+}
+
+// Config is a standard Sim config -- use as a starting point.
+type Config struct {
+
+	// specify include files here, and after configuration,
+	// it contains list of include files added.
+	Includes []string
+
+	// open the GUI -- does not automatically run -- if false,
+	// then runs automatically and quits.
+	GUI bool `default:"true"`
+
+	// log debugging information
+	Debug bool
+
+	// parameter related configuration options
+	Params ParamConfig `display:"add-fields"`
+
+	// sim running related configuration options
+	Run RunConfig `display:"add-fields"`
+
+	// data logging related configuration options
+	Log LogConfig `display:"add-fields"`
+}
+
+func (cfg *Config) IncludesPtr() *[]string { return &cfg.Includes }
 
 // Sim encapsulates the entire simulation model, and we define all the
 // functionality as methods on this struct.  This structure keeps all relevant
@@ -139,263 +226,116 @@ var InputNameMap map[string]int
 // for the fields which provide hints to how things should be displayed).
 type Sim struct {
 
+	// simulation configuration parameters -- set by .toml config file and / or args
+	Config Config `new-window:"+"`
+
 	// the network -- click to view / edit parameters for layers, paths, etc
-	Net *deep.Network `display:"no-inline"`
+	Net *leabra.Network `new-window:"+" display:"no-inline"`
 
-	// training epoch-level log data
-	TrnEpcLog *table.Table `display:"no-inline"`
+	// network parameter management
+	Params emer.NetParams `display:"add-fields"`
 
-	// testing epoch-level log data
-	TstEpcLog *table.Table `display:"no-inline"`
+	// contains looper control loops for running sim
+	Loops *looper.Manager `new-window:"+" display:"no-inline"`
 
-	// testing trial-level log data
-	TstTrlLog *table.Table `display:"no-inline"`
+	// contains computed statistic values
+	Stats estats.Stats `new-window:"+"`
 
-	// log of all test trials where errors were made
-	TstErrLog *table.Table `display:"no-inline"`
+	// Contains all the logs and information about the logs.'
+	Logs elog.Logs `new-window:"+"`
 
-	// stats on test trials where errors were made
-	TstErrStats *table.Table `display:"no-inline"`
+	// the training patterns to use
+	Patterns *table.Table `new-window:"+" display:"no-inline"`
 
-	// testing cycle-level log data
-	TstCycLog *table.Table `display:"no-inline"`
-
-	// summary log of each run
-	RunLog *table.Table `display:"no-inline"`
-
-	// aggregate stats on all runs
-	RunStats *table.Table `display:"no-inline"`
-
-	// full collection of param sets
-	Params params.Sets `display:"no-inline"`
-
-	// which set of *additional* parameters to use -- always applies Base and optionaly this next if set
-	ParamSet string
-
-	// extra tag string to add to any file names output from sim (e.g., weights files, log files, params for run)
-	Tag string
-
-	// maximum number of model runs to perform
-	MaxRuns int
-
-	// maximum number of epochs to run per model run
-	MaxEpcs int
-
-	// if a positive number, training will stop after this many epochs with zero SSE
-	NZeroStop int
-
-	// Training environment -- contains everything about iterating over input / output patterns over training
-	TrainEnv FSAEnv
-
-	// Testing environment -- manages iterating over testing
-	TestEnv FSAEnv
+	// Environments
+	Envs env.Envs `new-window:"+" display:"no-inline"`
 
 	// leabra timing parameters and state
-	Time leabra.Context
+	Context leabra.Context `new-window:"+"`
 
-	// whether to update the network view while running
-	ViewOn bool
+	// netview update parameters
+	ViewUpdate netview.ViewUpdate `display:"add-fields"`
 
-	// at what time scale to update the display during training?  Anything longer than Epoch updates at Epoch in this model
-	TrainUpdate etime.Times
+	// manages all the gui elements
+	GUI egui.GUI `display:"-"`
 
-	// at what time scale to update the display during testing?  Anything longer than Epoch updates at Epoch in this model
-	TestUpdate etime.Times
-
-	// how often to run through all the test patterns, in terms of training epochs -- can use 0 or -1 for no testing
-	TestInterval int
-
-	// names of layers to collect more detailed stats on (avg act, etc)
-	LayStatNms []string
-
-	// 1 if trial was error, 0 if correct -- based on SSE = 0 (subject to .5 unit-wise tolerance)
-	TrlErr float64 `edit:"-"`
-
-	// current trial's sum squared error
-	TrlSSE float64 `edit:"-"`
-
-	// current trial's average sum squared error
-	TrlAvgSSE float64 `edit:"-"`
-
-	// current trial's cosine difference
-	TrlCosDiff float64 `edit:"-"`
-
-	// last epoch's total sum squared error
-	EpcSSE float64 `edit:"-"`
-
-	// last epoch's average sum squared error (average over trials, and over units within layer)
-	EpcAvgSSE float64 `edit:"-"`
-
-	// last epoch's average TrlErr
-	EpcPctErr float64 `edit:"-"`
-
-	// 1 - last epoch's average TrlErr
-	EpcPctCor float64 `edit:"-"`
-
-	// last epoch's average cosine difference for output layer (a normalized error measure, maximum of 1 when the minus phase exactly matches the plus)
-	EpcCosDiff float64 `edit:"-"`
-
-	// how long did the epoch take per trial in wall-clock milliseconds
-	EpcPerTrlMSec float64 `edit:"-"`
-
-	// epoch at when SSE first went to zero
-	FirstZero int `edit:"-"`
-
-	// number of epochs in a row with zero SSE
-	NZero int `edit:"-"`
-
-	// sum to increment as we go through epoch
-	SumErr float64 `display:"-" edit:"-"`
-
-	// sum to increment as we go through epoch
-	SumSSE float64 `display:"-" edit:"-"`
-
-	// sum to increment as we go through epoch
-	SumAvgSSE float64 `display:"-" edit:"-"`
-
-	// sum to increment as we go through epoch
-	SumCosDiff float64 `display:"-" edit:"-"`
-
-	// main GUI window
-	Win *core.Window `display:"-"`
-
-	// the network viewer
-	NetView *netview.NetView `display:"-"`
-
-	// the master toolbar
-	ToolBar *core.ToolBar `display:"-"`
-
-	// the training epoch plot
-	TrnEpcPlot *plot.Plot2D `display:"-"`
-
-	// the testing epoch plot
-	TstEpcPlot *plot.Plot2D `display:"-"`
-
-	// the test-trial plot
-	TstTrlPlot *plot.Plot2D `display:"-"`
-
-	// the test-cycle plot
-	TstCycPlot *plot.Plot2D `display:"-"`
-
-	// the run plot
-	RunPlot *plot.Plot2D `display:"-"`
-
-	// log file
-	TrnEpcFile *os.File `display:"-"`
-
-	// log file
-	RunFile *os.File `display:"-"`
-
-	// for holding layer values
-	ValuesTsrs map[string]*tensor.Float32 `display:"-"`
-
-	// for command-line run only, auto-save final weights after each run
-	SaveWeights bool `display:"-"`
-
-	// if true, runing in no GUI mode
-	NoGui bool `display:"-"`
-
-	// if true, print message for all params that are set
-	LogSetParams bool `display:"-"`
-
-	// true if sim is running
-	IsRunning bool `display:"-"`
-
-	// flag to stop running
-	StopNow bool `display:"-"`
-
-	// flag to initialize NewRun if last one finished
-	NeedsNewRun bool `display:"-"`
-
-	// the current random seed
-	RndSeed int64 `display:"-"`
-
-	// timer for last epoch
-	LastEpcTime time.Time `display:"-"`
+	// a list of random seeds to use for each run
+	RandSeeds randx.Seeds `display:"-"`
 }
-
-// TheSim is the overall state for this simulation
-var TheSim Sim
 
 // New creates new blank elements and initializes defaults
 func (ss *Sim) New() {
-	ss.Net = &deep.Network{}
-	ss.TrnEpcLog = &table.Table{}
-	ss.TstEpcLog = &table.Table{}
-	ss.TstTrlLog = &table.Table{}
-	ss.TstCycLog = &table.Table{}
-	ss.RunLog = &table.Table{}
-	ss.RunStats = &table.Table{}
-	ss.Params = ParamSets
-	ss.RndSeed = 1
-	ss.ViewOn = true
-	ss.TrainUpdate = leabra.AlphaCycle
-	ss.TestUpdate = leabra.Cycle
-	ss.TestInterval = 500
-	ss.LayStatNms = []string{"HiddenP", "Hidden"}
-	if InputNameMap == nil {
-		InputNameMap = make(map[string]int, len(InputNames))
-		for i, nm := range InputNames {
-			InputNameMap[nm] = i
-		}
-	}
+	econfig.Config(&ss.Config, "config.toml")
+	ss.Net = leabra.NewNetwork("RA25")
+	ss.Params.Config(ParamSets, ss.Config.Params.Sheet, ss.Config.Params.Tag, ss.Net)
+	ss.Stats.Init()
+	ss.Patterns = &table.Table{}
+	ss.RandSeeds.Init(100) // max 100 runs
+	ss.InitRandSeed(0)
+	ss.Context.Defaults()
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // 		Configs
 
-// Config configures all the elements using the standard functions
-func (ss *Sim) Config() {
+// ConfigAll configures all the elements using the standard functions
+func (ss *Sim) ConfigAll() {
 	ss.ConfigEnv()
 	ss.ConfigNet(ss.Net)
-	ss.ConfigTrnEpcLog(ss.TrnEpcLog)
-	ss.ConfigTstEpcLog(ss.TstEpcLog)
-	ss.ConfigTstTrlLog(ss.TstTrlLog)
-	ss.ConfigTstCycLog(ss.TstCycLog)
-	ss.ConfigRunLog(ss.RunLog)
+	ss.ConfigLogs()
+	ss.ConfigLoops()
+	if ss.Config.Params.SaveAll {
+		ss.Config.Params.SaveAll = false
+		ss.Net.SaveParamsSnapshot(&ss.Params.Params, &ss.Config, ss.Config.Params.Good)
+		os.Exit(0)
+	}
 }
 
 func (ss *Sim) ConfigEnv() {
-	if ss.MaxRuns == 0 { // allow user override
-		ss.MaxRuns = 10
+	// Can be called multiple times -- don't re-create
+	var trn, tst *FSAEnv
+	if len(ss.Envs) == 0 {
+		trn = &FSAEnv{}
+		tst = &FSAEnv{}
+	} else {
+		trn = ss.Envs.ByMode(etime.Train).(*FSAEnv)
+		tst = ss.Envs.ByMode(etime.Test).(*FSAEnv)
 	}
-	if ss.MaxEpcs == 0 { // allow user override
-		ss.MaxEpcs = 50
-		ss.NZeroStop = 5
-	}
 
-	ss.TrainEnv.Name = "TrainEnv"
-	ss.TrainEnv.Seq.Max = 25 // 25 sequences per epoch training
-	ss.TrainEnv.TMatReber()
-	ss.TrainEnv.Validate()
-	ss.TrainEnv.Run.Max = ss.MaxRuns // note: we are not setting epoch max -- do that manually
+	// note: names must be standard here!
+	trn.Name = etime.Train.String()
+	trn.Seq.Max = 25 // 25 sequences per epoch training
+	trn.TMatReber()
 
-	ss.TestEnv.Name = "TestEnv"
-	ss.TestEnv.Seq.Max = 10
-	ss.TestEnv.TMatReber() // todo: random
-	ss.TestEnv.Validate()
+	tst.Name = etime.Test.String()
+	tst.Seq.Max = 10
+	tst.TMatReber() // todo: random
 
-	ss.TrainEnv.Init(0)
-	ss.TestEnv.Init(0)
+	trn.Init(0)
+	tst.Init(0)
+
+	// note: names must be in place when adding
+	ss.Envs.Add(trn, tst)
 }
 
-func (ss *Sim) ConfigNet(net *deep.Network) {
-	net.InitName(net, "DeepFSA")
+func (ss *Sim) ConfigNet(net *leabra.Network) {
+	net.SetRandSeed(ss.RandSeeds[0]) // init new separate random seed, using run = 0
+
 	in := net.AddLayer2D("Input", 1, 7, leabra.InputLayer)
 	hid, hidct, hidp := net.AddDeep2D("Hidden", 8, 8)
 
-	hidp.Shape.CopyShape(in.Shape)
-	hidp.(*deep.TRCLayer).Drivers.Add("Input")
+	hidp.Shape.CopyShape(&in.Shape)
+	hidp.Drivers.Add("Input")
 
 	trg := net.AddLayer2D("Targets", 1, 7, leabra.InputLayer) // just for visualization
 
-	in.SetClass("Input")
-	hidp.SetClass("Input")
-	trg.SetClass("Input")
+	in.AddClass("Input")
+	hidp.AddClass("Input")
+	trg.AddClass("Input")
 
-	hidct.SetRelPos(relpos.Rel{Rel: relpos.RightOf, Other: "Hidden", YAlign: relpos.Front, Space: 2})
-	hidp.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "Input", YAlign: relpos.Front, Space: 2})
-	trg.SetRelPos(relpos.Rel{Rel: relpos.Behind, Other: "HiddenP", XAlign: relpos.Left, Space: 2})
+	hidct.PlaceRightOf(hid, 2)
+	hidp.PlaceRightOf(in, 2)
+	trg.PlaceBehind(hidp, 2)
 
 	full := paths.NewFull()
 	full.SelfCon = true // unclear if this makes a diff for self cons at all
@@ -410,14 +350,17 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 	// net.LateralConnectLayer(hidct, full) // note: this does not work AT ALL -- essential to learn from t-1
 	net.ConnectCtxtToCT(in, hidct, full)
 
+	net.Build()
 	net.Defaults()
-	ss.SetParams("Network", ss.LogSetParams) // only set Network params
-	err := net.Build()
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	ss.ApplyParams()
 	net.InitWeights()
+}
+
+func (ss *Sim) ApplyParams() {
+	ss.Params.SetAll()
+	if ss.Config.Params.Network != nil {
+		ss.Params.SetNetworkMap(ss.Net, ss.Config.Params.Network)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -426,1185 +369,401 @@ func (ss *Sim) ConfigNet(net *deep.Network) {
 // Init restarts the run, and initializes everything, including network weights
 // and resets the epoch log table
 func (ss *Sim) Init() {
-	rand.Seed(ss.RndSeed)
-	ss.ConfigEnv() // re-config env just in case a different set of patterns was
+	if ss.Config.GUI {
+		ss.Stats.SetString("RunName", ss.Params.RunName(0)) // in case user interactively changes tag
+	}
+	ss.Loops.ResetCounters()
+	ss.InitRandSeed(0)
+	// ss.ConfigEnv() // re-config env just in case a different set of patterns was
 	// selected or patterns have been modified etc
-	ss.StopNow = false
-	ss.SetParams("", ss.LogSetParams) // all sheets
+	ss.GUI.StopNow = false
+	ss.ApplyParams()
 	ss.NewRun()
-	ss.UpdateView(true)
+	ss.ViewUpdate.RecordSyns()
+	ss.ViewUpdate.Update()
 }
 
-// NewRndSeed gets a new random seed based on current time -- otherwise uses
-// the same random seed for every run
-func (ss *Sim) NewRndSeed() {
-	ss.RndSeed = time.Now().UnixNano()
+// InitRandSeed initializes the random seed based on current training run number
+func (ss *Sim) InitRandSeed(run int) {
+	ss.RandSeeds.Set(run)
+	ss.RandSeeds.Set(run, &ss.Net.Rand)
 }
 
-// Counters returns a string of the current counter state
-// use tabs to achieve a reasonable formatting overall
-// and add a few tabs at the end to allow for expansion..
-func (ss *Sim) Counters(train bool) string {
-	if train {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TrainEnv.Trial.Cur, ss.Time.Cycle, ss.TrainEnv.String())
+// ConfigLoops configures the control loops: Training, Testing
+func (ss *Sim) ConfigLoops() {
+	man := looper.NewManager()
+
+	trls := ss.Config.Run.NTrials
+
+	man.AddStack(etime.Train).
+		AddTime(etime.Run, ss.Config.Run.NRuns).
+		AddTime(etime.Epoch, ss.Config.Run.NEpochs).
+		AddTime(etime.Trial, trls).
+		AddTime(etime.Cycle, 100)
+
+	man.AddStack(etime.Test).
+		AddTime(etime.Epoch, 1).
+		AddTime(etime.Trial, trls).
+		AddTime(etime.Cycle, 100)
+
+	leabra.LooperStdPhases(man, &ss.Context, ss.Net, 75, 99)                // plus phase timing
+	leabra.LooperSimCycleAndLearn(man, ss.Net, &ss.Context, &ss.ViewUpdate) // std algo code
+
+	for m, _ := range man.Stacks {
+		stack := man.Stacks[m]
+		stack.Loops[etime.Trial].OnStart.Add("ApplyInputs", func() {
+			ss.ApplyInputs()
+		})
+	}
+
+	man.GetLoop(etime.Train, etime.Run).OnStart.Add("NewRun", ss.NewRun)
+
+	// Train stop early condition
+	man.GetLoop(etime.Train, etime.Epoch).IsDone["NZeroStop"] = func() bool {
+		// This is calculated in TrialStats
+		stopNz := ss.Config.Run.NZero
+		if stopNz <= 0 {
+			stopNz = 2
+		}
+		curNZero := ss.Stats.Int("NZero")
+		stop := curNZero >= stopNz
+		return stop
+	}
+
+	// Add Testing
+	trainEpoch := man.GetLoop(etime.Train, etime.Epoch)
+	trainEpoch.OnStart.Add("TestAtInterval", func() {
+		if (ss.Config.Run.TestInterval > 0) && ((trainEpoch.Counter.Cur+1)%ss.Config.Run.TestInterval == 0) {
+			// Note the +1 so that it doesn't occur at the 0th timestep.
+			ss.TestAll()
+		}
+	})
+
+	/////////////////////////////////////////////
+	// Logging
+
+	man.GetLoop(etime.Test, etime.Epoch).OnEnd.Add("LogTestErrors", func() {
+		leabra.LogTestErrors(&ss.Logs)
+	})
+	man.GetLoop(etime.Train, etime.Epoch).OnEnd.Add("PCAStats", func() {
+		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+		if ss.Config.Run.PCAInterval > 0 && trnEpc%ss.Config.Run.PCAInterval == 0 {
+			leabra.PCAStats(ss.Net, &ss.Logs, &ss.Stats)
+			ss.Logs.ResetLog(etime.Analyze, etime.Trial)
+		}
+	})
+
+	man.AddOnEndToAll("Log", ss.Log)
+	leabra.LooperResetLogBelow(man, &ss.Logs)
+
+	man.GetLoop(etime.Train, etime.Trial).OnEnd.Add("LogAnalyze", func() {
+		trnEpc := man.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+		if (ss.Config.Run.PCAInterval > 0) && (trnEpc%ss.Config.Run.PCAInterval == 0) {
+			ss.Log(etime.Analyze, etime.Trial)
+		}
+	})
+
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("RunStats", func() {
+		ss.Logs.RunStats("PctCor", "FirstZero", "LastZero")
+	})
+
+	// Save weights to file, to look at later
+	man.GetLoop(etime.Train, etime.Run).OnEnd.Add("SaveWeights", func() {
+		ctrString := ss.Stats.PrintValues([]string{"Run", "Epoch"}, []string{"%03d", "%05d"}, "_")
+		leabra.SaveWeightsIfConfigSet(ss.Net, ss.Config.Log.SaveWeights, ctrString, ss.Stats.String("RunName"))
+	})
+
+	////////////////////////////////////////////
+	// GUI
+
+	if !ss.Config.GUI {
+		if ss.Config.Log.NetData {
+			man.GetLoop(etime.Test, etime.Trial).Main.Add("NetDataRecord", func() {
+				ss.GUI.NetDataRecord(ss.ViewUpdate.Text)
+			})
+		}
 	} else {
-		return fmt.Sprintf("Run:\t%d\tEpoch:\t%d\tTrial:\t%d\tCycle:\t%d\tName:\t%v\t\t\t", ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur, ss.TestEnv.Trial.Cur, ss.Time.Cycle, ss.TestEnv.String())
+		leabra.LooperUpdateNetView(man, &ss.ViewUpdate, ss.Net, ss.NetViewCounters)
+		leabra.LooperUpdatePlots(man, &ss.GUI)
 	}
+
+	if ss.Config.Debug {
+		mpi.Println(man.DocString())
+	}
+	ss.Loops = man
 }
 
-func (ss *Sim) UpdateView(train bool) {
-	if ss.NetView != nil && ss.NetView.IsVisible() {
-		ss.NetView.Record(ss.Counters(train), -1)
-		// note: essential to use Go version of update when called from another goroutine
-		ss.NetView.GoUpdate() // note: using counters is significantly slower..
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 	    Running the Network, starting bottom-up..
-
-// AlphaCyc runs one alpha-cycle (100 msec, 4 quarters)			 of processing.
-// External inputs must have already been applied prior to calling,
-// using ApplyExt method on relevant layers (see TrainTrial, TestTrial).
-// If train is true, then learning DWt or WtFromDWt calls are made.
-// Handles netview updating within scope of AlphaCycle
-func (ss *Sim) AlphaCyc(train bool) {
-	// ss.Win.PollEvents() // this can be used instead of running in a separate goroutine
-	viewUpdate := ss.TrainUpdate
-	if !train {
-		viewUpdate = ss.TestUpdate
-	}
-
-	ss.Net.AlphaCycInit(train)
-	ss.Time.AlphaCycStart()
-	for qtr := 0; qtr < 4; qtr++ {
-		for cyc := 0; cyc < ss.Time.CycPerQtr; cyc++ {
-			ss.Net.Cycle(&ss.Time)
-			if !train {
-				ss.LogTstCyc(ss.TstCycLog, ss.Time.Cycle)
-			}
-			ss.Time.CycleInc()
-			if ss.ViewOn {
-				switch viewUpdate {
-				case leabra.Cycle:
-					if cyc != ss.Time.CycPerQtr-1 { // will be updated by quarter
-						ss.UpdateView(train)
-					}
-				case leabra.FastSpike:
-					if (cyc+1)%10 == 0 {
-						ss.UpdateView(train)
-					}
-				}
-			}
-		}
-		ss.Net.QuarterFinal(&ss.Time)
-		ss.Time.QuarterInc()
-		if ss.ViewOn {
-			switch {
-			case viewUpdate <= leabra.Quarter:
-				ss.UpdateView(train)
-			case viewUpdate == leabra.Phase:
-				if qtr >= 2 {
-					ss.UpdateView(train)
-				}
-			}
-		}
-	}
-
-	if train {
-		ss.Net.DWt()
-		ss.NetView.RecordSyns()
-		ss.Net.WtFromDWt()
-	}
-	if ss.ViewOn && viewUpdate == leabra.AlphaCycle {
-		ss.UpdateView(train)
-	}
-	if !train {
-		ss.TstCycPlot.GoUpdate() // make sure up-to-date at end
-	}
-}
-
-// ApplyInputs applies input patterns from given envirbonment.
+// ApplyInputs applies input patterns from given environment.
 // It is good practice to have this be a separate method with appropriate
 // args so that it can be used for various different contexts
 // (training, testing, etc).
-func (ss *Sim) ApplyInputs(en env.Env) {
-	ss.Net.InitExt() // clear any existing inputs -- not strictly necessary if always
-	// going to the same layers, but good practice and cheap anyway
-
-	// just using direct access to state here
-	in := ss.Net.LayerByName("Input").(leabra.LeabraLayer).AsLeabra()
-	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
-	clrmsk, setmsk, _ := in.ApplyExtFlags()
-	fsenv := en.(*FSAEnv)
-	ns := fsenv.NNext.Values[0]
-	for i := 0; i < ns; i++ {
-		lbl := fsenv.NextLabels.Values[i]
-		li, ok := InputNameMap[lbl]
-		if !ok {
-			log.Printf("Input label: %v not found in InputNames list of labels\n", lbl)
-			continue
+func (ss *Sim) ApplyInputs() {
+	ctx := &ss.Context
+	net := ss.Net
+	ev := ss.Envs.ByMode(ctx.Mode).(*FSAEnv)
+	ev.Step()
+	lays := net.LayersByType(leabra.InputLayer, leabra.TargetLayer)
+	net.InitExt()
+	ss.Stats.SetString("TrialName", ev.String())
+	for _, lnm := range lays {
+		ly := ss.Net.LayerByName(lnm)
+		pats := ev.State(ly.Name)
+		if pats != nil {
+			ly.ApplyExt(pats)
 		}
-		if i == 0 {
-			inr := &in.Neurons[li]
-			inr.Ext = 1
-			inr.ClearMask(clrmsk)
-			inr.SetMask(setmsk)
-		}
-		inr := &trg.Neurons[li]
-		inr.Ext = 1
-		inr.ClearMask(clrmsk)
-		inr.SetMask(setmsk)
-	}
-}
-
-// TrainTrial runs one trial of training using TrainEnv
-func (ss *Sim) TrainTrial() {
-	if ss.NeedsNewRun {
-		ss.NewRun()
-	}
-
-	ss.TrainEnv.Step() // the Env encapsulates and manages all counter state
-
-	// Key to query counters FIRST because current state is in NEXT epoch
-	// if epoch counter has changed
-	epc, _, chg := ss.TrainEnv.Counter(env.Epoch)
-	if chg {
-		ss.LogTrnEpc(ss.TrnEpcLog)
-		ss.TrainEnv.Trial.Cur = 0
-		if ss.ViewOn && ss.TrainUpdate > leabra.AlphaCycle {
-			ss.UpdateView(true)
-		}
-		if ss.TestInterval > 0 && epc%ss.TestInterval == 0 { // note: epc is *next* so won't trigger first time
-			ss.TestAll()
-		}
-		if epc >= ss.MaxEpcs || (ss.NZeroStop > 0 && ss.NZero >= ss.NZeroStop) {
-			// done with training..
-			ss.RunEnd()
-			if ss.TrainEnv.Run.Incr() { // we are done!
-				ss.StopNow = true
-				return
-			} else {
-				ss.NeedsNewRun = true
-				return
-			}
-		}
-	}
-
-	ss.ApplyInputs(&ss.TrainEnv)
-	ss.AlphaCyc(true)   // train
-	ss.TrialStats(true) // accumulate
-}
-
-// RunEnd is called at the end of a run -- save weights, record final log, etc here
-func (ss *Sim) RunEnd() {
-	ss.LogRun(ss.RunLog)
-	if ss.SaveWeights {
-		fnm := ss.WeightsFileName()
-		fmt.Printf("Saving Weights to: %v\n", fnm)
-		ss.Net.SaveWeightsJSON(core.Filename(fnm))
 	}
 }
 
 // NewRun intializes a new run of the model, using the TrainEnv.Run counter
 // for the new run value
 func (ss *Sim) NewRun() {
-	run := ss.TrainEnv.Run.Cur
-	ss.TrainEnv.Init(run)
-	ss.TestEnv.Init(run)
-	ss.Time.Reset()
+	ctx := &ss.Context
+	ss.InitRandSeed(ss.Loops.GetLoop(etime.Train, etime.Run).Counter.Cur)
+	ss.Envs.ByMode(etime.Train).Init(0)
+	ss.Envs.ByMode(etime.Test).Init(0)
+	ctx.Reset()
+	ctx.Mode = etime.Train
 	ss.Net.InitWeights()
 	ss.InitStats()
-	ss.TrnEpcLog.SetNumRows(0)
-	ss.TstEpcLog.SetNumRows(0)
-	ss.NeedsNewRun = false
-}
-
-// InitStats initializes all the statistics, especially important for the
-// cumulative epoch stats -- called at start of new run
-func (ss *Sim) InitStats() {
-	// accumulators
-	ss.SumErr = 0
-	ss.SumSSE = 0
-	ss.SumAvgSSE = 0
-	ss.SumCosDiff = 0
-	ss.FirstZero = -1
-	ss.NZero = 0
-	// clear rest just to make Sim look initialized
-	ss.TrlErr = 0
-	ss.TrlSSE = 0
-	ss.TrlAvgSSE = 0
-	ss.EpcSSE = 0
-	ss.EpcAvgSSE = 0
-	ss.EpcPctErr = 0
-	ss.EpcCosDiff = 0
-}
-
-// TrialStats computes the trial-level statistics and adds them to the epoch accumulators if
-// accum is true.  Note that we're accumulating stats here on the Sim side so the
-// core algorithm side remains as simple as possible, and doesn't need to worry about
-// different time-scales over which stats could be accumulated etc.
-// You can also aggregate directly from log data, as is done for testing stats
-func (ss *Sim) TrialStats(accum bool) {
-	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
-	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
-	ss.TrlCosDiff = float64(inp.CosDiff.Cos)
-	// ss.TrlSSE, ss.TrlAvgSSE = inp.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
-	// compute SSE against target as activation of inp outside of trg > .5
-	sse := 0.0
-	gotOne := false
-	for ni := range inp.Neurons {
-		inn := &inp.Neurons[ni]
-		if inn.Off {
-			continue
-		}
-		tgn := &trg.Neurons[ni]
-		if tgn.Act > 0.5 {
-			if inn.ActM > 0.4 {
-				gotOne = true
-			}
-		} else {
-			if inn.ActM > 0.5 {
-				sse += float64(inn.ActM)
-			}
-		}
-	}
-	if !gotOne {
-		sse += 1
-	}
-	ss.TrlSSE = sse
-	ss.TrlAvgSSE = sse // not really meaningful
-	if ss.TrlSSE > 0 {
-		ss.TrlErr = 1
-	} else {
-		ss.TrlErr = 0
-	}
-	if accum {
-		ss.SumErr += ss.TrlErr
-		ss.SumSSE += ss.TrlSSE
-		ss.SumAvgSSE += ss.TrlAvgSSE
-		ss.SumCosDiff += ss.TrlCosDiff
-	}
-}
-
-// TrainEpoch runs training trials for remainder of this epoch
-func (ss *Sim) TrainEpoch() {
-	ss.StopNow = false
-	curEpc := ss.TrainEnv.Epoch.Cur
-	for {
-		ss.TrainTrial()
-		if ss.StopNow || ss.TrainEnv.Epoch.Cur != curEpc {
-			break
-		}
-	}
-	ss.Stopped()
-}
-
-// TrainRun runs training trials for remainder of run
-func (ss *Sim) TrainRun() {
-	ss.StopNow = false
-	curRun := ss.TrainEnv.Run.Cur
-	for {
-		ss.TrainTrial()
-		if ss.StopNow || ss.TrainEnv.Run.Cur != curRun {
-			break
-		}
-	}
-	ss.Stopped()
-}
-
-// Train runs the full training from this point onward
-func (ss *Sim) Train() {
-	ss.StopNow = false
-	for {
-		ss.TrainTrial()
-		if ss.StopNow {
-			break
-		}
-	}
-	ss.Stopped()
-}
-
-// Stop tells the sim to stop running
-func (ss *Sim) Stop() {
-	ss.StopNow = true
-}
-
-// Stopped is called when a run method stops running -- updates the IsRunning flag and toolbar
-func (ss *Sim) Stopped() {
-	ss.IsRunning = false
-	if ss.Win != nil {
-		vp := ss.Win.WinViewport2D()
-		if ss.ToolBar != nil {
-			ss.ToolBar.UpdateActions()
-		}
-		vp.SetNeedsFullRender()
-	}
-}
-
-// SaveWeights saves the network weights -- when called with views.CallMethod
-// it will auto-prompt for filename
-func (ss *Sim) SaveWeights(filename core.Filename) {
-	ss.Net.SaveWeightsJSON(filename)
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////
-// Testing
-
-// TestTrial runs one trial of testing -- always sequentially presented inputs
-func (ss *Sim) TestTrial(returnOnChg bool) {
-	ss.TestEnv.Step()
-
-	// Query counters FIRST
-	_, _, chg := ss.TestEnv.Counter(env.Epoch)
-	if chg {
-		if ss.ViewOn && ss.TestUpdate > leabra.AlphaCycle {
-			ss.UpdateView(false)
-		}
-		ss.LogTstEpc(ss.TstEpcLog)
-		if returnOnChg {
-			return
-		}
-	}
-
-	ss.ApplyInputs(&ss.TestEnv)
-	ss.AlphaCyc(false)   // !train
-	ss.TrialStats(false) // !accumulate
-	ss.LogTstTrl(ss.TstTrlLog)
+	ss.StatCounters()
+	ss.Logs.ResetLog(etime.Train, etime.Epoch)
+	ss.Logs.ResetLog(etime.Test, etime.Epoch)
 }
 
 // TestAll runs through the full set of testing items
 func (ss *Sim) TestAll() {
-	ss.TestEnv.Init(ss.TrainEnv.Run.Cur)
-	for {
-		ss.TestTrial(true) // return on change -- don't wrap
-		_, _, chg := ss.TestEnv.Counter(env.Epoch)
-		if chg || ss.StopNow {
-			break
-		}
-	}
-}
-
-// RunTestAll runs through the full set of testing items, has stop running = false at end -- for gui
-func (ss *Sim) RunTestAll() {
-	ss.StopNow = false
-	ss.TestAll()
-	ss.Stopped()
-}
-
-/////////////////////////////////////////////////////////////////////////
-//   Params setting
-
-// ParamsName returns name of current set of parameters
-func (ss *Sim) ParamsName() string {
-	if ss.ParamSet == "" {
-		return "Base"
-	}
-	return ss.ParamSet
-}
-
-// SetParams sets the params for "Base" and then current ParamSet.
-// If sheet is empty, then it applies all avail sheets (e.g., Network, Sim)
-// otherwise just the named sheet
-// if setMsg = true then we output a message for each param that was set.
-func (ss *Sim) SetParams(sheet string, setMsg bool) error {
-	if sheet == "" {
-		// this is important for catching typos and ensuring that all sheets can be used
-		ss.Params.ValidateSheets([]string{"Network", "Sim"})
-	}
-	err := ss.SetParamsSet("Base", sheet, setMsg)
-	if ss.ParamSet != "" && ss.ParamSet != "Base" {
-		err = ss.SetParamsSet(ss.ParamSet, sheet, setMsg)
-	}
-	return err
-}
-
-// SetParamsSet sets the params for given params.Set name.
-// If sheet is empty, then it applies all avail sheets (e.g., Network, Sim)
-// otherwise just the named sheet
-// if setMsg = true then we output a message for each param that was set.
-func (ss *Sim) SetParamsSet(setNm string, sheet string, setMsg bool) error {
-	pset, err := ss.Params.SetByName(setNm)
-	if err != nil {
-		return err
-	}
-	if sheet == "" || sheet == "Network" {
-		netp, ok := pset.Sheets["Network"]
-		if ok {
-			ss.Net.ApplyParams(netp, setMsg)
-		}
-	}
-
-	if sheet == "" || sheet == "Sim" {
-		simp, ok := pset.Sheets["Sim"]
-		if ok {
-			simp.Apply(ss, setMsg)
-		}
-	}
-	// note: if you have more complex environments with parameters, definitely add
-	// sheets for them, e.g., "TrainEnv", "TestEnv" etc
-	return err
+	ss.Envs.ByMode(etime.Test).Init(0)
+	ss.Loops.ResetAndRun(etime.Test)
+	ss.Loops.Mode = etime.Train // Important to reset Mode back to Train because this is called from within the Train Run.
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+// 		Stats
+
+// InitStats initializes all the statistics.
+// called at start of new run
+func (ss *Sim) InitStats() {
+	ss.Stats.SetFloat("UnitErr", 0.0)
+	ss.Stats.SetFloat("CorSim", 0.0)
+	ss.Stats.SetString("TrialName", "")
+	ss.Logs.InitErrStats() // inits TrlErr, FirstZero, LastZero, NZero
+}
+
+// StatCounters saves current counters to Stats, so they are available for logging etc
+// Also saves a string rep of them for ViewUpdate.Text
+func (ss *Sim) StatCounters() {
+	ctx := &ss.Context
+	mode := ctx.Mode
+	ss.Loops.Stacks[mode].CountersToStats(&ss.Stats)
+	// always use training epoch..
+	trnEpc := ss.Loops.Stacks[etime.Train].Loops[etime.Epoch].Counter.Cur
+	ss.Stats.SetInt("Epoch", trnEpc)
+	trl := ss.Stats.Int("Trial")
+	ss.Stats.SetInt("Trial", trl)
+	ss.Stats.SetInt("Cycle", int(ctx.Cycle))
+}
+
+func (ss *Sim) NetViewCounters(tm etime.Times) {
+	if ss.ViewUpdate.View == nil {
+		return
+	}
+	if tm == etime.Trial {
+		ss.TrialStats() // get trial stats for current di
+	}
+	ss.StatCounters()
+	ss.ViewUpdate.Text = ss.Stats.Print([]string{"Run", "Epoch", "Trial", "TrialName", "Cycle", "UnitErr", "TrlErr", "CorSim"})
+}
+
+// TrialStats computes the trial-level statistics.
+// Aggregation is done directly from log data.
+func (ss *Sim) TrialStats() {
+	out := ss.Net.LayerByName("Output")
+
+	ss.Stats.SetFloat("CorSim", float64(out.CosDiff.Cos))
+
+	sse, avgsse := out.MSE(0.5) // 0.5 = per-unit tolerance -- right side of .5
+	ss.Stats.SetFloat("SSE", sse)
+	ss.Stats.SetFloat("AvgSSE", avgsse)
+	if sse > 0 {
+		ss.Stats.SetFloat("TrlErr", 1)
+	} else {
+		ss.Stats.SetFloat("TrlErr", 0)
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // 		Logging
 
-// ValuesTsr gets value tensor of given name, creating if not yet made
-func (ss *Sim) ValuesTsr(name string) *tensor.Float32 {
-	if ss.ValuesTsrs == nil {
-		ss.ValuesTsrs = make(map[string]*tensor.Float32)
+func (ss *Sim) ConfigLogs() {
+	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // used for naming logs, stats, etc
+
+	ss.Logs.AddCounterItems(etime.Run, etime.Epoch, etime.Trial, etime.Cycle)
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.AllTimes, "RunName")
+	ss.Logs.AddStatStringItem(etime.AllModes, etime.Trial, "TrialName")
+
+	ss.Logs.AddStatAggItem("CorSim", etime.Run, etime.Epoch, etime.Trial)
+	ss.Logs.AddStatAggItem("UnitErr", etime.Run, etime.Epoch, etime.Trial)
+	ss.Logs.AddErrStatAggItems("TrlErr", etime.Run, etime.Epoch, etime.Trial)
+
+	ss.Logs.AddCopyFromFloatItems(etime.Train, []etime.Times{etime.Epoch, etime.Run}, etime.Test, etime.Epoch, "Tst", "CorSim", "UnitErr", "PctCor", "PctErr")
+
+	ss.Logs.AddPerTrlMSec("PerTrlMSec", etime.Run, etime.Epoch, etime.Trial)
+
+	layers := ss.Net.LayersByType(leabra.SuperLayer, leabra.CTLayer, leabra.TargetLayer)
+	leabra.LogAddDiagnosticItems(&ss.Logs, layers, etime.Train, etime.Epoch, etime.Trial)
+	leabra.LogInputLayer(&ss.Logs, ss.Net, etime.Train)
+
+	leabra.LogAddPCAItems(&ss.Logs, ss.Net, etime.Train, etime.Run, etime.Epoch, etime.Trial)
+
+	ss.Logs.AddLayerTensorItems(ss.Net, "Act", etime.Test, etime.Trial, "InputLayer", "TargetLayer")
+
+	ss.Logs.PlotItems("CorSim", "PctCor", "FirstZero", "LastZero")
+
+	ss.Logs.CreateTables()
+	ss.Logs.SetContext(&ss.Stats, ss.Net)
+	// don't plot certain combinations we don't use
+	ss.Logs.NoPlot(etime.Train, etime.Cycle)
+	ss.Logs.NoPlot(etime.Test, etime.Run)
+	// note: Analyze not plotted by default
+	ss.Logs.SetMeta(etime.Train, etime.Run, "LegendCol", "RunName")
+}
+
+// Log is the main logging function, handles special things for different scopes
+func (ss *Sim) Log(mode etime.Modes, time etime.Times) {
+	ctx := &ss.Context
+	if mode != etime.Analyze {
+		ctx.Mode = mode // Also set specifically in a Loop callback.
 	}
-	tsr, ok := ss.ValuesTsrs[name]
-	if !ok {
-		tsr = &tensor.Float32{}
-		ss.ValuesTsrs[name] = tsr
+	dt := ss.Logs.Table(mode, time)
+	if dt == nil {
+		return
 	}
-	return tsr
-}
-
-// RunName returns a name for this run that combines Tag and Params -- add this to
-// any file names that are saved.
-func (ss *Sim) RunName() string {
-	if ss.Tag != "" {
-		return ss.Tag + "_" + ss.ParamsName()
-	} else {
-		return ss.ParamsName()
-	}
-}
-
-// RunEpochName returns a string with the run and epoch numbers with leading zeros, suitable
-// for using in weights file names.  Uses 3, 5 digits for each.
-func (ss *Sim) RunEpochName(run, epc int) string {
-	return fmt.Sprintf("%03d_%05d", run, epc)
-}
-
-// WeightsFileName returns default current weights file name
-func (ss *Sim) WeightsFileName() string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + ss.RunEpochName(ss.TrainEnv.Run.Cur, ss.TrainEnv.Epoch.Cur) + ".wts"
-}
-
-// LogFileName returns default log file name
-func (ss *Sim) LogFileName(lognm string) string {
-	return ss.Net.Nm + "_" + ss.RunName() + "_" + lognm + ".tsv"
-}
-
-//////////////////////////////////////////////
-//  TrnEpcLog
-
-// LogTrnEpc adds data from current epoch to the TrnEpcLog table.
-// computes epoch averages prior to logging.
-func (ss *Sim) LogTrnEpc(dt *table.Table) {
 	row := dt.Rows
-	dt.SetNumRows(row + 1)
 
-	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-	nt := float64(ss.TrainEnv.Trial.Prv)
-
-	ss.EpcSSE = ss.SumSSE / nt
-	ss.SumSSE = 0
-	ss.EpcAvgSSE = ss.SumAvgSSE / nt
-	ss.SumAvgSSE = 0
-	ss.EpcPctErr = float64(ss.SumErr) / nt
-	ss.SumErr = 0
-	ss.EpcPctCor = 1 - ss.EpcPctErr
-	ss.EpcCosDiff = ss.SumCosDiff / nt
-	ss.SumCosDiff = 0
-	if ss.FirstZero < 0 && ss.EpcPctErr == 0 {
-		ss.FirstZero = epc
-	}
-	if ss.EpcPctErr == 0 {
-		ss.NZero++
-	} else {
-		ss.NZero = 0
+	switch {
+	case time == etime.Cycle:
+		return
+	case time == etime.Trial:
+		ss.TrialStats()
+		ss.StatCounters()
 	}
 
-	if ss.LastEpcTime.IsZero() {
-		ss.EpcPerTrlMSec = 0
-	} else {
-		iv := time.Now().Sub(ss.LastEpcTime)
-		ss.EpcPerTrlMSec = float64(iv) / (nt * float64(time.Millisecond))
-	}
-	ss.LastEpcTime = time.Now()
-
-	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
-	dt.SetCellFloat("Epoch", row, float64(epc))
-	dt.SetCellFloat("SSE", row, ss.EpcSSE)
-	dt.SetCellFloat("AvgSSE", row, ss.EpcAvgSSE)
-	dt.SetCellFloat("PctErr", row, ss.EpcPctErr)
-	dt.SetCellFloat("PctCor", row, ss.EpcPctCor)
-	dt.SetCellFloat("CosDiff", row, ss.EpcCosDiff)
-	dt.SetCellFloat("PerTrlMSec", row, ss.EpcPerTrlMSec)
-
-	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Name+" ActAvg", row, float64(ly.Pools[0].ActAvg.ActPAvgEff))
-	}
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.TrnEpcPlot.GoUpdate()
-	if ss.TrnEpcFile != nil {
-		if ss.TrainEnv.Run.Cur == 0 && epc == 0 {
-			dt.WriteCSVHeaders(ss.TrnEpcFile, table.Tab)
-		}
-		dt.WriteCSVRow(ss.TrnEpcFile, row, table.Tab)
-	}
-}
-
-func (ss *Sim) ConfigTrnEpcLog(dt *table.Table) {
-	dt.SetMetaData("name", "TrnEpcLog")
-	dt.SetMetaData("desc", "Record of performance over epochs of training")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	sch := table.Schema{
-		{"Run", tensor.INT64, nil, nil},
-		{"Epoch", tensor.INT64, nil, nil},
-		{"SSE", tensor.FLOAT64, nil, nil},
-		{"AvgSSE", tensor.FLOAT64, nil, nil},
-		{"PctErr", tensor.FLOAT64, nil, nil},
-		{"PctCor", tensor.FLOAT64, nil, nil},
-		{"CosDiff", tensor.FLOAT64, nil, nil},
-		{"PerTrlMSec", tensor.FLOAT64, nil, nil},
-	}
-	for _, lnm := range ss.LayStatNms {
-		sch = append(sch, table.Column{lnm + " ActAvg", tensor.FLOAT64, nil, nil})
-	}
-	dt.SetFromSchema(sch, 0)
-}
-
-func (ss *Sim) ConfigTrnEpcPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
-	plt.Params.Title = "DeepFSA Epoch Plot"
-	plt.Params.XAxisCol = "Epoch"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Epoch", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("SSE", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("PctErr", plot.On, plot.FixMin, 0, plot.FixMax, 1)  // default plot
-	plt.SetColParams("PctCor", plot.Off, plot.FixMin, 0, plot.FixMax, 1) // default plot
-	plt.SetColParams("CosDiff", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	plt.SetColParams("PerTrlMSec", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-
-	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" ActAvg", false, true, 0, true, .5)
-	}
-	return plt
-}
-
-//////////////////////////////////////////////
-//  TstTrlLog
-
-// LogTstTrl adds data from current trial to the TstTrlLog table.
-// log always contains number of testing items
-func (ss *Sim) LogTstTrl(dt *table.Table) {
-	epc := ss.TrainEnv.Epoch.Prv // this is triggered by increment so use previous value
-
-	trl := ss.TestEnv.Trial.Cur
-	row := trl
-
-	if dt.Rows <= row {
-		dt.SetNumRows(row + 1)
-	}
-
-	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
-	dt.SetCellFloat("Epoch", row, float64(epc))
-	dt.SetCellFloat("Seq", row, float64(ss.TestEnv.Seq.Cur))
-	dt.SetCellFloat("Tick", row, float64(ss.TestEnv.Tick.Cur))
-	dt.SetCellFloat("Trial", row, float64(trl))
-	dt.SetCellString("TrialName", row, ss.TestEnv.String())
-	dt.SetCellFloat("Err", row, ss.TrlErr)
-	dt.SetCellFloat("SSE", row, ss.TrlSSE)
-	dt.SetCellFloat("AvgSSE", row, ss.TrlAvgSSE)
-	dt.SetCellFloat("CosDiff", row, ss.TrlCosDiff)
-
-	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
-	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
-	ivt := ss.ValuesTsr("Input")
-	trgt := ss.ValuesTsr("Target")
-	inp.UnitValuesTensor(ivt, "ActM")
-	dt.SetCellTensor("InActM", row, ivt)
-	inp.UnitValuesTensor(ivt, "ActP")
-	dt.SetCellTensor("InActP", row, ivt)
-	trg.UnitValuesTensor(trgt, "ActP")
-	dt.SetCellTensor("Targs", row, trgt)
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.TstTrlPlot.GoUpdate()
-}
-
-func (ss *Sim) ConfigTstTrlLog(dt *table.Table) {
-	inp := ss.Net.LayerByName("HiddenP").(leabra.LeabraLayer).AsLeabra()
-	trg := ss.Net.LayerByName("Targets").(leabra.LeabraLayer).AsLeabra()
-
-	dt.SetMetaData("name", "TstTrlLog")
-	dt.SetMetaData("desc", "Record of testing per input pattern")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	nt := ss.TestEnv.Trial.Prv
-	sch := table.Schema{
-		{"Run", tensor.INT64, nil, nil},
-		{"Epoch", tensor.INT64, nil, nil},
-		{"Seq", tensor.INT64, nil, nil},
-		{"Tick", tensor.INT64, nil, nil},
-		{"Trial", tensor.INT64, nil, nil},
-		{"TrialName", tensor.STRING, nil, nil},
-		{"Err", tensor.FLOAT64, nil, nil},
-		{"SSE", tensor.FLOAT64, nil, nil},
-		{"AvgSSE", tensor.FLOAT64, nil, nil},
-		{"CosDiff", tensor.FLOAT64, nil, nil},
-	}
-	sch = append(sch, table.Schema{
-		{"InActM", tensor.FLOAT64, inp.Shp.Shp, nil},
-		{"InActP", tensor.FLOAT64, inp.Shp.Shp, nil},
-		{"Targs", tensor.FLOAT64, trg.Shp.Shp, nil},
-	}...)
-	dt.SetFromSchema(sch, nt)
-}
-
-func (ss *Sim) ConfigTstTrlPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
-	plt.Params.Title = "DeepFSA Test Trial Plot"
-	plt.Params.XAxisCol = "Trial"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Epoch", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Seq", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Tick", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Trial", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("TrialName", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Err", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("SSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", plot.On, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("CosDiff", plot.On, plot.FixMin, 0, plot.FixMax, 1)
-
-	plt.SetColParams("InActP", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	plt.SetColParams("InActM", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	plt.SetColParams("Targs", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	return plt
-}
-
-//////////////////////////////////////////////
-//  TstEpcLog
-
-func (ss *Sim) LogTstEpc(dt *table.Table) {
-	row := dt.Rows
-	dt.SetNumRows(row + 1)
-
-	trl := ss.TstTrlLog
-	tix := table.NewIndexView(trl)
-	epc := ss.TrainEnv.Epoch.Prv // ?
-
-	// note: this shows how to use agg methods to compute summary data from another
-	// data table, instead of incrementing on the Sim
-	dt.SetCellFloat("Run", row, float64(ss.TrainEnv.Run.Cur))
-	dt.SetCellFloat("Epoch", row, float64(epc))
-	dt.SetCellFloat("SSE", row, stats.Sum(tix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, stats.Mean(tix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
-		return val > 0
-	})[0])
-	dt.SetCellFloat("PctCor", row, stats.PropIf(tix, "SSE", func(idx int, val float64) bool {
-		return val == 0
-	})[0])
-	dt.SetCellFloat("CosDiff", row, stats.Mean(tix, "CosDiff")[0])
-
-	trlix := table.NewIndexView(trl)
-	trlix.Filter(func(et *table.Table, row int) bool {
-		return et.CellFloat("SSE", row) > 0 // include error trials
-	})
-	ss.TstErrLog = trlix.NewTable()
-
-	allsp := split.All(trlix)
-	split.Agg(allsp, "SSE", stats.AggSum)
-	split.Agg(allsp, "AvgSSE", stats.AggMean)
-	split.Agg(allsp, "InActM", stats.AggMean)
-	split.Agg(allsp, "InActP", stats.AggMean)
-	split.Agg(allsp, "Targs", stats.AggMean)
-
-	ss.TstErrStats = allsp.AggsToTable(table.AddAggName)
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.TstEpcPlot.GoUpdate()
-}
-
-func (ss *Sim) ConfigTstEpcLog(dt *table.Table) {
-	dt.SetMetaData("name", "TstEpcLog")
-	dt.SetMetaData("desc", "Summary stats for testing trials")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	dt.SetFromSchema(table.Schema{
-		{"Run", tensor.INT64, nil, nil},
-		{"Epoch", tensor.INT64, nil, nil},
-		{"SSE", tensor.FLOAT64, nil, nil},
-		{"AvgSSE", tensor.FLOAT64, nil, nil},
-		{"PctErr", tensor.FLOAT64, nil, nil},
-		{"PctCor", tensor.FLOAT64, nil, nil},
-		{"CosDiff", tensor.FLOAT64, nil, nil},
-	}, 0)
-}
-
-func (ss *Sim) ConfigTstEpcPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
-	plt.Params.Title = "DeepFSA Testing Epoch Plot"
-	plt.Params.XAxisCol = "Epoch"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("Epoch", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("SSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("PctErr", plot.On, plot.FixMin, 0, plot.FixMax, 1) // default plot
-	plt.SetColParams("PctCor", plot.On, plot.FixMin, 0, plot.FixMax, 1) // default plot
-	plt.SetColParams("CosDiff", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	return plt
-}
-
-//////////////////////////////////////////////
-//  TstCycLog
-
-// LogTstCyc adds data from current trial to the TstCycLog table.
-// log just has 100 cycles, is overwritten
-func (ss *Sim) LogTstCyc(dt *table.Table, cyc int) {
-	if dt.Rows <= cyc {
-		dt.SetNumRows(cyc + 1)
-	}
-
-	dt.SetCellFloat("Cycle", cyc, float64(cyc))
-	for _, lnm := range ss.LayStatNms {
-		ly := ss.Net.LayerByName(lnm).(leabra.LeabraLayer).AsLeabra()
-		dt.SetCellFloat(ly.Name+" Ge.Avg", cyc, float64(ly.Pools[0].Inhib.Ge.Avg))
-		dt.SetCellFloat(ly.Name+" Act.Avg", cyc, float64(ly.Pools[0].Inhib.Act.Avg))
-	}
-
-	if cyc%10 == 0 { // too slow to do every cyc
-		// note: essential to use Go version of update when called from another goroutine
-		ss.TstCycPlot.GoUpdate()
-	}
-}
-
-func (ss *Sim) ConfigTstCycLog(dt *table.Table) {
-	dt.SetMetaData("name", "TstCycLog")
-	dt.SetMetaData("desc", "Record of activity etc over one trial by cycle")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	np := 100 // max cycles
-	sch := table.Schema{
-		{"Cycle", tensor.INT64, nil, nil},
-	}
-	for _, lnm := range ss.LayStatNms {
-		sch = append(sch, table.Column{lnm + " Ge.Avg", tensor.FLOAT64, nil, nil})
-		sch = append(sch, table.Column{lnm + " Act.Avg", tensor.FLOAT64, nil, nil})
-	}
-	dt.SetFromSchema(sch, np)
-}
-
-func (ss *Sim) ConfigTstCycPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
-	plt.Params.Title = "DeepFSA Test Cycle Plot"
-	plt.Params.XAxisCol = "Cycle"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Cycle", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	for _, lnm := range ss.LayStatNms {
-		plt.SetColParams(lnm+" Ge.Avg", true, true, 0, true, .5)
-		plt.SetColParams(lnm+" Act.Avg", true, true, 0, true, .5)
-	}
-	return plt
-}
-
-//////////////////////////////////////////////
-//  RunLog
-
-// LogRun adds data from current run to the RunLog table.
-func (ss *Sim) LogRun(dt *table.Table) {
-	run := ss.TrainEnv.Run.Cur // this is NOT triggered by increment yet -- use Cur
-	row := dt.Rows
-	dt.SetNumRows(row + 1)
-
-	epclog := ss.TrnEpcLog
-	epcix := table.NewIndexView(epclog)
-	// compute mean over last N epochs for run level
-	nlast := 5
-	if nlast > epcix.Len()-1 {
-		nlast = epcix.Len() - 1
-	}
-	epcix.Indexes = epcix.Indexes[epcix.Len()-nlast:]
-
-	params := ss.RunName() // includes tag
-
-	dt.SetCellFloat("Run", row, float64(run))
-	dt.SetCellString("Params", row, params)
-	dt.SetCellFloat("FirstZero", row, float64(ss.FirstZero))
-	dt.SetCellFloat("SSE", row, stats.Mean(epcix, "SSE")[0])
-	dt.SetCellFloat("AvgSSE", row, stats.Mean(epcix, "AvgSSE")[0])
-	dt.SetCellFloat("PctErr", row, stats.Mean(epcix, "PctErr")[0])
-	dt.SetCellFloat("PctCor", row, stats.Mean(epcix, "PctCor")[0])
-	dt.SetCellFloat("CosDiff", row, stats.Mean(epcix, "CosDiff")[0])
-
-	runix := table.NewIndexView(dt)
-	spl := split.GroupBy(runix, []string{"Params"})
-	split.Desc(spl, "FirstZero")
-	split.Desc(spl, "PctCor")
-	ss.RunStats = spl.AggsToTable(table.AddAggName)
-
-	// note: essential to use Go version of update when called from another goroutine
-	ss.RunPlot.GoUpdate()
-	if ss.RunFile != nil {
-		if row == 0 {
-			dt.WriteCSVHeaders(ss.RunFile, table.Tab)
-		}
-		dt.WriteCSVRow(ss.RunFile, row, table.Tab)
-	}
-}
-
-func (ss *Sim) ConfigRunLog(dt *table.Table) {
-	dt.SetMetaData("name", "RunLog")
-	dt.SetMetaData("desc", "Record of performance at end of training")
-	dt.SetMetaData("read-only", "true")
-	dt.SetMetaData("precision", strconv.Itoa(LogPrec))
-
-	dt.SetFromSchema(table.Schema{
-		{"Run", tensor.INT64, nil, nil},
-		{"Params", tensor.STRING, nil, nil},
-		{"FirstZero", tensor.FLOAT64, nil, nil},
-		{"SSE", tensor.FLOAT64, nil, nil},
-		{"AvgSSE", tensor.FLOAT64, nil, nil},
-		{"PctErr", tensor.FLOAT64, nil, nil},
-		{"PctCor", tensor.FLOAT64, nil, nil},
-		{"CosDiff", tensor.FLOAT64, nil, nil},
-	}, 0)
-}
-
-func (ss *Sim) ConfigRunPlot(plt *plot.Plot2D, dt *table.Table) *plot.Plot2D {
-	plt.Params.Title = "DeepFSA Run Plot"
-	plt.Params.XAxisCol = "Run"
-	plt.SetTable(dt)
-	// order of params: on, fixMin, min, fixMax, max
-	plt.SetColParams("Run", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("FirstZero", plot.On, plot.FixMin, 0, plot.FloatMax, 0) // default plot
-	plt.SetColParams("SSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("AvgSSE", plot.Off, plot.FixMin, 0, plot.FloatMax, 0)
-	plt.SetColParams("PctErr", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	plt.SetColParams("PctCor", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	plt.SetColParams("CosDiff", plot.Off, plot.FixMin, 0, plot.FixMax, 1)
-	return plt
+	ss.Logs.LogRow(mode, time, row) // also logs to file, etc
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // 		Gui
 
-func (ss *Sim) ConfigNetView(nv *netview.NetView) {
-	nv.ViewDefaults()
-	// nv.Scene().Camera.Pose.Pos.Set(0, 1.5, 3.0) // more "head on" than default which is more "top down"
-	// nv.Scene().Camera.LookAt(math32.Vector3{0, 0, 0}, math32.Vector3{0, 1, 0})
-
-	nv.ConfigLabels(InputNames)
-
-	ly := nv.LayerByName("Targets")
-	for li, lnm := range InputNames {
-		lbl := nv.LabelByName(lnm)
-		lbl.Pose = ly.Pose
-		lbl.Pose.Pos.Y += .2
-		lbl.Pose.Pos.Z += .02
-		lbl.Pose.Pos.X += 0.05 + float32(li)*.06
-		lbl.Pose.Scale.SetMul(math32.Vector3{0.6, 0.4, 0.5})
-	}
-}
-
 // ConfigGUI configures the Cogent Core GUI interface for this simulation.
-func (ss *Sim) ConfigGUI() *core.Window {
-	width := 1600
-	height := 1200
+func (ss *Sim) ConfigGUI() {
+	title := "Leabra Random Associator"
+	ss.GUI.MakeBody(ss, "ra25", title, `This demonstrates a basic Leabra model. See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
+	ss.GUI.CycleUpdateInterval = 10
 
-	core.SetAppName("DeepFSA")
-	core.SetAppAbout(`This demonstrates a basic DeepLeabra model on the Finite State Automaton problem (e.g., the Reber grammar). See <a href="https://github.com/emer/emergent">emergent on GitHub</a>.</p>`)
-
-	win := core.NewMainWindow("DeepFSA", "DeepLeabra Finite State Automaton", width, height)
-	ss.Win = win
-
-	vp := win.WinViewport2D()
-	updt := vp.UpdateStart()
-
-	mfr := win.SetMainFrame()
-
-	tbar := core.AddNewToolBar(mfr, "tbar")
-	tbar.SetStretchMaxWidth()
-	ss.ToolBar = tbar
-
-	split := core.AddNewSplitView(mfr, "split")
-	split.Dim = math32.X
-	split.SetStretchMax()
-
-	sv := views.AddNewSimForm(split, "sv")
-	sv.SetStruct(ss)
-
-	tv := core.AddNewTabView(split, "tv")
-
-	nv := tv.AddNewTab(netview.KiT_NetView, "NetView").(*netview.NetView)
-	nv.Var = "Act"
+	nv := ss.GUI.AddNetView("Network")
+	nv.Options.MaxRecs = 300
 	nv.SetNet(ss.Net)
-	ss.NetView = nv
-	ss.ConfigNetView(nv)
+	ss.ViewUpdate.Config(nv, etime.AlphaCycle, etime.AlphaCycle)
+	ss.GUI.ViewUpdate = &ss.ViewUpdate
 
-	plt := tv.AddNewTab(plot.KiT_Plot2D, "TrnEpcPlot").(*plot.Plot2D)
-	ss.TrnEpcPlot = ss.ConfigTrnEpcPlot(plt, ss.TrnEpcLog)
+	nv.SceneXYZ().Camera.Pose.Pos.Set(0, 1, 2.75) // more "head on" than default which is more "top down"
+	nv.SceneXYZ().Camera.LookAt(math32.Vec3(0, 0, 0), math32.Vec3(0, 1, 0))
 
-	plt = tv.AddNewTab(plot.KiT_Plot2D, "TstTrlPlot").(*plot.Plot2D)
-	ss.TstTrlPlot = ss.ConfigTstTrlPlot(plt, ss.TstTrlLog)
+	ss.GUI.AddPlots(title, &ss.Logs)
 
-	plt = tv.AddNewTab(plot.KiT_Plot2D, "TstCycPlot").(*plot.Plot2D)
-	ss.TstCycPlot = ss.ConfigTstCycPlot(plt, ss.TstCycLog)
-
-	plt = tv.AddNewTab(plot.KiT_Plot2D, "TstEpcPlot").(*plot.Plot2D)
-	ss.TstEpcPlot = ss.ConfigTstEpcPlot(plt, ss.TstEpcLog)
-
-	plt = tv.AddNewTab(plot.KiT_Plot2D, "RunPlot").(*plot.Plot2D)
-	ss.RunPlot = ss.ConfigRunPlot(plt, ss.RunLog)
-
-	split.SetSplits(.2, .8)
-
-	tbar.AddAction(core.ActOpts{Label: "Init", Icon: "update", Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		ss.Init()
-		vp.SetNeedsFullRender()
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Train", Icon: "run", Tooltip: "Starts the network training, picking up from wherever it may have left off.  If not stopped, training will complete the specified number of Runs through the full number of Epochs of training, with testing automatically occuring at the specified interval.",
-		UpdateFunc: func(act *core.Action) {
-			act.SetActiveStateUpdate(!ss.IsRunning)
-		}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			tbar.UpdateActions()
-			// ss.Train()
-			go ss.Train()
-		}
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Stop", Icon: "stop", Tooltip: "Interrupts running.  Hitting Train again will pick back up where it left off.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		ss.Stop()
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Step Trial", Icon: "step-fwd", Tooltip: "Advances one training trial at a time.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			ss.TrainTrial()
-			ss.IsRunning = false
-			vp.SetNeedsFullRender()
-		}
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Step Epoch", Icon: "fast-fwd", Tooltip: "Advances one epoch (complete set of training patterns) at a time.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			tbar.UpdateActions()
-			go ss.TrainEpoch()
-		}
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Step Run", Icon: "fast-fwd", Tooltip: "Advances one full training Run at a time.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			tbar.UpdateActions()
-			go ss.TrainRun()
-		}
-	})
-
-	tbar.AddSeparator("test")
-
-	tbar.AddAction(core.ActOpts{Label: "Test Trial", Icon: "step-fwd", Tooltip: "Runs the next testing trial.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			ss.TestTrial(false) // don't return on change -- wrap
-			ss.IsRunning = false
-			vp.SetNeedsFullRender()
-		}
-	})
-
-	tbar.AddAction(core.ActOpts{Label: "Test All", Icon: "fast-fwd", Tooltip: "Tests all of the testing trials.", UpdateFunc: func(act *core.Action) {
-		act.SetActiveStateUpdate(!ss.IsRunning)
-	}}, win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-		if !ss.IsRunning {
-			ss.IsRunning = true
-			tbar.UpdateActions()
-			go ss.RunTestAll()
-		}
-	})
-
-	tbar.AddSeparator("log")
-
-	tbar.AddAction(core.ActOpts{Label: "Reset RunLog", Icon: "reset", Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used"}, win.This(),
-		func(recv, send tree.Node, sig int64, data interface{}) {
-			ss.RunLog.SetNumRows(0)
-			ss.RunPlot.Update()
-		})
-
-	tbar.AddSeparator("misc")
-
-	tbar.AddAction(core.ActOpts{Label: "New Seed", Icon: "new", Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time."}, win.This(),
-		func(recv, send tree.Node, sig int64, data interface{}) {
-			ss.NewRndSeed()
-		})
-
-	tbar.AddAction(core.ActOpts{Label: "README", Icon: icons.FileMarkdown, Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
-		func(recv, send tree.Node, sig int64, data interface{}) {
-			core.OpenURL("https://github.com/emer/leabra/blob/main/examples/deep_fsa/README.md")
-		})
-
-	vp.UpdateEndNoSig(updt)
-
-	// main menu
-	appnm := core.AppName()
-	mmen := win.MainMenu
-	mmen.ConfigMenus([]string{appnm, "File", "Edit", "Window"})
-
-	amen := win.MainMenu.ChildByName(appnm, 0).(*core.Action)
-	amen.Menu.AddAppMenu(win)
-
-	emen := win.MainMenu.ChildByName("Edit", 1).(*core.Action)
-	emen.Menu.AddCopyCutPaste(win)
-
-	// note: Command in shortcuts is automatically translated into Control for
-	// Linux, Windows or Meta for MacOS
-	// fmen := win.MainMenu.ChildByName("File", 0).(*core.Action)
-	// fmen.Menu.AddAction(core.ActOpts{Label: "Open", Shortcut: "Command+O"},
-	// 	win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-	// 		FileViewOpenSVG(vp)
-	// 	})
-	// fmen.Menu.AddSeparator("csep")
-	// fmen.Menu.AddAction(core.ActOpts{Label: "Close Window", Shortcut: "Command+W"},
-	// 	win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-	// 		win.Close()
-	// 	})
-
-	/*
-		inQuitPrompt := false
-		core.SetQuitReqFunc(func() {
-			if inQuitPrompt {
-				return
-			}
-			inQuitPrompt = true
-			core.PromptDialog(vp, core.DlgOpts{Title: "Really Quit?",
-				Prompt: "Are you <i>sure</i> you want to quit and lose any unsaved params, weights, logs, etc?"}, core.AddOk, core.AddCancel,
-				win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-					if sig == int64(core.DialogAccepted) {
-						core.Quit()
-					} else {
-						inQuitPrompt = false
-					}
-				})
-		})
-
-		// core.SetQuitCleanFunc(func() {
-		// 	fmt.Printf("Doing final Quit cleanup here..\n")
-		// })
-
-		inClosePrompt := false
-		win.SetCloseReqFunc(func(w *core.Window) {
-			if inClosePrompt {
-				return
-			}
-			inClosePrompt = true
-			core.PromptDialog(vp, core.DlgOpts{Title: "Really Close Window?",
-				Prompt: "Are you <i>sure</i> you want to close the window?  This will Quit the App as well, losing all unsaved params, weights, logs, etc"}, core.AddOk, core.AddCancel,
-				win.This(), func(recv, send tree.Node, sig int64, data interface{}) {
-					if sig == int64(core.DialogAccepted) {
-						core.Quit()
-					} else {
-						inClosePrompt = false
-					}
-				})
-		})
-	*/
-
-	win.SetCloseCleanFunc(func(w *core.Window) {
-		go core.Quit() // once main window is closed, quit
-	})
-
-	win.MainMenuUpdated()
-	return win
+	ss.GUI.FinalizeGUI(false)
 }
 
-// These props register Save methods so they can be used
-var SimProps = tree.Props{
-	"CallMethods": tree.PropSlice{
-		{"SaveWeights", tree.Props{
-			"desc": "save network weights to file",
-			"icon": "file-save",
-			"Args": tree.PropSlice{
-				{"File Name", tree.Props{
-					"ext": ".wts,.wts.gz",
-				}},
-			},
-		}},
-	},
+func (ss *Sim) MakeToolbar(p *tree.Plan) {
+	ss.GUI.AddToolbarItem(p, egui.ToolbarItem{Label: "Init", Icon: icons.Update,
+		Tooltip: "Initialize everything including network weights, and start over.  Also applies current params.",
+		Active:  egui.ActiveStopped,
+		Func: func() {
+			ss.Init()
+			ss.GUI.UpdateWindow()
+		},
+	})
+
+	ss.GUI.AddLooperCtrl(p, ss.Loops, []etime.Modes{etime.Train, etime.Test})
+
+	////////////////////////////////////////////////
+	tree.Add(p, func(w *core.Separator) {})
+	ss.GUI.AddToolbarItem(p, egui.ToolbarItem{Label: "Reset RunLog",
+		Icon:    icons.Reset,
+		Tooltip: "Reset the accumulated log of all Runs, which are tagged with the ParamSet used",
+		Active:  egui.ActiveAlways,
+		Func: func() {
+			ss.Logs.ResetLog(etime.Train, etime.Run)
+			ss.GUI.UpdatePlot(etime.Train, etime.Run)
+		},
+	})
+	////////////////////////////////////////////////
+	tree.Add(p, func(w *core.Separator) {})
+	ss.GUI.AddToolbarItem(p, egui.ToolbarItem{Label: "New Seed",
+		Icon:    icons.Add,
+		Tooltip: "Generate a new initial random seed to get different results.  By default, Init re-establishes the same initial seed every time.",
+		Active:  egui.ActiveAlways,
+		Func: func() {
+			ss.RandSeeds.NewSeeds()
+		},
+	})
+	ss.GUI.AddToolbarItem(p, egui.ToolbarItem{Label: "README",
+		Icon:    icons.FileMarkdown,
+		Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
+		Active:  egui.ActiveAlways,
+		Func: func() {
+			core.TheApp.OpenURL("https://github.com/emer/leabra/blob/main/examples/ra25/README.md")
+		},
+	})
 }
 
-func (ss *Sim) CmdArgs() {
-	ss.NoGui = true
-	var nogui bool
-	var saveEpcLog bool
-	var saveRunLog bool
-	var note string
-	flag.StringVar(&ss.ParamSet, "params", "", "ParamSet name to use -- must be valid name as listed in compiled-in params or loaded params")
-	flag.StringVar(&ss.Tag, "tag", "", "extra tag to add to file names saved from this run")
-	flag.StringVar(&note, "note", "", "user note -- describe the run params etc")
-	flag.IntVar(&ss.MaxRuns, "runs", 10, "number of runs to do (note that MaxEpcs is in paramset)")
-	flag.BoolVar(&ss.LogSetParams, "setparams", false, "if true, print a record of each parameter that is set")
-	flag.BoolVar(&ss.SaveWeights, "wts", false, "if true, save final weights after each run")
-	flag.BoolVar(&saveEpcLog, "epclog", true, "if true, save train epoch log to file")
-	flag.BoolVar(&saveRunLog, "runlog", true, "if true, save run epoch log to file")
-	flag.BoolVar(&nogui, "nogui", true, "if not passing any other args and want to run nogui, use nogui")
-	flag.Parse()
+func (ss *Sim) RunGUI() {
+	ss.Init()
+	ss.ConfigGUI()
+	ss.GUI.Body.RunMainWindow()
+}
+
+func (ss *Sim) RunNoGUI() {
+	if ss.Config.Params.Note != "" {
+		mpi.Printf("Note: %s\n", ss.Config.Params.Note)
+	}
+	if ss.Config.Log.SaveWeights {
+		mpi.Printf("Saving final weights per run\n")
+	}
+	runName := ss.Params.RunName(ss.Config.Run.Run)
+	ss.Stats.SetString("RunName", runName) // used for naming logs, stats, etc
+	netName := ss.Net.Name
+
+	elog.SetLogFile(&ss.Logs, ss.Config.Log.Trial, etime.Train, etime.Trial, "trl", netName, runName)
+	elog.SetLogFile(&ss.Logs, ss.Config.Log.Epoch, etime.Train, etime.Epoch, "epc", netName, runName)
+	elog.SetLogFile(&ss.Logs, ss.Config.Log.Run, etime.Train, etime.Run, "run", netName, runName)
+	elog.SetLogFile(&ss.Logs, ss.Config.Log.TestEpoch, etime.Test, etime.Epoch, "tst_epc", netName, runName)
+	elog.SetLogFile(&ss.Logs, ss.Config.Log.TestTrial, etime.Test, etime.Trial, "tst_trl", netName, runName)
+
+	netdata := ss.Config.Log.NetData
+	if netdata {
+		mpi.Printf("Saving NetView data from testing\n")
+		ss.GUI.InitNetData(ss.Net, 200)
+	}
+
 	ss.Init()
 
-	if note != "" {
-		fmt.Printf("note: %s\n", note)
-	}
-	if ss.ParamSet != "" {
-		fmt.Printf("Using ParamSet: %s\n", ss.ParamSet)
+	mpi.Printf("Running %d Runs starting at %d\n", ss.Config.Run.NRuns, ss.Config.Run.Run)
+	ss.Loops.GetLoop(etime.Train, etime.Run).Counter.SetCurMaxPlusN(ss.Config.Run.Run, ss.Config.Run.NRuns)
+
+	if ss.Config.Run.StartWts != "" { // this is just for testing -- not usually needed
+		ss.Loops.Step(etime.Train, 1, etime.Trial) // get past NewRun
+		ss.Net.OpenWeightsJSON(core.Filename(ss.Config.Run.StartWts))
+		mpi.Printf("Starting with initial weights from: %s\n", ss.Config.Run.StartWts)
 	}
 
-	if saveEpcLog {
-		var err error
-		fnm := ss.LogFileName("epc")
-		ss.TrnEpcFile, err = os.Create(fnm)
-		if err != nil {
-			log.Println(err)
-			ss.TrnEpcFile = nil
-		} else {
-			fmt.Printf("Saving epoch log to: %v\n", fnm)
-			defer ss.TrnEpcFile.Close()
-		}
+	mpi.Printf("Set NThreads to: %d\n", ss.Net.NThreads)
+
+	ss.Loops.Run(etime.Train)
+
+	ss.Logs.CloseLogFiles()
+
+	if netdata {
+		ss.GUI.SaveNetData(ss.Stats.String("RunName"))
 	}
-	if saveRunLog {
-		var err error
-		fnm := ss.LogFileName("run")
-		ss.RunFile, err = os.Create(fnm)
-		if err != nil {
-			log.Println(err)
-			ss.RunFile = nil
-		} else {
-			fmt.Printf("Saving run log to: %v\n", fnm)
-			defer ss.RunFile.Close()
-		}
-	}
-	if ss.SaveWeights {
-		fmt.Printf("Saving final weights per run\n")
-	}
-	fmt.Printf("Running %d Runs\n", ss.MaxRuns)
-	ss.Train()
 }

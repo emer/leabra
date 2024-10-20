@@ -133,23 +133,23 @@ func (pt *Path) DWtMatrix() {
 
 //////// DaHebbPath
 
-func (pj *Path) DaHebbDefaults() {
-	pj.Learn.WtSig.Gain = 1
-	pj.Learn.Norm.On = false
-	pj.Learn.Momentum.On = false
-	pj.Learn.WtBal.On = false
+func (pt *Path) DaHebbDefaults() {
+	pt.Learn.WtSig.Gain = 1
+	pt.Learn.Norm.On = false
+	pt.Learn.Momentum.On = false
+	pt.Learn.WtBal.On = false
 }
 
 // DWtDaHebb computes the weight change (learning), for [DaHebbPath].
-func (pj *Path) DWtDaHebb() {
-	slay := pj.Send
-	rlay := pj.Recv
+func (pt *Path) DWtDaHebb() {
+	slay := pt.Send
+	rlay := pt.Recv
 	for si := range slay.Neurons {
 		sn := &slay.Neurons[si]
-		nc := int(pj.SConN[si])
-		st := int(pj.SConIndexSt[si])
-		syns := pj.Syns[st : st+nc]
-		scons := pj.SConIndex[st : st+nc]
+		nc := int(pt.SConN[si])
+		st := int(pt.SConIndexSt[si])
+		syns := pt.Syns[st : st+nc]
+		scons := pt.SConIndex[st : st+nc]
 
 		for ci := range syns {
 			sy := &syns[ci]
@@ -157,7 +157,7 @@ func (pj *Path) DWtDaHebb() {
 			rn := &rlay.Neurons[ri]
 			da := rn.DALrn
 			dwt := da * rn.Act * sn.Act
-			sy.DWt += pj.Learn.Lrate * dwt
+			sy.DWt += pt.Learn.Lrate * dwt
 		}
 	}
 }

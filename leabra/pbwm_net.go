@@ -8,18 +8,6 @@ import (
 	"github.com/emer/emergent/v2/paths"
 )
 
-// GateSend is called at end of Cycle, computes Gating and sends to other layers
-func (nt *Network) GateSend(ctx *Context) {
-	for _, ly := range nt.Layers {
-		if ly.Off {
-			continue
-		}
-		if ly.Type == GPiThalLayer {
-			ly.GPiGateSend(ctx)
-		}
-	}
-}
-
 // RecGateAct is called after GateSend, to record gating activations at time of gating
 func (nt *Network) RecGateAct(ctx *Context) {
 	for _, ly := range nt.Layers {
@@ -27,17 +15,6 @@ func (nt *Network) RecGateAct(ctx *Context) {
 			continue
 		}
 		ly.RecGateAct(ctx)
-	}
-}
-
-// SendMods is called at end of Cycle to send modulator signals (DA, etc)
-// which will then be active for the next cycle of processing
-func (nt *Network) SendMods(ctx *Context) {
-	for _, ly := range nt.Layers {
-		if ly.Off {
-			continue
-		}
-		ly.SendMods(ctx)
 	}
 }
 

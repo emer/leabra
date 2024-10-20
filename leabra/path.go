@@ -213,6 +213,7 @@ func (pt *Path) InitWtSym(rpt *Path) {
 func (pt *Path) InitGInc() {
 	for ri := range pt.GInc {
 		pt.GInc[ri] = 0
+		pt.CtxtGeInc[ri] = 0
 		pt.GeRaw[ri] = 0
 	}
 }
@@ -223,6 +224,9 @@ func (pt *Path) InitGInc() {
 // SendGDelta sends the delta-activation from sending neuron index si,
 // to integrate synaptic conductances on receivers
 func (pt *Path) SendGDelta(si int, delta float32) {
+	if pt.Type == CTCtxtPath {
+		return
+	}
 	scdel := delta * pt.GScale
 	nc := pt.SConN[si]
 	st := pt.SConIndexSt[si]
@@ -238,6 +242,8 @@ func (pt *Path) SendGDelta(si int, delta float32) {
 func (pt *Path) RecvGInc() {
 	rlay := pt.Recv
 	switch pt.Type {
+	case CTCtxtPath:
+		// nop
 	case InhibPath:
 		for ri := range rlay.Neurons {
 			rn := &rlay.Neurons[ri]
@@ -272,6 +278,8 @@ func (pt *Path) DWt() {
 	switch {
 	case pt.Type == CHLPath && pt.CHL.On:
 		pt.DWtCHL()
+	case pt.Type == CTCtxtPath:
+		pt.DWtCTCtxt()
 	case pt.Type == EcCa1Path:
 		pt.DWtEcCa1()
 	case pt.Type == MatrixPath:

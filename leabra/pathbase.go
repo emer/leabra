@@ -48,6 +48,11 @@ type Path struct {
 	// synaptic-level learning parameters
 	Learn LearnSynParams `display:"add-fields"`
 
+	// For CTCtxtPath if true, this is the pathway from corresponding
+	// Superficial layer.  Should be OneToOne path, with Learn.Learn = false,
+	// WtInit.Var = 0, Mean = 0.8. These defaults are set if FromSuper = true.
+	FromSuper bool
+
 	// CHL are the parameters for CHL learning. if CHL is On then
 	// WtSig.SoftBound is automatically turned off, as it is incompatible.
 	CHL CHLParams `display:"inline"`
@@ -68,7 +73,11 @@ type Path struct {
 	// on neuron depending on pathway type.
 	GInc []float32
 
-	// per-recv, per-path raw excitatory input, for GPiThalPath
+	// CtxtGeInc is local per-recv unit accumulator for Ctxt excitatory
+	// conductance from sending units, Not a delta, the full value.
+	CtxtGeInc []float32
+
+	// per-recv, per-path raw excitatory input, for GPiThalPath.
 	GeRaw []float32
 
 	// weight balance state variables for this pathway, one per recv neuron.
@@ -489,6 +498,7 @@ func (pt *Path) Build() error {
 	}
 	pt.Syns = make([]Synapse, len(pt.SConIndex))
 	pt.GInc = make([]float32, rlen)
+	pt.CtxtGeInc = make([]float32, rlen)
 	pt.GeRaw = make([]float32, rlen)
 	pt.WbRecv = make([]WtBalRecvPath, rlen)
 	return nil

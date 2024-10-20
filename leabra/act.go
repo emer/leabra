@@ -112,6 +112,7 @@ func (ac *ActParams) DecayState(nrn *Neuron, decay float32) {
 		nrn.Gk -= decay * nrn.Gk
 		nrn.Vm -= decay * (nrn.Vm - ac.Init.Vm)
 		nrn.GiSyn -= decay * nrn.GiSyn
+		nrn.Burst -= decay * (nrn.Burst - ac.Init.Act)
 	}
 	nrn.ActDel = 0
 	nrn.Inet = 0
@@ -138,6 +139,7 @@ func (ac *ActParams) InitActs(nrn *Neuron) {
 	nrn.Spike = 0
 	nrn.ISI = -1
 	nrn.ISIAvg = -1
+	nrn.CtxtGe = 0
 	nrn.ActG = 0
 	nrn.DALrn = 0
 	nrn.Shunt = 0
@@ -158,6 +160,8 @@ func (ac *ActParams) InitActQs(nrn *Neuron) {
 	nrn.ActM = 0
 	nrn.ActP = 0
 	nrn.ActDif = 0
+	nrn.Burst = 0
+	nrn.BurstPrv = 0
 }
 
 ///////////////////////////////////////////////////////////////////////

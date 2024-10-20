@@ -48,6 +48,18 @@ type Layer struct {
 	// Learning parameters and methods that operate at the neuron level.
 	Learn LearnNeurParams `display:"add-fields"`
 
+	// Burst has parameters for computing Burst from act, in Superficial layers
+	// (but also needed in Deep layers for deep self connections).
+	Burst BurstParams `display:"inline"`
+
+	// Pulvinar has parameters for computing Pulvinar plus-phase (outcome)
+	// activations based on Burst activation from corresponding driver neuron.
+	Pulvinar PulvinarParams `display:"inline"`
+
+	// Drivers are names of SuperLayer(s) that sends 5IB Burst driver
+	// inputs to this layer.
+	Drivers Drivers
+
 	// RW are Rescorla-Wagner RL learning parameters.
 	RW RWParams `display:"inline"`
 
@@ -111,6 +123,8 @@ func (ly *Layer) Defaults() {
 	ly.Act.Defaults()
 	ly.Inhib.Defaults()
 	ly.Learn.Defaults()
+	ly.Burst.Defaults()
+	ly.Pulvinar.Defaults()
 	ly.RW.Defaults()
 	ly.TD.Defaults()
 	ly.Matrix.Defaults()
@@ -148,6 +162,8 @@ func (ly *Layer) UpdateParams() {
 	ly.Act.Update()
 	ly.Inhib.Update()
 	ly.Learn.Update()
+	ly.Burst.Update()
+	ly.Pulvinar.Update()
 	ly.RW.Update()
 	ly.TD.Update()
 	ly.Matrix.Update()
@@ -164,6 +180,10 @@ func (ly *Layer) UpdateParams() {
 func (ly *Layer) ShouldDisplay(field string) bool {
 	isPBWM := ly.Type == MatrixLayer || ly.Type == GPiThalLayer || ly.Type == CINLayer || ly.Type == PFCLayer || ly.Type == PFCDeepLayer
 	switch field {
+	case "Burst":
+		return ly.Type == SuperLayer || ly.Type == CTLayer
+	case "Pulvinar", "Drivers":
+		return ly.Type == PulvinarLayer
 	case "RW":
 		return ly.Type == RWPredLayer || ly.Type == RWDaLayer
 	case "TD":

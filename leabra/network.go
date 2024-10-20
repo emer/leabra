@@ -54,9 +54,8 @@ func (nt *Network) Cycle(ctx *Context) {
 	nt.InhibFromGeAct(ctx)
 	nt.ActFromG(ctx)
 	nt.AvgMaxAct(ctx)
-	nt.GateSend(ctx)   // GateLayer (GPiThal) computes gating, sends to other layers
+	nt.CyclePost(ctx)  // general post cycle actions.
 	nt.RecGateAct(ctx) // Record activation state at time of gating (in ActG neuron var)
-	nt.SendMods(ctx)   // send neuromod
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -119,13 +118,32 @@ func (nt *Network) AvgMaxAct(ctx *Context) {
 	}
 }
 
+// CyclePost is called at end of Cycle, for misc updates after new Act
+// value has been computed.
+// SuperLayer computes Burst activity.
+// GateLayer (GPiThal) computes gating, sends to other layers.
+func (nt *Network) CyclePost(ctx *Context) {
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.CyclePost(ctx)
+	}
+}
+
 // QuarterFinal does updating after end of a quarter, for first 2
 func (nt *Network) QuarterFinal(ctx *Context) {
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
 		}
-		ly.QuarterFinal(ctx)
+		ly.QuarterFinal(ctx) // also does SendCtxtGe
+	}
+	for _, ly := range nt.Layers {
+		if ly.Off {
+			continue
+		}
+		ly.CtxtFromGe(ctx)
 	}
 }
 

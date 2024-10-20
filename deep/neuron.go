@@ -38,12 +38,6 @@ func init() {
 // SuperNeuron has the neuron values for SuperLayer
 type SuperNeuron struct {
 
-	// 5IB bursting activation value, computed by thresholding regular activation
-	Burst float32
-
-	// previous bursting activation -- used for context-based learning
-	BurstPrv float32
-
 	// attentional signal from TRC layer
 	Attn float32
 }

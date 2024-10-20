@@ -115,6 +115,12 @@ type Neuron struct {
 	// average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation
 	ActAvg float32
 
+	// 5IB bursting activation value, computed by thresholding regular activation
+	Burst float32
+
+	// previous bursting activation -- used for context-based learning
+	BurstPrv float32
+
 	////////////////////////////
 	// Gmisc
 
@@ -148,6 +154,11 @@ type Neuron struct {
 	// average inter-spike-interval -- average time interval between spikes.  Starts at -1 when initialized, and goes to -2 after first spike, and is only valid after the second spike post-initialization.
 	ISIAvg float32
 
+	// CtxtGe is context (temporally delayed) excitatory conducances.
+	CtxtGe float32
+
+	////////// Special algorithm vars: RL, PBWM
+
 	// gating activation -- the activity value when gating occurred in this pool.
 	ActG float32
 
@@ -167,8 +178,9 @@ type Neuron struct {
 var NeuronVars = []string{
 	"Act", "Ge", "Gi", "Gk", "Inet", "Vm", "Noise", "Spike", "Targ", "Ext",
 	"AvgSS", "AvgS", "AvgM", "AvgL", "AvgLLrn", "AvgSLrn", "ActLrn",
-	"ActM", "ActP", "ActDif", "ActDel", "ActQ0", "ActQ1", "ActQ2", "ActAvg",
-	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg", "ActG", "DALrn", "Shunt", "Maint", "MaintGe", "DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt"}
+	"ActM", "ActP", "ActDif", "ActDel", "ActQ0", "ActQ1", "ActQ2", "ActAvg", "Burst", "BurstPrv",
+	"GiSyn", "GiSelf", "ActSent", "GeRaw", "GiRaw", "GknaFast", "GknaMed", "GknaSlow", "ISI", "ISIAvg",
+	"ActG", "DALrn", "Shunt", "Maint", "MaintGe", "DA", "ACh", "SE", "GateAct", "GateNow", "GateCnt"}
 
 var NeuronVarsMap map[string]int
 
@@ -204,14 +216,16 @@ var NeuronVarProps = map[string]string{
 	"ActLrn":  `cat:"Learn"`,
 
 	// Phase vars
-	"ActM":   `cat:"Phase"`,
-	"ActP":   `cat:"Phase"`,
-	"ActDif": `cat:"Phase" auto-scale:"+"`,
-	"ActDel": `cat:"Phase" auto-scale:"+"`,
-	"ActQ0":  `cat:"Phase"`,
-	"ActQ1":  `cat:"Phase"`,
-	"ActQ2":  `cat:"Phase"`,
-	"ActAvg": `cat:"Phase"`,
+	"ActM":     `cat:"Phase"`,
+	"ActP":     `cat:"Phase"`,
+	"ActDif":   `cat:"Phase" auto-scale:"+"`,
+	"ActDel":   `cat:"Phase" auto-scale:"+"`,
+	"ActQ0":    `cat:"Phase"`,
+	"ActQ1":    `cat:"Phase"`,
+	"ActQ2":    `cat:"Phase"`,
+	"ActAvg":   `cat:"Phase"`,
+	"Burst":    `cat:"Phase"`,
+	"BurstPrv": `cat:"Phase"`,
 
 	// Gmisc vars
 	"GiSyn":    `cat:"Gmisc"`,
