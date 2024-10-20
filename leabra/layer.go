@@ -135,6 +135,23 @@ func (ly *Layer) ApplyExt(ext tensor.Tensor) {
 	}
 }
 
+// ApplyExtVal applies given external value to given neuron
+// using clearMask, setMask, and toTarg from ApplyExtFlags.
+// Also saves Val in Exts for potential use by GPU.
+func (ly *Layer) ApplyExtValue(lni int, val float32, clear, set []enums.BitFlag, toTarg bool) {
+	nrn := &ly.Neurons[lni]
+	if nrn.IsOff() {
+		return
+	}
+	if toTarg {
+		nrn.Targ = val
+	} else {
+		nrn.Ext = val
+	}
+	nrn.SetFlag(false, clear...)
+	nrn.SetFlag(true, set...)
+}
+
 // ApplyExt2D applies 2D tensor external input
 func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
@@ -145,17 +162,7 @@ func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
 			idx := []int{y, x}
 			vl := float32(ext.Float(idx))
 			i := ly.Shape.Offset(idx)
-			nrn := &ly.Neurons[i]
-			if nrn.IsOff() {
-				continue
-			}
-			if toTarg {
-				nrn.Targ = vl
-			} else {
-				nrn.Ext = vl
-			}
-			nrn.SetFlag(false, clear...)
-			nrn.SetFlag(true, set...)
+			ly.ApplyExtValue(i, vl, clear, set, toTarg)
 		}
 	}
 }
@@ -172,17 +179,7 @@ func (ly *Layer) ApplyExt2Dto4D(ext tensor.Tensor) {
 			idx := []int{y, x}
 			vl := float32(ext.Float(idx))
 			ui := tensor.Projection2DIndex(&ly.Shape, false, y, x)
-			nrn := &ly.Neurons[ui]
-			if nrn.IsOff() {
-				continue
-			}
-			if toTarg {
-				nrn.Targ = vl
-			} else {
-				nrn.Ext = vl
-			}
-			nrn.SetFlag(false, clear...)
-			nrn.SetFlag(true, set...)
+			ly.ApplyExtValue(ui, vl, clear, set, toTarg)
 		}
 	}
 }
@@ -201,17 +198,7 @@ func (ly *Layer) ApplyExt4D(ext tensor.Tensor) {
 					idx := []int{yp, xp, yn, xn}
 					vl := float32(ext.Float(idx))
 					i := ly.Shape.Offset(idx)
-					nrn := &ly.Neurons[i]
-					if nrn.IsOff() {
-						continue
-					}
-					if toTarg {
-						nrn.Targ = vl
-					} else {
-						nrn.Ext = vl
-					}
-					nrn.SetFlag(false, clear...)
-					nrn.SetFlag(true, set...)
+					ly.ApplyExtValue(i, vl, clear, set, toTarg)
 				}
 			}
 		}
@@ -225,18 +212,8 @@ func (ly *Layer) ApplyExt1DTsr(ext tensor.Tensor) {
 	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(ext.Len(), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
-		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
-			continue
-		}
 		vl := float32(ext.Float1D(i))
-		if toTarg {
-			nrn.Targ = vl
-		} else {
-			nrn.Ext = vl
-		}
-		nrn.SetFlag(false, clear...)
-		nrn.SetFlag(true, set...)
+		ly.ApplyExtValue(i, vl, clear, set, toTarg)
 	}
 }
 
@@ -247,18 +224,8 @@ func (ly *Layer) ApplyExt1D(ext []float64) {
 	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
-		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
-			continue
-		}
 		vl := float32(ext[i])
-		if toTarg {
-			nrn.Targ = vl
-		} else {
-			nrn.Ext = vl
-		}
-		nrn.SetFlag(false, clear...)
-		nrn.SetFlag(true, set...)
+		ly.ApplyExtValue(i, vl, clear, set, toTarg)
 	}
 }
 
@@ -272,18 +239,8 @@ func (ly *Layer) ApplyExt1D32(ext []float32) {
 	clear, set, toTarg := ly.ApplyExtFlags()
 	mx := min(len(ext), len(ly.Neurons))
 	for i := 0; i < mx; i++ {
-		nrn := &ly.Neurons[i]
-		if nrn.IsOff() {
-			continue
-		}
 		vl := ext[i]
-		if toTarg {
-			nrn.Targ = vl
-		} else {
-			nrn.Ext = vl
-		}
-		nrn.SetFlag(false, clear...)
-		nrn.SetFlag(true, set...)
+		ly.ApplyExtValue(i, vl, clear, set, toTarg)
 	}
 }
 
