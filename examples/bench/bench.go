@@ -187,7 +187,7 @@ func TrainNet(net *leabra.Network, pats, epcLog *table.Table, epcs int) {
 	}
 	tmr.Stop()
 	if Silent {
-		fmt.Printf("%6.3g\n", tmr.Total)
+		fmt.Printf("%v\n", tmr.Total)
 	} else {
 		fmt.Printf("Took %v for %v epochs, avg per epc: m%6.4g\n", tmr.Total, epcs, float64(tmr.Total)/float64(int(time.Second)*epcs))
 	}
