@@ -1,9 +1,12 @@
-# Leabra in Go emergent
+# Leabra: Local, Error-driven and Associative, Biologically Realistic Algorithm
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/emer/leabra)](https://goreportcard.com/report/github.com/emer/leabra)
-[![Go Reference](https://pkg.go.dev/badge/github.com/emer/leabra.svg)](https://pkg.go.dev/github.com/emer/leabra)
-[![CI](https://github.com/emer/leabra/actions/workflows/ci.yml/badge.svg)](https://github.com/emer/leabra/actions/workflows/ci.yml)
-[![Codecov](https://codecov.io/gh/emer/leabra/branch/main/graph/badge.svg?token=Hw5cInAxY3)](https://codecov.io/gh/emer/leabra)
+<p align="center">
+    <a href="https://goreportcard.com/report/github.com/emer/leabra"><img src="https://goreportcard.com/badge/github.com/emer/leabra" alt="Go Report Card"></a>
+    <a href="https://pkg.go.dev/github.com/emer/leabra"><img src="https://img.shields.io/badge/dev-reference-007d9c?logo=go&logoColor=white&style=flat" alt="pkg.go.dev docs"></a>
+    <a href="https://github.com/emer/leabra/actions"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/emer/leabra/go.yml"></a>
+    <a href="https://raw.githack.com/wiki/emer/leabra/coverage.html"><img alt="Test Coverage" src="https://github.com/emer/leabra/wiki/coverage.svg"></a>
+    <a href="https://github.com/emer/leabra/tags"><img alt="Version" src="https://img.shields.io/github/v/tag/emer/leabra?label=version"></a>
+</p>
 
 This is the Go implementation of the Leabra algorithm for biologically based models of cognition, based on the [emergent](https://github.com/emer/emergent) framework.
 
@@ -19,7 +22,7 @@ See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/RE
 
 # Current Status / News
 
-* August 2024: Currently updating Leabra to v2 using the updated emergent toolkit for logging, looper control mechanisms, and simplified GUI management, along with updates to use the [Cogent Core](https://cogentcore.org/core) GUI framework, which allows running models directly on the web browser, and is in general much more robust, performant, and looks better too!  The [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) are being updated so they all run on the web, which should be much easier for students.  We are probably not going to update most of the special algorithm code (definitely not PVLV, probably not PBWM, etc), which is much improved in the [axon](https://github.com/emer/axon) framework.  In general, Leabra will be maintained henceforth as a simpler teaching-oriented package.  Researchers are encouraged to use axon instead.
+* October 2024: Finished initial update to v2 using the updated emergent toolkit for logging, looper control mechanisms, and simplified GUI management, along with updates to use the [Cogent Core](https://cogentcore.org/core) GUI framework, which allows running models directly on the web browser, and is in general much more robust, performant, and looks better too!  The [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) are being updated so they all run on the web, which should be much easier for students. The special algorithm code (Deep, Hip, PBWM, RL) are implemented as special layer and path types, with switch cases, not as Go subtypes. This is overall much simpler, and would allow a future GPU version. In general, research users are encouraged to transition to the [axon](https://github.com/emer/axon) framework, while Leabra remains algorithmically frozen.
 
 * Nov 2020: Full Python conversions of CCN sims complete, and [eTorch](https://github.com/emer/etorch) for viewing and interacting with PyTorch models.
 
@@ -31,40 +34,19 @@ See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/RE
 
 # Design
 
-* `leabra` sub-package provides a clean, well-organized implementation of core Leabra algorithms and Network structures. More specialized modifications such as `DeepLeabra` or `PBWM` or `PVLV` are all (going to be) implemented as additional specialized code that builds on / replaces elements of the basic version.  The goal is to make all of the code simpler, more transparent, and more easily modified by end users.  You should not have to dig through deep chains of C++ inheritance to find out what is going on.  Nevertheless, the basic tradeoffs of code re-use dictate that not everything should be in-line in one massive blob of code, so there is still some inevitable tracking down of function calls etc.  The algorithm overview below should be helpful in finding everything.
+* `leabra` sub-package provides a clean, well-organized implementation of core Leabra algorithms and Network structures. More specialized modifications such as [DeepLeabra](Deep.md) and [PBWM](PBWM.md) are implemented using specialized `LayerTypes` and `PathTypes` with switch statements to manage special functionality.
 
 * `ActParams` (in [act.go](https://github.com/emer/leabra/blob/main/leabra/act.go)), `InhibParams` (in [inhib.go](https://github.com/emer/leabra/blob/main/leabra/inhib.go)), and `LearnNeurParams` / `LearnSynParams` (in [learn.go](https://github.com/emer/leabra/blob/main/leabra/learn.go)) provide the core parameters and functions used, including the X-over-X-plus-1 activation function, FFFB inhibition, and the XCal BCM-like learning rule, etc.  This function-based organization should be clearer than the purely structural organization used in C++ emergent.
 
-* There are 3 main levels of structure: `Network`, `Layer` and `Prjn` (projection).  The network calls methods on its Layers, and Layers iterate over both `Neuron` data structures (which have only a minimal set of methods) and the `Prjn`s, to implement the relevant computations.  The `Prjn` fully manages everything about a projection of connectivity between two layers, including the full list of `Syanpse` elements in the connection.  There is no "ConGroup" or "ConState" level as was used in C++, which greatly simplifies many things.  The Layer also has a set of `Pool` elements, one for each level at which inhibition is computed (there is always one for the Layer, and then optionally one for each Sub-Pool of units (*Pool* is the new simpler term for "Unit Group" from C++ emergent).
+* There are 3 main levels of structure: `Network`, `Layer` and `Path` (pathway).  The network calls methods on its Layers, and Layers iterate over both `Neuron` data structures (which have only a minimal set of methods) and the `Path`s, to implement the relevant computations.  The `Path` fully manages everything about a pathway of connectivity between two layers, including the full list of `Syanpse` elements in the connection.  There is no "ConGroup" or "ConState" level as was used in C++, which greatly simplifies many things.  The Layer also has a set of `Pool` elements, one for each level at which inhibition is computed (there is always one for the Layer, and then optionally one for each Sub-Pool of units (*Pool* is the new simpler term for "Unit Group" from C++ emergent).
 
-* The `NetworkBase` and `LayerBase` structs manage all the core structural aspects of things (data structures etc), and then the algorithm-specific versions (e.g., `leabra.Network`) use Go's anonymous embedding (akin to inheritance in C++) to transparently get all that functionality, while then directly implementing the algorithm code.  Almost every step of computation has an associated method in `leabra.Layer`, so look first in [layer.go](https://github.com/emer/leabra/blob/main/leabra/layer.go) to see how something is implemented.
+* Almost every step of computation has an associated method in `leabra.Layer`, so look first in [layer.go](https://github.com/emer/leabra/blob/main/leabra/layer.go) to see how something is implemented.
 
 * Each structural element directly has all the parameters controlling its behavior -- e.g., the `Layer` contains an `ActParams` field (named `Act`), etc, instead of using a separate `Spec` structure as in C++ emergent.  The Spec-like ability to share parameter settings across multiple layers etc is instead achieved through a **styling**-based paradigm -- you apply parameter "styles" to relevant layers instead of assigning different specs to them.  This paradigm should be less confusing and less likely to result in accidental or poorly understood parameter applications.  We adopt the CSS (cascading-style-sheets) standard where parameters can be specifed in terms of the Name of an object (e.g., `#Hidden`), the *Class* of an object (e.g., `.TopDown` -- where the class name TopDown is manually assigned to relevant elements), and the *Type* of an object (e.g., `Layer` applies to all layers).  Multiple space-separated classes can be assigned to any given element, enabling a powerful combinatorial styling strategy to be used.
 
-* Go uses `interfaces` to represent abstract collections of functionality (i.e., sets of methods).  The `emer` package provides a set of interfaces for each structural level (e.g., `emer.Layer` etc) -- any given specific layer must implement all of these methods, and the structural containers (e.g., the list of layers in a network) are lists of these interfaces.  An interface is implicitly a *pointer* to an actual concrete object that implements the interface.  Thus, we typically need to convert this interface into the pointer to the actual concrete type, as in:
+* The [emergent/emer]((https://github.com/emer/emergent) interfaces are designed to support generic access to network state, e.g., for the 3D network viewer, but specifically avoid anything algorithmic.  Thus, they should allow viewing of any kind of network, including PyTorch backprop nets.
 
-```Go
-func (nt *Network) InitActs() {
-	for _, ly := range nt.Layers {
-		if ly.IsOff() {
-			continue
-		}
-		ly.(*Layer).InitActs() // ly is the emer.Layer interface -- (*Layer) converts to leabra.Layer
-	}
-}
-```
-
-* The emer interfaces are designed to support generic access to network state, e.g., for the 3D network viewer, but specifically avoid anything algorithmic.  Thus, they should allow viewing of any kind of network, including PyTorch backprop nets.
-
-* There is also a `leabra.LeabraLayer` and `leabra.LeabraPrjn` interface, defined in [leabra.go](https://github.com/emer/leabra/blob/main/leabra/leabra.go), which provides a virtual interface for the Leabra-specific algorithm functions at the basic level.  These interfaces are used in the base leabra code, so that any more specialized version that embeds the basic leabra types will be called instead.  See `deep` sub-package for implemented example that does DeepLeabra on top of the basic `leabra` foundation.
-
-* Layers have a `Shape` property, using the `etensor.Shape` type, which specifies their n-dimensional (tensor) shape.  Standard layers are expected to use a 2D Y*X shape (note: dimension order is now outer-to-inner or *RowMajor* now), and a 4D shape then enables `Pools` ("unit groups") as hypercolumn-like structures within a layer that can have their own local level of inihbition, and are also used extensively for organizing patterns of connectivity.
-
-# Naming Conventions
-
-There are several changes from the original C++ emergent implementation for how things are named now:
-* `Pool <- Unit_Group` -- A group of Neurons that share pooled inhibition.  Can be entire layer and / or sub-pools within a layer.
-* `AlphaCyc <- Trial` -- We are now distinguishing more clearly between network-level timing units (e.g., the 100 msec alpha cycle over which learning operates within posterior cortex) and environmental or experimental timing units, e.g., the `Trial` etc. Please see the [TimeScales](https://godoc.org/github.com/emer/leabra/leabra#TimeScales) type for an attempt to standardize the different units of time along these different dimensions.  The `examples/ra25` example uses trials and epochs for controlling the "environment" (such as it is), while the algorithm-specific code refers to AlphaCyc, Quarter, and Cycle, which are the only time scales that are specifically coded within the algorithm -- everything else is up to the specific model code.
+* Layers have a `Shape` property, using the `tensor.Shape` type, which specifies their n-dimensional (tensor) shape.  Standard layers are expected to use a 2D Y*X shape (note: dimension order is now outer-to-inner or *RowMajor* now), and a 4D shape then enables `Pools` ("unit groups") as hypercolumn-like structures within a layer that can have their own local level of inihbition, and are also used extensively for organizing patterns of connectivity.
 
 # The Leabra Algorithm
 
@@ -78,7 +60,7 @@ The version of Leabra implemented here corresponds to version 8.5 of [C++ emerge
 
 The basic activation dynamics of Leabra are based on standard electrophysiological principles of real neurons, and in discrete spiking mode we implement exactly the AdEx (adapting exponential) model of Gerstner and colleagues [Scholarpedia article on AdEx](https://www.scholarpedia.org/article/Adaptive_exponential_integrate-and-fire_model).  The basic `leabra` package implements the rate code mode (which runs faster and allows for smaller networks), which provides a very close approximation to the AdEx model behavior, in terms of a graded activation signal matching the actual instantaneous rate of spiking across a population of AdEx neurons.  We generally conceive of a single rate-code neuron as representing a microcolumn of roughly 100 spiking pyramidal neurons in the neocortex.  Conversion factors from biological units from AdEx to normalized units used in Leabra are in this [google sheet](https://docs.google.com/spreadsheets/d/1jn-NcXY4-y3pOw6inFOgPYlaQodrGIjcsAWkiD9f1FQ/edit?usp=sharing).
 
-The excitatory synaptic input conductance (`Ge` in the code, known as *net input* in artificial neural networks) is computed as an average, not a sum, over connections, based on normalized, sigmoidaly transformed weight values, which are subject to scaling on a projection level to alter relative contributions.  Automatic scaling is performed to compensate for differences in expected activity level in the different projections.  See section on [Input Scaling](#input-scaling) for details.
+The excitatory synaptic input conductance (`Ge` in the code, known as *net input* in artificial neural networks) is computed as an average, not a sum, over connections, based on normalized, sigmoidaly transformed weight values, which are subject to scaling on a pathway level to alter relative contributions.  Automatic scaling is performed to compensate for differences in expected activity level in the different pathways.  See section on [Input Scaling](#input-scaling) for details.
 
 Inhibition is computed using a feed-forward (FF) and feed-back (FB) inhibition function (*FFFB*) that closely approximates the behavior of inhibitory interneurons in the neocortex.  FF is based on a multiplicative factor applied to the average excitatory net input coming into a layer, and FB is based on a multiplicative factor applied to the average activation within the layer.  These simple linear functions do an excellent job of controlling the overall activation levels in bidirectionally connected networks, producing behavior very similar to the more abstract computational implementation of kWTA dynamics implemented in previous versions.
 
@@ -86,7 +68,7 @@ There is a single learning equation, derived from a very detailed model of spike
 
 Weights are subject to a contrast enhancement function, which compensates for the soft (exponential) weight bounding that keeps weights within the normalized 0-1 range.  Contrast enhancement is important for enhancing the selectivity of self-organizing learning, and generally results in faster learning with better overall results.  Learning operates on the underlying internal linear weight value.  Biologically, we associate the underlying linear weight value with internal synaptic factors such as actin scaffolding, CaMKII phosphorlation level, etc, while the contrast enhancement operates at the level of AMPA receptor expression.
 
-There are various extensions to the algorithm that implement special neural mechanisms associated with the prefrontal cortex and basal ganglia [PBWM](#pbwm), dopamine systems [PVLV](#pvlv), the [Hippocampus](#hippocampus), and predictive learning and temporal integration dynamics associated with the thalamocortical circuits [DeepLeabra](#deepleabra).  All of these are (will be) implemented as additional modifications of the core, simple `leabra` implementation, instead of having everything rolled into one giant hairball as in the original C++ implementation.
+There are various extensions to the algorithm that implement special neural mechanisms associated with the prefrontal cortex and basal ganglia [PBWM](#pbwm), dopamine systems [PVLV](#pvlv), the [Hippocampus](#hippocampus), and predictive learning and temporal integration dynamics associated with the thalamocortical circuits [DeepLeabra](Deep.md).  All of these are (will be) implemented as additional modifications of the core, simple `leabra` implementation, instead of having everything rolled into one giant hairball as in the original C++ implementation.
 
 # Pseudocode as a LaTeX doc for Paper Appendix
 
@@ -110,10 +92,10 @@ There are also other implementations of Leabra available:
 * [R](https://github.com/johannes-titz/leabRa) implementation by Johannes Titz.
 
 This repository contains specialized additions to the core algorithm described here:
-* [deep](https://github.com/emer/leabra/blob/main/deep) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
-* [pbwm](https://github.com/emer/leabra/blob/main/rl) has basic reinforcement learning models such as Rescorla-Wagner and TD (temporal differences).
-* [pbwm](https://github.com/emer/leabra/blob/main/pbwm1) has the prefrontal-cortex basal ganglia working memory model (PBWM).
-* [hip](https://github.com/emer/leabra/blob/main/hip) has the hippocampus specific learning mechanisms.
+* [Deep](Deep.md) has the DeepLeabra mechanisms for simulating the deep neocortical <-> thalamus pathways (wherein basic Leabra represents purely superficial-layer processing)
+* [RL](RL.md) has basic reinforcement learning models such as Rescorla-Wagner and TD (temporal differences).
+* [PBWM](PBWM.md) has the prefrontal-cortex basal ganglia working memory model (PBWM).
+* [hip](Hip.md) has the hippocampus specific learning mechanisms.
 
 ## Timing
 
@@ -150,7 +132,7 @@ The `leabra.Neuron` struct contains all the neuron (unit) level variables, and t
 * `ActDel` delta activation: change in Act from one cycle to next -- can be useful to track where changes are taking place
 * `ActAvg` = average activation (of final plus phase activation state) over long time intervals (time constant = DtPars.AvgTau -- typically 200) -- useful for finding hog units and seeing overall distribution of activation
 * `Noise` = noise value added to unit (`ActNoiseParams` determines distribution, and when / where it is added)
-* `GiSyn` = aggregated synaptic inhibition (from Inhib projections) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi
+* `GiSyn` = aggregated synaptic inhibition (from Inhib pathways) -- time integral of GiRaw -- this is added with computed FFFB inhibition to get the full inhibition in Gi
 * `GiSelf` = total amount of self-inhibition -- time-integrated to avoid oscillations
 
 The following are more implementation-level variables used in integrating synaptic inputs:
@@ -161,7 +143,7 @@ The following are more implementation-level variables used in integrating synapt
 * `GiRaw` = raw inhibitory conductance (net input) received from sending units (send delta's are added to this value)
 * `GiInc` = delta increment in GiRaw sent using SendGeDelta
 
-Neurons are connected via synapses parameterized with the following variables, contained in the `leabra.Synapse` struct.  The `leabra.Prjn` contains all of the synaptic connections for all the neurons across a given layer -- there are no Neuron-level data structures in the Go version.  
+Neurons are connected via synapses parameterized with the following variables, contained in the `leabra.Synapse` struct.  The `leabra.Path` contains all of the synaptic connections for all the neurons across a given layer -- there are no Neuron-level data structures in the Go version.  
 
 * `Wt` = synaptic weight value -- sigmoid contrast-enhanced
 * `LWt` = linear (underlying) weight value -- learns according to the lrate specified in the connection spec -- this is converted into the effective weight value, Wt, via sigmoidal contrast enhancement (see `WtSigParams`)
@@ -194,8 +176,8 @@ func (nt *Network) Cycle(ltime *Time) {
 For every cycle of activation updating, we compute the excitatory input conductance `Ge`, then compute inhibition `Gi` based on average `Ge` and `Act` (from previous cycle), then compute the `Act` based on those conductances.  The equations below are not shown in computational order but rather conceptual order for greater clarity.  All of the relevant parameters are in the `leabra.Layer.Act` and `Inhib` fields, which are of type `ActParams` and `InhibParams` -- in this Go version, the parameters have been organized functionally, not structurally, into three categories.
 
 * `Ge` excitatory conductance is actually computed using a highly efficient delta-sender-activation based algorithm, which only does the expensive multiplication of activations * weights when the sending activation changes by a given amount (`OptThreshParams.Delta`).  However, conceptually, the conductance is given by this equation:
-    + `GeRaw += Sum_(recv) Prjn.GScale * Send.Act * Wt`
-        + `Prjn.GScale` is the [Input Scaling](#input-scaling) factor that includes 1/N to compute an average, and the `WtScaleParams` `Abs` absolute scaling and `Rel` relative scaling, which allow one to easily modulate the overall strength of different input projections.
+    + `GeRaw += Sum_(recv) Path.GScale * Send.Act * Wt`
+        + `Path.GScale` is the [Input Scaling](#input-scaling) factor that includes 1/N to compute an average, and the `WtScaleParams` `Abs` absolute scaling and `Rel` relative scaling, which allow one to easily modulate the overall strength of different input pathways.
     + `Ge += DtParams.Integ * (1/ DtParams.GTau) * (GeRaw - Ge)`
         + This does a time integration of excitatory conductance, `GTau = 1.4` default, and global integration time constant, `Integ = 1` for 1 msec default.
 
@@ -267,7 +249,7 @@ Learning is based on running-averages of activation variables, parameterized in 
 * **Weight Balance** -- this option (off by default but recommended for larger models) attempts to maintain more balanced weights across units, to prevent some units from hogging the representational space, by changing the rates of weight increase and decrease in the soft weight bounding function, as a function of the average receiving weights.  All params in `WtBalParams`:
     + `if (Wb.Avg < LoThr): Wb.Fact = LoGain * (LoThr - MAX(Wb.Avg, AvgThr)); Wb.Dec = 1 / (1 + Wb.Fact); Wb.Inc = 2 - Wb.Dec`
     + `else: Wb.Fact = HiGain * (Wb.Avg - HiThr); Wb.Inc = 1 / (1 + Wb.Fact); Wb.Dec = 2 - Wb.Inc`
-        + `Wb` is the `WtBalRecvPrjn` structure stored on the `leabra.Prjn`, per each Recv neuron.  `Wb.Avg` = average of recv weights (computed separately and only every N = 10 weight updates, to minimize computational cost).  If this average is relatively low (compared to LoThr = .4) then there is a bias to increase more than decrease, in proportion to how much below this threshold they are (LoGain = 6).  If the average is relatively high (compared to HiThr = .4), then decreases are stronger than increases, HiGain = 4.
+        + `Wb` is the `WtBalRecvPath` structure stored on the `leabra.Path`, per each Recv neuron.  `Wb.Avg` = average of recv weights (computed separately and only every N = 10 weight updates, to minimize computational cost).  If this average is relatively low (compared to LoThr = .4) then there is a bias to increase more than decrease, in proportion to how much below this threshold they are (LoGain = 6).  If the average is relatively high (compared to HiThr = .4), then decreases are stronger than increases, HiGain = 4.
     + A key feature of this mechanism is that it does not change the sign of any weight changes, including not causing weights to change that are otherwise not changing due to the learning rule.  This is not true of an alternative mechanism that has been used in various models, which normalizes the total weight value by subtracting the average.  Overall this weight balance mechanism is important for larger networks on harder tasks, where the hogging problem can be a significant problem.
 
 * **Weight update equation** 
@@ -284,17 +266,17 @@ Learning is based on running-averages of activation variables, parameterized in 
 
 ## Input Scaling
 
-The `Ge` and `Gi` synaptic conductances computed from a given projection from one layer to the next reflect the number of receptors currently open and capable of passing current, which is a function of the activity of the sending layer, and total number of synapses.  We use a set of equations to automatically normalize (rescale) these factors across different projections, so that each projection has roughly an equal influence on the receiving neuron, by default.
+The `Ge` and `Gi` synaptic conductances computed from a given pathway from one layer to the next reflect the number of receptors currently open and capable of passing current, which is a function of the activity of the sending layer, and total number of synapses.  We use a set of equations to automatically normalize (rescale) these factors across different pathways, so that each pathway has roughly an equal influence on the receiving neuron, by default.
 
 The most important factor to be mindful of for this automatic rescaling process is the expected activity level in a given sending layer.  This is set initially to `Layer.Inhib.ActAvg.Init`, and adapted from there by the various other parameters in that `Inhib.ActAvg` struct.  It is a good idea in general to set that `Init` value to a reasonable estimate of the proportion of activity you expect in the layer, and in very small networks, it is typically much better to just set the `Fixed` flag and keep this `Init` value as such, as otherwise the automatically computed averages can fluctuate significantly and thus create corresponding changes in input scaling.  The default `UseFirst` flag tries to avoid the dependence on the `Init` values but sometimes the first value may not be very representative, so it is better to set `Init` and turn off `UseFirst` for more reliable performance.
 
-Furthermore, we add two tunable parameters that further scale the overall conductance received from a given projection (one in a *relative* way compared to other projections, and the other a simple *absolute* multiplicative scaling factor).  These are some of the most important parameters to configure in the model -- in particular the strength of top-down "back" projections typically must be relatively weak compared to bottom-up forward projections (e.g., a relative scaling factor of 0.1 or 0.2 relative to the forward projections).
+Furthermore, we add two tunable parameters that further scale the overall conductance received from a given pathway (one in a *relative* way compared to other pathways, and the other a simple *absolute* multiplicative scaling factor).  These are some of the most important parameters to configure in the model -- in particular the strength of top-down "back" pathways typically must be relatively weak compared to bottom-up forward pathways (e.g., a relative scaling factor of 0.1 or 0.2 relative to the forward pathways).
 
 The scaling contributions of these two factors are:
 
 * `GScale = WtScale.Abs * (WtScale.Rel / Sum(all WtScale.Rel))`
 
-Thus, all the `Rel` factors contribute in proportion to their relative value compared to the sum of all such factors across all receiving projections into a layer, while `Abs` just multiplies directly.
+Thus, all the `Rel` factors contribute in proportion to their relative value compared to the sum of all such factors across all receiving pathways into a layer, while `Abs` just multiplies directly.
 
 In general, you want to adjust the `Rel` factors, to keep the total `Ge` and `Gi` levels relatively constant, while just shifting the relative contributions.  In the relatively rare case where the overall `Ge` levels are too high or too low, you should adjust the `Abs` values to compensate.
 
@@ -302,7 +284,7 @@ Typically the `Ge` value should be between .5 and 1, to maintain a reasonably re
 
 ### Automatic Rescaling
 
-Here are the relevant factors that are used to compute the automatic rescaling to take into account the expected activity level on the sending layer, and the number of connections in the projection.  The actual code is in `leabra/layer.go: GScaleFmAvgAct()` and `leabra/act.go SLayActScale`
+Here are the relevant factors that are used to compute the automatic rescaling to take into account the expected activity level on the sending layer, and the number of connections in the pathway.  The actual code is in `leabra/layer.go: GScaleFmAvgAct()` and `leabra/act.go SLayActScale`
 
 * `savg` = sending layer average activation
 * `snu` = sending layer number of units
