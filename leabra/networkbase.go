@@ -331,34 +331,11 @@ func (nt *Network) BidirConnectLayers(low, high *Layer, pat paths.Pattern) (fwdp
 	return
 }
 
-// BidirConnectLayersPy establishes bidirectional pathways between two layers,
-// with low = lower layer that sends a Forward pathway to the high layer,
-// and receives a Back pathway in the opposite direction.
-// Does not yet actually connect the units within the layers -- that
-// requires Build.
-// Py = python version with no return vals.
-func (nt *Network) BidirConnectLayersPy(low, high *Layer, pat paths.Pattern) {
-	nt.ConnectLayers(low, high, pat, ForwardPath)
-	nt.ConnectLayers(high, low, pat, BackPath)
-}
-
 // LateralConnectLayer establishes a self-pathway within given layer.
 // Does not yet actually connect the units within the layers -- that
 // requires Build.
 func (nt *Network) LateralConnectLayer(lay *Layer, pat paths.Pattern) *Path {
-	pt := &Path{}
-	return nt.LateralConnectLayerPath(lay, pat, pt)
-}
-
-// LateralConnectLayerPath makes lateral self-pathway using given pathway.
-// Does not yet actually connect the units within the layers -- that
-// requires Build.
-func (nt *Network) LateralConnectLayerPath(lay *Layer, pat paths.Pattern, pt *Path) *Path {
-	// pt.Init(pt)
-	pt.Connect(lay, lay, pat, LateralPath)
-	lay.RecvPaths = append(lay.RecvPaths, pt)
-	lay.SendPaths = append(lay.SendPaths, pt)
-	return pt
+	return nt.ConnectLayers(lay, lay, pat, LateralPath)
 }
 
 // Build constructs the layer and pathway state based on the layer shapes
