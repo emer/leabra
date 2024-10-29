@@ -6,16 +6,16 @@ import (
 	"cogentcore.org/core/enums"
 )
 
-var _ActionsValues = []Actions{0, 1, 2}
+var _ActionsValues = []Actions{0, 1, 2, 3, 4}
 
 // ActionsN is the highest valid value for type Actions, plus one.
-const ActionsN Actions = 3
+const ActionsN Actions = 5
 
-var _ActionsValueMap = map[string]Actions{`Store`: 0, `Ignore`: 1, `Recall`: 2}
+var _ActionsValueMap = map[string]Actions{`Store1`: 0, `Store2`: 1, `Ignore`: 2, `Recall1`: 3, `Recall2`: 4}
 
-var _ActionsDescMap = map[Actions]string{0: ``, 1: ``, 2: ``}
+var _ActionsDescMap = map[Actions]string{0: ``, 1: ``, 2: ``, 3: ``, 4: ``}
 
-var _ActionsMap = map[Actions]string{0: `Store`, 1: `Ignore`, 2: `Recall`}
+var _ActionsMap = map[Actions]string{0: `Store1`, 1: `Store2`, 2: `Ignore`, 3: `Recall1`, 4: `Recall2`}
 
 // String returns the string representation of this Actions value.
 func (i Actions) String() string { return enums.String(i, _ActionsMap) }

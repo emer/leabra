@@ -80,13 +80,6 @@ var ParamSets = params.Sets{
 				"Layer.Act.Clamp.Range.Min": "-1",
 				"Layer.Act.Clamp.Range.Max": "1",
 			}},
-		{Sel: ".PFCMntDToOut", Desc: "PFC Deep -> PFC fixed",
-			Params: params.Params{
-				"Path.Learn.Learn": "false",
-				"Path.WtInit.Mean": "0.8",
-				"Path.WtInit.Var":  "0",
-				"Path.WtInit.Sym":  "false",
-			}},
 		{Sel: ".PFCMntDToOut", Desc: "PFC MntD -> PFC Out fixed",
 			Params: params.Params{
 				"Path.Learn.Learn": "false",
@@ -94,9 +87,9 @@ var ParamSets = params.Sets{
 				"Path.WtInit.Var":  "0",
 				"Path.WtInit.Sym":  "false",
 			}},
-		{Sel: ".FmPFCOutD", Desc: "If multiple stripes, PFC OutD needs to be strong b/c avg act says weak",
+		{Sel: ".FmPFCOutD", Desc: "PFC OutD needs to be strong b/c avg act says weak",
 			Params: params.Params{
-				"Path.WtScale.Abs": "1", // increase in proportion to number of stripes
+				"Path.WtScale.Abs": "4",
 			}},
 		{Sel: ".PFCFixed", Desc: "Input -> PFC",
 			Params: params.Params{
@@ -107,7 +100,7 @@ var ParamSets = params.Sets{
 			}},
 		{Sel: ".MatrixPath", Desc: "Matrix learning",
 			Params: params.Params{
-				"Path.Learn.Lrate":         "0.04", // .04 > .1
+				"Path.Learn.Lrate":         "0.04", // .04 > .1 > .02
 				"Path.WtInit.Var":          "0.1",
 				"Path.Trace.GateNoGoPosLR": "1",    // 0.1 default
 				"Path.Trace.NotGatedLR":    "0.7",  // 0.7 default
@@ -118,8 +111,8 @@ var ParamSets = params.Sets{
 		{Sel: ".MatrixLayer", Desc: "exploring these options",
 			Params: params.Params{
 				"Layer.Act.XX1.Gain":       "100",
-				"Layer.Inhib.Layer.Gi":     "1.9",
-				"Layer.Inhib.Layer.FB":     "0.5",
+				"Layer.Inhib.Layer.Gi":     "2.2", // 2.2 > 1.8 > 2.4
+				"Layer.Inhib.Layer.FB":     "1",   // 1 > .5
 				"Layer.Inhib.Pool.On":      "true",
 				"Layer.Inhib.Pool.Gi":      "2.1", // def 1.9
 				"Layer.Inhib.Pool.FB":      "0",
@@ -130,19 +123,19 @@ var ParamSets = params.Sets{
 			}},
 		{Sel: "#GPiThal", Desc: "defaults also set automatically by layer but included here just to be sure",
 			Params: params.Params{
-				"Layer.Inhib.Layer.Gi":     "1.8",
-				"Layer.Inhib.Layer.FB":     "1", // was 0.5
+				"Layer.Inhib.Layer.Gi":     "1.8", // 1.8 > 2.0
+				"Layer.Inhib.Layer.FB":     "1",   // 1.0 > 0.5
 				"Layer.Inhib.Pool.On":      "false",
 				"Layer.Inhib.ActAvg.Init":  ".2",
 				"Layer.Inhib.ActAvg.Fixed": "true",
 				"Layer.Act.Dt.GTau":        "3",
 				"Layer.GPiGate.GeGain":     "3",
-				"Layer.GPiGate.NoGo":       "1",   // 1.25?
-				"Layer.GPiGate.Thr":        "0.2", // 0.25?
+				"Layer.GPiGate.NoGo":       "1.25", // was 1 default
+				"Layer.GPiGate.Thr":        "0.25", // .2 default
 			}},
 		{Sel: "#GPeNoGo", Desc: "GPe is a regular layer -- needs special params",
 			Params: params.Params{
-				"Layer.Inhib.Layer.Gi":     "2.4", // 2.4 > 2.2 > 1.8
+				"Layer.Inhib.Layer.Gi":     "2.4", // 2.4 > 2.2 > 1.8 > 2.6
 				"Layer.Inhib.Layer.FB":     "0.5",
 				"Layer.Inhib.Layer.FBTau":  "3", // otherwise a bit jumpy
 				"Layer.Inhib.Pool.On":      "false",
@@ -186,8 +179,8 @@ var ParamSets = params.Sets{
 			}},
 		{Sel: "#RWPred", Desc: "keep it guessing",
 			Params: params.Params{
-				"Layer.RW.PredRange.Min": "0.01", // increasing to .05, .95 can be useful for harder tasks
-				"Layer.RW.PredRange.Max": "0.99",
+				"Layer.RW.PredRange.Min": "0.05", // single most important param!  was .01 -- need penalty..
+				"Layer.RW.PredRange.Max": "0.95",
 			}},
 	},
 }
@@ -325,12 +318,12 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	da.Name = "SNc"
 
 	inp := net.AddLayer2D("Input", 1, 4, leabra.InputLayer)
-	ctrl := net.AddLayer2D("CtrlInput", 1, 3, leabra.InputLayer)
+	ctrl := net.AddLayer2D("CtrlInput", 1, 5, leabra.InputLayer)
 	out := net.AddLayer2D("Output", 1, 4, leabra.TargetLayer)
 	hid := net.AddLayer2D("Hidden", 7, 7, leabra.SuperLayer)
 
 	// args: nY, nMaint, nOut, nNeurBgY, nNeurBgX, nNeurPfcY, nNeurPfcX
-	mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 1, 1, 1, 1, 3, 1, 4)
+	mtxGo, mtxNoGo, gpe, gpi, cin, pfcMnt, pfcMntD, pfcOut, pfcOutD := net.AddPBWM("", 4, 2, 2, 1, 5, 1, 4)
 	_ = gpe
 	_ = gpi
 	_ = pfcMnt
@@ -539,7 +532,7 @@ func (ss *Sim) ApplyReward(train bool) {
 	} else {
 		en = ss.Envs.ByMode(etime.Test).(*SIREnv)
 	}
-	if en.Act != Recall { // only reward on recall trials!
+	if en.Act != Recall1 && en.Act != Recall2 { // only reward on recall trials!
 		return
 	}
 	out := ss.Net.LayerByName("Output")

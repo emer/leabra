@@ -17,9 +17,11 @@ import (
 type Actions int32 //enums:enum
 
 const (
-	Store Actions = iota
+	Store1 Actions = iota
+	Store2
 	Ignore
-	Recall
+	Recall1
+	Recall2
 )
 
 // SIREnv implements the store-ignore-recall task
@@ -43,9 +45,12 @@ type SIREnv struct {
 	Stim int
 
 	// current stimulus being maintained
-	Maint int
+	Maint1 int
 
-	// input pattern with stim
+	// current stimulus being maintained
+	Maint2 int
+
+	// stimulus input pattern
 	Input tensor.Float64
 
 	// input pattern with action
@@ -58,7 +63,7 @@ type SIREnv struct {
 	Reward tensor.Float64
 
 	// trial is the step counter within epoch
-	Trial env.Counter `view:"inline"`
+	Trial env.Counter `display:"inline"`
 }
 
 func (ev *SIREnv) Label() string { return ev.Name }
@@ -89,6 +94,10 @@ func (ev *SIREnv) State(element string) tensor.Tensor {
 	return nil
 }
 
+func (ev *SIREnv) Actions() env.Elements {
+	return nil
+}
+
 // StimStr returns a letter string rep of stim (A, B...)
 func (ev *SIREnv) StimStr(stim int) string {
 	return string([]byte{byte('A' + stim)})
@@ -96,14 +105,15 @@ func (ev *SIREnv) StimStr(stim int) string {
 
 // String returns the current state as a string
 func (ev *SIREnv) String() string {
-	return fmt.Sprintf("%s_%s_mnt_%s_rew_%g", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint), ev.Reward.Values[0])
+	return fmt.Sprintf("%s_%s_mnt1_%s_mnt2_%s_rew_%g", ev.Act, ev.StimStr(ev.Stim), ev.StimStr(ev.Maint1), ev.StimStr(ev.Maint2), ev.Reward.Values[0])
 }
 
 func (ev *SIREnv) Init(run int) {
 	ev.Trial.Scale = etime.Trial
 	ev.Trial.Init()
 	ev.Trial.Cur = -1 // init state -- key so that first Step() = 0
-	ev.Maint = -1
+	ev.Maint1 = -1
+	ev.Maint2 = -1
 }
 
 // SetState sets the input, output states
@@ -111,7 +121,7 @@ func (ev *SIREnv) SetState() {
 	ev.CtrlInput.SetZeros()
 	ev.CtrlInput.Values[ev.Act] = 1
 	ev.Input.SetZeros()
-	if ev.Act != Recall {
+	if ev.Act != Recall1 && ev.Act != Recall2 {
 		ev.Input.Values[ev.Stim] = 1
 	}
 	ev.Output.SetZeros()
@@ -134,22 +144,33 @@ func (ev *SIREnv) SetReward(netout int) bool {
 func (ev *SIREnv) StepSIR() {
 	for {
 		ev.Act = Actions(rand.Intn(int(ActionsN)))
-		if ev.Act == Store && ev.Maint >= 0 { // already full
+		if ev.Act == Store1 && ev.Maint1 >= 0 { // already full
 			continue
 		}
-		if ev.Act == Recall && ev.Maint < 0 { // nothign
+		if ev.Act == Recall1 && ev.Maint1 < 0 { // nothing
+			continue
+		}
+		if ev.Act == Store2 && ev.Maint2 >= 0 { // already full
+			continue
+		}
+		if ev.Act == Recall2 && ev.Maint2 < 0 { // nothing
 			continue
 		}
 		break
 	}
 	ev.Stim = rand.Intn(ev.NStim)
 	switch ev.Act {
-	case Store:
-		ev.Maint = ev.Stim
+	case Store1:
+		ev.Maint1 = ev.Stim
+	case Store2:
+		ev.Maint2 = ev.Stim
 	case Ignore:
-	case Recall:
-		ev.Stim = ev.Maint
-		ev.Maint = -1
+	case Recall1:
+		ev.Stim = ev.Maint1
+		ev.Maint1 = -1
+	case Recall2:
+		ev.Stim = ev.Maint2
+		ev.Maint2 = -1
 	}
 	ev.SetState()
 }
