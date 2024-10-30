@@ -48,7 +48,7 @@ var ParamSets = params.Sets{
 	"Base": {
 		{Sel: "Path", Desc: "no extra learning factors",
 			Params: params.Params{
-				"Path.Learn.Lrate":       "0.02", // slower overall is key
+				"Path.Learn.Lrate":       "0.01", // slower overall is key
 				"Path.Learn.Norm.On":     "false",
 				"Path.Learn.Momentum.On": "false",
 				"Path.Learn.WtBal.On":    "false",
@@ -179,7 +179,7 @@ var ParamSets = params.Sets{
 			}},
 		{Sel: "#RWPred", Desc: "keep it guessing",
 			Params: params.Params{
-				"Layer.RW.PredRange.Min": "0.05", // single most important param!  was .01 -- need penalty..
+				"Layer.RW.PredRange.Min": "0.02", // single most important param!  was .01 -- need penalty..
 				"Layer.RW.PredRange.Max": "0.95",
 			}},
 	},
@@ -191,7 +191,7 @@ type Config struct {
 	NRuns int `default:"10" min:"1"`
 
 	// total number of epochs per run
-	NEpochs int `default:"100"`
+	NEpochs int `default:"200"`
 
 	// total number of trials per epochs per run
 	NTrials int `default:"100"`
@@ -333,13 +333,6 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 
 	cin.CIN.RewLays.Add(rew.Name, rp.Name)
 
-	inp.PlaceAbove(rew)
-	out.PlaceRightOf(inp, 2)
-	ctrl.PlaceBehind(inp, 2)
-	hid.PlaceBehind(ctrl, 2)
-	mtxGo.PlaceRightOf(rew, 2)
-	pfcMnt.PlaceRightOf(out, 2)
-
 	full := paths.NewFull()
 	fmin := paths.NewRect()
 	fmin.Size.Set(1, 1)
@@ -356,12 +349,20 @@ func (ss *Sim) ConfigNet(net *leabra.Network) {
 	pt.AddClass("PFCFixed")
 
 	net.ConnectLayers(inp, hid, full, leabra.ForwardPath)
+	net.ConnectLayers(ctrl, hid, full, leabra.ForwardPath)
 	net.BidirConnectLayers(hid, out, full)
 	pt = net.ConnectLayers(pfcOutD, hid, full, leabra.ForwardPath)
 	pt.AddClass("FmPFCOutD")
 	pt = net.ConnectLayers(pfcOutD, out, full, leabra.ForwardPath)
 	pt.AddClass("FmPFCOutD")
 	net.ConnectLayers(inp, out, full, leabra.ForwardPath)
+
+	inp.PlaceAbove(rew)
+	out.PlaceRightOf(inp, 2)
+	ctrl.PlaceBehind(inp, 2)
+	hid.PlaceBehind(ctrl, 2)
+	mtxGo.PlaceRightOf(rew, 2)
+	pfcMnt.PlaceRightOf(out, 2)
 
 	net.Build()
 	net.Defaults()

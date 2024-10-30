@@ -64,6 +64,15 @@ func (ly *Layer) InitActs() {
 	ly.NeuroMod.Init()
 }
 
+// UpdateActAvgEff updates the effective ActAvg.ActPAvgEff value used in netinput
+// scaling, from the current ActAvg.ActPAvg and fixed Init values.
+func (ly *Layer) UpdateActAvgEff() {
+	for pi := range ly.Pools {
+		pl := &ly.Pools[pi]
+		ly.Inhib.ActAvg.EffFromAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
+	}
+}
+
 // InitWeightsSym initializes the weight symmetry.
 // higher layers copy weights from lower layers.
 func (ly *Layer) InitWtSym() {
