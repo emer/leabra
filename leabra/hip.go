@@ -236,14 +236,18 @@ func (net *Network) ConfigLoopsHip(ctx *Context, ls *looper.Stacks) {
 		net.GScaleFromAvgAct()
 		net.InitGInc()
 	})
-	ls.AddEventAllModes(etime.Cycle, "HipPlusPhase:Start", 75, func() {
-		ca1FromECin.WtScale.Abs = 1
-		ca1FromCa3.WtScale.Abs = 0
-		if ctx.Mode == etime.Train {
-			ecin.UnitValues(&tmpValues, "Act", 0)
-			ecout.ApplyExt1D32(tmpValues)
-		}
-		net.GScaleFromAvgAct()
-		net.InitGInc()
-	})
+	for _, st := range ls.Stacks {
+		ev := st.Loops[etime.Cycle].EventByCounter(75)
+		ev.OnEvent.Prepend("HipPlusPhase:Start", func() bool {
+			ca1FromECin.WtScale.Abs = 1
+			ca1FromCa3.WtScale.Abs = 0
+			if ctx.Mode == etime.Train {
+				ecin.UnitValues(&tmpValues, "Act", 0)
+				ecout.ApplyExt1D32(tmpValues)
+			}
+			net.GScaleFromAvgAct()
+			net.InitGInc()
+			return true
+		})
+	}
 }
