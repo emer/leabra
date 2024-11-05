@@ -18,36 +18,31 @@ import (
 // and plusEnd is end of plus phase, typically 99
 // resets the state at start of trial.
 // Can pass a trial-level time scale to use instead of the default etime.Trial
-func LooperStdPhases(man *looper.Manager, ctx *Context, net *Network, plusStart, plusEnd int, trial ...etime.Times) {
+func LooperStdPhases(ls *looper.Stacks, ctx *Context, net *Network, plusStart, plusEnd int, trial ...etime.Times) {
 	trl := etime.Trial
 	if len(trial) > 0 {
 		trl = trial[0]
 	}
-	minusPhase := &looper.Event{Name: "MinusPhase", AtCounter: 0}
-	minusPhase.OnEvent.Add("MinusPhase:Start", func() {
+	ls.AddEventAllModes(etime.Cycle, "MinusPhase:Start", 0, func() {
 		ctx.PlusPhase = false
 	})
-	quarter1 := looper.NewEvent("Quarter1", 25, func() {
+	ls.AddEventAllModes(etime.Cycle, "Quarter1", 25, func() {
 		net.QuarterFinal(ctx)
 		ctx.QuarterInc()
 	})
-	quarter2 := looper.NewEvent("Quarter2", 50, func() {
+	ls.AddEventAllModes(etime.Cycle, "Quarter2", 50, func() {
 		net.QuarterFinal(ctx)
 		ctx.QuarterInc()
 	})
-	plusPhase := &looper.Event{Name: "PlusPhase", AtCounter: plusStart}
-	plusPhase.OnEvent.Add("MinusPhase:End", func() {
+	ls.AddEventAllModes(etime.Cycle, "MinusPhase:End", plusStart, func() {
 		net.QuarterFinal(ctx)
 		ctx.QuarterInc()
 	})
-	plusPhase.OnEvent.Add("PlusPhase:Start", func() {
+	ls.AddEventAllModes(etime.Cycle, "PlusPhase:Start", plusStart, func() {
 		ctx.PlusPhase = true
 	})
 
-	man.AddEventAllModes(etime.Cycle, minusPhase, quarter1, quarter2, plusPhase)
-
-	for m, _ := range man.Stacks {
-		stack := man.Stacks[m]
+	for m, stack := range ls.Stacks {
 		stack.Loops[trl].OnStart.Add("AlphaCycInit", func() {
 			net.AlphaCycInit(m == etime.Train)
 			ctx.AlphaCycStart()
@@ -61,19 +56,18 @@ func LooperStdPhases(man *looper.Manager, ctx *Context, net *Network, plusStart,
 // LooperSimCycleAndLearn adds Cycle and DWt, WtFromDWt functions to looper
 // for given network, ctx, and netview update manager
 // Can pass a trial-level time scale to use instead of the default etime.Trial
-func LooperSimCycleAndLearn(man *looper.Manager, net *Network, ctx *Context, viewupdt *netview.ViewUpdate, trial ...etime.Times) {
+func LooperSimCycleAndLearn(ls *looper.Stacks, net *Network, ctx *Context, viewupdt *netview.ViewUpdate, trial ...etime.Times) {
 	trl := etime.Trial
 	if len(trial) > 0 {
 		trl = trial[0]
 	}
-	for m, _ := range man.Stacks {
-		cycLoop := man.Stacks[m].Loops[etime.Cycle]
-		cycLoop.Main.Add("Cycle", func() {
+	for m := range ls.Stacks {
+		ls.Stacks[m].Loops[etime.Cycle].OnStart.Add("Cycle", func() {
 			net.Cycle(ctx)
 			ctx.CycleInc()
 		})
 	}
-	ttrl := man.GetLoop(etime.Train, trl)
+	ttrl := ls.Loop(etime.Train, trl)
 	if ttrl != nil {
 		ttrl.OnEnd.Add("UpdateWeights", func() {
 			net.DWt()
@@ -85,10 +79,10 @@ func LooperSimCycleAndLearn(man *looper.Manager, net *Network, ctx *Context, vie
 	}
 
 	// Set variables on ss that are referenced elsewhere, such as ApplyInputs.
-	for m, loops := range man.Stacks {
+	for m, loops := range ls.Stacks {
 		for _, loop := range loops.Loops {
 			loop.OnStart.Add("SetCtxMode", func() {
-				ctx.Mode = m
+				ctx.Mode = m.(etime.Modes)
 			})
 		}
 	}
@@ -98,8 +92,8 @@ func LooperSimCycleAndLearn(man *looper.Manager, net *Network, ctx *Context, vie
 // to reset the log at the level below each loop -- this is good default behavior.
 // Exceptions can be passed to exclude specific levels -- e.g., if except is Epoch
 // then Epoch does not reset the log below it
-func LooperResetLogBelow(man *looper.Manager, logs *elog.Logs, except ...etime.Times) {
-	for m, stack := range man.Stacks {
+func LooperResetLogBelow(ls *looper.Stacks, logs *elog.Logs, except ...etime.Times) {
+	for m, stack := range ls.Stacks {
 		for t, loop := range stack.Loops {
 			curTime := t
 			isExcept := false
@@ -111,7 +105,7 @@ func LooperResetLogBelow(man *looper.Manager, logs *elog.Logs, except ...etime.T
 			}
 			if below := stack.TimeBelow(curTime); !isExcept && below != etime.NoTime {
 				loop.OnStart.Add("ResetLog"+below.String(), func() {
-					logs.ResetLog(m, below)
+					logs.ResetLog(m.(etime.Modes), below.(etime.Times))
 				})
 			}
 		}
@@ -119,10 +113,10 @@ func LooperResetLogBelow(man *looper.Manager, logs *elog.Logs, except ...etime.T
 }
 
 // LooperUpdateNetView adds netview update calls at each time level
-func LooperUpdateNetView(man *looper.Manager, viewupdt *netview.ViewUpdate, net *Network, ctrUpdateFunc func(tm etime.Times)) {
-	for m, stack := range man.Stacks {
+func LooperUpdateNetView(ls *looper.Stacks, viewupdt *netview.ViewUpdate, net *Network, ctrUpdateFunc func(tm etime.Times)) {
+	for m, stack := range ls.Stacks {
 		for t, loop := range stack.Loops {
-			curTime := t
+			curTime := t.(etime.Times)
 			if curTime != etime.Cycle {
 				loop.OnEnd.Add("GUI:UpdateNetView", func() {
 					ctrUpdateFunc(curTime)
@@ -131,7 +125,7 @@ func LooperUpdateNetView(man *looper.Manager, viewupdt *netview.ViewUpdate, net 
 				})
 			}
 		}
-		cycLoop := man.GetLoop(m, etime.Cycle)
+		cycLoop := ls.Loop(m, etime.Cycle)
 		cycLoop.OnEnd.Add("GUI:UpdateNetView", func() {
 			cyc := cycLoop.Counter.Cur
 			ctrUpdateFunc(etime.Cycle)
@@ -142,19 +136,19 @@ func LooperUpdateNetView(man *looper.Manager, viewupdt *netview.ViewUpdate, net 
 }
 
 // LooperUpdatePlots adds plot update calls at each time level
-func LooperUpdatePlots(man *looper.Manager, gui *egui.GUI) {
-	for m, stack := range man.Stacks {
+func LooperUpdatePlots(ls *looper.Stacks, gui *egui.GUI) {
+	for m, stack := range ls.Stacks {
 		for t, loop := range stack.Loops {
-			curTime := t
+			curTime := t.(etime.Times)
 			curLoop := loop
 			if curTime == etime.Cycle {
 				curLoop.OnEnd.Add("GUI:UpdatePlot", func() {
 					cyc := curLoop.Counter.Cur
-					gui.GoUpdateCyclePlot(m, cyc)
+					gui.GoUpdateCyclePlot(m.(etime.Modes), cyc)
 				})
 			} else {
 				curLoop.OnEnd.Add("GUI:UpdatePlot", func() {
-					gui.GoUpdatePlot(m, curTime)
+					gui.GoUpdatePlot(m.(etime.Modes), curTime)
 				})
 			}
 		}

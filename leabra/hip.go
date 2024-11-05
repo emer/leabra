@@ -206,7 +206,7 @@ func (pt *Path) DWtEcCa1() {
 // ConfigLoopsHip configures the hippocampal looper and should be included in ConfigLoops
 // in model to make sure hip loops is configured correctly.
 // see hip.go for an instance of implementation of this function.
-func (net *Network) ConfigLoopsHip(ctx *Context, man *looper.Manager) {
+func (net *Network) ConfigLoopsHip(ctx *Context, ls *looper.Stacks) {
 	var tmpValues []float32
 	ecout := net.LayerByName("ECout")
 	ecin := net.LayerByName("ECin")
@@ -218,21 +218,14 @@ func (net *Network) ConfigLoopsHip(ctx *Context, man *looper.Manager) {
 
 	dgPjScale := ca3FromDg.WtScale.Rel
 
-	// configure events -- note that events are shared between Train, Test
-	// so only need to do it once on Train
-	mode := etime.Train
-	stack := man.Stacks[mode]
-	cyc, _ := stack.Loops[etime.Cycle]
-	minusStart := cyc.EventByName("MinusPhase") // cycle 0
-	minusStart.OnEvent.Add("HipMinusPhase:Start", func() {
+	ls.AddEventAllModes(etime.Cycle, "HipMinusPhase:Start", 0, func() {
 		ca1FromECin.WtScale.Abs = 1
 		ca1FromCa3.WtScale.Abs = 0
 		ca3FromDg.WtScale.Rel = 0
 		net.GScaleFromAvgAct()
 		net.InitGInc()
 	})
-	quarter1 := cyc.EventByName("Quarter1")
-	quarter1.OnEvent.Add("Hip:Quarter1", func() {
+	ls.AddEventAllModes(etime.Cycle, "Hip:Quarter1", 25, func() {
 		ca1FromECin.WtScale.Abs = 0
 		ca1FromCa3.WtScale.Abs = 1
 		if ctx.Mode == etime.Test {
@@ -243,8 +236,7 @@ func (net *Network) ConfigLoopsHip(ctx *Context, man *looper.Manager) {
 		net.GScaleFromAvgAct()
 		net.InitGInc()
 	})
-	plus := cyc.EventByName("PlusPhase")
-	plus.OnEvent.InsertBefore("MinusPhase:End", "HipPlusPhase:Start", func() {
+	ls.AddEventAllModes(etime.Cycle, "HipPlusPhase:Start", 75, func() {
 		ca1FromECin.WtScale.Abs = 1
 		ca1FromCa3.WtScale.Abs = 0
 		if ctx.Mode == etime.Train {
