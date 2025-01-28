@@ -8,10 +8,10 @@ import (
 	"log"
 	"math/rand"
 
-	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor"
+	"cogentcore.org/lab/base/randx"
+	"github.com/emer/etensor/tensor"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////

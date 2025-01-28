@@ -10,14 +10,14 @@ import (
 
 	"cogentcore.org/core/base/errors"
 	"cogentcore.org/core/math32/minmax"
-	"cogentcore.org/core/plot/plotcore"
-	"cogentcore.org/core/tensor/stats/split"
-	"cogentcore.org/core/tensor/stats/stats"
-	"cogentcore.org/core/tensor/table"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
 	"github.com/emer/emergent/v2/estats"
 	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/etensor/plot/plotcore"
+	"github.com/emer/etensor/tensor/stats/split"
+	"github.com/emer/etensor/tensor/stats/stats"
+	"github.com/emer/etensor/tensor/table"
 )
 
 // LogTestErrors records all errors made across TestTrials, at Test Epoch scope

@@ -7,8 +7,8 @@ package leabra
 import (
 	"fmt"
 
-	"cogentcore.org/core/base/mpi"
 	"cogentcore.org/core/core"
+	"cogentcore.org/lab/base/mpi"
 	"github.com/emer/emergent/v2/ecmd"
 )
 

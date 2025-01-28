@@ -6,7 +6,7 @@ package leabra
 
 import (
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor"
+	"github.com/emer/etensor/tensor"
 )
 
 // note: path.go contains algorithm methods; pathbase.go has infrastructure.

@@ -15,16 +15,14 @@ import (
 	"log"
 	"os"
 
-	"cogentcore.org/core/base/mpi"
-	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/core"
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/icons"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/math32/vecint"
-	"cogentcore.org/core/tensor"
-	"cogentcore.org/core/tensor/table"
 	"cogentcore.org/core/tree"
+	"cogentcore.org/lab/base/mpi"
+	"cogentcore.org/lab/base/randx"
 	"github.com/emer/emergent/v2/econfig"
 	"github.com/emer/emergent/v2/egui"
 	"github.com/emer/emergent/v2/elog"
@@ -37,6 +35,8 @@ import (
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
 	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/etensor/tensor"
+	"github.com/emer/etensor/tensor/table"
 	"github.com/emer/leabra/v2/leabra"
 )
 

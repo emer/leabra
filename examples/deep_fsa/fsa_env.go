@@ -7,10 +7,10 @@ package main
 import (
 	"fmt"
 
-	"cogentcore.org/core/base/randx"
-	"cogentcore.org/core/tensor"
+	"cogentcore.org/lab/base/randx"
 	"github.com/emer/emergent/v2/env"
 	"github.com/emer/emergent/v2/etime"
+	"github.com/emer/etensor/tensor"
 )
 
 // FSAEnv generates states in a finite state automaton (FSA) which is a

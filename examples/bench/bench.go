@@ -17,12 +17,12 @@ import (
 	"os"
 	"time"
 
-	"cogentcore.org/core/base/randx"
 	"cogentcore.org/core/base/timer"
-	"cogentcore.org/core/tensor/table"
+	"cogentcore.org/lab/base/randx"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/patgen"
 	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/etensor/tensor/table"
 	"github.com/emer/leabra/v2/leabra"
 )
 

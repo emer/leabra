@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"cogentcore.org/core/math32"
-	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/etensor/tensor"
 )
 
 // Note: this test project exactly reproduces the configuration and behavior of

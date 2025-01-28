@@ -10,8 +10,8 @@ import (
 	"unsafe"
 
 	"cogentcore.org/core/base/datasize"
-	"cogentcore.org/core/tensor"
 	"github.com/emer/emergent/v2/paths"
+	"github.com/emer/etensor/tensor"
 )
 
 ///////////////////////////////////////////////////////////////////////////
