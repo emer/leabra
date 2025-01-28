@@ -65,7 +65,7 @@ func (sk *ActParams) SpikeVmFromG(nrn *leabra.Neuron) {
 	if sk.Noise.Type == leabra.VmNoise {
 		nwVm += nrn.Noise
 	}
-	nrn.Vm = sk.VmRange.ClipValue(nwVm)
+	nrn.Vm = sk.VmRange.ClampValue(nwVm)
 }
 
 // SpikeActFromVm computes the discrete spiking activation

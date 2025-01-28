@@ -45,7 +45,7 @@ func (ly *Layer) ActFromGRWPred(ctx *Context) {
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.Act = ly.RW.PredRange.ClipValue(nrn.Ge) // clipped linear
+		nrn.Act = ly.RW.PredRange.ClampValue(nrn.Ge) // clipped linear
 		ly.Learn.AvgsFromAct(nrn)
 	}
 }
