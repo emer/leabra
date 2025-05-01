@@ -748,7 +748,7 @@ func (ss *Sim) MakeToolbar(p *tree.Plan) {
 		Tooltip: "Opens your browser on the README file that contains instructions for how to run this model.",
 		Active:  egui.ActiveAlways,
 		Func: func() {
-			core.TheApp.OpenURL("https://github.com/emer/leabra/blob/main/examples/ra25/README.md")
+			core.TheApp.OpenURL("https://github.com/emer/leabra/blob/main/examples/deep_fsa/README.md")
 		},
 	})
 }

@@ -2537,7 +2537,7 @@ func (ss *Sim) ConfigGUI() *core.Window {
 
 	tbar.AddAction(core.ActOpts{Label: "README", Icon: icons.FileMarkdown, Tooltip: "Opens your browser on the README file that contains instructions for how to run this model."}, win.This(),
 		func(recv, send tree.Node, sig int64, data interface{}) {
-			core.OpenURL("https://github.com/emer/leabra/blob/main/examples/ra25/README.md")
+			core.OpenURL("https://github.com/emer/leabra/blob/main/examples/hip_bench/README.md")
 		})
 
 	vp.UpdateEndNoSig(updt)

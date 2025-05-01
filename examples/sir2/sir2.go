@@ -562,7 +562,7 @@ func (ss *Sim) NewRun() {
 	ctx.Reset()
 	ctx.Mode = etime.Train
 	ss.Net.InitWeights()
-	ss.InitStats()
+	ss.StatsInit()
 	ss.StatCounters()
 	ss.Logs.ResetLog(etime.Train, etime.Epoch)
 	ss.Logs.ResetLog(etime.Test, etime.Epoch)
@@ -578,9 +578,9 @@ func (ss *Sim) TestAll() {
 ////////////////////////////////////////////////////////////////////////
 // 		Stats
 
-// InitStats initializes all the statistics.
+// StatsInit initializes all the statistics.
 // called at start of new run
-func (ss *Sim) InitStats() {
+func (ss *Sim) StatsInit() {
 	ss.Stats.SetFloat("SSE", 0.0)
 	ss.Stats.SetFloat("DA", 0.0)
 	ss.Stats.SetFloat("AbsDA", 0.0)
