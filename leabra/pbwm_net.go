@@ -9,7 +9,8 @@ import (
 )
 
 // RecGateAct is called after GateSend, to record gating activations at time of gating
-func (nt *Network) RecGateAct(ctx *Context) {
+func (nt *Network) RecGateAct() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -23,7 +24,7 @@ func (nt *Network) RecGateAct(ctx *Context) {
 // and each pool has nNeurY, nNeurX neurons.  da gives the DaReceptor type (D1R = Go, D2R = NoGo)
 func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *Layer {
 	tX := nMaint + nOut
-	mtx := nt.AddLayer4D(name, nY, tX, nNeurY, nNeurX, MatrixLayer)
+	mtx := nt.AddLayer4D(name, MatrixLayer, nY, tX, nNeurY, nNeurX)
 	mtx.PBWM.DaR = da
 	mtx.PBWM.Set(nY, nMaint, nOut)
 	return mtx
@@ -34,7 +35,7 @@ func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX 
 // and each pool has 1x1 neurons.
 func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
-	gpe := nt.AddLayer4D(name, nY, tX, 1, 1, GPeLayer)
+	gpe := nt.AddLayer4D(name, GPeLayer, nY, tX, 1, 1)
 	return gpe
 }
 
@@ -43,14 +44,14 @@ func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 // and each pool has 1x1 neurons.
 func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
-	gpi := nt.AddLayer4D(name, nY, tX, 1, 1, GPiThalLayer)
+	gpi := nt.AddLayer4D(name, GPiThalLayer, nY, tX, 1, 1)
 	gpi.PBWM.Set(nY, nMaint, nOut)
 	return gpi
 }
 
 // AddCINLayer adds a CINLayer, with a single neuron.
 func (nt *Network) AddCINLayer(name string) *Layer {
-	cin := nt.AddLayer2D(name, 1, 1, CINLayer)
+	cin := nt.AddLayer2D(name, CINLayer, 1, 1)
 	return cin
 }
 
@@ -94,12 +95,12 @@ func (nt *Network) AddDorsalBG(prefix string, nY, nMaint, nOut, nNeurY, nNeurX i
 // else Full set of 5 dynamic maintenance types. Both have the class "PFC" set.
 // deep is positioned behind super.
 func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out, dynMaint bool) (sp, dp *Layer) {
-	sp = nt.AddLayer4D(name, nY, nX, nNeurY, nNeurX, SuperLayer)
+	sp = nt.AddLayer4D(name, SuperLayer, nY, nX, nNeurY, nNeurX)
 	dym := 1
 	if !dynMaint {
 		dym = 5
 	}
-	dp = nt.AddLayer4D(name+"D", nY, nX, dym*nNeurY, nNeurX, PFCDeepLayer)
+	dp = nt.AddLayer4D(name+"D", PFCDeepLayer, nY, nX, dym*nNeurY, nNeurX)
 	sp.AddClass("PFC")
 	dp.AddClass("PFC")
 	dp.PFCGate.OutGate = out

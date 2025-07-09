@@ -96,9 +96,9 @@ func (ly *Layer) ActFromGRWDa(ctx *Context) {
 // Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
 // Only generates DA when Rew layer has external input -- otherwise zero.
 func (nt *Network) AddRWLayers(prefix string, space float32) (rew, rp, da *Layer) {
-	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, InputLayer)
-	rp = nt.AddLayer2D(prefix+"RWPred", 1, 1, RWPredLayer)
-	da = nt.AddLayer2D(prefix+"DA", 1, 1, RWDaLayer)
+	rew = nt.AddLayer2D(prefix+"Rew", InputLayer, 1, 1)
+	rp = nt.AddLayer2D(prefix+"RWPred", RWPredLayer, 1, 1)
+	da = nt.AddLayer2D(prefix+"DA", RWDaLayer, 1, 1)
 	da.RW.RewLay = rew.Name
 	rp.PlaceBehind(rew, space)
 	da.PlaceBehind(rp, space)
@@ -284,10 +284,10 @@ func (pt *Path) DWtTDPred() {
 // Pathway from Rew to RewInteg is given class TDToInteg -- should
 // have no learning and 1 weight.
 func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *Layer) {
-	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, InputLayer)
-	rp = nt.AddLayer2D(prefix+"Pred", 1, 1, TDPredLayer)
-	ri = nt.AddLayer2D(prefix+"Integ", 1, 1, TDIntegLayer)
-	td = nt.AddLayer2D(prefix+"TD", 1, 1, TDDaLayer)
+	rew = nt.AddLayer2D(prefix+"Rew", InputLayer, 1, 1)
+	rp = nt.AddLayer2D(prefix+"Pred", TDPredLayer, 1, 1)
+	ri = nt.AddLayer2D(prefix+"Integ", TDIntegLayer, 1, 1)
+	td = nt.AddLayer2D(prefix+"TD", TDDaLayer, 1, 1)
 	ri.TD.PredLay = rp.Name
 	td.TD.IntegLay = ri.Name
 

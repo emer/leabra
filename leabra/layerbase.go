@@ -5,20 +5,19 @@
 package leabra
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"math"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"cogentcore.org/core/base/errors"
 	"cogentcore.org/core/base/num"
+	"cogentcore.org/core/base/reflectx"
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/weights"
-	"github.com/emer/etensor/tensor"
 )
 
 // Layer implements the Leabra algorithm at the layer level,
@@ -208,31 +207,70 @@ func (ly *Layer) ShouldDisplay(field string) bool {
 	return true
 }
 
-// JsonToParams reformates json output to suitable params display output
-func JsonToParams(b []byte) string {
-	br := strings.Replace(string(b), `"`, ``, -1)
-	br = strings.Replace(br, ",\n", "", -1)
-	br = strings.Replace(br, "{\n", "{", -1)
-	br = strings.Replace(br, "} ", "}\n  ", -1)
-	br = strings.Replace(br, "\n }", " }", -1)
-	br = strings.Replace(br, "\n  }\n", " }", -1)
-	return br[1:] + "\n"
-}
+// ParamsString returns a listing of all parameters in the Layer and
+// pathways within the layer. If nonDefault is true, only report those
+// not at their default values.
+func (ly *Layer) ParamsString(nonDefault bool) string {
+	var b strings.Builder
+	b.WriteString("////////  Layer: " + ly.Name + "\n")
 
-// AllParams returns a listing of all parameters in the Layer
-func (ly *Layer) AllParams() string {
-	str := "/////////////////////////////////////////////////\nLayer: " + ly.Name + "\n"
-	b, _ := json.MarshalIndent(&ly.Act, "", " ")
-	str += "Act: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Inhib, "", " ")
-	str += "Inhib: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
-	str += "Learn: {\n " + JsonToParams(b)
+	b.WriteString(params.PrintStruct(ly, 1, func(path string, ft reflect.StructField, fv any) bool {
+		if ft.Tag.Get("display") == "-" {
+			return false
+		}
+		if nonDefault {
+			if def := ft.Tag.Get("default"); def != "" {
+				if reflectx.ValueIsDefault(reflect.ValueOf(fv), def) {
+					return false
+				}
+			} else {
+				if reflectx.NonPointerType(ft.Type).Kind() != reflect.Struct {
+					return false
+				}
+			}
+		}
+		isPBWM := ly.Type == MatrixLayer || ly.Type == GPiThalLayer || ly.Type == CINLayer || ly.Type == PFCLayer || ly.Type == PFCDeepLayer
+		switch path {
+		case "Act", "Inhib", "Learn":
+			return true
+		case "Burst":
+			return ly.Type == SuperLayer || ly.Type == CTLayer
+		case "Pulvinar", "Drivers":
+			return ly.Type == PulvinarLayer
+		case "RW":
+			return ly.Type == RWPredLayer || ly.Type == RWDaLayer
+		case "TD":
+			return ly.Type == TDPredLayer || ly.Type == TDIntegLayer || ly.Type == TDDaLayer
+		case "PBWM":
+			return isPBWM
+		case "SendTo":
+			return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer || ly.Type == CINLayer
+		case "Matrix":
+			return ly.Type == MatrixLayer
+		case "GPiGate":
+			return ly.Type == GPiThalLayer
+		case "CIN":
+			return ly.Type == CINLayer
+		case "PFCGate", "PFCMaint":
+			return ly.Type == PFCLayer || ly.Type == PFCDeepLayer
+		case "PFCDyns":
+			return ly.Type == PFCDeepLayer
+		}
+		return false
+	},
+		func(path string, ft reflect.StructField, fv any) string {
+			if nonDefault {
+				if def := ft.Tag.Get("default"); def != "" {
+					return reflectx.ToString(fv) + " [" + def + "]"
+				}
+			}
+			return ""
+		}))
+
 	for _, pt := range ly.RecvPaths {
-		pstr := pt.AllParams()
-		str += pstr
+		b.WriteString(pt.ParamsString(nonDefault))
 	}
-	return str
+	return b.String()
 }
 
 // RecipToSendPath finds the reciprocal pathway relative to the given sending pathway
@@ -329,76 +367,6 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 	return nil
 }
 
-// UnitValuesTensor returns values of given variable name on unit
-// for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValuesTensor(tsr tensor.Tensor, varNm string, di int) error {
-	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValuesTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	tsr.SetShape(ly.Shape.Sizes, ly.Shape.Names...)
-	vidx, err := ly.UnitVarIndex(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i := range ly.Neurons {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i := range ly.Neurons {
-		v := ly.UnitValue1D(vidx, i, di)
-		if math32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
-// UnitValuesSampleTensor fills in values of given variable name on unit
-// for a smaller subset of sample units in the layer, into given tensor.
-// This is used for computationally intensive stats or displays that work
-// much better with a smaller number of units.
-// The set of sample units are defined by SampleIndexes -- all units
-// are used if no such subset has been defined.
-// If tensor is not already big enough to hold the values, it is
-// set to a 1D shape to hold all the values if subset is defined,
-// otherwise it calls UnitValuesTensor and is identical to that.
-// Returns error on invalid var name.
-func (ly *Layer) UnitValuesSampleTensor(tsr tensor.Tensor, varNm string, di int) error {
-	nu := len(ly.SampleIndexes)
-	if nu == 0 {
-		return ly.UnitValuesTensor(tsr, varNm, di)
-	}
-	if tsr == nil {
-		err := fmt.Errorf("axon.UnitValuesSampleTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	if tsr.Len() != nu {
-		tsr.SetShape([]int{nu}, "Units")
-	}
-	vidx, err := ly.UnitVarIndex(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i, _ := range ly.SampleIndexes {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i, ui := range ly.SampleIndexes {
-		v := ly.UnitValue1D(vidx, ui, di)
-		if math32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
@@ -406,7 +374,7 @@ func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 	if err != nil {
 		return math32.NaN()
 	}
-	fidx := ly.Shape.Offset(idx)
+	fidx := ly.Shape.IndexTo1D(idx...)
 	return ly.UnitValue1D(vidx, fidx, di)
 }
 
@@ -540,8 +508,8 @@ func (ly *Layer) BuildSubPools() {
 	pi := 1
 	for py := 0; py < spy; py++ {
 		for px := 0; px < spx; px++ {
-			soff := ly.Shape.Offset([]int{py, px, 0, 0})
-			eoff := ly.Shape.Offset([]int{py, px, sh[2] - 1, sh[3] - 1}) + 1
+			soff := ly.Shape.IndexTo1D(py, px, 0, 0)
+			eoff := ly.Shape.IndexTo1D(py, px, sh[2]-1, sh[3]-1) + 1
 			pl := &ly.Pools[pi]
 			pl.StIndex = soff
 			pl.EdIndex = eoff

@@ -10,8 +10,8 @@ import (
 	"unsafe"
 
 	"cogentcore.org/core/base/datasize"
+	"cogentcore.org/lab/tensor"
 	"github.com/emer/emergent/v2/paths"
-	"github.com/emer/etensor/tensor"
 )
 
 ///////////////////////////////////////////////////////////////////////////
@@ -38,6 +38,7 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 		}
 		ly.AlphaCycInit(updtActAvg)
 	}
+	nt.Context.AlphaCycStart()
 }
 
 // Cycle runs one cycle of activation updating:
@@ -48,14 +49,15 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 // * Average and Max Act stats
 // This basic version doesn't use the time info, but more specialized types do, and we
 // want to keep a consistent API for end-user code.
-func (nt *Network) Cycle(ctx *Context) {
-	nt.SendGDelta(ctx) // also does integ
-	nt.AvgMaxGe(ctx)
-	nt.InhibFromGeAct(ctx)
-	nt.ActFromG(ctx)
-	nt.AvgMaxAct(ctx)
-	nt.CyclePost(ctx)  // general post cycle actions.
-	nt.RecGateAct(ctx) // Record activation state at time of gating (in ActG neuron var)
+func (nt *Network) Cycle() {
+	nt.SendGDelta() // also does integ
+	nt.AvgMaxGe()
+	nt.InhibFromGeAct()
+	nt.ActFromG()
+	nt.AvgMaxAct()
+	nt.CyclePost()        // general post cycle actions.
+	nt.RecGateAct()       // Record activation state at time of gating (in ActG neuron var)
+	nt.Context.CycleInc() // keep synced
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +65,8 @@ func (nt *Network) Cycle(ctx *Context) {
 
 // SendGeDelta sends change in activation since last sent, if above thresholds
 // and integrates sent deltas into GeRaw and time-integrated Ge values
-func (nt *Network) SendGDelta(ctx *Context) {
+func (nt *Network) SendGDelta() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -79,7 +82,8 @@ func (nt *Network) SendGDelta(ctx *Context) {
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxGe(ctx *Context) {
+func (nt *Network) AvgMaxGe() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -89,7 +93,8 @@ func (nt *Network) AvgMaxGe(ctx *Context) {
 }
 
 // InhibiFromGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
-func (nt *Network) InhibFromGeAct(ctx *Context) {
+func (nt *Network) InhibFromGeAct() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -99,7 +104,8 @@ func (nt *Network) InhibFromGeAct(ctx *Context) {
 }
 
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
-func (nt *Network) ActFromG(ctx *Context) {
+func (nt *Network) ActFromG() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -109,7 +115,8 @@ func (nt *Network) ActFromG(ctx *Context) {
 }
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
-func (nt *Network) AvgMaxAct(ctx *Context) {
+func (nt *Network) AvgMaxAct() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -122,7 +129,8 @@ func (nt *Network) AvgMaxAct(ctx *Context) {
 // value has been computed.
 // SuperLayer computes Burst activity.
 // GateLayer (GPiThal) computes gating, sends to other layers.
-func (nt *Network) CyclePost(ctx *Context) {
+func (nt *Network) CyclePost() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -132,7 +140,8 @@ func (nt *Network) CyclePost(ctx *Context) {
 }
 
 // QuarterFinal does updating after end of a quarter, for first 2
-func (nt *Network) QuarterFinal(ctx *Context) {
+func (nt *Network) QuarterFinal() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -145,10 +154,12 @@ func (nt *Network) QuarterFinal(ctx *Context) {
 		}
 		ly.CtxtFromGe(ctx)
 	}
+	ctx.QuarterInc()
 }
 
 // MinusPhase is called at the end of the minus phase (quarter 3), to record state.
-func (nt *Network) MinusPhase(ctx *Context) {
+func (nt *Network) MinusPhase() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -158,7 +169,8 @@ func (nt *Network) MinusPhase(ctx *Context) {
 }
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
-func (nt *Network) PlusPhase(ctx *Context) {
+func (nt *Network) PlusPhase() {
+	ctx := &nt.Context
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -204,6 +216,13 @@ func (nt *Network) WtFromDWt() {
 	}
 }
 
+// DWtToWt computes the weight change (learning) based on current
+// running-average activation values, and then WtFromDWt.
+func (nt *Network) DWtToWt() {
+	nt.DWt()
+	nt.WtFromDWt()
+}
+
 // LrateMult sets the new Lrate parameter for Paths to LrateInit * mult.
 // Useful for implementing learning rate schedules.
 func (nt *Network) LrateMult(mult float32) {
@@ -215,8 +234,7 @@ func (nt *Network) LrateMult(mult float32) {
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-//  Init methods
+////////  Init methods
 
 // InitWeights initializes synaptic weights and all other
 // associated long-term state variables including running-average

@@ -73,7 +73,7 @@ func (ly *Layer) SendACh(ach float32) {
 
 // AddClampDaLayer adds a ClampDaLayer of given name
 func (nt *Network) AddClampDaLayer(name string) *Layer {
-	return nt.AddLayer2D(name, 1, 1, ClampDaLayer)
+	return nt.AddLayer2D(name, ClampDaLayer, 1, 1)
 }
 
 func (ly *Layer) ClampDaDefaults() {

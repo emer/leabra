@@ -90,7 +90,7 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 		for xp := maintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
 				for xn := 0; xn < xnN; xn++ {
-					ni := ly.Shape.Offset([]int{yp, xp, yn, xn})
+					ni := ly.Shape.IndexTo1D(yp, xp, yn, xn)
 					nrn := &ly.Neurons[ni]
 					if nrn.IsOff() {
 						continue

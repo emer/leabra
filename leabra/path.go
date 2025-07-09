@@ -6,7 +6,7 @@ package leabra
 
 import (
 	"cogentcore.org/core/math32"
-	"github.com/emer/etensor/tensor"
+	"cogentcore.org/lab/tensor"
 )
 
 // note: path.go contains algorithm methods; pathbase.go has infrastructure.
@@ -38,9 +38,9 @@ func (pt *Path) SetScalesRPool(scales tensor.Tensor) {
 				for rux := 0; rux < rNuX; rux++ {
 					ri := 0
 					if r2d {
-						ri = rsh.Offset([]int{ruy, rux})
+						ri = rsh.IndexTo1D(ruy, rux)
 					} else {
-						ri = rsh.Offset([]int{rpy, rpx, ruy, rux})
+						ri = rsh.IndexTo1D(rpy, rpx, ruy, rux)
 					}
 					scst := (ruy*rNuX + rux) * rfsz
 					nc := int(pt.RConN[ri])

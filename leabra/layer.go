@@ -11,7 +11,7 @@ import (
 	"cogentcore.org/core/enums"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/lab/base/randx"
-	"github.com/emer/etensor/tensor"
+	"cogentcore.org/lab/tensor"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -169,8 +169,8 @@ func (ly *Layer) ApplyExt2D(ext tensor.Tensor) {
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.Float(idx))
-			i := ly.Shape.Offset(idx)
+			vl := float32(ext.Float(idx...))
+			i := ly.Shape.IndexTo1D(idx...)
 			ly.ApplyExtValue(i, vl, clear, set, toTarg)
 		}
 	}
@@ -186,7 +186,7 @@ func (ly *Layer) ApplyExt2Dto4D(ext tensor.Tensor) {
 	for y := 0; y < ymx; y++ {
 		for x := 0; x < xmx; x++ {
 			idx := []int{y, x}
-			vl := float32(ext.Float(idx))
+			vl := float32(ext.Float(idx...))
 			ui := tensor.Projection2DIndex(&ly.Shape, false, y, x)
 			ly.ApplyExtValue(ui, vl, clear, set, toTarg)
 		}
@@ -205,8 +205,8 @@ func (ly *Layer) ApplyExt4D(ext tensor.Tensor) {
 			for yn := 0; yn < ynmx; yn++ {
 				for xn := 0; xn < xnmx; xn++ {
 					idx := []int{yp, xp, yn, xn}
-					vl := float32(ext.Float(idx))
-					i := ly.Shape.Offset(idx)
+					vl := float32(ext.Float(idx...))
+					i := ly.Shape.IndexTo1D(idx...)
 					ly.ApplyExtValue(i, vl, clear, set, toTarg)
 				}
 			}

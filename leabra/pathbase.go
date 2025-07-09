@@ -5,21 +5,23 @@
 package leabra
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"cogentcore.org/core/base/indent"
+	"cogentcore.org/core/base/reflectx"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/math32/minmax"
+	"cogentcore.org/lab/tensor"
 	"github.com/emer/emergent/v2/emer"
+	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/weights"
-	"github.com/emer/etensor/tensor"
 )
 
 // note: paths.go contains algorithm methods; pathbase.go has infrastructure.
@@ -183,16 +185,46 @@ func (pt *Path) ShouldDisplay(field string) bool {
 	return true
 }
 
-// AllParams returns a listing of all parameters in the Layer
-func (pt *Path) AllParams() string {
-	str := "///////////////////////////////////////////////////\nPath: " + pt.Name + "\n"
-	b, _ := json.MarshalIndent(&pt.WtInit, "", " ")
-	str += "WtInit: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&pt.WtScale, "", " ")
-	str += "WtScale: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&pt.Learn, "", " ")
-	str += "Learn: {\n " + strings.Replace(JsonToParams(b), " XCal: {", "\n  XCal: {", -1)
-	return str
+// ParamsString returns a listing of all parameters in the Layer and
+// pathways within the layer. If nonDefault is true, only report those
+// not at their default values.
+func (pt *Path) ParamsString(nonDefault bool) string {
+	var b strings.Builder
+	b.WriteString("  ////////  Path: " + pt.Name + "\n")
+	b.WriteString(params.PrintStruct(pt, 1, func(path string, ft reflect.StructField, fv any) bool {
+		if ft.Tag.Get("display") == "-" {
+			return false
+		}
+		if nonDefault {
+			if def := ft.Tag.Get("default"); def != "" {
+				if reflectx.ValueIsDefault(reflect.ValueOf(fv), def) {
+					return false
+				}
+			} else {
+				if reflectx.NonPointerType(ft.Type).Kind() != reflect.Struct {
+					return false
+				}
+			}
+		}
+		switch path {
+		case "WtInit", "WtScale", "Learn":
+			return true
+		case "CHL":
+			return pt.Type == CHLPath
+		case "Trace":
+			return pt.Type == MatrixPath
+		}
+		return false
+	},
+		func(path string, ft reflect.StructField, fv any) string {
+			if nonDefault {
+				if def := ft.Tag.Get("default"); def != "" {
+					return reflectx.ToString(fv) + " [" + def + "]"
+				}
+			}
+			return ""
+		}))
+	return b.String()
 }
 
 func (pt *Path) SynVarNames() []string {
