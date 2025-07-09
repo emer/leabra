@@ -402,7 +402,6 @@ func (ss *Sim) Init() {
 	ss.Loops.ResetCounters()
 	ss.InitRandSeed(0)
 	ss.ConfigEnv() // re-config env just in case a different set of patterns was
-	ss.GUI.StopNow = false
 	ss.ApplyParams()
 	ss.NewRun()
 	ss.ViewUpdate.RecordSyns()

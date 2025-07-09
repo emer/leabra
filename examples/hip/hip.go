@@ -400,7 +400,6 @@ func (ss *Sim) Init() {
 	ss.Stats.SetString("RunName", ss.Params.RunName(0)) // in case user interactively changes tag
 	ss.Loops.ResetCounters()
 
-	ss.GUI.StopNow = false
 	ss.ApplyParams()
 	ss.NewRun()
 	ss.ViewUpdate.RecordSyns()
