@@ -25,9 +25,9 @@ import (
 type Network struct {
 	emer.NetworkBase
 
-	// Context is the context state. Other copies of Context can be maintained
+	// Ctx is the context state. Other copies of Context can be maintained
 	// and [SetContext] to update this one, but this instance is the canonical one.
-	Context Context
+	Ctx Context
 
 	// list of layers
 	Layers []*Layer
@@ -46,6 +46,7 @@ type Network struct {
 	WtBalCtr int `edit:"-"`
 }
 
+func (nt *Network) Context() *Context            { return &nt.Ctx }
 func (nt *Network) NumLayers() int               { return len(nt.Layers) }
 func (nt *Network) EmerLayer(idx int) emer.Layer { return nt.Layers[idx] }
 func (nt *Network) MaxParallelData() int         { return 1 }
@@ -56,7 +57,7 @@ func NewNetwork(name string) *Network {
 	net := &Network{}
 	emer.InitNetwork(net, name)
 	net.NThreads = 1
-	net.Context.Defaults()
+	net.Context().Defaults()
 	return net
 }
 
@@ -81,7 +82,7 @@ func (nt *Network) UpdateLayerMaps() {
 	nt.UpdateLayerNameMap()
 	nt.LayerClassMap = make(map[string][]string)
 	for _, ly := range nt.Layers {
-		cs := ly.Type.String() + " " + ly.Class
+		cs := ly.Params.Type.String() + " " + ly.Class
 		cls := strings.Split(cs, " ")
 		for _, cl := range cls {
 			if cl == "" {
@@ -199,12 +200,13 @@ func (nt *Network) AllLayerInhibs() string {
 		if ly.Off {
 			continue
 		}
-		str += fmt.Sprintf("%15s\t\tNominal:\t%6.2f\n", ly.Name, ly.Inhib.ActAvg.Init)
-		if ly.Inhib.Layer.On {
-			str += fmt.Sprintf("\t\t\t\t\t\tLayer.Gi:\t%6.2f\n", ly.Inhib.Layer.Gi)
+		lp := &ly.Params
+		str += fmt.Sprintf("%15s\t\tNominal:\t%6.2f\n", ly.Name, lp.Inhib.ActAvg.Init)
+		if lp.Inhib.Layer.On {
+			str += fmt.Sprintf("\t\t\t\t\t\tLayer.Gi:\t%6.2f\n", lp.Inhib.Layer.Gi)
 		}
-		if ly.Inhib.Pool.On {
-			str += fmt.Sprintf("\t\t\t\t\t\tPool.Gi: \t%6.2f\n", ly.Inhib.Pool.Gi)
+		if lp.Inhib.Pool.On {
+			str += fmt.Sprintf("\t\t\t\t\t\tPool.Gi: \t%6.2f\n", lp.Inhib.Pool.Gi)
 		}
 		str += fmt.Sprintf("\n")
 	}
@@ -226,7 +228,7 @@ func (nt *Network) AllPathScales() string {
 			if pt.Off {
 				continue
 			}
-			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pt.Name, pt.WtScale.Abs, pt.WtScale.Rel)
+			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pt.Name, pt.Params.WtScale.Abs, pt.Params.WtScale.Rel)
 		}
 	}
 	return str
@@ -234,7 +236,7 @@ func (nt *Network) AllPathScales() string {
 
 // Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
-	nt.Context.Defaults()
+	nt.Context().Defaults()
 	nt.WtBalInterval = 10
 	nt.WtBalCtr = 0
 	for li, ly := range nt.Layers {
@@ -290,7 +292,7 @@ func (nt *Network) AddLayerInit(ly *Layer, name string, typ LayerTypes, shape ..
 	}
 	emer.InitLayer(ly, name)
 	ly.Shape.SetShapeSizes(shape...)
-	ly.Type = typ
+	ly.Params.Type = typ
 	nt.Layers = append(nt.Layers, ly)
 	nt.UpdateLayerMaps()
 }

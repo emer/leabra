@@ -59,7 +59,7 @@ func (tp *TraceParams) LrateMod(gated, d2r, posDa bool) float32 {
 	return 1
 }
 
-func (pt *Path) MatrixDefaults() {
+func (pt *PathParams) MatrixDefaults() {
 	pt.Learn.WtSig.Gain = 1
 	pt.Learn.Norm.On = false
 	pt.Learn.Momentum.On = false
@@ -76,9 +76,10 @@ func (pt *Path) ClearTrace() {
 
 // DWtMatrix computes the weight change (learning) for MatrixPath.
 func (pt *Path) DWtMatrix() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
-	d2r := (rlay.PBWM.DaR == D2R)
+	d2r := (rlay.Params.PBWM.DaR == D2R)
 	da := rlay.NeuroMod.DA
 	ach := rlay.NeuroMod.ACh
 	gateActIdx, _ := NeuronVarIndexByName("GateAct")
@@ -97,28 +98,28 @@ func (pt *Path) DWtMatrix() {
 			// da := rlay.UnitValueByIndex(DA, int(ri)) // note: more efficient to just assume same for all units
 			// ach := rlay.UnitValueByIndex(ACh, int(ri))
 			gateAct := rlay.UnitValue1D(gateActIdx, int(ri), 0)
-			achDk := math32.Min(1, ach*pt.Trace.AChDecay)
+			achDk := math32.Min(1, ach*pp.Trace.AChDecay)
 			tr := sy.Tr
 
 			dwt := float32(0)
 			if da != 0 {
 				dwt = daLrn * tr
 				if d2r && da > 0 && tr < 0 {
-					dwt *= pt.Trace.GateNoGoPosLR
+					dwt *= pp.Trace.GateNoGoPosLR
 				}
 			}
 
 			tr -= achDk * tr
 
-			newNTr := pt.Trace.LrnFactor(rn.Act) * sn.Act
+			newNTr := pp.Trace.LrnFactor(rn.Act) * sn.Act
 			ntr := float32(0)
 			if gateAct > 0 { // gated
 				ntr = newNTr
 			} else { // not-gated
-				ntr = -pt.Trace.NotGatedLR * newNTr // opposite sign for non-gated
+				ntr = -pp.Trace.NotGatedLR * newNTr // opposite sign for non-gated
 			}
 
-			decay := pt.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
+			decay := pp.Trace.Decay * math32.Abs(ntr) // decay is function of new trace
 			if decay > 1 {
 				decay = 1
 			}
@@ -126,14 +127,14 @@ func (pt *Path) DWtMatrix() {
 			sy.Tr = tr
 			sy.NTr = ntr
 
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 	}
 }
 
 //////// DaHebbPath
 
-func (pt *Path) DaHebbDefaults() {
+func (pt *PathParams) DaHebbDefaults() {
 	pt.Learn.WtSig.Gain = 1
 	pt.Learn.Norm.On = false
 	pt.Learn.Momentum.On = false
@@ -142,6 +143,7 @@ func (pt *Path) DaHebbDefaults() {
 
 // DWtDaHebb computes the weight change (learning), for [DaHebbPath].
 func (pt *Path) DWtDaHebb() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
 	for si := range slay.Neurons {
@@ -157,7 +159,7 @@ func (pt *Path) DWtDaHebb() {
 			rn := &rlay.Neurons[ri]
 			da := rn.DALrn
 			dwt := da * rn.Act * sn.Act
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 	}
 }

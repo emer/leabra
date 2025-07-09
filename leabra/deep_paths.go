@@ -9,10 +9,11 @@ import (
 )
 
 func (pt *Path) CTCtxtDefaults() {
+	pp := &pt.Params
 	if pt.FromSuper {
-		pt.Learn.Learn = false
-		pt.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
-		pt.WtInit.Var = 0
+		pp.Learn.Learn = false
+		pp.WtInit.Mean = 0.5 // .5 better than .8 in several cases..
+		pp.WtInit.Var = 0
 	}
 }
 
@@ -41,8 +42,9 @@ func (pt *Path) RecvCtxtGeInc() {
 
 // DWt computes the weight change (learning) for CTCtxt pathways.
 func (pt *Path) DWtCTCtxt() {
+	pp := &pt.Params
 	slay := pt.Send
-	issuper := pt.Send.Type == SuperLayer
+	issuper := pt.Send.Params.Type == SuperLayer
 	rlay := pt.Recv
 	for si := range slay.Neurons {
 		sact := float32(0)
@@ -61,24 +63,24 @@ func (pt *Path) DWtCTCtxt() {
 			rn := &rlay.Neurons[ri]
 			// following line should be ONLY diff: sact for *both* short and medium *sender*
 			// activations, which are first two args:
-			err, bcm := pt.Learn.CHLdWt(sact, sact, rn.AvgSLrn, rn.AvgM, rn.AvgL)
+			err, bcm := pp.Learn.CHLdWt(sact, sact, rn.AvgSLrn, rn.AvgM, rn.AvgL)
 
-			bcm *= pt.Learn.XCal.LongLrate(rn.AvgLLrn)
-			err *= pt.Learn.XCal.MLrn
+			bcm *= pp.Learn.XCal.LongLrate(rn.AvgLLrn)
+			err *= pp.Learn.XCal.MLrn
 			dwt := bcm + err
 			norm := float32(1)
-			if pt.Learn.Norm.On {
-				norm = pt.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
+			if pp.Learn.Norm.On {
+				norm = pp.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
-			if pt.Learn.Momentum.On {
-				dwt = norm * pt.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
+			if pp.Learn.Momentum.On {
+				dwt = norm * pp.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 		// aggregate max DWtNorm over sending synapses
-		if pt.Learn.Norm.On {
+		if pp.Learn.Norm.On {
 			maxNorm := float32(0)
 			for ci := range syns {
 				sy := &syns[ci]

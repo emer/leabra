@@ -191,7 +191,7 @@ func ApplyParamSheets(net *Network, layer *params.Sheet[*LayerParams], path *par
 func ApplyLayerSheet(net *Network, sheet *params.Sheet[*LayerParams]) bool {
 	applied := false
 	for _, ly := range net.Layers {
-		app := sheet.Apply(ly.Params)
+		app := sheet.Apply(&ly.Params)
 		ly.UpdateParams()
 		if app {
 			applied = true
@@ -205,7 +205,7 @@ func ApplyPathSheet(net *Network, sheet *params.Sheet[*PathParams]) bool {
 	applied := false
 	for _, ly := range net.Layers {
 		for _, pt := range ly.RecvPaths {
-			app := sheet.Apply(pt.Params)
+			app := sheet.Apply(&pt.Params)
 			pt.UpdateParams()
 			if app {
 				applied = true

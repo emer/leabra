@@ -9,17 +9,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"cogentcore.org/core/base/indent"
-	"cogentcore.org/core/base/reflectx"
 	"cogentcore.org/core/math32"
 	"cogentcore.org/core/math32/minmax"
 	"cogentcore.org/lab/tensor"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
 	"github.com/emer/emergent/v2/weights"
 )
@@ -31,36 +28,19 @@ import (
 type Path struct {
 	emer.PathBase
 
+	// Params contains all of the path parameters, which implement the algorithm.
+	Params PathParams
+
+	// For CTCtxtPath if true, this is the pathway from corresponding
+	// Superficial layer. Should be OneToOne path, with Learn.Learn = false,
+	// WtInit.Var = 0, Mean = 0.8. These defaults are set if FromSuper = true.
+	FromSuper bool
+
 	// sending layer for this pathway.
 	Send *Layer
 
 	// receiving layer for this pathway.
 	Recv *Layer
-
-	// type of pathway.
-	Type PathTypes
-
-	// initial random weight distribution
-	WtInit WtInitParams `display:"inline"`
-
-	// weight scaling parameters: modulates overall strength of pathway,
-	// using both absolute and relative factors.
-	WtScale WtScaleParams `display:"inline"`
-
-	// synaptic-level learning parameters
-	Learn LearnSynParams `display:"add-fields"`
-
-	// For CTCtxtPath if true, this is the pathway from corresponding
-	// Superficial layer.  Should be OneToOne path, with Learn.Learn = false,
-	// WtInit.Var = 0, Mean = 0.8. These defaults are set if FromSuper = true.
-	FromSuper bool
-
-	// CHL are the parameters for CHL learning. if CHL is On then
-	// WtSig.SoftBound is automatically turned off, as it is incompatible.
-	CHL CHLParams `display:"inline"`
-
-	// special parameters for matrix trace learning
-	Trace TraceParams `display:"inline"`
 
 	// synaptic state values, ordered by the sending layer
 	// units which owns them -- one-to-one with SConIndex array.
@@ -131,58 +111,18 @@ type Path struct {
 func (pt *Path) StyleObject() any      { return pt }
 func (pt *Path) RecvLayer() emer.Layer { return pt.Recv }
 func (pt *Path) SendLayer() emer.Layer { return pt.Send }
-func (pt *Path) TypeName() string      { return pt.Type.String() }
-func (pt *Path) TypeNumber() int       { return int(pt.Type) }
+func (pt *Path) TypeName() string      { return pt.Params.Type.String() }
+func (pt *Path) TypeNumber() int       { return int(pt.Params.Type) }
 
 func (pt *Path) Defaults() {
-	pt.WtInit.Defaults()
-	pt.WtScale.Defaults()
-	pt.Learn.Defaults()
-	pt.CHL.Defaults()
-	pt.Trace.Defaults()
+	pt.Params.Path = pt
+	pt.Params.Defaults()
 	pt.GScale = 1
-	pt.DefaultsForType()
-}
-
-func (pt *Path) DefaultsForType() {
-	switch pt.Type {
-	case CHLPath:
-		pt.CHLDefaults()
-	case EcCa1Path:
-		pt.EcCa1Defaults()
-	case TDPredPath:
-		pt.TDPredDefaults()
-	case RWPath:
-		pt.RWDefaults()
-	case MatrixPath:
-		pt.MatrixDefaults()
-	case DaHebbPath:
-		pt.DaHebbDefaults()
-	}
 }
 
 // UpdateParams updates all params given any changes that might have been made to individual values
 func (pt *Path) UpdateParams() {
-	pt.WtScale.Update()
-	pt.Learn.Update()
-	pt.Learn.LrateInit = pt.Learn.Lrate
-	if pt.Type == CHLPath && pt.CHL.On {
-		pt.Learn.WtSig.SoftBound = false
-	}
-	pt.CHL.Update()
-	pt.Trace.Update()
-}
-
-func (pt *Path) ShouldDisplay(field string) bool {
-	switch field {
-	case "CHL":
-		return pt.Type == CHLPath
-	case "Trace":
-		return pt.Type == MatrixPath
-	default:
-		return true
-	}
-	return true
+	pt.Params.UpdateParams()
 }
 
 // ParamsString returns a listing of all parameters in the Layer and
@@ -191,39 +131,7 @@ func (pt *Path) ShouldDisplay(field string) bool {
 func (pt *Path) ParamsString(nonDefault bool) string {
 	var b strings.Builder
 	b.WriteString("  ////////  Path: " + pt.Name + "\n")
-	b.WriteString(params.PrintStruct(pt, 1, func(path string, ft reflect.StructField, fv any) bool {
-		if ft.Tag.Get("display") == "-" {
-			return false
-		}
-		if nonDefault {
-			if def := ft.Tag.Get("default"); def != "" {
-				if reflectx.ValueIsDefault(reflect.ValueOf(fv), def) {
-					return false
-				}
-			} else {
-				if reflectx.NonPointerType(ft.Type).Kind() != reflect.Struct {
-					return false
-				}
-			}
-		}
-		switch path {
-		case "WtInit", "WtScale", "Learn":
-			return true
-		case "CHL":
-			return pt.Type == CHLPath
-		case "Trace":
-			return pt.Type == MatrixPath
-		}
-		return false
-	},
-		func(path string, ft reflect.StructField, fv any) string {
-			if nonDefault {
-				if def := ft.Tag.Get("default"); def != "" {
-					return reflectx.ToString(fv) + " [" + def + "]"
-				}
-			}
-			return ""
-		}))
+	b.WriteString(pt.Params.ParamsString(nonDefault))
 	return b.String()
 }
 
@@ -324,6 +232,7 @@ func (pt *Path) SynValue(varNm string, sidx, ridx int) float32 {
 // between given send, recv unit indexes (1D, flat indexes)
 // returns error for access errors.
 func (pt *Path) SetSynValue(varNm string, sidx, ridx int, val float32) error {
+	pp := &pt.Params
 	vidx, err := pt.SynVarIndex(varNm)
 	if err != nil {
 		return err
@@ -335,7 +244,7 @@ func (pt *Path) SetSynValue(varNm string, sidx, ridx int, val float32) error {
 	sy := &pt.Syns[synIndex]
 	sy.SetVarByIndex(vidx, val)
 	if varNm == "Wt" {
-		pt.Learn.LWtFromWt(sy)
+		pp.Learn.LWtFromWt(sy)
 	}
 	return nil
 }
@@ -443,7 +352,7 @@ func (pt *Path) Connect(slay, rlay *Layer, pat paths.Pattern, typ PathTypes) {
 	pt.Send = slay
 	pt.Recv = rlay
 	pt.Pattern = pat
-	pt.Type = typ
+	pt.Params.Type = typ
 	pt.Name = pt.Send.Name + "To" + pt.Recv.Name
 }
 

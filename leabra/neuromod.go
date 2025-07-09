@@ -76,7 +76,7 @@ func (nt *Network) AddClampDaLayer(name string) *Layer {
 	return nt.AddLayer2D(name, ClampDaLayer, 1, 1)
 }
 
-func (ly *Layer) ClampDaDefaults() {
+func (ly *LayerParams) ClampDaDefaults() {
 	ly.Act.Clamp.Range.Set(-1, 1)
 }
 

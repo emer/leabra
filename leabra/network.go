@@ -38,7 +38,7 @@ func (nt *Network) AlphaCycInit(updtActAvg bool) {
 		}
 		ly.AlphaCycInit(updtActAvg)
 	}
-	nt.Context.AlphaCycStart()
+	nt.Context().AlphaCycStart()
 }
 
 // Cycle runs one cycle of activation updating:
@@ -55,9 +55,9 @@ func (nt *Network) Cycle() {
 	nt.InhibFromGeAct()
 	nt.ActFromG()
 	nt.AvgMaxAct()
-	nt.CyclePost()        // general post cycle actions.
-	nt.RecGateAct()       // Record activation state at time of gating (in ActG neuron var)
-	nt.Context.CycleInc() // keep synced
+	nt.CyclePost()          // general post cycle actions.
+	nt.RecGateAct()         // Record activation state at time of gating (in ActG neuron var)
+	nt.Context().CycleInc() // keep synced
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ func (nt *Network) Cycle() {
 // SendGeDelta sends change in activation since last sent, if above thresholds
 // and integrates sent deltas into GeRaw and time-integrated Ge values
 func (nt *Network) SendGDelta() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -83,7 +83,7 @@ func (nt *Network) SendGDelta() {
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
 func (nt *Network) AvgMaxGe() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -94,7 +94,7 @@ func (nt *Network) AvgMaxGe() {
 
 // InhibiFromGeAct computes inhibition Gi from Ge and Act stats within relevant Pools
 func (nt *Network) InhibFromGeAct() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -105,7 +105,7 @@ func (nt *Network) InhibFromGeAct() {
 
 // ActFromG computes rate-code activation from Ge, Gi, Gl conductances
 func (nt *Network) ActFromG() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -116,7 +116,7 @@ func (nt *Network) ActFromG() {
 
 // AvgMaxGe computes the average and max Ge stats, used in inhibition
 func (nt *Network) AvgMaxAct() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -130,7 +130,7 @@ func (nt *Network) AvgMaxAct() {
 // SuperLayer computes Burst activity.
 // GateLayer (GPiThal) computes gating, sends to other layers.
 func (nt *Network) CyclePost() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -141,7 +141,7 @@ func (nt *Network) CyclePost() {
 
 // QuarterFinal does updating after end of a quarter, for first 2
 func (nt *Network) QuarterFinal() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -159,7 +159,7 @@ func (nt *Network) QuarterFinal() {
 
 // MinusPhase is called at the end of the minus phase (quarter 3), to record state.
 func (nt *Network) MinusPhase() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -170,7 +170,7 @@ func (nt *Network) MinusPhase() {
 
 // PlusPhase is called at the end of the plus phase (quarter 4), to record state.
 func (nt *Network) PlusPhase() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -321,6 +321,10 @@ func (nt *Network) InitExt() {
 		}
 		ly.InitExt()
 	}
+}
+
+// ApplyExts does network-level final apply external inputs updates.
+func (nt *Network) ApplyExts() {
 }
 
 // UpdateExtFlags updates the neuron flags for external input

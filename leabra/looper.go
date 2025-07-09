@@ -21,7 +21,7 @@ import (
 //   - netview update calls at appropriate levels (no-op if no GUI)
 func LooperStandard(ls *looper.Stacks, net *Network, viewFunc func(mode enums.Enum) *NetViewUpdate, plusStart, plusEnd int, cycle, trial, trainMode enums.Enum) {
 	ls.AddEventAllModes(cycle, "MinusPhase:Start", 0, func() {
-		net.Context.PlusPhase = false
+		net.Context().PlusPhase = false
 	})
 	ls.AddEventAllModes(cycle, "Quarter1", 25, func() {
 		net.QuarterFinal()
@@ -33,7 +33,7 @@ func LooperStandard(ls *looper.Stacks, net *Network, viewFunc func(mode enums.En
 		net.QuarterFinal()
 	})
 	ls.AddEventAllModes(cycle, "PlusPhase:Start", plusStart, func() {
-		net.Context.PlusPhase = true
+		net.Context().PlusPhase = true
 	})
 
 	for mode, st := range ls.Stacks {
@@ -96,33 +96,22 @@ const (
 	// synchrony peaks in this range.
 	Gamma
 
-	// Beta is 50 cycles (msec) or 20 hz (two Gammas).
-	// Gating in the basal ganglia and associated updating in prefrontal
-	// cortex occurs at this frequency.
-	Beta
-
-	// Alpha is 100 cycle (msec) or 10 hz (two Betas).
-	// Posterior neocortex exhibits synchrony peaks in this range,
-	// corresponding to the intrinsic bursting frequency of layer 5
-	// IB neurons, and corticothalamic loop resonance.
-	Alpha
-
 	// Phase is the Minus or Plus phase, where plus phase is bursting / outcome
 	// that drives positive learning relative to prediction in minus phase.
 	// Minus phase is at 150 cycles (msec).
 	Phase
 
-	// Theta is 200 cycles (msec) or 5 hz (two Alphas), i.e., a Trial.
-	// This is the modal duration of a saccade, the update frequency of
-	// medial temporal lobe episodic memory, and the minimal predictive learning cycle
-	// (perceive on Alpha 1, predict on 2).
-	Theta
+	// Alpha is 100 cycle (msec) or 10 hz (four Gammas).
+	// Posterior neocortex exhibits synchrony peaks in this range,
+	// corresponding to the intrinsic bursting frequency of layer 5
+	// IB neurons, and corticothalamic loop resonance.
+	Alpha
 )
 
 //gosl:end
 
 // ViewTimeCycles are the cycle intervals associated with each ViewTimes level.
-var ViewTimeCycles = []int{1, 10, 25, 50, 100, 150, 200}
+var ViewTimeCycles = []int{1, 10, 25, 75, 100}
 
 // Cycles returns the number of cycles associated with a given view time.
 func (vt ViewTimes) Cycles() int {
@@ -241,7 +230,7 @@ func (vu *NetViewUpdate) UpdateCycle(cyc int, mode, level enums.Enum) {
 		vu.updateCycleRaster(cyc, counters)
 		return
 	}
-	if vu.Time == Theta { // only trial
+	if vu.Time == Alpha { // only trial
 		return
 	}
 	vtc := vu.Time.Cycles()

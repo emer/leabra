@@ -39,7 +39,8 @@ func (db *BurstParams) Update() {
 
 // BurstPrv records Burst activity just prior to burst
 func (ly *Layer) BurstPrv(ctx *Context) {
-	if !ly.Burst.BurstQtr.HasNext(ctx.Quarter) {
+	lp := &ly.Params
+	if !lp.Burst.BurstQtr.HasNext(ctx.Quarter) {
 		return
 	}
 	// if will be updating next quarter, save just prior
@@ -54,14 +55,15 @@ func (ly *Layer) BurstPrv(ctx *Context) {
 // BurstFromAct updates Burst layer 5IB bursting value from current Act
 // (superficial activation), subject to thresholding.
 func (ly *Layer) BurstFromAct(ctx *Context) {
-	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
+	lp := &ly.Params
+	if !lp.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	lpl := &ly.Pools[0]
 	actMax := lpl.Inhib.Act.Max
 	actAvg := lpl.Inhib.Act.Avg
-	thr := actAvg + ly.Burst.ThrRel*(actMax-actAvg)
-	thr = math32.Max(thr, ly.Burst.ThrAbs)
+	thr := actAvg + lp.Burst.ThrRel*(actMax-actAvg)
+	thr = math32.Max(thr, lp.Burst.ThrAbs)
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -90,7 +92,8 @@ func (ly *Layer) BurstAsAct(ctx *Context) {
 // This must be called at the end of the Burst quarter for this layer.
 // Satisfies the CtxtSender interface.
 func (ly *Layer) SendCtxtGe(ctx *Context) {
-	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
+	lp := &ly.Params
+	if !lp.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -98,12 +101,12 @@ func (ly *Layer) SendCtxtGe(ctx *Context) {
 		if nrn.IsOff() {
 			continue
 		}
-		if nrn.Burst > ly.Act.OptThresh.Send {
+		if nrn.Burst > lp.Act.OptThresh.Send {
 			for _, sp := range ly.SendPaths {
 				if sp.Off {
 					continue
 				}
-				if sp.Type != CTCtxtPath {
+				if sp.Params.Type != CTCtxtPath {
 					continue
 				}
 				sp.SendCtxtGe(ni, nrn.Burst)
@@ -115,14 +118,15 @@ func (ly *Layer) SendCtxtGe(ctx *Context) {
 // CTGFromInc integrates new synaptic conductances from increments
 // sent during last SendGDelta.
 func (ly *Layer) CTGFromInc(ctx *Context) {
+	lp := &ly.Params
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		geRaw := nrn.GeRaw + ly.Neurons[ni].CtxtGe
-		ly.Act.GeFromRaw(nrn, geRaw)
-		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
+		lp.Act.GeFromRaw(nrn, geRaw)
+		lp.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
@@ -131,10 +135,11 @@ func (ly *Layer) CTGFromInc(ctx *Context) {
 // This must be called at the end of the DeepBurst quarter for this layer,
 // after SendCtxtGe.
 func (ly *Layer) CtxtFromGe(ctx *Context) {
-	if ly.Type != CTLayer {
+	lp := &ly.Params
+	if lp.Type != CTLayer {
 		return
 	}
-	if !ly.Burst.BurstQtr.HasFlag(ctx.Quarter) {
+	if !lp.Burst.BurstQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for ni := range ly.Neurons {
@@ -144,7 +149,7 @@ func (ly *Layer) CtxtFromGe(ctx *Context) {
 		if pt.Off {
 			continue
 		}
-		if pt.Type != CTCtxtPath {
+		if pt.Params.Type != CTCtxtPath {
 			continue
 		}
 		pt.RecvCtxtGeInc()
@@ -278,14 +283,15 @@ func (ly *Layer) DriverLayer(drv *Driver) (*Layer, error) {
 
 // SetDriverOffs sets the driver offsets.
 func (ly *Layer) SetDriverOffs() error {
-	if ly.Type != PulvinarLayer {
+	lp := &ly.Params
+	if lp.Type != PulvinarLayer {
 		return nil
 	}
 	mx, my := UnitsSize(ly)
 	mn := my * mx
 	off := 0
 	var err error
-	for _, drv := range ly.Drivers {
+	for _, drv := range lp.Drivers {
 		dl, err := ly.DriverLayer(drv)
 		if err != nil {
 			continue
@@ -318,6 +324,7 @@ func DriveAct(dni int, dly *Layer, issuper bool) float32 {
 // SetDriverNeuron sets the driver activation for given Neuron,
 // based on given Ge driving value (use DriveFromMaxAvg) from driver layer (Burst or Act)
 func (ly *Layer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
+	lp := &ly.Params
 	if tni >= len(ly.Neurons) {
 		return
 	}
@@ -326,31 +333,32 @@ func (ly *Layer) SetDriverNeuron(tni int, drvGe, drvInhib float32) {
 		return
 	}
 	geRaw := (1-drvInhib)*nrn.GeRaw + drvGe
-	ly.Act.GeFromRaw(nrn, geRaw)
-	ly.Act.GiFromRaw(nrn, nrn.GiRaw)
+	lp.Act.GeFromRaw(nrn, geRaw)
+	lp.Act.GiFromRaw(nrn, nrn.GiRaw)
 }
 
 // SetDriverActs sets the driver activations, integrating across all the driver layers
 func (ly *Layer) SetDriverActs() {
+	lp := &ly.Params
 	nux, nuy := UnitsSize(ly)
 	nun := nux * nuy
 	pyn := ly.Shape.DimSize(0)
 	pxn := ly.Shape.DimSize(1)
-	for _, drv := range ly.Drivers {
+	for _, drv := range lp.Drivers {
 		dly, err := ly.DriverLayer(drv)
 		if err != nil {
 			continue
 		}
-		issuper := dly.Type == SuperLayer
+		issuper := dly.Params.Type == SuperLayer
 		drvMax := dly.Pools[0].Inhib.Act.Max
-		drvInhib := math32.Min(1, drvMax/ly.Pulvinar.MaxInhib)
+		drvInhib := math32.Min(1, drvMax/lp.Pulvinar.MaxInhib)
 
 		if dly.Is2D() {
 			if ly.Is2D() {
 				for dni := range dly.Neurons {
 					tni := drv.Off + dni
 					drvAct := DriveAct(dni, dly, issuper)
-					ly.SetDriverNeuron(tni, ly.Pulvinar.GeFromMaxAvg(drvAct, drvAct), drvInhib)
+					ly.SetDriverNeuron(tni, lp.Pulvinar.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 				}
 			} else { // copy flat to all pools -- not typical
 				for dni := range dly.Neurons {
@@ -359,7 +367,7 @@ func (ly *Layer) SetDriverActs() {
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
 							pni := (py*pxn+px)*nun + tni
-							ly.SetDriverNeuron(pni, ly.Pulvinar.GeFromMaxAvg(drvAct, drvAct), drvInhib)
+							ly.SetDriverNeuron(pni, lp.Pulvinar.GeFromMaxAvg(drvAct, drvAct), drvInhib)
 						}
 					}
 				}
@@ -391,9 +399,9 @@ func (ly *Layer) SetDriverActs() {
 						avg /= float32(avgn)
 					}
 					tni := drv.Off + dni
-					ly.SetDriverNeuron(tni, ly.Pulvinar.GeFromMaxAvg(max, avg), drvInhib)
+					ly.SetDriverNeuron(tni, lp.Pulvinar.GeFromMaxAvg(max, avg), drvInhib)
 				}
-			} else if ly.Pulvinar.NoTopo { // ly is 4D
+			} else if lp.Pulvinar.NoTopo { // ly is 4D
 				for dni := 0; dni < dnun; dni++ {
 					max := float32(0)
 					avg := float32(0)
@@ -414,7 +422,7 @@ func (ly *Layer) SetDriverActs() {
 					if avgn > 0 {
 						avg /= float32(avgn)
 					}
-					drvGe := ly.Pulvinar.GeFromMaxAvg(max, avg)
+					drvGe := lp.Pulvinar.GeFromMaxAvg(max, avg)
 					tni := drv.Off + dni
 					for py := 0; py < pyn; py++ {
 						for px := 0; px < pxn; px++ {
@@ -454,7 +462,7 @@ func (ly *Layer) SetDriverActs() {
 								avg /= float32(avgn)
 							}
 							tni := pni + drv.Off + dni
-							ly.SetDriverNeuron(tni, ly.Pulvinar.GeFromMaxAvg(max, avg), drvInhib)
+							ly.SetDriverNeuron(tni, lp.Pulvinar.GeFromMaxAvg(max, avg), drvInhib)
 						}
 					}
 				}

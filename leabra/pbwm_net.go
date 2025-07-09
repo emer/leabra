@@ -10,7 +10,7 @@ import (
 
 // RecGateAct is called after GateSend, to record gating activations at time of gating
 func (nt *Network) RecGateAct() {
-	ctx := &nt.Context
+	ctx := nt.Context()
 	for _, ly := range nt.Layers {
 		if ly.Off {
 			continue
@@ -25,8 +25,8 @@ func (nt *Network) RecGateAct() {
 func (nt *Network) AddMatrixLayer(name string, nY, nMaint, nOut, nNeurY, nNeurX int, da DaReceptors) *Layer {
 	tX := nMaint + nOut
 	mtx := nt.AddLayer4D(name, MatrixLayer, nY, tX, nNeurY, nNeurX)
-	mtx.PBWM.DaR = da
-	mtx.PBWM.Set(nY, nMaint, nOut)
+	mtx.Params.PBWM.DaR = da
+	mtx.Params.PBWM.Set(nY, nMaint, nOut)
 	return mtx
 }
 
@@ -45,7 +45,7 @@ func (nt *Network) AddGPeLayer(name string, nY, nMaint, nOut int) *Layer {
 func (nt *Network) AddGPiThalLayer(name string, nY, nMaint, nOut int) *Layer {
 	tX := nMaint + nOut
 	gpi := nt.AddLayer4D(name, GPiThalLayer, nY, tX, 1, 1)
-	gpi.PBWM.Set(nY, nMaint, nOut)
+	gpi.Params.PBWM.Set(nY, nMaint, nOut)
 	return gpi
 }
 
@@ -103,11 +103,11 @@ func (nt *Network) AddPFCLayer(name string, nY, nX, nNeurY, nNeurX int, out, dyn
 	dp = nt.AddLayer4D(name+"D", PFCDeepLayer, nY, nX, dym*nNeurY, nNeurX)
 	sp.AddClass("PFC")
 	dp.AddClass("PFC")
-	dp.PFCGate.OutGate = out
+	dp.Params.PFCGate.OutGate = out
 	if dynMaint {
-		dp.PFCDyns.MaintOnly()
+		dp.Params.PFCDyns.MaintOnly()
 	} else {
-		dp.PFCDyns.FullDyn(10)
+		dp.Params.PFCDyns.FullDyn(10)
 	}
 	dp.PlaceBehind(sp, 2)
 	return
