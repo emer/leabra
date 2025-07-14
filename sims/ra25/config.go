@@ -65,11 +65,11 @@ type RunConfig struct {
 	// Should be an even multiple of NData.
 	Trials int `default:"32"`
 
-	// Cycles is the total number of cycles per trial: at least 200.
-	Cycles int `default:"200"`
+	// Cycles is the total number of cycles per trial: typically 100.
+	Cycles int `default:"100"`
 
-	// PlusCycles is the total number of plus-phase cycles per trial. For Cycles=300, use 100.
-	PlusCycles int `default:"50"`
+	// PlusCycles is the total number of plus-phase cycles per trial: typically 25.
+	PlusCycles int `default:"25"`
 
 	// NZero is how many perfect, zero-error epochs before stopping a Run.
 	NZero int `default:"2"`
