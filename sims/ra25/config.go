@@ -14,10 +14,10 @@ import (
 type ParamConfig struct {
 
 	// Hidden1Size is the size of hidden 1 layer.
-	Hidden1Size vecint.Vector2i `default:"{'X':10,'Y':10}" nest:"+"`
+	Hidden1Size vecint.Vector2i `default:"{'X':7,'Y':7}" nest:"+"`
 
 	// Hidden2Size is the size of hidden 2 layer.
-	Hidden2Size vecint.Vector2i `default:"{'X':10,'Y':10}" nest:"+"`
+	Hidden2Size vecint.Vector2i `default:"{'X':7,'Y':7}" nest:"+"`
 
 	// Script is an interpreted script that is run to set parameters in Layer and Path
 	// sheets, by default using the "Script" set name.

@@ -40,7 +40,7 @@ import (
 )
 
 //go:embed random_5x5_25.tsv
-var content embed.FS
+var embedfs embed.FS
 
 // Modes are the looping modes (Stacks) for running and statistics.
 type Modes int32 //enums:enum
@@ -268,14 +268,6 @@ func (ss *Sim) InitRandSeed(run int) {
 	ss.RandSeeds.Set(run, &ss.Net.Rand)
 }
 
-// CurrentMode returns the current Train / Test mode from Context.
-func (ss *Sim) CurrentMode() Modes {
-	ctx := ss.Net.Context()
-	var md Modes
-	md.SetInt64(int64(ctx.Mode))
-	return md
-}
-
 // NetViewUpdater returns the NetViewUpdate for given mode.
 func (ss *Sim) NetViewUpdater(mode enums.Enum) *leabra.NetViewUpdate {
 	if mode.Int64() == Train.Int64() {
@@ -306,7 +298,7 @@ func (ss *Sim) ConfigLoops() {
 
 	leabra.LooperStandard(ls, ss.Net, ss.NetViewUpdater, cycles-plusPhase, cycles-1, Cycle, Trial, Train)
 
-	ls.Stacks[Train].OnInit.Add("Init", func() { ss.Init() })
+	ls.Stacks[Train].OnInit.Add("Init", ss.Init)
 
 	ls.AddOnStartToLoop(Trial, "ApplyInputs", func(mode enums.Enum) {
 		ss.ApplyInputs(mode.(Modes))
@@ -324,7 +316,6 @@ func (ss *Sim) ConfigLoops() {
 		curNZero := int(curModeDir.Value("NZero").Float1D(-1))
 		stop := curNZero >= stopNz
 		return stop
-		return false
 	})
 
 	trainEpoch.OnStart.Add("TestAtInterval", func() {
@@ -344,8 +335,8 @@ func (ss *Sim) ConfigLoops() {
 	if ss.Config.GUI {
 		leabra.LooperUpdateNetView(ls, Cycle, Trial, ss.NetViewUpdater)
 
-		ls.Stacks[Train].OnInit.Add("GUI-Init", func() { ss.GUI.UpdateWindow() })
-		ls.Stacks[Test].OnInit.Add("GUI-Init", func() { ss.GUI.UpdateWindow() })
+		ls.Stacks[Train].OnInit.Add("GUI-Init", ss.GUI.UpdateWindow)
+		ls.Stacks[Test].OnInit.Add("GUI-Init", ss.GUI.UpdateWindow)
 	}
 
 	if ss.Config.Debug {
@@ -419,7 +410,7 @@ func (ss *Sim) OpenTable(dir *tensorfs.Node, fsys fs.FS, fnm, name, docs string)
 	dt := table.New()
 	metadata.SetName(dt, name)
 	metadata.SetDoc(dt, docs)
-	err := dt.OpenFS(content, fnm, tensor.Tab)
+	err := dt.OpenFS(embedfs, fnm, tensor.Tab)
 	if errors.Log(err) != nil {
 		return dt, err
 	}
@@ -429,7 +420,7 @@ func (ss *Sim) OpenTable(dir *tensorfs.Node, fsys fs.FS, fnm, name, docs string)
 
 func (ss *Sim) OpenInputs() {
 	dir := ss.Root.Dir("Inputs")
-	ss.OpenTable(dir, content, "random_5x5_25.tsv", "Train", "Training inputs")
+	ss.OpenTable(dir, embedfs, "random_5x5_25.tsv", "Train", "Training inputs")
 }
 
 //////// Stats

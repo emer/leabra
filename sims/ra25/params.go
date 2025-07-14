@@ -20,7 +20,7 @@ var LayerParams = leabra.LayerSheets{
 			}},
 		{Sel: "#Output", Doc: "",
 			Set: func(ly *leabra.LayerParams) {
-				ly.Inhib.Layer.Gi = 1.8
+				ly.Inhib.Layer.Gi = 1.4
 			}},
 	},
 }
