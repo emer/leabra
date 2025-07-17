@@ -6,7 +6,7 @@ require (
 	cogentcore.org/core v0.3.12
 	cogentcore.org/lab v0.1.2
 	github.com/cogentcore/yaegi v0.0.0-20250622201820-b7838bdd95eb
-	github.com/emer/emergent/v2 v2.0.0-dev0.1.7.0.20250630184401-56587d34404f
+	github.com/emer/emergent/v2 v2.0.0-dev0.1.7.0.20250717205125-e619cee2adff
 	github.com/emer/etensor v0.0.0-20250128231607-f3fea92f0b80
 )
 
