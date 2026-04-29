@@ -59,12 +59,11 @@ const (
 	Expt
 )
 
-// StatsPhase is the phase of stats processing for given mode, level.
-// Accumulated values are reset at Start, added each Step.
-type StatsPhase int32 //enums:enum
 const (
-	Start StatsPhase = iota
-	Step
+	// Start initializes stats, in start arg of StatFuncs call.
+	Start = true
+	// Step is an iteration of stats, in start arg of StatFuncs call.
+	Step = false
 )
 
 // see params.go for params, config.go for config
@@ -110,7 +109,7 @@ type Sim struct {
 	// StatFuncs are statistics functions called at given mode and level,
 	// to perform all stats computations. phase = Start does init at start of given level,
 	// and all intialization / configuration (called during Init too).
-	StatFuncs []func(mode Modes, level Levels, phase StatsPhase) `display:"-"`
+	StatFuncs []func(mode enums.Enum, level enums.Enum, start bool) `display:"-"`
 
 	// GUI manages all the GUI elements
 	GUI egui.GUI `display:"-"`
@@ -135,7 +134,7 @@ func (ss *Sim) ConfigSim() {
 	ss.ConfigNet(ss.Net)
 	ss.ConfigLoops()
 	ss.ConfigStats()
-	// if ss.Config.Run.GPU {
+	// if ss.Config..GPU {
 	// 	fmt.Println(leabra.GPUSystem.Vars().StringDoc())
 	// }
 	if ss.Config.Params.SaveAll {
@@ -160,7 +159,7 @@ func (ss *Sim) ConfigEnv() {
 
 	// this logic can be used to create train-test splits of a set of patterns:
 	// n := inputs.NumRows()
-	// order := rand.Perm(n)
+	// order := ss.Net.Rand.Perm(n)
 	// ntrn := int(0.85 * float64(n))
 	// trnEnv := table.NewView(inputs)
 	// tstEnv := table.NewView(inputs)
@@ -242,8 +241,7 @@ func (ss *Sim) Init() {
 
 // InitRandSeed initializes the random seed based on current training run number
 func (ss *Sim) InitRandSeed(run int) {
-	ss.RandSeeds.Set(run)
-	ss.RandSeeds.Set(run, &ss.Net.Rand)
+	ss.RandSeeds.Set(run, ss.Net.Rand)
 }
 
 // NetViewUpdater returns the NetViewUpdate for given mode.
@@ -403,9 +401,16 @@ func (ss *Sim) OpenInputs() {
 
 //////// Stats
 
-// AddStat adds a stat compute function.
-func (ss *Sim) AddStat(f func(mode Modes, level Levels, phase StatsPhase)) {
+// AddStatStd adds a standard stat compute function (defined in leabra)
+func (ss *Sim) AddStatStd(f func(mode enums.Enum, level enums.Enum, start bool)) {
 	ss.StatFuncs = append(ss.StatFuncs, f)
+}
+
+// AddStat adds a custom stat compute function.
+func (ss *Sim) AddStat(f func(mode Modes, level Levels, start bool)) {
+	ss.AddStatStd(func(mode enums.Enum, level enums.Enum, start bool) {
+		f(mode.(Modes), level.(Levels), start)
+	})
 }
 
 // StatsStart is called by Looper at the start of given level, for each iteration.
@@ -433,11 +438,11 @@ func (ss *Sim) StatsStep(lmd, ltm enums.Enum) {
 }
 
 // RunStats runs the StatFuncs for given mode, level and phase.
-func (ss *Sim) RunStats(mode Modes, level Levels, phase StatsPhase) {
+func (ss *Sim) RunStats(mode Modes, level Levels, start bool) {
 	for _, sf := range ss.StatFuncs {
-		sf(mode, level, phase)
+		sf(mode, level, start)
 	}
-	if phase == Step && ss.GUI.Tabs != nil {
+	if !start && ss.GUI.Tabs != nil {
 		nm := mode.String() + " " + level.String() + " Plot"
 		ss.GUI.Tabs.AsLab().GoUpdatePlot(nm)
 		if level == Run {
@@ -493,23 +498,15 @@ func (ss *Sim) ConfigStats() {
 	ss.SetRunName()
 
 	// last arg(s) are levels to exclude
-	counterFunc := leabra.StatLoopCounters(ss.Stats, ss.Current, ss.Loops, net, Trial, Cycle)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		counterFunc(mode, level, phase == Start)
-	})
-	runNameFunc := leabra.StatRunName(ss.Stats, ss.Current, ss.Loops, net, Trial, Cycle)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		runNameFunc(mode, level, phase == Start)
-	})
-	trialNameFunc := leabra.StatTrialName(ss.Stats, ss.Current, ss.Loops, net, Trial)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		trialNameFunc(mode, level, phase == Start)
-	})
+	ss.AddStatStd(leabra.StatLoopCounters(ss.Stats, ss.Current, ss.Loops, net, Trial, Cycle))
+	ss.AddStatStd(leabra.StatRunName(ss.Stats, ss.Current, ss.Loops, net, Trial, Cycle))
+	ss.AddStatStd(leabra.StatTrialName(ss.Stats, ss.Current, ss.Loops, net, Trial))
+	ss.AddStatStd(leabra.StatPerTrialMSec(ss.Stats, Train, Trial))
 
 	// up to a point, it is good to use loops over stats in one function,
 	// to reduce repetition of boilerplate.
 	statNames := []string{"CorSim", "SSE", "AvgSSE", "Err", "NZero", "FirstZero", "LastZero"}
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
+	ss.AddStat(func(mode Modes, level Levels, start bool) {
 		for _, name := range statNames {
 			if name == "NZero" && (mode != Train || level == Trial) {
 				return
@@ -521,7 +518,7 @@ func (ss *Sim) ConfigStats() {
 			subDir := modeDir.Dir((level - 1).String()) // note: will fail for Cycle
 			tsr := levelDir.Float64(name)
 			var stat float64
-			if phase == Start {
+			if start {
 				tsr.SetNumRows(0)
 				plot.SetFirstStyler(tsr, func(s *plot.Style) {
 					s.Range.SetMin(0).SetMax(1)
@@ -609,39 +606,25 @@ func (ss *Sim) ConfigStats() {
 		}
 	})
 
-	perTrlFunc := leabra.StatPerTrialMSec(ss.Stats, Train, Trial)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		perTrlFunc(mode, level, phase == Start)
-	})
-
 	lays := net.LayersByType(leabra.SuperLayer, leabra.CTLayer, leabra.TargetLayer)
-	actGeFunc := leabra.StatLayerActGe(ss.Stats, net, Train, Trial, Run, lays...)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		actGeFunc(mode, level, phase == Start)
-	})
+	ss.AddStatStd(leabra.StatLayerActGe(ss.Stats, net, Train, Trial, Run, lays...))
 
 	pcaFunc := leabra.StatPCA(ss.Stats, ss.Current, net, ss.Config.Run.PCAInterval, Train, Trial, Run, lays...)
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
+	ss.AddStat(func(mode Modes, level Levels, start bool) {
 		trnEpc := ss.Loops.Loop(Train, Epoch).Counter.Cur
-		pcaFunc(mode, level, phase == Start, trnEpc)
+		pcaFunc(mode, level, start, trnEpc)
 	})
 
-	stateFunc := leabra.StatLayerState(ss.Stats, net, Test, Trial, true, "ActM", "Input", "Output")
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		stateFunc(mode, level, phase == Start)
-	})
+	ss.AddStatStd(leabra.StatLayerState(ss.Stats, net, Test, Trial, true, "ActM", "Input", "Output"))
 
-	runAllFunc := leabra.StatLevelAll(ss.Stats, Train, Run, func(s *plot.Style, cl tensor.Values) {
+	ss.AddStatStd(leabra.StatLevelAll(ss.Stats, Train, Run, func(s *plot.Style, cl tensor.Values) {
 		name := metadata.Name(cl)
 		switch name {
 		case "FirstZero", "LastZero":
 			s.On = true
 			s.Range.SetMin(0)
 		}
-	})
-	ss.AddStat(func(mode Modes, level Levels, phase StatsPhase) {
-		runAllFunc(mode, level, phase == Start)
-	})
+	}))
 }
 
 // StatCounters returns counters string to show at bottom of netview.
