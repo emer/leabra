@@ -149,6 +149,49 @@ func (i *LayerTypes) UnmarshalText(text []byte) error {
 	return enums.UnmarshalText(i, text, "LayerTypes")
 }
 
+var _ViewTimesValues = []ViewTimes{0, 1, 2, 3, 4}
+
+// ViewTimesN is the highest valid value for type ViewTimes, plus one.
+const ViewTimesN ViewTimes = 5
+
+var _ViewTimesValueMap = map[string]ViewTimes{`Cycle`: 0, `FastSpike`: 1, `Gamma`: 2, `Phase`: 3, `Alpha`: 4}
+
+var _ViewTimesDescMap = map[ViewTimes]string{0: `Cycle is an update of neuron state, equivalent to 1 msec of real time.`, 1: `FastSpike is 10 cycles (msec) or 100hz. This is the fastest spiking time generally observed in the neocortex.`, 2: `Gamma is 25 cycles (msec) or 40hz. Neocortical activity often exhibits synchrony peaks in this range.`, 3: `Phase is the Minus or Plus phase, where plus phase is bursting / outcome that drives positive learning relative to prediction in minus phase. Minus phase is at 150 cycles (msec).`, 4: `Alpha is 100 cycle (msec) or 10 hz (four Gammas). Posterior neocortex exhibits synchrony peaks in this range, corresponding to the intrinsic bursting frequency of layer 5 IB neurons, and corticothalamic loop resonance.`}
+
+var _ViewTimesMap = map[ViewTimes]string{0: `Cycle`, 1: `FastSpike`, 2: `Gamma`, 3: `Phase`, 4: `Alpha`}
+
+// String returns the string representation of this ViewTimes value.
+func (i ViewTimes) String() string { return enums.String(i, _ViewTimesMap) }
+
+// SetString sets the ViewTimes value from its string representation,
+// and returns an error if the string is invalid.
+func (i *ViewTimes) SetString(s string) error {
+	return enums.SetString(i, s, _ViewTimesValueMap, "ViewTimes")
+}
+
+// Int64 returns the ViewTimes value as an int64.
+func (i ViewTimes) Int64() int64 { return int64(i) }
+
+// SetInt64 sets the ViewTimes value from an int64.
+func (i *ViewTimes) SetInt64(in int64) { *i = ViewTimes(in) }
+
+// Desc returns the description of the ViewTimes value.
+func (i ViewTimes) Desc() string { return enums.Desc(i, _ViewTimesDescMap) }
+
+// ViewTimesValues returns all possible values for the type ViewTimes.
+func ViewTimesValues() []ViewTimes { return _ViewTimesValues }
+
+// Values returns all possible values for the type ViewTimes.
+func (i ViewTimes) Values() []enums.Enum { return enums.Values(_ViewTimesValues) }
+
+// MarshalText implements the [encoding.TextMarshaler] interface.
+func (i ViewTimes) MarshalText() ([]byte, error) { return []byte(i.String()), nil }
+
+// UnmarshalText implements the [encoding.TextUnmarshaler] interface.
+func (i *ViewTimes) UnmarshalText(text []byte) error {
+	return enums.UnmarshalText(i, text, "ViewTimes")
+}
+
 var _DaReceptorsValues = []DaReceptors{0, 1}
 
 // DaReceptorsN is the highest valid value for type DaReceptors, plus one.

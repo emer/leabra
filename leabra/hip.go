@@ -77,7 +77,7 @@ func (ch *CHLParams) DWt(hebb, err float32) float32 {
 	return ch.Hebb*hebb + ch.Err*err
 }
 
-func (pt *Path) CHLDefaults() {
+func (pt *PathParams) CHLDefaults() {
 	pt.Learn.Norm.On = false     // off by default
 	pt.Learn.Momentum.On = false // off by default
 	pt.Learn.WtBal.On = false    // todo: experiment
@@ -86,16 +86,18 @@ func (pt *Path) CHLDefaults() {
 // SAvgCor computes the sending average activation, corrected according to the SAvgCor
 // correction factor (typically makes layer appear more sparse than it is)
 func (pt *Path) SAvgCor(slay *Layer) float32 {
-	savg := .5 + pt.CHL.SAvgCor*(slay.Pools[0].ActAvg.ActPAvgEff-0.5)
-	savg = math32.Max(pt.CHL.SAvgThr, savg) // keep this computed value within bounds
+	pp := &pt.Params
+	savg := .5 + pp.CHL.SAvgCor*(slay.Pools[0].ActAvg.ActPAvgEff-0.5)
+	savg = math32.Max(pp.CHL.SAvgThr, savg) // keep this computed value within bounds
 	return 0.5 / savg
 }
 
 // DWtCHL computes the weight change (learning) for CHL
 func (pt *Path) DWtCHL() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
-	if slay.Pools[0].ActP.Avg < pt.CHL.SAvgThr { // inactive, no learn
+	if slay.Pools[0].ActP.Avg < pp.CHL.SAvgThr { // inactive, no learn
 		return
 	}
 	for si := range slay.Neurons {
@@ -104,7 +106,7 @@ func (pt *Path) DWtCHL() {
 		st := int(pt.SConIndexSt[si])
 		syns := pt.Syns[st : st+nc]
 		scons := pt.SConIndex[st : st+nc]
-		snActM := pt.CHL.MinusAct(sn.ActM, sn.ActQ1)
+		snActM := pp.CHL.MinusAct(sn.ActM, sn.ActQ1)
 
 		savgCor := pt.SAvgCor(slay)
 
@@ -112,25 +114,25 @@ func (pt *Path) DWtCHL() {
 			sy := &syns[ci]
 			ri := scons[ci]
 			rn := &rlay.Neurons[ri]
-			rnActM := pt.CHL.MinusAct(rn.ActM, rn.ActQ1)
+			rnActM := pp.CHL.MinusAct(rn.ActM, rn.ActQ1)
 
-			hebb := pt.CHL.HebbDWt(sn.ActP, rn.ActP, savgCor, sy.LWt)
-			err := pt.CHL.ErrDWt(sn.ActP, snActM, rn.ActP, rnActM, sy.LWt)
+			hebb := pp.CHL.HebbDWt(sn.ActP, rn.ActP, savgCor, sy.LWt)
+			err := pp.CHL.ErrDWt(sn.ActP, snActM, rn.ActP, rnActM, sy.LWt)
 
-			dwt := pt.CHL.DWt(hebb, err)
+			dwt := pp.CHL.DWt(hebb, err)
 			norm := float32(1)
-			if pt.Learn.Norm.On {
-				norm = pt.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
+			if pp.Learn.Norm.On {
+				norm = pp.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
-			if pt.Learn.Momentum.On {
-				dwt = norm * pt.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
+			if pp.Learn.Momentum.On {
+				dwt = norm * pp.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 		// aggregate max DWtNorm over sending synapses
-		if pt.Learn.Norm.On {
+		if pp.Learn.Norm.On {
 			maxNorm := float32(0)
 			for ci := range syns {
 				sy := &syns[ci]
@@ -146,15 +148,16 @@ func (pt *Path) DWtCHL() {
 	}
 }
 
-func (pt *Path) EcCa1Defaults() {
-	pt.Learn.Norm.On = false     // off by default
-	pt.Learn.Momentum.On = false // off by default
-	pt.Learn.WtBal.On = false    // todo: experiment
+func (pp *PathParams) EcCa1Defaults() {
+	pp.Learn.Norm.On = false     // off by default
+	pp.Learn.Momentum.On = false // off by default
+	pp.Learn.WtBal.On = false    // todo: experiment
 }
 
 // DWt computes the weight change (learning) -- on sending pathways
 // Delta version
 func (pt *Path) DWtEcCa1() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
 	for si := range slay.Neurons {
@@ -170,24 +173,24 @@ func (pt *Path) DWtEcCa1() {
 			rn := &rlay.Neurons[ri]
 
 			err := (sn.ActP * rn.ActP) - (sn.ActQ1 * rn.ActQ1)
-			bcm := pt.Learn.BCMdWt(sn.AvgSLrn, rn.AvgSLrn, rn.AvgL)
-			bcm *= pt.Learn.XCal.LongLrate(rn.AvgLLrn)
-			err *= pt.Learn.XCal.MLrn
+			bcm := pp.Learn.BCMdWt(sn.AvgSLrn, rn.AvgSLrn, rn.AvgL)
+			bcm *= pp.Learn.XCal.LongLrate(rn.AvgLLrn)
+			err *= pp.Learn.XCal.MLrn
 			dwt := bcm + err
 
 			norm := float32(1)
-			if pt.Learn.Norm.On {
-				norm = pt.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
+			if pp.Learn.Norm.On {
+				norm = pp.Learn.Norm.NormFromAbsDWt(&sy.Norm, math32.Abs(dwt))
 			}
-			if pt.Learn.Momentum.On {
-				dwt = norm * pt.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
+			if pp.Learn.Momentum.On {
+				dwt = norm * pp.Learn.Momentum.MomentFromDWt(&sy.Moment, dwt)
 			} else {
 				dwt *= norm
 			}
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 		// aggregate max DWtNorm over sending synapses
-		if pt.Learn.Norm.On {
+		if pp.Learn.Norm.On {
 			maxNorm := float32(0)
 			for ci := range syns {
 				sy := &syns[ci]
@@ -216,22 +219,22 @@ func (net *Network) ConfigLoopsHip(ctx *Context, ls *looper.Stacks) {
 	ca1FromCa3 := errors.Log1(ca1.RecvPathBySendName("CA3")).(*Path)
 	ca3FromDg := errors.Log1(ca3.RecvPathBySendName("DG")).(*Path)
 
-	dgPjScale := ca3FromDg.WtScale.Rel
+	dgPjScale := ca3FromDg.Params.WtScale.Rel
 
 	ls.AddEventAllModes(etime.Cycle, "HipMinusPhase:Start", 0, func() {
-		ca1FromECin.WtScale.Abs = 1
-		ca1FromCa3.WtScale.Abs = 0
-		ca3FromDg.WtScale.Rel = 0
+		ca1FromECin.Params.WtScale.Abs = 1
+		ca1FromCa3.Params.WtScale.Abs = 0
+		ca3FromDg.Params.WtScale.Rel = 0
 		net.GScaleFromAvgAct()
 		net.InitGInc()
 	})
 	ls.AddEventAllModes(etime.Cycle, "Hip:Quarter1", 25, func() {
-		ca1FromECin.WtScale.Abs = 0
-		ca1FromCa3.WtScale.Abs = 1
+		ca1FromECin.Params.WtScale.Abs = 0
+		ca1FromCa3.Params.WtScale.Abs = 1
 		if ctx.Mode == etime.Test {
-			ca3FromDg.WtScale.Rel = 1 // weaker
+			ca3FromDg.Params.WtScale.Rel = 1 // weaker
 		} else {
-			ca3FromDg.WtScale.Rel = dgPjScale
+			ca3FromDg.Params.WtScale.Rel = dgPjScale
 		}
 		net.GScaleFromAvgAct()
 		net.InitGInc()
@@ -239,8 +242,8 @@ func (net *Network) ConfigLoopsHip(ctx *Context, ls *looper.Stacks) {
 	for _, st := range ls.Stacks {
 		ev := st.Loops[etime.Cycle].EventByCounter(75)
 		ev.OnEvent.Prepend("HipPlusPhase:Start", func() bool {
-			ca1FromECin.WtScale.Abs = 1
-			ca1FromCa3.WtScale.Abs = 0
+			ca1FromECin.Params.WtScale.Abs = 1
+			ca1FromCa3.Params.WtScale.Abs = 0
 			if ctx.Mode == etime.Train {
 				ecin.UnitValues(&tmpValues, "Act", 0)
 				ecout.ApplyExt1D32(tmpValues)

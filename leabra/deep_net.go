@@ -10,32 +10,32 @@ import (
 
 // AddSuperLayer2D adds a SuperLayer of given size, with given name.
 func (nt *Network) AddSuperLayer2D(name string, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer2D(name, nNeurY, nNeurX, SuperLayer)
+	return nt.AddLayer2D(name, SuperLayer, nNeurY, nNeurX)
 }
 
 // AddSuperLayer4D adds a SuperLayer of given size, with given name.
 func (nt *Network) AddSuperLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, SuperLayer)
+	return nt.AddLayer4D(name, SuperLayer, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
 // AddCTLayer2D adds a CTLayer of given size, with given name.
 func (nt *Network) AddCTLayer2D(name string, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer2D(name, nNeurY, nNeurX, CTLayer)
+	return nt.AddLayer2D(name, CTLayer, nNeurY, nNeurX)
 }
 
 // AddCTLayer4D adds a CTLayer of given size, with given name.
 func (nt *Network) AddCTLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, CTLayer)
+	return nt.AddLayer4D(name, CTLayer, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
 // AddPulvinarLayer2D adds a PulvinarLayer of given size, with given name.
 func (nt *Network) AddPulvinarLayer2D(name string, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer2D(name, nNeurY, nNeurX, PulvinarLayer)
+	return nt.AddLayer2D(name, PulvinarLayer, nNeurY, nNeurX)
 }
 
 // AddPulvinarLayer4D adds a PulvinarLayer of given size, with given name.
 func (nt *Network) AddPulvinarLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
-	return nt.AddLayer4D(name, nPoolsY, nPoolsX, nNeurY, nNeurX, PulvinarLayer)
+	return nt.AddLayer4D(name, PulvinarLayer, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
 // ConnectSuperToCT adds a CTCtxtPath from given sending Super layer to a CT layer

@@ -12,12 +12,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"cogentcore.org/core/base/iox/tomlx"
 	"cogentcore.org/core/core"
-	"github.com/emer/emergent/v2/econfig"
 	"github.com/emer/emergent/v2/emer"
-	"github.com/emer/emergent/v2/params"
 	"github.com/emer/emergent/v2/paths"
 )
 
@@ -25,8 +25,15 @@ import (
 type Network struct {
 	emer.NetworkBase
 
+	// Ctx is the context state. Other copies of Context can be maintained
+	// and [SetContext] to update this one, but this instance is the canonical one.
+	Ctx Context
+
 	// list of layers
 	Layers []*Layer
+
+	// LayerClassMap is a map from class name to layer names.
+	LayerClassMap map[string][]string `display:"-"`
 
 	// number of parallel threads (go routines) to use.
 	NThreads int `edit:"-"`
@@ -39,6 +46,7 @@ type Network struct {
 	WtBalCtr int `edit:"-"`
 }
 
+func (nt *Network) Context() *Context            { return &nt.Ctx }
 func (nt *Network) NumLayers() int               { return len(nt.Layers) }
 func (nt *Network) EmerLayer(idx int) emer.Layer { return nt.Layers[idx] }
 func (nt *Network) MaxParallelData() int         { return 1 }
@@ -49,6 +57,7 @@ func NewNetwork(name string) *Network {
 	net := &Network{}
 	emer.InitNetwork(net, name)
 	net.NThreads = 1
+	net.Context().Defaults()
 	return net
 }
 
@@ -69,6 +78,62 @@ func (nt *Network) LayersByType(layType ...LayerTypes) []string {
 	return nt.LayersByClass(nms...)
 }
 
+func (nt *Network) UpdateLayerMaps() {
+	nt.UpdateLayerNameMap()
+	nt.LayerClassMap = make(map[string][]string)
+	for _, ly := range nt.Layers {
+		cs := ly.Params.Type.String() + " " + ly.Class
+		cls := strings.Split(cs, " ")
+		for _, cl := range cls {
+			if cl == "" {
+				continue
+			}
+			ll := nt.LayerClassMap[cl]
+			ll = append(ll, ly.Name)
+			nt.LayerClassMap[cl] = ll
+		}
+	}
+}
+
+// LayersByClass returns a list of layer names by given class(es).
+// Lists are compiled when network Build() function called,
+// or now if not yet present.
+// The layer Type is always included as a Class, along with any other
+// space-separated strings specified in Class for parameter styling, etc.
+// If no classes are passed, all layer names in order are returned.
+func (nt *Network) LayersByClass(classes ...string) []string {
+	if nt.LayerClassMap == nil {
+		nt.UpdateLayerMaps()
+	}
+	var nms []string
+	if len(classes) == 0 {
+		for _, ly := range nt.Layers {
+			if ly.Off {
+				continue
+			}
+			nms = append(nms, ly.Name)
+		}
+		return nms
+	}
+	for _, lc := range classes {
+		nms = append(nms, nt.LayerClassMap[lc]...)
+	}
+	// only get unique layers
+	layers := []string{}
+	has := map[string]bool{}
+	for _, nm := range nms {
+		if has[nm] {
+			continue
+		}
+		layers = append(layers, nm)
+		has[nm] = true
+	}
+	if len(layers) == 0 {
+		panic(fmt.Sprintf("No Layers found for query: %#v.", classes))
+	}
+	return layers
+}
+
 // KeyLayerParams returns a listing for all layers in the network,
 // of the most important layer-level params (specific to each algorithm).
 func (nt *Network) KeyLayerParams() string {
@@ -86,7 +151,7 @@ func (nt *Network) KeyPathParams() string {
 // or `params_2006_01_02` (year, month, day) datestamp,
 // providing a snapshot of the simulation params for easy diffs and later reference.
 // Also saves current Config and Params state.
-func (nt *Network) SaveParamsSnapshot(pars *params.Sets, cfg any, good bool) error {
+func (nt *Network) SaveParamsSnapshot(cfg any, good bool) error {
 	date := time.Now().Format("2006_01_02")
 	if good {
 		date = "good"
@@ -96,10 +161,10 @@ func (nt *Network) SaveParamsSnapshot(pars *params.Sets, cfg any, good bool) err
 	if err != nil {
 		log.Println(err) // notify but OK if it exists
 	}
-	econfig.Save(cfg, filepath.Join(dir, "config.toml"))
-	pars.SaveTOML(core.Filename(filepath.Join(dir, "params.toml")))
-	nt.SaveAllParams(core.Filename(filepath.Join(dir, "params_all.txt")))
-	nt.SaveNonDefaultParams(core.Filename(filepath.Join(dir, "params_nondef.txt")))
+	fmt.Println("Saving params to:", dir)
+	tomlx.Save(cfg, filepath.Join(dir, "config.toml"))
+	nt.SaveParams(emer.AllParams, core.Filename(filepath.Join(dir, "params_all.txt")))
+	nt.SaveParams(emer.NonDefault, core.Filename(filepath.Join(dir, "params_nondef.txt")))
 	nt.SaveAllLayerInhibs(core.Filename(filepath.Join(dir, "params_layers.txt")))
 	nt.SaveAllPathScales(core.Filename(filepath.Join(dir, "params_paths.txt")))
 	return nil
@@ -135,25 +200,13 @@ func (nt *Network) AllLayerInhibs() string {
 		if ly.Off {
 			continue
 		}
-		ph := ly.ParamsHistory.ParamsHistory()
-		lh := ph["Layer.Inhib.ActAvg.Init"]
-		if lh != "" {
-			lh = "Params: " + lh
+		lp := &ly.Params
+		str += fmt.Sprintf("%15s\t\tNominal:\t%6.2f\n", ly.Name, lp.Inhib.ActAvg.Init)
+		if lp.Inhib.Layer.On {
+			str += fmt.Sprintf("\t\t\t\t\t\tLayer.Gi:\t%6.2f\n", lp.Inhib.Layer.Gi)
 		}
-		str += fmt.Sprintf("%15s\t\tNominal:\t%6.2f\t%s\n", ly.Name, ly.Inhib.ActAvg.Init, lh)
-		if ly.Inhib.Layer.On {
-			lh := ph["Layer.Inhib.Layer.Gi"]
-			if lh != "" {
-				lh = "Params: " + lh
-			}
-			str += fmt.Sprintf("\t\t\t\t\t\tLayer.Gi:\t%6.2f\t%s\n", ly.Inhib.Layer.Gi, lh)
-		}
-		if ly.Inhib.Pool.On {
-			lh := ph["Layer.Inhib.Pool.Gi"]
-			if lh != "" {
-				lh = "Params: " + lh
-			}
-			str += fmt.Sprintf("\t\t\t\t\t\tPool.Gi: \t%6.2f\t%s\n", ly.Inhib.Pool.Gi, lh)
+		if lp.Inhib.Pool.On {
+			str += fmt.Sprintf("\t\t\t\t\t\tPool.Gi: \t%6.2f\n", lp.Inhib.Pool.Gi)
 		}
 		str += fmt.Sprintf("\n")
 	}
@@ -175,7 +228,7 @@ func (nt *Network) AllPathScales() string {
 			if pt.Off {
 				continue
 			}
-			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pt.Name, pt.WtScale.Abs, pt.WtScale.Rel)
+			str += fmt.Sprintf("\t%23s\t\tAbs:\t%g\tRel:\t%g\n", pt.Name, pt.Params.WtScale.Abs, pt.Params.WtScale.Rel)
 		}
 	}
 	return str
@@ -183,6 +236,7 @@ func (nt *Network) AllPathScales() string {
 
 // Defaults sets all the default parameters for all layers and pathways
 func (nt *Network) Defaults() {
+	nt.Context().Defaults()
 	nt.WtBalInterval = 10
 	nt.WtBalCtr = 0
 	for li, ly := range nt.Layers {
@@ -231,14 +285,14 @@ func (nt *Network) SynVarProps() map[string]string {
 
 // AddLayerInit is implementation routine that takes a given layer and
 // adds it to the network, and initializes and configures it properly.
-func (nt *Network) AddLayerInit(ly *Layer, name string, shape []int, typ LayerTypes) {
+func (nt *Network) AddLayerInit(ly *Layer, name string, typ LayerTypes, shape ...int) {
 	if nt.EmerNetwork == nil {
 		log.Printf("Network EmerNetwork is nil: MUST call emer.InitNetwork on network, passing a pointer to the network to initialize properly!")
 		return
 	}
 	emer.InitLayer(ly, name)
-	ly.SetShape(shape)
-	ly.Type = typ
+	ly.Shape.SetShapeSizes(shape...)
+	ly.Params.Type = typ
 	nt.Layers = append(nt.Layers, ly)
 	nt.UpdateLayerMaps()
 }
@@ -250,16 +304,16 @@ func (nt *Network) AddLayerInit(ly *Layer, name string, shape []int, typ LayerTy
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each unit
 // group having 4 rows (Y) of 5 (X) units.
-func (nt *Network) AddLayer(name string, shape []int, typ LayerTypes) *Layer {
+func (nt *Network) AddLayer(name string, typ LayerTypes, shape ...int) *Layer {
 	ly := &Layer{} // essential to use EmerNet interface here!
-	nt.AddLayerInit(ly, name, shape, typ)
+	nt.AddLayerInit(ly, name, typ, shape...)
 	return ly
 }
 
 // AddLayer2D adds a new layer with given name and 2D shape to the network.
 // 2D and 4D layer shapes are generally preferred but not essential.
-func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ LayerTypes) *Layer {
-	return nt.AddLayer(name, []int{shapeY, shapeX}, typ)
+func (nt *Network) AddLayer2D(name string, typ LayerTypes, shapeY, shapeX int) *Layer {
+	return nt.AddLayer(name, typ, shapeY, shapeX)
 }
 
 // AddLayer4D adds a new layer with given name and 4D shape to the network.
@@ -267,8 +321,8 @@ func (nt *Network) AddLayer2D(name string, shapeY, shapeX int, typ LayerTypes) *
 // shape is in row-major format with outer-most dimensions first:
 // e.g., 4D 3, 2, 4, 5 = 3 rows (Y) of 2 cols (X) of pools, with each pool
 // having 4 rows (Y) of 5 (X) neurons.
-func (nt *Network) AddLayer4D(name string, nPoolsY, nPoolsX, nNeurY, nNeurX int, typ LayerTypes) *Layer {
-	return nt.AddLayer(name, []int{nPoolsY, nPoolsX, nNeurY, nNeurX}, typ)
+func (nt *Network) AddLayer4D(name string, typ LayerTypes, nPoolsY, nPoolsX, nNeurY, nNeurX int) *Layer {
+	return nt.AddLayer(name, typ, nPoolsY, nPoolsX, nNeurY, nNeurX)
 }
 
 // ConnectLayerNames establishes a pathway between two layers, referenced by name
@@ -341,7 +395,7 @@ func (nt *Network) LateralConnectLayer(lay *Layer, pat paths.Pattern) *Path {
 // Build constructs the layer and pathway state based on the layer shapes
 // and patterns of interconnectivity
 func (nt *Network) Build() error {
-	nt.MakeLayerMaps()
+	nt.UpdateLayerMaps()
 	var errs []error
 	for li, ly := range nt.Layers {
 		ly.Index = li

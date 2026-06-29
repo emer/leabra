@@ -40,32 +40,35 @@ func (rp *RWParams) Update() {
 
 // ActFromGRWPred computes linear activation for [RWPredLayer].
 func (ly *Layer) ActFromGRWPred(ctx *Context) {
+	lp := &ly.Params
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
-		nrn.Act = ly.RW.PredRange.ClampValue(nrn.Ge) // clipped linear
-		ly.Learn.AvgsFromAct(nrn)
+		nrn.Act = lp.RW.PredRange.ClampValue(nrn.Ge) // clipped linear
+		lp.Learn.AvgsFromAct(nrn)
 	}
 }
 
 // RWLayers returns the reward and RWPredLayer layers based on names.
 func (ly *Layer) RWLayers() (*Layer, *Layer, error) {
-	tly := ly.Network.LayerByName(ly.RW.RewLay)
+	lp := &ly.Params
+	tly := ly.Network.LayerByName(lp.RW.RewLay)
 	if tly == nil {
-		err := fmt.Errorf("RWDaLayer %s, RewLay: %q not found", ly.Name, ly.RW.RewLay)
+		err := fmt.Errorf("RWDaLayer %s, RewLay: %q not found", ly.Name, lp.RW.RewLay)
 		return nil, nil, errors.Log(err)
 	}
-	ply := ly.Network.LayerByName(ly.RW.PredLay)
+	ply := ly.Network.LayerByName(lp.RW.PredLay)
 	if ply == nil {
-		err := fmt.Errorf("RWDaLayer %s, RWPredLay: %q not found", ly.Name, ly.RW.PredLay)
+		err := fmt.Errorf("RWDaLayer %s, RWPredLay: %q not found", ly.Name, lp.RW.PredLay)
 		return nil, nil, errors.Log(err)
 	}
 	return tly, ply, nil
 }
 
 func (ly *Layer) ActFromGRWDa(ctx *Context) {
+	lp := &ly.Params
 	rly, ply, _ := ly.RWLayers()
 	if rly == nil || ply == nil {
 		return
@@ -88,7 +91,7 @@ func (ly *Layer) ActFromGRWDa(ctx *Context) {
 		} else {
 			nrn.Act = 0 // nothing
 		}
-		ly.Learn.AvgsFromAct(nrn)
+		lp.Learn.AvgsFromAct(nrn)
 	}
 }
 
@@ -96,10 +99,10 @@ func (ly *Layer) ActFromGRWDa(ctx *Context) {
 // Reward layer, a RWPred prediction layer, and a dopamine layer that computes diff.
 // Only generates DA when Rew layer has external input -- otherwise zero.
 func (nt *Network) AddRWLayers(prefix string, space float32) (rew, rp, da *Layer) {
-	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, InputLayer)
-	rp = nt.AddLayer2D(prefix+"RWPred", 1, 1, RWPredLayer)
-	da = nt.AddLayer2D(prefix+"DA", 1, 1, RWDaLayer)
-	da.RW.RewLay = rew.Name
+	rew = nt.AddLayer2D(prefix+"Rew", InputLayer, 1, 1)
+	rp = nt.AddLayer2D(prefix+"RWPred", RWPredLayer, 1, 1)
+	da = nt.AddLayer2D(prefix+"DA", RWDaLayer, 1, 1)
+	da.Params.RW.RewLay = rew.Name
 	rp.PlaceBehind(rew, space)
 	da.PlaceBehind(rp, space)
 
@@ -110,7 +113,7 @@ func (nt *Network) AddRWLayers(prefix string, space float32) (rew, rp, da *Layer
 	return
 }
 
-func (pt *Path) RWDefaults() {
+func (pt *PathParams) RWDefaults() {
 	pt.Learn.WtSig.Gain = 1
 	pt.Learn.Norm.On = false
 	pt.Learn.Momentum.On = false
@@ -119,6 +122,7 @@ func (pt *Path) RWDefaults() {
 
 // DWtRW computes the weight change (learning) for [RWPath].
 func (pt *Path) DWtRW() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
 	lda := rlay.NeuroMod.DA
@@ -143,7 +147,7 @@ func (pt *Path) DWtRW() {
 			}
 
 			dwt := da * sn.Act // no recv unit activation
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 	}
 }
@@ -174,6 +178,7 @@ func (tp *TDParams) Update() {
 
 // ActFromGTDPred computes linear activation for [TDPredLayer].
 func (ly *Layer) ActFromGTDPred(ctx *Context) {
+	lp := &ly.Params
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -184,20 +189,22 @@ func (ly *Layer) ActFromGTDPred(ctx *Context) {
 		} else {
 			nrn.Act = nrn.ActP // previous actP
 		}
-		ly.Learn.AvgsFromAct(nrn)
+		lp.Learn.AvgsFromAct(nrn)
 	}
 }
 
 func (ly *Layer) TDPredLayer() (*Layer, error) {
-	tly := ly.Network.LayerByName(ly.TD.PredLay)
+	lp := &ly.Params
+	tly := ly.Network.LayerByName(lp.TD.PredLay)
 	if tly == nil {
-		err := fmt.Errorf("TDIntegLayer %s RewPredLayer: %q not found", ly.Name, ly.TD.PredLay)
+		err := fmt.Errorf("TDIntegLayer %s RewPredLayer: %q not found", ly.Name, lp.TD.PredLay)
 		return nil, errors.Log(err)
 	}
 	return tly, nil
 }
 
 func (ly *Layer) ActFromGTDInteg(ctx *Context) {
+	lp := &ly.Params
 	rply, _ := ly.TDPredLayer()
 	if rply == nil {
 		return
@@ -210,25 +217,26 @@ func (ly *Layer) ActFromGTDInteg(ctx *Context) {
 			continue
 		}
 		if ctx.Quarter == 3 { // plus phase
-			nrn.Act = nrn.Ge + ly.TD.Discount*rpAct
+			nrn.Act = nrn.Ge + lp.TD.Discount*rpAct
 		} else {
 			nrn.Act = rpActP // previous actP
 		}
-		ly.Learn.AvgsFromAct(nrn)
+		lp.Learn.AvgsFromAct(nrn)
 	}
 }
 
 func (ly *Layer) TDIntegLayer() (*Layer, error) {
-	tly := ly.Network.LayerByName(ly.TD.IntegLay)
+	lp := &ly.Params
+	tly := ly.Network.LayerByName(lp.TD.IntegLay)
 	if tly == nil {
-		err := fmt.Errorf("TDIntegLayer %s RewIntegLayer: %q not found", ly.Name, ly.TD.IntegLay)
+		err := fmt.Errorf("TDIntegLayer %s RewIntegLayer: %q not found", ly.Name, lp.TD.IntegLay)
 		return nil, errors.Log(err)
 	}
 	return tly, nil
 }
 
 func (ly *Layer) TDDaDefaults() {
-	ly.Act.Clamp.Range.Set(-100, 100)
+	ly.Params.Act.Clamp.Range.Set(-100, 100)
 }
 
 func (ly *Layer) ActFromGTDDa(ctx *Context) {
@@ -252,7 +260,7 @@ func (ly *Layer) ActFromGTDDa(ctx *Context) {
 	}
 }
 
-func (pt *Path) TDPredDefaults() {
+func (pt *PathParams) TDPredDefaults() {
 	pt.Learn.WtSig.Gain = 1
 	pt.Learn.Norm.On = false
 	pt.Learn.Momentum.On = false
@@ -261,6 +269,7 @@ func (pt *Path) TDPredDefaults() {
 
 // DWtTDPred computes the weight change (learning) for [TDPredPath].
 func (pt *Path) DWtTDPred() {
+	pp := &pt.Params
 	slay := pt.Send
 	rlay := pt.Recv
 	da := rlay.NeuroMod.DA
@@ -275,7 +284,7 @@ func (pt *Path) DWtTDPred() {
 			sy := &syns[ci]
 			// ri := scons[ci]
 			dwt := da * sn.ActQ0 // no recv unit activation, prior trial act
-			sy.DWt += pt.Learn.Lrate * dwt
+			sy.DWt += pp.Learn.Lrate * dwt
 		}
 	}
 }
@@ -284,23 +293,24 @@ func (pt *Path) DWtTDPred() {
 // Pathway from Rew to RewInteg is given class TDToInteg -- should
 // have no learning and 1 weight.
 func (nt *Network) AddTDLayers(prefix string, space float32) (rew, rp, ri, td *Layer) {
-	rew = nt.AddLayer2D(prefix+"Rew", 1, 1, InputLayer)
-	rp = nt.AddLayer2D(prefix+"Pred", 1, 1, TDPredLayer)
-	ri = nt.AddLayer2D(prefix+"Integ", 1, 1, TDIntegLayer)
-	td = nt.AddLayer2D(prefix+"TD", 1, 1, TDDaLayer)
-	ri.TD.PredLay = rp.Name
-	td.TD.IntegLay = ri.Name
+	rew = nt.AddLayer2D(prefix+"Rew", InputLayer, 1, 1)
+	rp = nt.AddLayer2D(prefix+"Pred", TDPredLayer, 1, 1)
+	ri = nt.AddLayer2D(prefix+"Integ", TDIntegLayer, 1, 1)
+	td = nt.AddLayer2D(prefix+"TD", TDDaLayer, 1, 1)
+	ri.Params.TD.PredLay = rp.Name
+	td.Params.TD.IntegLay = ri.Name
 
 	rp.PlaceBehind(rew, space)
 	ri.PlaceBehind(rp, space)
 	td.PlaceBehind(ri, space)
 
 	pt := nt.ConnectLayers(rew, ri, paths.NewFull(), ForwardPath)
+	pp := &pt.Params
 	pt.AddClass("TDToInteg")
-	pt.Learn.Learn = false
-	pt.WtInit.Mean = 1
-	pt.WtInit.Var = 0
-	pt.WtInit.Sym = false
+	pp.Learn.Learn = false
+	pp.WtInit.Mean = 1
+	pp.WtInit.Var = 0
+	pp.WtInit.Sym = false
 
 	rew.Doc = "Reward input, activated by external rewards, e.g., the US = unconditioned stimulus"
 	rp.Doc = "Reward Prediction, representing estimated value V(t) in the minus phase, and in plus phase computes estimated V(t+1) based on learned weights"

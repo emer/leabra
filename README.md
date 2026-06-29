@@ -18,17 +18,17 @@ $ core run [platform]
 
 where `[platform]` is optional (defaults to your local system), and can include `android`, `ios` and `web`!
 
-See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) repository which also provide good starting points.  The [emergent wiki install](https://github.com/emer/emergent/wiki/Install) page has a tutorial for how to create your own simulation starting from the ra25 example.
+See the [ra25 example](https://github.com/emer/leabra/blob/main/examples/ra25/README.md) for a complete working example (intended to be a good starting point for creating your own models), and any of the 26 models in the [compcogneuro/sims](https://github.com/compcogneuro/sims) repository which also provide good starting points.  The [emergent wiki install](https://github.com/emer/emergent/wiki/Install) page has a tutorial for how to create your own simulation starting from the ra25 example.
 
 # Current Status / News
 
-* October 2024: Finished initial update to v2 using the updated emergent toolkit for logging, looper control mechanisms, and simplified GUI management, along with updates to use the [Cogent Core](https://cogentcore.org/core) GUI framework, which allows running models directly on the web browser, and is in general much more robust, performant, and looks better too!  The [Comp Cog Neuro sims](https://github.com/CompCogNeuro/sims) are being updated so they all run on the web, which should be much easier for students. The special algorithm code (Deep, Hip, PBWM, RL) are implemented as special layer and path types, with switch cases, not as Go subtypes. This is overall much simpler, and would allow a future GPU version. In general, research users are encouraged to transition to the [axon](https://github.com/emer/axon) framework, while Leabra remains algorithmically frozen.
+* October 2024: Finished initial update to v2 using the updated emergent toolkit for logging, looper control mechanisms, and simplified GUI management, along with updates to use the [Cogent Core](https://cogentcore.org/core) GUI framework, which allows running models directly on the web browser, and is in general much more robust, performant, and looks better too!  The [Comp Cog Neuro sims](https://github.com/compcogneuro/sims) are being updated so they all run on the web, which should be much easier for students. The special algorithm code (Deep, Hip, PBWM, RL) are implemented as special layer and path types, with switch cases, not as Go subtypes. This is overall much simpler, and would allow a future GPU version. In general, research users are encouraged to transition to the [axon](https://github.com/emer/axon) framework, while Leabra remains algorithmically frozen.
 
 * Nov 2020: Full Python conversions of CCN sims complete, and [eTorch](https://github.com/emer/etorch) for viewing and interacting with PyTorch models.
 
 * April 2020: GoGi GUI version 1.0 released, and updated install instructions to use go.mod modules for most users.
 
-* 12/30/2019: Version 1.0.0 Released! -- [CCN textbook simulations](https://github.com/CompCogNeuro/sims) are done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.
+* 12/30/2019: Version 1.0.0 Released! -- [CCN textbook simulations](https://github.com/compcogneuro/sims) are done and `hip`, `deep` and `pbwm` variants are in place and robustly tested.
 
 * 3/2019: Python interface is up and running!  See the `python` directory in `leabra` for the [README](https://github.com/emer/leabra/blob/main/python/README.md) status and how to give it a try.  You can run the full `examples/ra25` code using Python, including the GUI etc.
 

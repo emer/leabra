@@ -5,11 +5,8 @@
 package leabra
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"math"
 	"strconv"
 	"strings"
 
@@ -18,7 +15,6 @@ import (
 	"cogentcore.org/core/math32"
 	"github.com/emer/emergent/v2/emer"
 	"github.com/emer/emergent/v2/weights"
-	"github.com/emer/etensor/tensor"
 )
 
 // Layer implements the Leabra algorithm at the layer level,
@@ -30,63 +26,14 @@ type Layer struct {
 	// find other layers etc; set when added by network.
 	Network *Network `copier:"-" json:"-" xml:"-" display:"-"`
 
-	// type of layer.
-	Type LayerTypes
-
 	// list of receiving pathways into this layer from other layers.
 	RecvPaths []*Path
 
 	// list of sending pathways from this layer to other layers.
 	SendPaths []*Path
 
-	// Activation parameters and methods for computing activations.
-	Act ActParams `display:"add-fields"`
-
-	// Inhibition parameters and methods for computing layer-level inhibition.
-	Inhib InhibParams `display:"add-fields"`
-
-	// Learning parameters and methods that operate at the neuron level.
-	Learn LearnNeurParams `display:"add-fields"`
-
-	// Burst has parameters for computing Burst from act, in Superficial layers
-	// (but also needed in Deep layers for deep self connections).
-	Burst BurstParams `display:"inline"`
-
-	// Pulvinar has parameters for computing Pulvinar plus-phase (outcome)
-	// activations based on Burst activation from corresponding driver neuron.
-	Pulvinar PulvinarParams `display:"inline"`
-
-	// Drivers are names of SuperLayer(s) that sends 5IB Burst driver
-	// inputs to this layer.
-	Drivers Drivers
-
-	// RW are Rescorla-Wagner RL learning parameters.
-	RW RWParams `display:"inline"`
-
-	// TD are Temporal Differences RL learning parameters.
-	TD TDParams `display:"inline"`
-
-	// Matrix BG gating parameters
-	Matrix MatrixParams `display:"inline"`
-
-	// PBWM has general PBWM parameters, including the shape
-	// of overall Maint + Out gating system that this layer is part of.
-	PBWM PBWMParams `display:"inline"`
-
-	// GPiGate are gating parameters determining threshold for gating etc.
-	GPiGate GPiGateParams `display:"inline"`
-
-	// CIN cholinergic interneuron parameters.
-	CIN CINParams `display:"inline"`
-
-	// PFC Gating parameters
-	PFCGate PFCGateParams `display:"inline"`
-
-	// PFC Maintenance parameters
-	PFCMaint PFCMaintParams `display:"inline"`
-
-	// PFCDyns dynamic behavior parameters -- provides deterministic control over PFC maintenance dynamics -- the rows of PFC units (along Y axis) behave according to corresponding index of Dyns (inner loop is Super Y axis, outer is Dyn types) -- ensure Y dim has even multiple of len(Dyns)
-	PFCDyns PFCDyns
+	// Params contains all of the layer parameters.
+	Params LayerParams
 
 	// slice of neurons for this layer, as a flat list of len = Shape.Len().
 	// Must iterate over index and use pointer to modify values.
@@ -109,130 +56,42 @@ type Layer struct {
 	SendTo LayerNames
 }
 
-// emer.Layer interface methods
-
-func (ly *Layer) StyleObject() any           { return ly }
-func (ly *Layer) TypeName() string           { return ly.Type.String() }
-func (ly *Layer) TypeNumber() int            { return int(ly.Type) }
-func (ly *Layer) NumRecvPaths() int          { return len(ly.RecvPaths) }
-func (ly *Layer) RecvPath(idx int) emer.Path { return ly.RecvPaths[idx] }
-func (ly *Layer) NumSendPaths() int          { return len(ly.SendPaths) }
-func (ly *Layer) SendPath(idx int) emer.Path { return ly.SendPaths[idx] }
-
 func (ly *Layer) Defaults() {
-	ly.Act.Defaults()
-	ly.Inhib.Defaults()
-	ly.Learn.Defaults()
-	ly.Burst.Defaults()
-	ly.Pulvinar.Defaults()
-	ly.RW.Defaults()
-	ly.TD.Defaults()
-	ly.Matrix.Defaults()
-	ly.PBWM.Defaults()
-	ly.GPiGate.Defaults()
-	ly.CIN.Defaults()
-	ly.PFCGate.Defaults()
-	ly.PFCMaint.Defaults()
-	ly.Inhib.Layer.On = true
+	ly.Params.Layer = ly
+	ly.Params.Defaults()
 	for _, pt := range ly.RecvPaths {
 		pt.Defaults()
 	}
-	ly.DefaultsForType()
 }
 
-// DefaultsForType sets the default parameter values for a given layer type.
-func (ly *Layer) DefaultsForType() {
-	switch ly.Type {
-	case ClampDaLayer:
-		ly.ClampDaDefaults()
-	case MatrixLayer:
-		ly.MatrixDefaults()
-	case GPiThalLayer:
-		ly.GPiThalDefaults()
-	case CINLayer:
-	case PFCLayer:
-	case PFCDeepLayer:
-		ly.PFCDeepDefaults()
-	}
-}
-
-// UpdateParams updates all params given any changes that might have been made to individual values
-// including those in the receiving pathways of this layer
 func (ly *Layer) UpdateParams() {
-	ly.Act.Update()
-	ly.Inhib.Update()
-	ly.Learn.Update()
-	ly.Burst.Update()
-	ly.Pulvinar.Update()
-	ly.RW.Update()
-	ly.TD.Update()
-	ly.Matrix.Update()
-	ly.PBWM.Update()
-	ly.GPiGate.Update()
-	ly.CIN.Update()
-	ly.PFCGate.Update()
-	ly.PFCMaint.Update()
+	ly.Params.UpdateParams()
 	for _, pt := range ly.RecvPaths {
 		pt.UpdateParams()
 	}
 }
 
-func (ly *Layer) ShouldDisplay(field string) bool {
-	isPBWM := ly.Type == MatrixLayer || ly.Type == GPiThalLayer || ly.Type == CINLayer || ly.Type == PFCLayer || ly.Type == PFCDeepLayer
-	switch field {
-	case "Burst":
-		return ly.Type == SuperLayer || ly.Type == CTLayer
-	case "Pulvinar", "Drivers":
-		return ly.Type == PulvinarLayer
-	case "RW":
-		return ly.Type == RWPredLayer || ly.Type == RWDaLayer
-	case "TD":
-		return ly.Type == TDPredLayer || ly.Type == TDIntegLayer || ly.Type == TDDaLayer
-	case "PBWM":
-		return isPBWM
-	case "SendTo":
-		return ly.Type == GPiThalLayer || ly.Type == ClampDaLayer || ly.Type == RWDaLayer || ly.Type == TDDaLayer || ly.Type == CINLayer
-	case "Matrix":
-		return ly.Type == MatrixLayer
-	case "GPiGate":
-		return ly.Type == GPiThalLayer
-	case "CIN":
-		return ly.Type == CINLayer
-	case "PFCGate", "PFCMaint":
-		return ly.Type == PFCLayer || ly.Type == PFCDeepLayer
-	case "PFCDyns":
-		return ly.Type == PFCDeepLayer
-	default:
-		return true
-	}
-	return true
-}
+// emer.Layer interface methods
 
-// JsonToParams reformates json output to suitable params display output
-func JsonToParams(b []byte) string {
-	br := strings.Replace(string(b), `"`, ``, -1)
-	br = strings.Replace(br, ",\n", "", -1)
-	br = strings.Replace(br, "{\n", "{", -1)
-	br = strings.Replace(br, "} ", "}\n  ", -1)
-	br = strings.Replace(br, "\n }", " }", -1)
-	br = strings.Replace(br, "\n  }\n", " }", -1)
-	return br[1:] + "\n"
-}
+func (ly *Layer) StyleObject() any           { return ly }
+func (ly *Layer) TypeName() string           { return ly.Params.Type.String() }
+func (ly *Layer) TypeNumber() int            { return int(ly.Params.Type) }
+func (ly *Layer) NumRecvPaths() int          { return len(ly.RecvPaths) }
+func (ly *Layer) RecvPath(idx int) emer.Path { return ly.RecvPaths[idx] }
+func (ly *Layer) NumSendPaths() int          { return len(ly.SendPaths) }
+func (ly *Layer) SendPath(idx int) emer.Path { return ly.SendPaths[idx] }
 
-// AllParams returns a listing of all parameters in the Layer
-func (ly *Layer) AllParams() string {
-	str := "/////////////////////////////////////////////////\nLayer: " + ly.Name + "\n"
-	b, _ := json.MarshalIndent(&ly.Act, "", " ")
-	str += "Act: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Inhib, "", " ")
-	str += "Inhib: {\n " + JsonToParams(b)
-	b, _ = json.MarshalIndent(&ly.Learn, "", " ")
-	str += "Learn: {\n " + JsonToParams(b)
+// ParamsString returns a listing of all parameters in the Layer and
+// pathways within the layer. If nonDefault is true, only report those
+// not at their default values.
+func (ly *Layer) ParamsString(nonDefault bool) string {
+	var b strings.Builder
+	b.WriteString("////////  Layer: " + ly.Name + "\n")
+	b.WriteString(ly.Params.ParamsString(nonDefault))
 	for _, pt := range ly.RecvPaths {
-		pstr := pt.AllParams()
-		str += pstr
+		b.WriteString(pt.ParamsString(nonDefault))
 	}
-	return str
+	return b.String()
 }
 
 // RecipToSendPath finds the reciprocal pathway relative to the given sending pathway
@@ -329,76 +188,6 @@ func (ly *Layer) UnitValues(vals *[]float32, varNm string, di int) error {
 	return nil
 }
 
-// UnitValuesTensor returns values of given variable name on unit
-// for each unit in the layer, as a float32 tensor in same shape as layer units.
-func (ly *Layer) UnitValuesTensor(tsr tensor.Tensor, varNm string, di int) error {
-	if tsr == nil {
-		err := fmt.Errorf("leabra.UnitValuesTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	tsr.SetShape(ly.Shape.Sizes, ly.Shape.Names...)
-	vidx, err := ly.UnitVarIndex(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i := range ly.Neurons {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i := range ly.Neurons {
-		v := ly.UnitValue1D(vidx, i, di)
-		if math32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
-// UnitValuesSampleTensor fills in values of given variable name on unit
-// for a smaller subset of sample units in the layer, into given tensor.
-// This is used for computationally intensive stats or displays that work
-// much better with a smaller number of units.
-// The set of sample units are defined by SampleIndexes -- all units
-// are used if no such subset has been defined.
-// If tensor is not already big enough to hold the values, it is
-// set to a 1D shape to hold all the values if subset is defined,
-// otherwise it calls UnitValuesTensor and is identical to that.
-// Returns error on invalid var name.
-func (ly *Layer) UnitValuesSampleTensor(tsr tensor.Tensor, varNm string, di int) error {
-	nu := len(ly.SampleIndexes)
-	if nu == 0 {
-		return ly.UnitValuesTensor(tsr, varNm, di)
-	}
-	if tsr == nil {
-		err := fmt.Errorf("axon.UnitValuesSampleTensor: Tensor is nil")
-		log.Println(err)
-		return err
-	}
-	if tsr.Len() != nu {
-		tsr.SetShape([]int{nu}, "Units")
-	}
-	vidx, err := ly.UnitVarIndex(varNm)
-	if err != nil {
-		nan := math.NaN()
-		for i, _ := range ly.SampleIndexes {
-			tsr.SetFloat1D(i, nan)
-		}
-		return err
-	}
-	for i, ui := range ly.SampleIndexes {
-		v := ly.UnitValue1D(vidx, ui, di)
-		if math32.IsNaN(v) {
-			tsr.SetFloat1D(i, math.NaN())
-		} else {
-			tsr.SetFloat1D(i, float64(v))
-		}
-	}
-	return nil
-}
-
 // UnitVal returns value of given variable name on given unit,
 // using shape-based dimensional index
 func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
@@ -406,7 +195,7 @@ func (ly *Layer) UnitValue(varNm string, idx []int, di int) float32 {
 	if err != nil {
 		return math32.NaN()
 	}
-	fidx := ly.Shape.Offset(idx)
+	fidx := ly.Shape.IndexTo1D(idx...)
 	return ly.UnitValue1D(vidx, fidx, di)
 }
 
@@ -540,8 +329,8 @@ func (ly *Layer) BuildSubPools() {
 	pi := 1
 	for py := 0; py < spy; py++ {
 		for px := 0; px < spx; px++ {
-			soff := ly.Shape.Offset([]int{py, px, 0, 0})
-			eoff := ly.Shape.Offset([]int{py, px, sh[2] - 1, sh[3] - 1}) + 1
+			soff := ly.Shape.IndexTo1D(py, px, 0, 0)
+			eoff := ly.Shape.IndexTo1D(py, px, sh[2]-1, sh[3]-1) + 1
 			pl := &ly.Pools[pi]
 			pl.StIndex = soff
 			pl.EdIndex = eoff
@@ -587,6 +376,7 @@ func (ly *Layer) BuildPaths() error {
 
 // Build constructs the layer state, including calling Build on the pathways
 func (ly *Layer) Build() error {
+	lp := &ly.Params
 	nu := ly.Shape.Len()
 	if nu == 0 {
 		return fmt.Errorf("Build Layer %v: no units specified in Shape", ly.Name)
@@ -604,7 +394,7 @@ func (ly *Layer) Build() error {
 	if err != nil {
 		return errors.Log(err)
 	}
-	err = ly.CIN.RewLays.Validate(ly.Network)
+	err = lp.CIN.RewLays.Validate(ly.Network)
 	if err != nil {
 		return errors.Log(err)
 	}
@@ -635,7 +425,7 @@ func (ly *Layer) SetWeights(lw *weights.Layer) error {
 			pv, _ := strconv.ParseFloat(ap, 32)
 			pl := &ly.Pools[0]
 			pl.ActAvg.ActPAvg = float32(pv)
-			ly.Inhib.ActAvg.EffFromAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
+			ly.Params.Inhib.ActAvg.EffFromAvg(&pl.ActAvg.ActPAvgEff, pl.ActAvg.ActPAvg)
 		}
 	}
 	var err error

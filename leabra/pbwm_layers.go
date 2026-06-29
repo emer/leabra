@@ -46,7 +46,7 @@ func (mp *MatrixParams) Defaults() {
 func (mp *MatrixParams) Update() {
 }
 
-func (ly *Layer) MatrixDefaults() {
+func (ly *LayerParams) MatrixDefaults() {
 	// special inhib params
 	ly.PBWM.Type = MaintOut
 	ly.Inhib.Layer.Gi = 1.9
@@ -63,12 +63,13 @@ func (ly *Layer) MatrixDefaults() {
 // DALrnFromDA returns effective learning dopamine value from given raw DA value
 // applying Burst and Dip Gain factors, and then reversing sign for D2R.
 func (ly *Layer) DALrnFromDA(da float32) float32 {
+	lp := &ly.Params
 	if da > 0 {
-		da *= ly.Matrix.BurstGain
+		da *= lp.Matrix.BurstGain
 	} else {
-		da *= ly.Matrix.DipGain
+		da *= lp.Matrix.DipGain
 	}
-	if ly.PBWM.DaR == D2R {
+	if lp.PBWM.DaR == D2R {
 		da *= -1
 	}
 	return da
@@ -76,7 +77,8 @@ func (ly *Layer) DALrnFromDA(da float32) float32 {
 
 // MatrixOutAChInhib applies OutAChInhib to bias output gating on reward trials.
 func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
-	if ly.Matrix.OutAChInhib == 0 {
+	lp := &ly.Params
+	if lp.Matrix.OutAChInhib == 0 {
 		return
 	}
 
@@ -84,22 +86,22 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 	xpN := ly.Shape.DimSize(1)
 	ynN := ly.Shape.DimSize(2)
 	xnN := ly.Shape.DimSize(3)
-	maintN := ly.PBWM.MaintN
+	maintN := lp.PBWM.MaintN
 	layAch := ly.NeuroMod.ACh // ACh comes from CIN neurons, represents reward time
 	for yp := 0; yp < ypN; yp++ {
 		for xp := maintN; xp < xpN; xp++ {
 			for yn := 0; yn < ynN; yn++ {
 				for xn := 0; xn < xnN; xn++ {
-					ni := ly.Shape.Offset([]int{yp, xp, yn, xn})
+					ni := ly.Shape.IndexTo1D(yp, xp, yn, xn)
 					nrn := &ly.Neurons[ni]
 					if nrn.IsOff() {
 						continue
 					}
 					ach := layAch
-					if ly.Matrix.ShuntACh && nrn.Shunt > 0 {
-						ach *= ly.Matrix.PatchShunt
+					if lp.Matrix.ShuntACh && nrn.Shunt > 0 {
+						ach *= lp.Matrix.PatchShunt
 					}
-					achI := ly.Matrix.OutAChInhib * (1 - ach)
+					achI := lp.Matrix.OutAChInhib * (1 - ach)
 					nrn.Gi += achI
 				}
 			}
@@ -109,6 +111,7 @@ func (ly *Layer) MatrixOutAChInhib(ctx *Context) {
 
 // DaAChFromLay computes Da and ACh from layer and Shunt received from PatchLayer units
 func (ly *Layer) DaAChFromLay(ctx *Context) {
+	lp := &ly.Params
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
@@ -116,7 +119,7 @@ func (ly *Layer) DaAChFromLay(ctx *Context) {
 		}
 		da := ly.NeuroMod.DA
 		if nrn.Shunt > 0 { // note: treating Shunt as binary variable -- could multiply
-			da *= ly.Matrix.PatchShunt
+			da *= lp.Matrix.PatchShunt
 		}
 		nrn.DALrn = ly.DALrnFromDA(da)
 	}
@@ -160,6 +163,7 @@ const (
 // SendToMatrixPFC adds standard SendTo layers for PBWM: MatrixGo, NoGo, PFCmntD, PFCoutD
 // with optional prefix -- excludes mnt, out cases if corresp shape = 0
 func (ly *Layer) SendToMatrixPFC(prefix string) {
+	lp := &ly.Params
 	pfcprefix := "PFC"
 	if prefix != "" {
 		pfcprefix = prefix
@@ -172,11 +176,11 @@ func (ly *Layer) SendToMatrixPFC(prefix string) {
 		case i < 2:
 			ly.SendTo[i] = nm
 		case i == 2:
-			if ly.PBWM.MaintX > 0 {
+			if lp.PBWM.MaintX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
 			}
 		case i == 3:
-			if ly.PBWM.OutX > 0 {
+			if lp.PBWM.OutX > 0 {
 				ly.SendTo = append(ly.SendTo, nm)
 			}
 		}
@@ -186,10 +190,11 @@ func (ly *Layer) SendToMatrixPFC(prefix string) {
 // SendPBWMParams send PBWMParams info to all SendTo layers -- convenient config-time
 // way to ensure all are consistent -- also checks validity of SendTo's
 func (ly *Layer) SendPBWMParams() error {
+	lp := &ly.Params
 	var lasterr error
 	for _, lnm := range ly.SendTo {
 		tly := ly.Network.LayerByName(lnm)
-		tly.PBWM.CopyGeomFrom(&ly.PBWM)
+		tly.Params.PBWM.CopyGeomFrom(&lp.PBWM)
 	}
 	return lasterr
 }
@@ -197,13 +202,14 @@ func (ly *Layer) SendPBWMParams() error {
 // MatrixPaths returns the recv paths from Go and NoGo MatrixLayer pathways -- error if not
 // found or if paths are not of the GPiThalPath type
 func (ly *Layer) MatrixPaths() (goPath, nogoPath *Path, err error) {
+	lp := &ly.Params
 	for _, p := range ly.RecvPaths {
 		if p.Off {
 			continue
 		}
 		slay := p.Send
-		if slay.Type == MatrixLayer {
-			if ly.PBWM.DaR == D1R {
+		if slay.Params.Type == MatrixLayer {
+			if lp.PBWM.DaR == D1R {
 				goPath = p
 			} else {
 				nogoPath = p
@@ -352,11 +358,12 @@ func (gs *GateState) CopyFrom(fm *GateState) {
 
 // GateType returns type of gating for this layer
 func (ly *Layer) GateType() GateTypes {
-	switch ly.Type {
+	lp := &ly.Params
+	switch lp.Type {
 	case GPiThalLayer, MatrixLayer:
 		return MaintOut
 	case PFCDeepLayer:
-		if ly.PFCGate.OutGate {
+		if lp.PFCGate.OutGate {
 			return Out
 		}
 		return Maint
@@ -366,6 +373,7 @@ func (ly *Layer) GateType() GateTypes {
 
 // SetGateStates sets the GateStates from given source states, of given gating type
 func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
+	lp := &ly.Params
 	myt := ly.GateType()
 	if myt < MaintOut && typ < MaintOut && myt != typ { // mismatch
 		return
@@ -380,7 +388,7 @@ func (ly *Layer) SetGateStates(src *Layer, typ GateTypes) {
 		mx := len(ly.Pools)
 		for i := 1; i < mx; i++ {
 			gs := &ly.Pool(i).Gate
-			si := 1 + ly.PBWM.FullIndex1D(i-1, myt)
+			si := 1 + lp.PBWM.FullIndex1D(i-1, myt)
 			sgs := &src.Pool(si).Gate
 			gs.CopyFrom(sgs)
 		}
@@ -432,7 +440,7 @@ func (gp *GPiGateParams) GeRaw(goRaw, nogoRaw float32) float32 {
 	return (gp.GeGain + gp.NoGo) * (goRaw - gp.NoGo*nogoRaw)
 }
 
-func (ly *Layer) GPiThalDefaults() {
+func (ly *LayerParams) GPiThalDefaults() {
 	ly.PBWM.Type = MaintOut
 	ly.Inhib.Layer.Gi = 1.8
 	ly.Inhib.Layer.FB = 0.2
@@ -444,6 +452,7 @@ func (ly *Layer) GPiThalDefaults() {
 // GPiGFromInc integrates new synaptic conductances from increments
 // sent during last SendGDelta.
 func (ly *Layer) GPiGFromInc(ctx *Context) {
+	lp := &ly.Params
 	goPath, nogoPath, _ := ly.MatrixPaths()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -452,9 +461,9 @@ func (ly *Layer) GPiGFromInc(ctx *Context) {
 		}
 		goRaw := goPath.GeRaw[ni]
 		nogoRaw := nogoPath.GeRaw[ni]
-		nrn.GeRaw = ly.GPiGate.GeRaw(goRaw, nogoRaw)
-		ly.Act.GeFromRaw(nrn, nrn.GeRaw)
-		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
+		nrn.GeRaw = lp.GPiGate.GeRaw(goRaw, nogoRaw)
+		lp.Act.GeFromRaw(nrn, nrn.GeRaw)
+		lp.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
@@ -466,7 +475,8 @@ func (ly *Layer) GPiGateSend(ctx *Context) {
 
 // GPiGateFromAct updates GateState from current activations, at time of gating
 func (ly *Layer) GPiGateFromAct(ctx *Context) {
-	gateQtr := ly.GPiGate.GateQtr.HasFlag(ctx.Quarter)
+	lp := &ly.Params
+	gateQtr := lp.GPiGate.GateQtr.HasFlag(ctx.Quarter)
 	qtrCyc := ctx.QuarterCycle()
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
@@ -477,11 +487,11 @@ func (ly *Layer) GPiGateFromAct(ctx *Context) {
 		if ctx.Quarter == 0 && qtrCyc == 0 {
 			gs.Act = 0 // reset at start
 		}
-		if gateQtr && qtrCyc == ly.GPiGate.Cycle { // gating
+		if gateQtr && qtrCyc == lp.GPiGate.Cycle { // gating
 			gs.Now = true
-			if nrn.Act < ly.GPiGate.Thr { // didn't gate
+			if nrn.Act < lp.GPiGate.Thr { // didn't gate
 				gs.Act = 0 // not over thr
-				if ly.GPiGate.ThrAct {
+				if lp.GPiGate.ThrAct {
 					gs.Act = 0
 				}
 				if gs.Cnt >= 0 {
@@ -535,8 +545,9 @@ func (ly *CINParams) Update() {
 
 // CINMaxAbsRew returns the maximum absolute value of reward layer activations.
 func (ly *Layer) CINMaxAbsRew() float32 {
+	lp := &ly.Params
 	mx := float32(0)
-	for _, nm := range ly.CIN.RewLays {
+	for _, nm := range lp.CIN.RewLays {
 		ly := ly.Network.LayerByName(nm)
 		if ly == nil {
 			continue
@@ -548,9 +559,10 @@ func (ly *Layer) CINMaxAbsRew() float32 {
 }
 
 func (ly *Layer) ActFromGCIN(ctx *Context) {
+	lp := &ly.Params
 	ract := ly.CINMaxAbsRew()
-	if ly.CIN.RewThr > 0 {
-		if ract > ly.CIN.RewThr {
+	if lp.CIN.RewThr > 0 {
+		if ract > lp.CIN.RewThr {
 			ract = 1
 		}
 	}
@@ -560,7 +572,7 @@ func (ly *Layer) ActFromGCIN(ctx *Context) {
 			continue
 		}
 		nrn.Act = ract
-		ly.Learn.AvgsFromAct(nrn)
+		lp.Learn.AvgsFromAct(nrn)
 	}
 }
 
@@ -724,7 +736,7 @@ func (pd *PFCDyns) Value(dyn int, time float32) float32 {
 	return dy.Value(time)
 }
 
-func (ly *Layer) PFCDeepDefaults() {
+func (ly *LayerParams) PFCDeepDefaults() {
 	if ly.PFCGate.OutGate && ly.PFCGate.OutQ1Only {
 		ly.PFCMaint.MaxMaint = 1
 		ly.PFCGate.GateQtr = 0
@@ -756,20 +768,22 @@ func (ly *Layer) SuperPFC() *Layer {
 
 // MaintGInc increments Ge from MaintGe, for PFCDeepLayer.
 func (ly *Layer) MaintGInc(ctx *Context) {
+	lp := &ly.Params
 	for ni := range ly.Neurons {
 		nrn := &ly.Neurons[ni]
 		if nrn.IsOff() {
 			continue
 		}
 		geRaw := nrn.GeRaw + nrn.MaintGe
-		ly.Act.GeFromRaw(nrn, geRaw)
-		ly.Act.GiFromRaw(nrn, nrn.GiRaw)
+		lp.Act.GeFromRaw(nrn, geRaw)
+		lp.Act.GiFromRaw(nrn, nrn.GiRaw)
 	}
 }
 
 // PFCDeepGating updates PFC Gating state.
 func (ly *Layer) PFCDeepGating(ctx *Context) {
-	if ly.PFCGate.OutGate && ly.PFCGate.OutQ1Only {
+	lp := &ly.Params
+	if lp.PFCGate.OutGate && lp.PFCGate.OutQ1Only {
 		if ctx.Quarter > 1 {
 			return
 		}
@@ -785,18 +799,18 @@ func (ly *Layer) PFCDeepGating(ctx *Context) {
 		}
 		if gs.Act > 0 { // use GPiThal threshold, so anything > 0
 			gs.Cnt = 0              // this is the "just gated" signal
-			if ly.PFCGate.OutGate { // time to clear out maint
-				if ly.PFCMaint.OutClearMaint {
+			if lp.PFCGate.OutGate { // time to clear out maint
+				if lp.PFCMaint.OutClearMaint {
 					fmt.Println("clear maint")
 					ly.ClearMaint(pi)
 				}
 			} else {
 				pfcs := ly.SuperPFC()
-				pfcs.DecayStatePool(pi, ly.PFCMaint.Clear)
+				pfcs.DecayStatePool(pi, lp.PFCMaint.Clear)
 			}
 		}
 		// test for over-duration maintenance -- allow for active gating to override
-		if gs.Cnt >= ly.PFCMaint.MaxMaint {
+		if gs.Cnt >= lp.PFCMaint.MaxMaint {
 			gs.Cnt = -1
 		}
 	}
@@ -812,13 +826,14 @@ func (ly *Layer) ClearMaint(pool int) {
 	if gs.Cnt >= 1 { // important: only for established maint, not just gated..
 		gs.Cnt = -1 // reset
 		pfcs := pfcm.SuperPFC()
-		pfcs.DecayStatePool(pool, pfcm.PFCMaint.Clear)
+		pfcs.DecayStatePool(pool, pfcm.Params.PFCMaint.Clear)
 	}
 }
 
 // DeepMaint updates deep maintenance activations
 func (ly *Layer) DeepMaint(ctx *Context) {
-	if !ly.PFCGate.GateQtr.HasFlag(ctx.Quarter) {
+	lp := &ly.Params
+	if !lp.PFCGate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	sly := ly.SuperPFC()
@@ -855,10 +870,10 @@ func (ly *Layer) DeepMaint(ctx *Context) {
 			sy := uy % syN // inner loop is s
 			si := pi*snn + sy*sxN + ux
 			snr := &sly.Neurons[si]
-			nrn.Maint = ly.PFCMaint.MaintGain * snr.Act
+			nrn.Maint = lp.PFCMaint.MaintGain * snr.Act
 		}
-		if ly.PFCMaint.UseDyn {
-			nrn.MaintGe = nrn.Maint * ly.PFCDyns.Value(dtyp, float32(gs.Cnt-1))
+		if lp.PFCMaint.UseDyn {
+			nrn.MaintGe = nrn.Maint * lp.PFCDyns.Value(dtyp, float32(gs.Cnt-1))
 		} else {
 			nrn.MaintGe = nrn.Maint
 		}
@@ -867,7 +882,8 @@ func (ly *Layer) DeepMaint(ctx *Context) {
 
 // UpdateGateCnt updates the gate counter
 func (ly *Layer) UpdateGateCnt(ctx *Context) {
-	if !ly.PFCGate.GateQtr.HasFlag(ctx.Quarter) {
+	lp := &ly.Params
+	if !lp.PFCGate.GateQtr.HasFlag(ctx.Quarter) {
 		return
 	}
 	for pi := range ly.Pools {
