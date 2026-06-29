@@ -162,7 +162,7 @@ func (vu *NetViewUpdate) GoUpdate(mode, level enums.Enum) {
 	if !vu.ShouldUpdate() {
 		return
 	}
-	if vu.IsCycleUpdating() && vu.View.Options.Raster.On { // no update for raster
+	if vu.IsCycleUpdating() && vu.View.Settings.Raster.On { // no update for raster
 		return
 	}
 	counters := vu.CounterFunc(mode, level)
@@ -192,7 +192,7 @@ func (vu *NetViewUpdate) UpdateWhenStopped(mode, level enums.Enum) {
 	if !vu.ShouldUpdate() {
 		return
 	}
-	if !vu.View.Options.Raster.On { // always record when not in raster mode
+	if !vu.View.Settings.Raster.On { // always record when not in raster mode
 		counters := vu.CounterFunc(mode, level)
 		vu.View.Record(counters, -1) // -1 = use a dummy counter
 	}
@@ -205,7 +205,7 @@ func (vu *NetViewUpdate) IsCycleUpdating() bool {
 	if !vu.ShouldUpdate() {
 		return false
 	}
-	if vu.View.Options.Raster.On || vu.Time == Cycle {
+	if vu.View.Settings.Raster.On || vu.Time == Cycle {
 		return true
 	}
 	return false
@@ -225,7 +225,7 @@ func (vu *NetViewUpdate) UpdateCycle(cyc int, mode, level enums.Enum) {
 	if !vu.ShouldUpdate() {
 		return
 	}
-	if vu.View.Options.Raster.On {
+	if vu.View.Settings.Raster.On {
 		counters := vu.CounterFunc(mode, level)
 		vu.updateCycleRaster(cyc, counters)
 		return

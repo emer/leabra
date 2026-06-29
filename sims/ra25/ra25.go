@@ -657,8 +657,8 @@ func (ss *Sim) ConfigGUI(b tree.Node) {
 	ss.GUI.MakeBody(b, ss, ss.Root, ss.Config.Name, ss.Config.Title, ss.Config.Doc)
 	ss.GUI.StopLevel = Trial
 	nv := ss.GUI.AddNetView("Network")
-	nv.Options.MaxRecs = 2 * ss.Config.Run.Cycles
-	nv.Options.Raster.Max = ss.Config.Run.Cycles
+	nv.Settings.MaxRecs = 2 * ss.Config.Run.Cycles
+	nv.Settings.Raster.Max = ss.Config.Run.Cycles
 	nv.SetNet(ss.Net)
 	ss.TrainUpdate.Config(nv, leabra.Phase, ss.StatCounters)
 	ss.TestUpdate.Config(nv, leabra.Phase, ss.StatCounters)
